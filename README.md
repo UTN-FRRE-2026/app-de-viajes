@@ -8,6 +8,7 @@ Plan completo: [PLAN.md](PLAN.md). Decisiones: [docs/adr](docs/adr).
 Documentación:
 - [docs/arquitectura.md](docs/arquitectura.md): por qué es un monorepo de microservicios y no un monolito.
 - [docs/eventos.md](docs/eventos.md): RabbitMQ, outbox/inbox y el catálogo de eventos.
+- [docs/reparto.md](docs/reparto.md): quién hace qué (Ivan, Agos, Maxi), dependencias y reglas de colaboración.
 - [docs/repaso-problemas-centrales.html](docs/repaso-problemas-centrales.html): repaso de 6.3, 6.6 y la variante G con diagramas de tiempos (abrir en el navegador).
 
 ## Estado
