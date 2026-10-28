@@ -1,0 +1,69 @@
+// Esquema de dispatch. Los estados son `text` con CHECK (agregado a mano en la migración)
+// para que el SQL crudo de los locks no necesite casts de enums de Postgres.
+
+generator client {
+  provider               = "prisma-client"
+  output                 = "../src/infra/db/generated"
+  moduleFormat           = "esm"
+  importFileExtension    = "js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model SolicitudViaje {
+  id            String   @id @db.Uuid
+  pasajeroId    String   @map("passenger_id") @db.Uuid
+  estado        String   @map("status")
+  origenLat     Float    @map("origin_lat")
+  origenLng     Float    @map("origin_lng")
+  destinoLat    Float    @map("destination_lat")
+  destinoLng    Float    @map("destination_lng")
+  choferId      String?  @map("driver_id") @db.Uuid
+  version       Int      @default(0)
+  creadaEn      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  actualizadaEn DateTime @default(now()) @map("updated_at") @db.Timestamptz(3)
+
+  ofertas    Oferta[]
+  asignacion AsignacionActiva?
+
+  @@index([pasajeroId])
+  @@map("ride_requests")
+}
+
+model Oferta {
+  id          String         @id @db.Uuid
+  solicitudId String         @map("request_id") @db.Uuid
+  choferId    String         @map("driver_id") @db.Uuid
+  estado      String         @map("status")
+  venceEn     DateTime       @map("expires_at") @db.Timestamptz(3)
+  creadaEn    DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  solicitud   SolicitudViaje @relation(fields: [solicitudId], references: [id])
+
+  @@unique([solicitudId, choferId])
+  @@index([estado, venceEn])
+  @@map("offers")
+}
+
+// El "lock" del chofer: una fila por chofer con viaje activo. Lo garantiza la restricción única.
+model AsignacionActiva {
+  choferId    String         @id @map("driver_id") @db.Uuid
+  solicitudId String         @unique @map("request_id") @db.Uuid
+  creadaEn    DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  solicitud   SolicitudViaje @relation(fields: [solicitudId], references: [id])
+
+  @@map("driver_active_assignment")
+}
+
+model EventoOutbox {
+  id          String    @id @db.Uuid
+  tipo        String    @map("type")
+  payload     Json
+  requestId   String?   @map("request_id")
+  creadoEn    DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  publicadoEn DateTime? @map("published_at") @db.Timestamptz(3)
+
+  @@index([publicadoEn, creadoEn])
+  @@map("outbox")
+}

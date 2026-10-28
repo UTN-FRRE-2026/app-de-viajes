@@ -1,0 +1,480 @@
+<!doctype html>
+<html lang="es">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Problemas centrales Grupo 7</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+/* Layout: una columna de lectura; los diagramas de tiempos van en "hojas" con su propio scroll horizontal. */
+:root {
+  --bg: #f4f6f9; --surface: #ffffff; --surface-2: #eceff4; --fg: #18202b; --muted: #586373; --rule: #d2d8e1;
+  --accent: #2557b8; --accent-soft: #dfe8f8;
+  --bad: #b93524; --bad-soft: #fbe6e2; --good: #1c7a45; --good-soft: #e0f2e7; --wait: #a86a0c; --wait-soft: #fbefd9;
+  --code-bg: #eef1f6;
+  --display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #10151c; --surface: #171e27; --surface-2: #1f2833; --fg: #e5e9ef; --muted: #9aa5b4; --rule: #2e3947;
+    --accent: #86b1ff; --accent-soft: #1c2b47;
+    --bad: #ff8270; --bad-soft: #3a1f1c; --good: #63d293; --good-soft: #17301f; --wait: #f2b553; --wait-soft: #3a2c14;
+    --code-bg: #131a22; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #10151c; --surface: #171e27; --surface-2: #1f2833; --fg: #e5e9ef; --muted: #9aa5b4; --rule: #2e3947;
+  --accent: #86b1ff; --accent-soft: #1c2b47;
+  --bad: #ff8270; --bad-soft: #3a1f1c; --good: #63d293; --good-soft: #17301f; --wait: #f2b553; --wait-soft: #3a2c14;
+  --code-bg: #131a22; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 16px; line-height: 1.6;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+.wrap { max-width: 900px; margin: 0 auto; padding-block: 28px 96px; display: grid; gap: 56px; }
+.wrap > * { min-width: 0; }
+h1, h2, h3 { font-family: var(--display); line-height: 1.15; text-wrap: balance; margin: 0; letter-spacing: -0.01em; }
+h1 { font-size: clamp(2rem, 5vw, 3rem); font-weight: 700; }
+h2 { font-size: clamp(1.55rem, 3.6vw, 2.1rem); font-weight: 700; }
+h3 { font-size: 1.22rem; font-weight: 600; }
+p, li { max-width: 68ch; }
+p { margin: 0; }
+a { color: var(--accent); }
+code { font-family: var(--mono); font-size: 0.88em; background: var(--surface-2); padding: 0.08em 0.35em; border-radius: 4px; }
+strong { font-weight: 600; }
+.eyebrow { font-family: var(--mono); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
+.flow { display: grid; gap: 16px; }
+.flow > * { min-width: 0; }
+section { display: grid; gap: 28px; }
+section > * { min-width: 0; }
+.sub { display: grid; gap: 16px; }
+.sub > * { min-width: 0; }
+ul.plain { margin: 0; padding-left: 1.2em; display: grid; gap: 6px; }
+header.hero { display: grid; gap: 14px; padding-top: 12px; }
+.lede { font-size: 1.12rem; color: var(--fg); }
+.thesis { color: var(--muted); }
+
+nav.toc {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  border-bottom: 1px solid var(--rule); padding-block: 10px; margin-top: -32px;
+  display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 0.92rem;
+}
+nav.toc a { color: var(--fg); text-decoration: none; display: inline-flex; gap: 6px; align-items: baseline; }
+nav.toc a span { font-family: var(--mono); font-size: 0.8rem; color: var(--muted); }
+nav.toc a:hover, nav.toc a:focus-visible { color: var(--accent); }
+
+.collisions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 720px) { .collisions { grid-template-columns: 1fr; } }
+.collisions div { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 14px 16px; display: grid; gap: 4px; align-content: start; }
+.collisions b { font-family: var(--mono); font-size: 0.82rem; color: var(--muted); font-weight: 500; }
+
+figure.diag { margin: 0; background: var(--surface); border: 1px solid var(--rule); border-radius: 12px; padding: 14px; display: grid; gap: 12px; }
+figure.diag > * { min-width: 0; }
+.scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.scroll svg { display: block; width: 100%; min-width: 640px; height: auto; }
+figcaption { font-size: 0.92rem; color: var(--muted); }
+.panel { display: grid; gap: 10px; }
+.panel-cap { font-size: 0.95rem; }
+.seg { display: flex; flex-wrap: wrap; gap: 6px; }
+.seg-btn {
+  font: 500 0.88rem/1 var(--body); color: var(--fg); background: var(--surface-2); border: 1px solid var(--rule);
+  border-radius: 999px; padding: 8px 14px; cursor: pointer;
+}
+.seg-btn:hover { border-color: var(--muted); }
+.seg-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.seg-bad[aria-pressed="true"] { background: var(--bad-soft); border-color: var(--bad); color: var(--bad); }
+.seg-good[aria-pressed="true"] { background: var(--good-soft); border-color: var(--good); color: var(--good); }
+.legend { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 0.82rem; color: var(--muted); }
+.legend li { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+.sw-lock { background: var(--accent); opacity: 0.45; }
+.sw-wait { background: var(--wait); opacity: 0.6; }
+.sw-bad { background: var(--bad); }
+.sw-good { background: var(--good); }
+
+/* SVG */
+svg text { font-family: var(--body); font-size: 12px; }
+svg .mono { font-family: var(--mono); font-size: 11.5px; }
+svg .sm { font-size: 11px; }
+svg .b { font-weight: 600; }
+.t-fg { fill: var(--fg); } .t-muted { fill: var(--muted); }
+.t-bad { fill: var(--bad); } .t-good { fill: var(--good); } .t-wait { fill: var(--wait); }
+.lane { fill: var(--surface-2); stroke: var(--rule); }
+.lane-db { fill: var(--accent-soft); stroke: var(--accent); }
+.life { stroke: var(--rule); stroke-width: 1.5; stroke-dasharray: 4 5; fill: none; }
+.ln { stroke-width: 1.6; fill: none; }
+.k-n { stroke: var(--fg); } .k-bad { stroke: var(--bad); } .k-good { stroke: var(--good); }
+.k-wait { stroke: var(--wait); stroke-dasharray: 5 4; }
+.h-n { fill: var(--fg); } .h-bad { fill: var(--bad); } .h-good { fill: var(--good); } .h-wait { fill: var(--wait); }
+.bar-lock { fill: var(--accent); opacity: 0.32; }
+.bar-wait { fill: var(--wait); opacity: 0.5; }
+.pill { stroke-width: 1.2; }
+.p-n { fill: var(--surface-2); stroke: var(--rule); }
+.p-bad { fill: var(--bad-soft); stroke: var(--bad); }
+.p-good { fill: var(--good-soft); stroke: var(--good); }
+.out { stroke-width: 1.4; }
+.out-bad { fill: var(--bad-soft); stroke: var(--bad); }
+.out-good { fill: var(--good-soft); stroke: var(--good); }
+.blk { stroke-width: 1.2; }
+.blk-n { fill: var(--surface-2); stroke: var(--muted); }
+.blk-bad { fill: var(--bad-soft); stroke: var(--bad); }
+.blk-good { fill: var(--good-soft); stroke: var(--good); }
+.blk-wait { fill: var(--wait-soft); stroke: var(--wait); }
+
+pre.code { margin: 0; background: var(--code-bg); border: 1px solid var(--rule); border-radius: 10px; padding: 16px 18px; overflow-x: auto; font: 13.5px/1.55 var(--mono); }
+pre.code code { background: none; padding: 0; font-size: inherit; }
+pre.code .c { color: var(--muted); }
+
+.aside { background: var(--surface-2); border-radius: 10px; padding: 14px 18px; display: grid; gap: 6px; }
+.aside .eyebrow { color: var(--accent); }
+
+.tablewrap { overflow-x: auto; border: 1px solid var(--rule); border-radius: 10px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; min-width: 600px; font-size: 0.93rem; }
+th, td { text-align: left; vertical-align: top; padding: 10px 14px; border-bottom: 1px solid var(--rule); }
+tr:last-child td { border-bottom: 0; }
+thead th { font-family: var(--mono); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 500; background: var(--surface-2); }
+tbody th { font-weight: 600; width: 22%; }
+td.ok { color: var(--fg); }
+
+.stat { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.stat strong { font-family: var(--display); font-size: 2.4rem; font-weight: 700; color: var(--accent); }
+
+.metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 24px; margin: 0; }
+@media (max-width: 640px) { .metrics { grid-template-columns: 1fr; } }
+.metrics div { display: grid; gap: 2px; padding-block: 8px; border-top: 1px solid var(--rule); }
+.metrics dt { font-family: var(--mono); font-size: 0.88rem; font-weight: 500; }
+.metrics dd { margin: 0; color: var(--muted); font-size: 0.93rem; }
+
+details { border-top: 1px solid var(--rule); padding-block: 12px; }
+details:last-child { border-bottom: 1px solid var(--rule); }
+summary { cursor: pointer; font-weight: 600; list-style-position: outside; }
+summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+details p { margin-top: 8px; color: var(--fg); }
+.faq { display: grid; }
+footer { color: var(--muted); font-size: 0.88rem; }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+section[id] { scroll-margin-top: 64px; }
+</style>
+
+<div class="wrap">
+  <header class="hero">
+    <span class="eyebrow">Plataforma de viajes · Grupo 7 · Variante G</span>
+    <h1>Problemas centrales</h1>
+    <p class="lede">Los tres problemas son el mismo tipo de problema: qué pasa cuando muchas cosas ocurren al mismo tiempo. El código que anda bien con un usuario por vez se rompe cuando dos pedidos llegan juntos o cuando llegan cientos por segundo.</p>
+    <p class="thesis">En los tres casos la garantía la da la base de datos (lock de fila, restricción única, <code>UPDATE</code> condicional, <code>CHECK</code>) y no el código de la aplicación, porque la base es lo único que ven a la vez todas las réplicas.</p>
+  </header>
+
+  <nav class="toc" aria-label="Secciones">
+    <a href="#asignacion"><span>6.3</span>Asignación única</a>
+    <a href="#tarea-pesada"><span>6.6</span>Tarea pesada</a>
+    <a href="#flotas"><span>G</span>Flotas y zonas</a>
+    <a href="#defensa"><span>?</span>Defensa</a>
+  </nav>
+
+  <section id="asignacion">
+    <div class="flow">
+      <span class="eyebrow">6.3 · servicio dispatch</span>
+      <h2>Asignación única</h2>
+      <p>Un pasajero pide un viaje y dispatch se lo ofrece a choferes cercanos. Una solicitud tiene que terminar con un solo chofer, y un chofer con una sola solicitud activa. Hay tres choques posibles:</p>
+    </div>
+    <div class="collisions">
+      <div><b>(a)</b><span>Dos choferes aceptan la misma solicitud.</span></div>
+      <div><b>(b)</b><span>Un chofer acepta dos solicitudes distintas.</span></div>
+      <div><b>(c)</b><span>El pasajero cancela justo cuando el chofer acepta.</span></div>
+    </div>
+
+    <div class="sub">
+      <h3>(a) Dos choferes, una solicitud</h3>
+      <figure class="diag" data-swap="sw1">
+  <div class="seg" role="group" aria-label="Variante del diagrama"><button type="button" id="sw1-b0" data-panel="sw1-p0" class="seg-btn seg-bad" aria-pressed="true">Con bug</button><button type="button" id="sw1-b1" data-panel="sw1-p1" class="seg-btn seg-good" aria-pressed="false">Con solución</button></div>
+  <div class="panel" id="sw1-p0" data-group="sw1"><div class="scroll"><svg viewBox="0 0 760 402" role="img" aria-label="Sin lock, los dos choferes leen BUSCANDO y los dos escriben ASIGNADO; el segundo pisa al primero."><line x1="160" y1="52" x2="160" y2="340" class="life"/><rect x="65" y="8" width="190" height="44" rx="8" class="lane "/><text x="160" y="27" text-anchor="middle" class="t-fg b">Chofer A</text><text x="160" y="43" text-anchor="middle" class="mono t-muted sm">tx1</text><line x1="400" y1="52" x2="400" y2="340" class="life"/><rect x="305" y="8" width="190" height="44" rx="8" class="lane lane-db"/><text x="400" y="27" text-anchor="middle" class="t-fg b">Postgres</text><text x="400" y="43" text-anchor="middle" class="mono t-muted sm">dispatch_db</text><line x1="640" y1="52" x2="640" y2="340" class="life"/><rect x="545" y="8" width="190" height="44" rx="8" class="lane "/><text x="640" y="27" text-anchor="middle" class="t-fg b">Chofer B</text><text x="640" y="43" text-anchor="middle" class="mono t-muted sm">tx2</text><text x="14" y="98" class="mono t-muted sm">t1</text><line x1="168" y1="94" x2="388" y2="94" class="ln k-n"/><polygon points="392,94 383,89 383,99" class="h-n"/><text x="280" y="86" text-anchor="middle" class="mono t-fg">SELECT status FROM R1</text><text x="280" y="112" text-anchor="middle" class="t-muted">BUSCANDO</text><text x="14" y="152" class="mono t-muted sm">t2</text><line x1="632" y1="148" x2="412" y2="148" class="ln k-n"/><polygon points="408,148 417,143 417,153" class="h-n"/><text x="520" y="140" text-anchor="middle" class="mono t-fg">SELECT status FROM R1</text><text x="520" y="166" text-anchor="middle" class="t-muted">BUSCANDO (A no escribió)</text><text x="14" y="206" class="mono t-muted sm">t3</text><line x1="168" y1="202" x2="388" y2="202" class="ln k-n"/><polygon points="392,202 383,197 383,207" class="h-n"/><text x="280" y="194" text-anchor="middle" class="mono t-fg">UPDATE R1 driver = A</text><text x="280" y="220" text-anchor="middle" class="t-muted">ok</text><text x="14" y="260" class="mono t-muted sm">t4</text><line x1="632" y1="256" x2="412" y2="256" class="ln k-bad"/><polygon points="408,256 417,251 417,261" class="h-bad"/><text x="520" y="248" text-anchor="middle" class="mono t-fg">UPDATE R1 driver = B</text><text x="520" y="274" text-anchor="middle" class="t-bad">ok, pisa a A</text><text x="14" y="314" class="mono t-muted sm">t5</text><rect x="110.5" y="298" width="99" height="24" rx="12" class="pill p-bad"/><text x="160" y="314" text-anchor="middle" class="t-bad b">200 aceptado</text><rect x="590.5" y="298" width="99" height="24" rx="12" class="pill p-bad"/><text x="640" y="314" text-anchor="middle" class="t-bad b">200 aceptado</text><rect x="40" y="352" width="700" height="40" rx="8" class="out out-bad"/><text x="390" y="377" text-anchor="middle" class="t-bad b">Dos choferes van a buscar al mismo pasajero</text></svg></div><p class="panel-cap">Los dos leen <code>BUSCANDO</code> antes de que el otro escriba. Es el patrón <em>check-then-act</em>: lo que leíste ya no es verdad cuando escribís.</p></div><div class="panel" id="sw1-p1" data-group="sw1"><div class="scroll"><svg viewBox="0 0 760 456" role="img" aria-label="Con FOR UPDATE, la segunda transacción espera el lock, luego lee ASIGNADO y responde 409."><line x1="160" y1="52" x2="160" y2="394" class="life"/><rect x="65" y="8" width="190" height="44" rx="8" class="lane "/><text x="160" y="27" text-anchor="middle" class="t-fg b">Chofer A</text><text x="160" y="43" text-anchor="middle" class="mono t-muted sm">tx1</text><line x1="400" y1="52" x2="400" y2="394" class="life"/><rect x="305" y="8" width="190" height="44" rx="8" class="lane lane-db"/><text x="400" y="27" text-anchor="middle" class="t-fg b">Postgres</text><text x="400" y="43" text-anchor="middle" class="mono t-muted sm">dispatch_db</text><line x1="640" y1="52" x2="640" y2="394" class="life"/><rect x="545" y="8" width="190" height="44" rx="8" class="lane "/><text x="640" y="27" text-anchor="middle" class="t-fg b">Chofer B</text><text x="640" y="43" text-anchor="middle" class="mono t-muted sm">tx2</text><rect x="155" y="80" width="10" height="190" rx="3" class="bar-lock"/><rect x="635" y="134" width="10" height="190" rx="3" class="bar-wait"/><text x="14" y="98" class="mono t-muted sm">t1</text><line x1="168" y1="94" x2="388" y2="94" class="ln k-n"/><polygon points="392,94 383,89 383,99" class="h-n"/><text x="280" y="86" text-anchor="middle" class="mono t-fg">SELECT R1 … FOR UPDATE</text><text x="280" y="112" text-anchor="middle" class="t-muted">BUSCANDO, lock tomado</text><text x="14" y="152" class="mono t-muted sm">t2</text><line x1="632" y1="148" x2="412" y2="148" class="ln k-wait"/><polygon points="408,148 417,143 417,153" class="h-wait"/><text x="520" y="140" text-anchor="middle" class="mono t-fg">SELECT R1 … FOR UPDATE</text><text x="520" y="166" text-anchor="middle" class="t-wait">bloqueada, espera</text><text x="14" y="206" class="mono t-muted sm">t3</text><line x1="168" y1="202" x2="388" y2="202" class="ln k-n"/><polygon points="392,202 383,197 383,207" class="h-n"/><text x="280" y="194" text-anchor="middle" class="mono t-fg">INSERT assignment + UPDATE</text><text x="280" y="220" text-anchor="middle" class="t-muted">ok</text><text x="14" y="260" class="mono t-muted sm">t4</text><line x1="168" y1="256" x2="388" y2="256" class="ln k-good"/><polygon points="392,256 383,251 383,261" class="h-good"/><text x="280" y="248" text-anchor="middle" class="mono t-fg">COMMIT</text><text x="280" y="274" text-anchor="middle" class="t-good">lock liberado</text><text x="14" y="314" class="mono t-muted sm">t5</text><line x1="408" y1="310" x2="628" y2="310" class="ln k-n"/><polygon points="632,310 623,305 623,315" class="h-n"/><text x="520" y="302" text-anchor="middle" class="mono t-fg">status = ASIGNADO</text><text x="520" y="328" text-anchor="middle" class="t-muted">ya no está BUSCANDO</text><text x="14" y="368" class="mono t-muted sm">t6</text><rect x="110.5" y="352" width="99" height="24" rx="12" class="pill p-good"/><text x="160" y="368" text-anchor="middle" class="t-good b">200 aceptado</text><rect x="581" y="352" width="118" height="24" rx="12" class="pill p-good"/><text x="640" y="368" text-anchor="middle" class="t-good b">409 ya asignada</text><rect x="40" y="406" width="700" height="40" rx="8" class="out out-good"/><text x="390" y="431" text-anchor="middle" class="t-good b">Una sola asignación. B recibe 409 y sigue con otra oferta.</text></svg></div><p class="panel-cap"><code>FOR UPDATE</code> bloquea la fila de R1. La tx2 se queda esperando y, cuando la tx1 confirma, lee el valor nuevo.</p></div>
+  <figcaption>Dos choferes aceptan la misma solicitud R1 con milisegundos de diferencia.</figcaption>
+  <ul class="legend" aria-label="Referencias">
+  <li><span class="sw sw-lock"></span>tiene el lock</li>
+  <li><span class="sw sw-wait"></span>esperando</li>
+  <li><span class="sw sw-bad"></span>estado incorrecto</li>
+  <li><span class="sw sw-good"></span>resultado correcto</li>
+</ul>
+</figure>
+    </div>
+
+    <div class="sub">
+      <h3>(b) Un chofer, dos solicitudes</h3>
+      <p>Bloquear la solicitud no alcanza, porque son dos filas distintas. Lo que hay que proteger es al chofer, y para eso alcanza con una restricción única.</p>
+      <figure class="diag" data-swap="sw2">
+  <div class="seg" role="group" aria-label="Variante del diagrama"><button type="button" id="sw2-b0" data-panel="sw2-p0" class="seg-btn seg-bad" aria-pressed="true">Con bug</button><button type="button" id="sw2-b1" data-panel="sw2-p1" class="seg-btn seg-good" aria-pressed="false">Con solución</button></div>
+  <div class="panel" id="sw2-p0" data-group="sw2"><div class="scroll"><svg viewBox="0 0 760 456" role="img" aria-label="Con el chequeo en la aplicación, ambas transacciones ven que el chofer no tiene viaje y lo asignan dos veces."><line x1="160" y1="52" x2="160" y2="394" class="life"/><rect x="65" y="8" width="190" height="44" rx="8" class="lane "/><text x="160" y="27" text-anchor="middle" class="t-fg b">Chofer A acepta R1</text><text x="160" y="43" text-anchor="middle" class="mono t-muted sm">tx1</text><line x1="400" y1="52" x2="400" y2="394" class="life"/><rect x="305" y="8" width="190" height="44" rx="8" class="lane lane-db"/><text x="400" y="27" text-anchor="middle" class="t-fg b">Postgres</text><text x="400" y="43" text-anchor="middle" class="mono t-muted sm">dispatch_db</text><line x1="640" y1="52" x2="640" y2="394" class="life"/><rect x="545" y="8" width="190" height="44" rx="8" class="lane "/><text x="640" y="27" text-anchor="middle" class="t-fg b">Chofer A acepta R2</text><text x="640" y="43" text-anchor="middle" class="mono t-muted sm">tx2</text><rect x="155" y="80" width="10" height="244" rx="3" class="bar-lock"/><rect x="635" y="134" width="10" height="244" rx="3" class="bar-lock"/><text x="14" y="98" class="mono t-muted sm">t1</text><line x1="168" y1="94" x2="388" y2="94" class="ln k-n"/><polygon points="392,94 383,89 383,99" class="h-n"/><text x="280" y="86" text-anchor="middle" class="mono t-fg">SELECT R1 … FOR UPDATE</text><text x="280" y="112" text-anchor="middle" class="t-muted">lock R1</text><text x="14" y="152" class="mono t-muted sm">t2</text><line x1="632" y1="148" x2="412" y2="148" class="ln k-n"/><polygon points="408,148 417,143 417,153" class="h-n"/><text x="520" y="140" text-anchor="middle" class="mono t-fg">SELECT R2 … FOR UPDATE</text><text x="520" y="166" text-anchor="middle" class="t-muted">lock R2 (otra fila, no espera)</text><text x="14" y="206" class="mono t-muted sm">t3</text><line x1="168" y1="202" x2="388" y2="202" class="ln k-n"/><polygon points="392,202 383,197 383,207" class="h-n"/><text x="280" y="194" text-anchor="middle" class="mono t-fg">¿A tiene viaje activo?</text><text x="280" y="220" text-anchor="middle" class="t-muted">no</text><text x="14" y="260" class="mono t-muted sm">t4</text><line x1="632" y1="256" x2="412" y2="256" class="ln k-bad"/><polygon points="408,256 417,251 417,261" class="h-bad"/><text x="520" y="248" text-anchor="middle" class="mono t-fg">¿A tiene viaje activo?</text><text x="520" y="274" text-anchor="middle" class="t-bad">no (tx1 no confirmó)</text><text x="14" y="314" class="mono t-muted sm">t5</text><line x1="168" y1="310" x2="388" y2="310" class="ln k-n"/><polygon points="392,310 383,305 383,315" class="h-n"/><text x="280" y="302" text-anchor="middle" class="mono t-fg">R1 = ASIGNADO; COMMIT</text><text x="280" y="328" text-anchor="middle" class="t-muted">ok</text><text x="14" y="368" class="mono t-muted sm">t6</text><line x1="632" y1="364" x2="412" y2="364" class="ln k-bad"/><polygon points="408,364 417,359 417,369" class="h-bad"/><text x="520" y="356" text-anchor="middle" class="mono t-fg">R2 = ASIGNADO; COMMIT</text><text x="520" y="382" text-anchor="middle" class="t-bad">ok</text><rect x="40" y="406" width="700" height="40" rx="8" class="out out-bad"/><text x="390" y="431" text-anchor="middle" class="t-bad b">El chofer A queda con dos viajes al mismo tiempo</text></svg></div><p class="panel-cap">Cada transacción bloquea <em>su</em> solicitud, así que no se esperan. El chequeo “¿tiene viaje activo?” lo hace la app y las dos ven que no.</p></div><div class="panel" id="sw2-p1" data-group="sw2"><div class="scroll"><svg viewBox="0 0 760 510" role="img" aria-label="Con la restricción única, el segundo INSERT espera, no inserta ninguna fila y se responde 409."><line x1="160" y1="52" x2="160" y2="448" class="life"/><rect x="65" y="8" width="190" height="44" rx="8" class="lane "/><text x="160" y="27" text-anchor="middle" class="t-fg b">Chofer A acepta R1</text><text x="160" y="43" text-anchor="middle" class="mono t-muted sm">tx1</text><line x1="400" y1="52" x2="400" y2="448" class="life"/><rect x="305" y="8" width="190" height="44" rx="8" class="lane lane-db"/><text x="400" y="27" text-anchor="middle" class="t-fg b">Postgres</text><text x="400" y="43" text-anchor="middle" class="mono t-muted sm">dispatch_db</text><line x1="640" y1="52" x2="640" y2="448" class="life"/><rect x="545" y="8" width="190" height="44" rx="8" class="lane "/><text x="640" y="27" text-anchor="middle" class="t-fg b">Chofer A acepta R2</text><text x="640" y="43" text-anchor="middle" class="mono t-muted sm">tx2</text><rect x="155" y="80" width="10" height="244" rx="3" class="bar-lock"/><rect x="635" y="242" width="10" height="136" rx="3" class="bar-wait"/><text x="14" y="98" class="mono t-muted sm">t1</text><line x1="168" y1="94" x2="388" y2="94" class="ln k-n"/><polygon points="392,94 383,89 383,99" class="h-n"/><text x="280" y="86" text-anchor="middle" class="mono t-fg">SELECT R1 … FOR UPDATE</text><text x="280" y="112" text-anchor="middle" class="t-muted">lock R1</text><text x="14" y="152" class="mono t-muted sm">t2</text><line x1="632" y1="148" x2="412" y2="148" class="ln k-n"/><polygon points="408,148 417,143 417,153" class="h-n"/><text x="520" y="140" text-anchor="middle" class="mono t-fg">SELECT R2 … FOR UPDATE</text><text x="520" y="166" text-anchor="middle" class="t-muted">lock R2, no espera</text><text x="14" y="206" class="mono t-muted sm">t3</text><line x1="168" y1="202" x2="388" y2="202" class="ln k-n"/><polygon points="392,202 383,197 383,207" class="h-n"/><text x="280" y="194" text-anchor="middle" class="mono t-fg">INSERT assignment (A, R1)</text><text x="280" y="220" text-anchor="middle" class="t-muted">ok, sin confirmar</text><text x="14" y="260" class="mono t-muted sm">t4</text><line x1="632" y1="256" x2="412" y2="256" class="ln k-wait"/><polygon points="408,256 417,251 417,261" class="h-wait"/><text x="520" y="248" text-anchor="middle" class="mono t-fg">INSERT assignment (A, R2)</text><text x="520" y="274" text-anchor="middle" class="t-wait">espera: misma clave A</text><text x="14" y="314" class="mono t-muted sm">t5</text><line x1="168" y1="310" x2="388" y2="310" class="ln k-good"/><polygon points="392,310 383,305 383,315" class="h-good"/><text x="280" y="302" text-anchor="middle" class="mono t-fg">UPDATE R1; COMMIT</text><text x="280" y="328" text-anchor="middle" class="t-good">ok</text><text x="14" y="368" class="mono t-muted sm">t6</text><line x1="408" y1="364" x2="628" y2="364" class="ln k-n"/><polygon points="632,364 623,359 623,369" class="h-n"/><text x="520" y="356" text-anchor="middle" class="mono t-fg">ON CONFLICT → 0 filas</text><text x="520" y="382" text-anchor="middle" class="t-muted">ROLLBACK de tx2</text><text x="14" y="422" class="mono t-muted sm">t7</text><rect x="110.5" y="406" width="99" height="24" rx="12" class="pill p-good"/><text x="160" y="422" text-anchor="middle" class="t-good b">200 aceptado</text><rect x="542.5" y="406" width="195" height="24" rx="12" class="pill p-good"/><text x="640" y="422" text-anchor="middle" class="t-good b">409 chofer con viaje activo</text><rect x="40" y="460" width="700" height="40" rx="8" class="out out-good"/><text x="390" y="485" text-anchor="middle" class="t-good b">Un solo viaje para A. R2 sigue BUSCANDO y pasa al próximo candidato.</text></svg></div><p class="panel-cap"><code>driver_active_assignment.driver_id</code> es <code>UNIQUE</code>. El segundo <code>INSERT</code> con la misma clave espera a que la tx1 termine y, cuando confirma, no inserta nada: con <code>ON CONFLICT DO NOTHING</code> devuelve 0 filas en vez de lanzar <code>23505 unique_violation</code>, así la transacción no queda abortada. Nosotros lo traducimos a 409.</p></div>
+  <figcaption>El chofer A tiene ofertas de R1 y R2 y acepta las dos casi a la vez (doble toque o reintento de la app).</figcaption>
+  <ul class="legend" aria-label="Referencias">
+  <li><span class="sw sw-lock"></span>tiene el lock</li>
+  <li><span class="sw sw-wait"></span>esperando</li>
+  <li><span class="sw sw-bad"></span>estado incorrecto</li>
+  <li><span class="sw sw-good"></span>resultado correcto</li>
+</ul>
+</figure>
+    </div>
+
+    <div class="sub">
+      <h3>(c) Cancelar contra aceptar</h3>
+      <p>La cancelación toma el mismo <code>FOR UPDATE</code> sobre la solicitud, así que nunca se ejecutan a la vez. Hay dos resultados válidos y los dos están documentados.</p>
+      <figure class="diag" data-swap="sw3">
+  <div class="seg" role="group" aria-label="Variante del diagrama"><button type="button" id="sw3-b0" data-panel="sw3-p0" class="seg-btn seg-bad" aria-pressed="true">Con bug</button><button type="button" id="sw3-b1" data-panel="sw3-p1" class="seg-btn seg-good" aria-pressed="false">Gana la cancelación</button><button type="button" id="sw3-b2" data-panel="sw3-p2" class="seg-btn seg-good" aria-pressed="false">Gana la aceptación</button></div>
+  <div class="panel" id="sw3-p0" data-group="sw3"><div class="scroll"><svg viewBox="0 0 760 348" role="img" aria-label="Sin lock, la cancelación pisa la asignación y el chofer queda bloqueado para siempre."><line x1="160" y1="52" x2="160" y2="286" class="life"/><rect x="65" y="8" width="190" height="44" rx="8" class="lane "/><text x="160" y="27" text-anchor="middle" class="t-fg b">Pasajero cancela</text><text x="160" y="43" text-anchor="middle" class="mono t-muted sm">tx-cancel</text><line x1="400" y1="52" x2="400" y2="286" class="life"/><rect x="305" y="8" width="190" height="44" rx="8" class="lane lane-db"/><text x="400" y="27" text-anchor="middle" class="t-fg b">Postgres</text><text x="400" y="43" text-anchor="middle" class="mono t-muted sm">dispatch_db</text><line x1="640" y1="52" x2="640" y2="286" class="life"/><rect x="545" y="8" width="190" height="44" rx="8" class="lane "/><text x="640" y="27" text-anchor="middle" class="t-fg b">Chofer acepta</text><text x="640" y="43" text-anchor="middle" class="mono t-muted sm">tx-accept</text><text x="14" y="98" class="mono t-muted sm">t1</text><line x1="632" y1="94" x2="412" y2="94" class="ln k-n"/><polygon points="408,94 417,89 417,99" class="h-n"/><text x="520" y="86" text-anchor="middle" class="mono t-fg">SELECT status FROM R1</text><text x="520" y="112" text-anchor="middle" class="t-muted">BUSCANDO</text><text x="14" y="152" class="mono t-muted sm">t2</text><line x1="168" y1="148" x2="388" y2="148" class="ln k-n"/><polygon points="392,148 383,143 383,153" class="h-n"/><text x="280" y="140" text-anchor="middle" class="mono t-fg">SELECT status FROM R1</text><text x="280" y="166" text-anchor="middle" class="t-muted">BUSCANDO</text><text x="14" y="206" class="mono t-muted sm">t3</text><line x1="632" y1="202" x2="412" y2="202" class="ln k-n"/><polygon points="408,202 417,197 417,207" class="h-n"/><text x="520" y="194" text-anchor="middle" class="mono t-fg">INSERT assignment + ASIGNADO</text><text x="520" y="220" text-anchor="middle" class="t-muted">ok</text><text x="14" y="260" class="mono t-muted sm">t4</text><line x1="168" y1="256" x2="388" y2="256" class="ln k-bad"/><polygon points="392,256 383,251 383,261" class="h-bad"/><text x="280" y="248" text-anchor="middle" class="mono t-fg">UPDATE CANCELADO_PASAJERO</text><text x="280" y="274" text-anchor="middle" class="t-bad">ok, pisa ASIGNADO</text><rect x="40" y="298" width="700" height="40" rx="8" class="out out-bad"/><text x="390" y="323" text-anchor="middle" class="t-bad b">Solicitud cancelada, pero el chofer queda “con viaje activo” y no puede aceptar más</text></svg></div><p class="panel-cap">Sin lock, la última escritura gana. Acá gana la cancelación, pero la fila del chofer en <code>driver_active_assignment</code> ya quedó escrita.</p></div><div class="panel" id="sw3-p1" data-group="sw3"><div class="scroll"><svg viewBox="0 0 760 402" role="img" aria-label="La cancelación toma el lock primero; la aceptación espera y recibe 409."><line x1="160" y1="52" x2="160" y2="340" class="life"/><rect x="65" y="8" width="190" height="44" rx="8" class="lane "/><text x="160" y="27" text-anchor="middle" class="t-fg b">Pasajero cancela</text><text x="160" y="43" text-anchor="middle" class="mono t-muted sm">tx-cancel</text><line x1="400" y1="52" x2="400" y2="340" class="life"/><rect x="305" y="8" width="190" height="44" rx="8" class="lane lane-db"/><text x="400" y="27" text-anchor="middle" class="t-fg b">Postgres</text><text x="400" y="43" text-anchor="middle" class="mono t-muted sm">dispatch_db</text><line x1="640" y1="52" x2="640" y2="340" class="life"/><rect x="545" y="8" width="190" height="44" rx="8" class="lane "/><text x="640" y="27" text-anchor="middle" class="t-fg b">Chofer acepta</text><text x="640" y="43" text-anchor="middle" class="mono t-muted sm">tx-accept</text><rect x="155" y="80" width="10" height="136" rx="3" class="bar-lock"/><rect x="635" y="134" width="10" height="136" rx="3" class="bar-wait"/><text x="14" y="98" class="mono t-muted sm">t1</text><line x1="168" y1="94" x2="388" y2="94" class="ln k-n"/><polygon points="392,94 383,89 383,99" class="h-n"/><text x="280" y="86" text-anchor="middle" class="mono t-fg">SELECT R1 … FOR UPDATE</text><text x="280" y="112" text-anchor="middle" class="t-muted">lock tomado</text><text x="14" y="152" class="mono t-muted sm">t2</text><line x1="632" y1="148" x2="412" y2="148" class="ln k-wait"/><polygon points="408,148 417,143 417,153" class="h-wait"/><text x="520" y="140" text-anchor="middle" class="mono t-fg">SELECT R1 … FOR UPDATE</text><text x="520" y="166" text-anchor="middle" class="t-wait">espera</text><text x="14" y="206" class="mono t-muted sm">t3</text><line x1="168" y1="202" x2="388" y2="202" class="ln k-good"/><polygon points="392,202 383,197 383,207" class="h-good"/><text x="280" y="194" text-anchor="middle" class="mono t-fg">CANCELADO_PASAJERO; COMMIT</text><text x="280" y="220" text-anchor="middle" class="t-good">lock liberado</text><text x="14" y="260" class="mono t-muted sm">t4</text><line x1="408" y1="256" x2="628" y2="256" class="ln k-n"/><polygon points="632,256 623,251 623,261" class="h-n"/><text x="520" y="248" text-anchor="middle" class="mono t-fg">status = CANCELADO_PASAJERO</text><text x="520" y="274" text-anchor="middle" class="t-muted">no está BUSCANDO</text><text x="14" y="314" class="mono t-muted sm">t5</text><rect x="107.5" y="298" width="105" height="24" rx="12" class="pill p-good"/><text x="160" y="314" text-anchor="middle" class="t-good b">200 cancelado</text><rect x="555.5" y="298" width="169" height="24" rx="12" class="pill p-good"/><text x="640" y="314" text-anchor="middle" class="t-good b">409 solicitud cancelada</text><rect x="40" y="352" width="700" height="40" rx="8" class="out out-good"/><text x="390" y="377" text-anchor="middle" class="t-good b">Nadie queda asignado y el chofer sigue libre</text></svg></div><p class="panel-cap">La cancelación toma el lock de R1 primero. La aceptación espera, lee <code>CANCELADO_PASAJERO</code> y responde 409. No se escribe nada del chofer.</p></div><div class="panel" id="sw3-p2" data-group="sw3"><div class="scroll"><svg viewBox="0 0 760 456" role="img" aria-label="La aceptación toma el lock primero; la cancelación espera y luego cancela el viaje asignado liberando al chofer."><line x1="160" y1="52" x2="160" y2="394" class="life"/><rect x="65" y="8" width="190" height="44" rx="8" class="lane "/><text x="160" y="27" text-anchor="middle" class="t-fg b">Pasajero cancela</text><text x="160" y="43" text-anchor="middle" class="mono t-muted sm">tx-cancel</text><line x1="400" y1="52" x2="400" y2="394" class="life"/><rect x="305" y="8" width="190" height="44" rx="8" class="lane lane-db"/><text x="400" y="27" text-anchor="middle" class="t-fg b">Postgres</text><text x="400" y="43" text-anchor="middle" class="mono t-muted sm">dispatch_db</text><line x1="640" y1="52" x2="640" y2="394" class="life"/><rect x="545" y="8" width="190" height="44" rx="8" class="lane "/><text x="640" y="27" text-anchor="middle" class="t-fg b">Chofer acepta</text><text x="640" y="43" text-anchor="middle" class="mono t-muted sm">tx-accept</text><rect x="635" y="80" width="10" height="136" rx="3" class="bar-lock"/><rect x="155" y="134" width="10" height="136" rx="3" class="bar-wait"/><rect x="155" y="242" width="10" height="82" rx="3" class="bar-lock"/><text x="14" y="98" class="mono t-muted sm">t1</text><line x1="632" y1="94" x2="412" y2="94" class="ln k-n"/><polygon points="408,94 417,89 417,99" class="h-n"/><text x="520" y="86" text-anchor="middle" class="mono t-fg">SELECT R1 … FOR UPDATE</text><text x="520" y="112" text-anchor="middle" class="t-muted">lock tomado</text><text x="14" y="152" class="mono t-muted sm">t2</text><line x1="168" y1="148" x2="388" y2="148" class="ln k-wait"/><polygon points="392,148 383,143 383,153" class="h-wait"/><text x="280" y="140" text-anchor="middle" class="mono t-fg">SELECT R1 … FOR UPDATE</text><text x="280" y="166" text-anchor="middle" class="t-wait">espera</text><text x="14" y="206" class="mono t-muted sm">t3</text><line x1="632" y1="202" x2="412" y2="202" class="ln k-good"/><polygon points="408,202 417,197 417,207" class="h-good"/><text x="520" y="194" text-anchor="middle" class="mono t-fg">assignment + ASIGNADO; COMMIT</text><text x="520" y="220" text-anchor="middle" class="t-good">lock liberado</text><text x="14" y="260" class="mono t-muted sm">t4</text><line x1="392" y1="256" x2="172" y2="256" class="ln k-n"/><polygon points="168,256 177,251 177,261" class="h-n"/><text x="280" y="248" text-anchor="middle" class="mono t-fg">status = ASIGNADO</text><text x="280" y="274" text-anchor="middle" class="t-muted">ahora el lock es de la cancelación</text><text x="14" y="314" class="mono t-muted sm">t5</text><line x1="168" y1="310" x2="388" y2="310" class="ln k-good"/><polygon points="392,310 383,305 383,315" class="h-good"/><text x="280" y="302" text-anchor="middle" class="mono t-fg">CANCELADO + DELETE assignment</text><text x="280" y="328" text-anchor="middle" class="t-good">misma tx; COMMIT</text><text x="14" y="368" class="mono t-muted sm">t6</text><rect x="72" y="352" width="176" height="24" rx="12" class="pill p-good"/><text x="160" y="368" text-anchor="middle" class="t-good b">200 cancelado con chofer</text><rect x="565" y="352" width="150" height="24" rx="12" class="pill p-good"/><text x="640" y="368" text-anchor="middle" class="t-good b">recibe TripCancelled</text><rect x="40" y="406" width="700" height="40" rx="8" class="out out-good"/><text x="390" y="431" text-anchor="middle" class="t-good b">El viaje se cancela y el chofer queda libre en la misma transacción</text></svg></div><p class="panel-cap">La aceptación toma el lock primero y asigna. La cancelación espera, ve <code>ASIGNADO</code> y pasa a ser “cancelar un viaje asignado”: en la misma transacción borra la fila del chofer y escribe <code>TripCancelled</code> en el outbox.</p></div>
+  <figcaption>El pasajero cancela en el mismo instante en que el chofer acepta.</figcaption>
+  <ul class="legend" aria-label="Referencias">
+  <li><span class="sw sw-lock"></span>tiene el lock</li>
+  <li><span class="sw sw-wait"></span>esperando</li>
+  <li><span class="sw sw-bad"></span>estado incorrecto</li>
+  <li><span class="sw sw-good"></span>resultado correcto</li>
+</ul>
+</figure>
+    </div>
+
+    <div class="sub">
+      <h3>La transacción de aceptación</h3>
+      <p>Todo pasa en una sola transacción. Si algo falla, no queda ni la asignación ni el evento.</p>
+      <pre class="code"><code>BEGIN;
+
+<span class="c">-- 1. Lock de la solicitud. Siempre primero.</span>
+SELECT id, status, version
+  FROM ride_requests
+ WHERE id = $1
+   FOR UPDATE;
+<span class="c">-- En el caso de uso: ¿status = 'BUSCANDO'? ¿oferta vigente y de este chofer?</span>
+<span class="c">-- Si no → ROLLBACK y 409.</span>
+
+<span class="c">-- 2. "Lock" del chofer: restricción única, no lock de fila.</span>
+INSERT INTO driver_active_assignment (driver_id, request_id)
+VALUES ($2, $1)
+ON CONFLICT DO NOTHING
+RETURNING driver_id;
+<span class="c">-- 0 filas → el chofer ya tiene viaje → ROLLBACK y 409 CHOFER_CON_VIAJE_ACTIVO</span>
+
+<span class="c">-- 3. Asignar y publicar el evento en la misma transacción.</span>
+UPDATE ride_requests
+   SET status = 'ASIGNADO', driver_id = $2, version = version + 1
+ WHERE id = $1;
+
+UPDATE offers SET status = 'ACEPTADA' WHERE id = $3;
+
+INSERT INTO outbox (id, type, payload)
+VALUES ($4, 'TripAssigned', $5);
+
+COMMIT;</code></pre>
+    </div>
+
+    <div class="sub">
+      <h3>Por qué no hay interbloqueo</h3>
+      <p>Un deadlock pasa cuando la transacción X tiene el lock 1 y espera el 2, mientras la Y tiene el 2 y espera el 1. Se evita con un orden fijo: todos los caminos bloquean primero la solicitud.</p>
+      <figure class="diag" data-swap="sw4">
+  <div class="seg" role="group" aria-label="Variante del diagrama"><button type="button" id="sw4-b0" data-panel="sw4-p0" class="seg-btn seg-bad" aria-pressed="true">Orden distinto</button><button type="button" id="sw4-b1" data-panel="sw4-p1" class="seg-btn seg-good" aria-pressed="false">Orden fijo</button></div>
+  <div class="panel" id="sw4-p0" data-group="sw4"><div class="scroll"><svg viewBox="0 0 760 402" role="img" aria-label="Con orden de locks distinto, cada transacción espera a la otra y Postgres aborta una con deadlock."><line x1="160" y1="52" x2="160" y2="340" class="life"/><rect x="65" y="8" width="190" height="44" rx="8" class="lane "/><text x="160" y="27" text-anchor="middle" class="t-fg b">Aceptar oferta</text><text x="160" y="43" text-anchor="middle" class="mono t-muted sm">R1 → chofer A</text><line x1="400" y1="52" x2="400" y2="340" class="life"/><rect x="305" y="8" width="190" height="44" rx="8" class="lane lane-db"/><text x="400" y="27" text-anchor="middle" class="t-fg b">Postgres</text><text x="400" y="43" text-anchor="middle" class="mono t-muted sm">dispatch_db</text><line x1="640" y1="52" x2="640" y2="340" class="life"/><rect x="545" y="8" width="190" height="44" rx="8" class="lane "/><text x="640" y="27" text-anchor="middle" class="t-fg b">Chofer se desconecta</text><text x="640" y="43" text-anchor="middle" class="mono t-muted sm">chofer A → R1</text><rect x="155" y="80" width="10" height="244" rx="3" class="bar-lock"/><rect x="635" y="134" width="10" height="190" rx="3" class="bar-lock"/><rect x="155" y="188" width="10" height="136" rx="3" class="bar-wait"/><rect x="635" y="242" width="10" height="82" rx="3" class="bar-wait"/><text x="14" y="98" class="mono t-muted sm">t1</text><line x1="168" y1="94" x2="388" y2="94" class="ln k-n"/><polygon points="392,94 383,89 383,99" class="h-n"/><text x="280" y="86" text-anchor="middle" class="mono t-fg">lock solicitud R1</text><text x="280" y="112" text-anchor="middle" class="t-muted">ok</text><text x="14" y="152" class="mono t-muted sm">t2</text><line x1="632" y1="148" x2="412" y2="148" class="ln k-n"/><polygon points="408,148 417,143 417,153" class="h-n"/><text x="520" y="140" text-anchor="middle" class="mono t-fg">lock fila chofer A</text><text x="520" y="166" text-anchor="middle" class="t-muted">ok</text><text x="14" y="206" class="mono t-muted sm">t3</text><line x1="168" y1="202" x2="388" y2="202" class="ln k-wait"/><polygon points="392,202 383,197 383,207" class="h-wait"/><text x="280" y="194" text-anchor="middle" class="mono t-fg">lock fila chofer A</text><text x="280" y="220" text-anchor="middle" class="t-wait">espera a la otra tx</text><text x="14" y="260" class="mono t-muted sm">t4</text><line x1="632" y1="256" x2="412" y2="256" class="ln k-wait"/><polygon points="408,256 417,251 417,261" class="h-wait"/><text x="520" y="248" text-anchor="middle" class="mono t-fg">lock solicitud R1</text><text x="520" y="274" text-anchor="middle" class="t-wait">espera a la otra tx</text><text x="14" y="314" class="mono t-muted sm">t5</text><rect x="306" y="298" width="188" height="24" rx="12" class="pill p-bad"/><text x="400" y="314" text-anchor="middle" class="t-bad b">40P01 deadlock: aborta una</text><rect x="40" y="352" width="700" height="40" rx="8" class="out out-bad"/><text x="390" y="377" text-anchor="middle" class="t-bad b">Ciclo de espera. Tras deadlock_timeout (1 s) Postgres mata una transacción.</text></svg></div><p class="panel-cap">Aceptar bloquea solicitud → chofer. “Chofer se desconecta” bloquea chofer → solicitud. Cada una tiene lo que la otra necesita.</p></div><div class="panel" id="sw4-p1" data-group="sw4"><div class="scroll"><svg viewBox="0 0 760 456" role="img" aria-label="Con orden fijo, la segunda transacción solo espera y no se forma un ciclo."><line x1="160" y1="52" x2="160" y2="394" class="life"/><rect x="65" y="8" width="190" height="44" rx="8" class="lane "/><text x="160" y="27" text-anchor="middle" class="t-fg b">Aceptar oferta</text><text x="160" y="43" text-anchor="middle" class="mono t-muted sm">R1 → chofer</text><line x1="400" y1="52" x2="400" y2="394" class="life"/><rect x="305" y="8" width="190" height="44" rx="8" class="lane lane-db"/><text x="400" y="27" text-anchor="middle" class="t-fg b">Postgres</text><text x="400" y="43" text-anchor="middle" class="mono t-muted sm">dispatch_db</text><line x1="640" y1="52" x2="640" y2="394" class="life"/><rect x="545" y="8" width="190" height="44" rx="8" class="lane "/><text x="640" y="27" text-anchor="middle" class="t-fg b">Chofer se desconecta</text><text x="640" y="43" text-anchor="middle" class="mono t-muted sm">R1 → chofer</text><rect x="155" y="80" width="10" height="190" rx="3" class="bar-lock"/><rect x="635" y="134" width="10" height="190" rx="3" class="bar-wait"/><rect x="635" y="296" width="10" height="82" rx="3" class="bar-lock"/><text x="14" y="98" class="mono t-muted sm">t1</text><line x1="168" y1="94" x2="388" y2="94" class="ln k-n"/><polygon points="392,94 383,89 383,99" class="h-n"/><text x="280" y="86" text-anchor="middle" class="mono t-fg">lock solicitud R1</text><text x="280" y="112" text-anchor="middle" class="t-muted">ok</text><text x="14" y="152" class="mono t-muted sm">t2</text><line x1="632" y1="148" x2="412" y2="148" class="ln k-wait"/><polygon points="408,148 417,143 417,153" class="h-wait"/><text x="520" y="140" text-anchor="middle" class="mono t-fg">lock solicitud R1</text><text x="520" y="166" text-anchor="middle" class="t-wait">espera a la otra tx</text><text x="14" y="206" class="mono t-muted sm">t3</text><line x1="168" y1="202" x2="388" y2="202" class="ln k-n"/><polygon points="392,202 383,197 383,207" class="h-n"/><text x="280" y="194" text-anchor="middle" class="mono t-fg">INSERT assignment (A)</text><text x="280" y="220" text-anchor="middle" class="t-muted">ok</text><text x="14" y="260" class="mono t-muted sm">t4</text><line x1="168" y1="256" x2="388" y2="256" class="ln k-good"/><polygon points="392,256 383,251 383,261" class="h-good"/><text x="280" y="248" text-anchor="middle" class="mono t-fg">COMMIT</text><text x="280" y="274" text-anchor="middle" class="t-good">lock liberado</text><text x="14" y="314" class="mono t-muted sm">t5</text><line x1="408" y1="310" x2="628" y2="310" class="ln k-n"/><polygon points="632,310 623,305 623,315" class="h-n"/><text x="520" y="302" text-anchor="middle" class="mono t-fg">lock R1 obtenido</text><text x="520" y="328" text-anchor="middle" class="t-muted">ve ASIGNADO y actúa en consecuencia</text><text x="14" y="368" class="mono t-muted sm">t6</text><line x1="632" y1="364" x2="412" y2="364" class="ln k-good"/><polygon points="408,364 417,359 417,369" class="h-good"/><text x="520" y="356" text-anchor="middle" class="mono t-fg">UPDATE …; COMMIT</text><text x="520" y="382" text-anchor="middle" class="t-good">ok</text><rect x="40" y="406" width="700" height="40" rx="8" class="out out-good"/><text x="390" y="431" text-anchor="middle" class="t-good b">Con el mismo orden no puede formarse un ciclo de espera</text></svg></div><p class="panel-cap">Todos los caminos bloquean primero la solicitud. La segunda transacción solo espera; nunca tiene algo que la primera necesite. En nuestro diseño, además, el chofer no es un lock de fila sino una restricción única.</p></div>
+  <figcaption>Diseño hipotético en el que el chofer también se bloquea como fila (<code>drivers … FOR UPDATE</code>) y dos caminos toman los locks en distinto orden.</figcaption>
+  <ul class="legend" aria-label="Referencias">
+  <li><span class="sw sw-lock"></span>tiene el lock</li>
+  <li><span class="sw sw-wait"></span>esperando</li>
+  <li><span class="sw sw-bad"></span>estado incorrecto</li>
+  <li><span class="sw sw-good"></span>resultado correcto</li>
+</ul>
+</figure>
+    </div>
+
+    <div class="sub">
+      <h3>Ofertas que vencen</h3>
+      <p>Si el chofer no responde en, por ejemplo, 15 segundos, la oferta pasa al siguiente candidato o la solicitud queda en <code>SIN_CHOFERES</code>. El servidor no depende de que el cliente avise: el celular puede estar sin señal o con la app cerrada.</p>
+      <ul class="plain">
+        <li><strong>Job diferido en BullMQ</strong> por cada oferta, programado para <code>expires_at</code>. Es el camino normal.</li>
+        <li><strong>Sweeper periódico</strong> que busca ofertas con <code>expires_at</code> vencido y sin resolver. Es el respaldo si un job se pierde o Redis se reinicia.</li>
+        <li>El vencimiento también toma el <code>FOR UPDATE</code> de la solicitud, así que no choca con una aceptación de último segundo.</li>
+      </ul>
+    </div>
+
+    <div class="sub">
+      <h3>Por qué la base de datos y no otra cosa</h3>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th scope="col">Opción</th><th scope="col">Problema</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Mutex en Node</th><td>Vale dentro de un proceso. Con dos réplicas de dispatch, cada una tiene el suyo y no se ven.</td></tr>
+            <tr><th scope="row">Lock en Redis</th><td>Puede vencerse por TTL a mitad de la operación, y no es atómico con la escritura en Postgres, que es la fuente de verdad.</td></tr>
+            <tr><th scope="row">Bloqueo optimista</th><td>Alternativa válida (<code>WHERE version = $v</code>, 0 filas → 409). Con muchos choferes sobre la misma solicitud genera reintentos. Va en el ADR 4 como alternativa considerada.</td></tr>
+            <tr><th scope="row">FOR UPDATE + UNIQUE</th><td class="ok">Elegida. La garantía es atómica con el dato y la ven todas las réplicas.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="aside">
+      <span class="eyebrow">Cómo se prueba</span>
+      <p>Contra un Postgres real; en memoria no se prueba nada de esto. 50 aceptaciones simultáneas con <code>Promise.all</code>, cada una con su conexión, deben dar exactamente <strong>1 respuesta 200 y 49 respuestas 409</strong>, y una sola fila en <code>driver_active_assignment</code>. Lo mismo para cancelar contra aceptar, y para un chofer con viaje activo que intenta aceptar otro.</p>
+    </div>
+  </section>
+
+  <section id="tarea-pesada">
+    <div class="flow">
+      <span class="eyebrow">6.6 · servicio location</span>
+      <h2>Tarea pesada</h2>
+      <div class="stat"><strong>250</strong><span>escrituras por segundo = 500 choferes × 1 ping cada 2 s, sin parar</span></div>
+      <p>Además, cada solicitud de viaje tiene que buscar choferes disponibles a menos de X km. Las dos cosas compiten por los mismos recursos: el hilo de Node y la base de datos.</p>
+    </div>
+
+    <div class="sub">
+      <h3>Por qué un pedido lento demora a todos</h3>
+      <p>Node corre tu código en un solo hilo, el event loop. Esperar a la base con <code>await</code> no lo bloquea, pero un cálculo síncrono sí: mientras dura, ningún otro pedido de ese proceso avanza. Esa demora aparece en la latencia p95 y p99 y en el lag del event loop.</p>
+      <figure class="diag">
+        <div class="scroll"><svg viewBox="0 0 760 250" role="img" aria-label="Con la versión ingenua, un cálculo síncrono de 140 ms hace esperar a los pings que llegan mientras tanto; con la optimizada, cada ping se atiende al llegar."><text x="14" y="66" class="t-fg b">Ingenua</text><line x1="160" y1="61" x2="730" y2="61" class="life"/><rect x="160" y="46" width="15" height="30" rx="4" class="blk blk-n"/><rect x="184" y="46" width="420" height="30" rx="4" class="blk blk-bad"/><text x="394" y="65" text-anchor="middle" class="t-bad sm">haversine + sort sobre 500 filas (síncrono)</text><rect x="610" y="46" width="15" height="30" rx="4" class="blk blk-wait"/><rect x="628" y="46" width="15" height="30" rx="4" class="blk blk-wait"/><rect x="646" y="46" width="15" height="30" rx="4" class="blk blk-wait"/><line x1="220" y1="30" x2="220" y2="43" class="ln k-wait"/><polygon points="220,45 216,38 224,38" class="h-wait"/><line x1="340" y1="30" x2="340" y2="43" class="ln k-wait"/><polygon points="340,45 336,38 344,38" class="h-wait"/><line x1="460" y1="30" x2="460" y2="43" class="ln k-wait"/><polygon points="460,45 456,38 464,38" class="h-wait"/><text x="220" y="24" class="t-wait sm">llegan 3 pings mientras calcula</text><text x="634" y="96" text-anchor="middle" class="t-wait sm">se atienden recién acá</text><text x="14" y="170" class="t-fg b">Optimizada</text><line x1="160" y1="165" x2="730" y2="165" class="life"/><rect x="160" y="150" width="15" height="30" rx="4" class="blk blk-n"/><rect x="184" y="150" width="15" height="30" rx="4" class="blk blk-good"/><rect x="220" y="150" width="15" height="30" rx="4" class="blk blk-good"/><rect x="340" y="150" width="15" height="30" rx="4" class="blk blk-good"/><rect x="460" y="150" width="15" height="30" rx="4" class="blk blk-good"/><line x1="220" y1="134" x2="220" y2="147" class="ln k-wait"/><polygon points="220,149 216,142 224,142" class="h-wait"/><line x1="340" y1="134" x2="340" y2="147" class="ln k-wait"/><polygon points="340,149 336,142 344,142" class="h-wait"/><line x1="460" y1="134" x2="460" y2="147" class="ln k-wait"/><polygon points="460,149 456,142 464,142" class="h-wait"/><text x="220" y="128" class="t-wait sm">llegan los mismos 3 pings</text><text x="340" y="200" text-anchor="middle" class="t-good sm">GEOSEARCH devuelve 30 candidatos; cada ping se atiende al llegar</text><line x1="160" y1="228" x2="730" y2="228" class="ln k-n"/><line x1="160" y1="224" x2="160" y2="232" class="ln k-n"/><text x="160" y="246" text-anchor="middle" class="mono t-muted sm">0 ms</text><line x1="310" y1="224" x2="310" y2="232" class="ln k-n"/><text x="310" y="246" text-anchor="middle" class="mono t-muted sm">50 ms</text><line x1="460" y1="224" x2="460" y2="232" class="ln k-n"/><text x="460" y="246" text-anchor="middle" class="mono t-muted sm">100 ms</text><line x1="610" y1="224" x2="610" y2="232" class="ln k-n"/><text x="610" y="246" text-anchor="middle" class="mono t-muted sm">150 ms</text><text x="14" y="232" class="t-muted sm">hilo de Node</text></svg></div>
+        <figcaption>Ilustrativo, no medido. Con la versión ingenua, un cálculo síncrono hace que los pings que llegan mientras tanto queden encolados. Con la optimizada, la búsqueda la resuelve Redis y el hilo queda libre.</figcaption>
+      </figure>
+    </div>
+
+    <div class="sub">
+      <h3>Ingenua contra optimizada</h3>
+      <p>La versión ingenua se construye a propósito, para tener contra qué medir. Se elige con <code>LOCATION_STRATEGY</code> y el cambio vive solo en <code>composicion.ts</code>.</p>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th scope="col">Aspecto</th><th scope="col">Ingenua</th><th scope="col">Optimizada</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Ubicación vigente</th><td>Un <code>INSERT</code> en Postgres por ping</td><td><code>GEOADD</code> en Redis, en memoria, sobrescribe la anterior</td></tr>
+            <tr><th scope="row">Historial</th><td>La misma tabla, 250 inserts por segundo, crece sin límite</td><td>Redis Stream; un worker lo pasa a Postgres en lotes con <code>createMany</code></td></tr>
+            <tr><th scope="row">Buscar candidatos</th><td>Trae todos los choferes, haversine en JS y sort en el mismo proceso</td><td><code>GEOSEARCH</code> con radio, después filtra por zona y flota</td></tr>
+            <tr><th scope="row">Choferes fantasma</th><td>Filtrar por timestamp en la query</td><td>ZSET con la marca del último ping; se descartan los que llevan más de ~30 s</td></tr>
+            <tr><th scope="row">Costo por ping</th><td>Una escritura con índice en disco</td><td>Una operación en memoria más un <code>XADD</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="sub">
+      <h3>Choferes fantasma, historial y retención</h3>
+      <ul class="plain">
+        <li><strong>Fantasmas.</strong> Si un chofer cierra la app, su última posición queda en el índice para siempre. Redis GEO no permite TTL por elemento, así que se lleva un ZSET <code>last_seen</code> y se descartan, en la búsqueda y en una limpieza periódica, los que dejaron de reportar.</li>
+        <li><strong>Historial en lotes.</strong> Cada ping hace un <code>XADD</code> al Stream. El worker lee de a cientos y hace un <code>createMany</code>: un insert de 500 filas en vez de 500 inserts.</li>
+        <li><strong>Retención.</strong> Los puntos de viajes activos se guardan 30 días. Los de choferes disponibles se descartan a las 24 h. Es un tema de costo y de privacidad: la ubicación de una persona es un dato sensible, y va en el ADR 12.</li>
+      </ul>
+    </div>
+
+    <div class="sub">
+      <h3>Qué se mide</h3>
+      <p>Lo que se evalúa no es haber usado Redis, sino demostrar con números que mejoró y explicar por qué. Simulador de 500 choferes y autocannon pidiendo viajes al mismo tiempo, 3 corridas por escenario, en las dos versiones. Todo va a <code>docs/mediciones.md</code>.</p>
+      <dl class="metrics">
+        <div><dt>p50 · p95 · p99</dt><dd>Latencia de <code>POST /rides</code>. El p99 es el que más sufre con un event loop bloqueado.</dd></div>
+        <div><dt>tiempo hasta asignación</dt><dd>Desde la solicitud hasta <code>TripAssigned</code>. Es lo que siente el pasajero.</dd></div>
+        <div><dt>req/s</dt><dd>Cuántos pedidos atiende el servicio antes de degradarse.</dd></div>
+        <div><dt>lag del event loop</dt><dd><code>monitorEventLoopDelay</code> expuesto en <code>/metrics</code>. Muestra si el hilo está trabado.</dd></div>
+        <div><dt>RSS</dt><dd>Memoria del proceso. Traer todos los choferes a JS la hace crecer.</dd></div>
+        <div><dt>3 corridas</dt><dd>Para que una corrida con suerte no decida la conclusión.</dd></div>
+      </dl>
+    </div>
+
+    <div class="aside">
+      <span class="eyebrow">Ojo con el informe</span>
+      <p>Con 500 choferes, el haversine en sí es barato. El cuello de botella probablemente sea Postgres, tanto por las escrituras como por leer la tabla entera. Hay que dejar que las mediciones digan dónde está y no asumirlo en el informe.</p>
+    </div>
+  </section>
+
+  <section id="flotas">
+    <div class="flow">
+      <span class="eyebrow">Variante G · servicio drivers</span>
+      <h2>Flotas y zonas</h2>
+      <p>Cada flota tiene un límite de choferes activos (por ejemplo, 10). Es otro <em>check-then-act</em>, esta vez sobre un contador.</p>
+    </div>
+
+    <div class="sub">
+      <h3>La carrera del límite</h3>
+      <figure class="diag" data-swap="sw5">
+  <div class="seg" role="group" aria-label="Variante del diagrama"><button type="button" id="sw5-b0" data-panel="sw5-p0" class="seg-btn seg-bad" aria-pressed="true">Con bug</button><button type="button" id="sw5-b1" data-panel="sw5-p1" class="seg-btn seg-good" aria-pressed="false">Con solución</button></div>
+  <div class="panel" id="sw5-p0" data-group="sw5"><div class="scroll"><svg viewBox="0 0 760 402" role="img" aria-label="Leyendo y comparando en la app, las dos activaciones ven 9 y la flota termina con 11 activos."><line x1="160" y1="52" x2="160" y2="340" class="life"/><rect x="65" y="8" width="190" height="44" rx="8" class="lane "/><text x="160" y="27" text-anchor="middle" class="t-fg b">Activación 1</text><text x="160" y="43" text-anchor="middle" class="mono t-muted sm">chofer X</text><line x1="400" y1="52" x2="400" y2="340" class="life"/><rect x="305" y="8" width="190" height="44" rx="8" class="lane lane-db"/><text x="400" y="27" text-anchor="middle" class="t-fg b">Postgres</text><text x="400" y="43" text-anchor="middle" class="mono t-muted sm">dispatch_db</text><line x1="640" y1="52" x2="640" y2="340" class="life"/><rect x="545" y="8" width="190" height="44" rx="8" class="lane "/><text x="640" y="27" text-anchor="middle" class="t-fg b">Activación 2</text><text x="640" y="43" text-anchor="middle" class="mono t-muted sm">chofer Y</text><text x="14" y="98" class="mono t-muted sm">t1</text><line x1="168" y1="94" x2="388" y2="94" class="ln k-n"/><polygon points="392,94 383,89 383,99" class="h-n"/><text x="280" y="86" text-anchor="middle" class="mono t-fg">SELECT active_count</text><text x="280" y="112" text-anchor="middle" class="t-muted">9 (límite 10)</text><text x="14" y="152" class="mono t-muted sm">t2</text><line x1="632" y1="148" x2="412" y2="148" class="ln k-n"/><polygon points="408,148 417,143 417,153" class="h-n"/><text x="520" y="140" text-anchor="middle" class="mono t-fg">SELECT active_count</text><text x="520" y="166" text-anchor="middle" class="t-muted">9</text><text x="14" y="206" class="mono t-muted sm">t3</text><rect x="107.5" y="190" width="105" height="24" rx="12" class="pill p-n"/><text x="160" y="206" text-anchor="middle" class="t-fg b">9 &lt; 10, puede</text><rect x="587.5" y="190" width="105" height="24" rx="12" class="pill p-n"/><text x="640" y="206" text-anchor="middle" class="t-fg b">9 &lt; 10, puede</text><text x="14" y="260" class="mono t-muted sm">t4</text><line x1="168" y1="256" x2="388" y2="256" class="ln k-n"/><polygon points="392,256 383,251 383,261" class="h-n"/><text x="280" y="248" text-anchor="middle" class="mono t-fg">UPDATE … + 1</text><text x="280" y="274" text-anchor="middle" class="t-muted">10</text><text x="14" y="314" class="mono t-muted sm">t5</text><line x1="632" y1="310" x2="412" y2="310" class="ln k-bad"/><polygon points="408,310 417,305 417,315" class="h-bad"/><text x="520" y="302" text-anchor="middle" class="mono t-fg">UPDATE … + 1</text><text x="520" y="328" text-anchor="middle" class="t-bad">11, pasó el límite</text><rect x="40" y="352" width="700" height="40" rx="8" class="out out-bad"/><text x="390" y="377" text-anchor="middle" class="t-bad b">11 choferes activos en una flota con límite 10</text></svg></div><p class="panel-cap">Leer el contador, comparar en la app y escribir son tres pasos separados. Entre el primero y el último, el otro pedido hizo lo mismo.</p></div><div class="panel" id="sw5-p1" data-group="sw5"><div class="scroll"><svg viewBox="0 0 760 402" role="img" aria-label="Con UPDATE condicional, la segunda activación espera, re-evalúa el WHERE y actualiza cero filas."><line x1="160" y1="52" x2="160" y2="340" class="life"/><rect x="65" y="8" width="190" height="44" rx="8" class="lane "/><text x="160" y="27" text-anchor="middle" class="t-fg b">Activación 1</text><text x="160" y="43" text-anchor="middle" class="mono t-muted sm">chofer X</text><line x1="400" y1="52" x2="400" y2="340" class="life"/><rect x="305" y="8" width="190" height="44" rx="8" class="lane lane-db"/><text x="400" y="27" text-anchor="middle" class="t-fg b">Postgres</text><text x="400" y="43" text-anchor="middle" class="mono t-muted sm">dispatch_db</text><line x1="640" y1="52" x2="640" y2="340" class="life"/><rect x="545" y="8" width="190" height="44" rx="8" class="lane "/><text x="640" y="27" text-anchor="middle" class="t-fg b">Activación 2</text><text x="640" y="43" text-anchor="middle" class="mono t-muted sm">chofer Y</text><rect x="155" y="80" width="10" height="136" rx="3" class="bar-lock"/><rect x="635" y="134" width="10" height="136" rx="3" class="bar-wait"/><text x="14" y="98" class="mono t-muted sm">t1</text><line x1="168" y1="94" x2="388" y2="94" class="ln k-n"/><polygon points="392,94 383,89 383,99" class="h-n"/><text x="280" y="86" text-anchor="middle" class="mono t-fg">UPDATE … WHERE count &lt; max</text><text x="280" y="112" text-anchor="middle" class="t-muted">9 &lt; 10 → 10, lock de fila</text><text x="14" y="152" class="mono t-muted sm">t2</text><line x1="632" y1="148" x2="412" y2="148" class="ln k-wait"/><polygon points="408,148 417,143 417,153" class="h-wait"/><text x="520" y="140" text-anchor="middle" class="mono t-fg">UPDATE … WHERE count &lt; max</text><text x="520" y="166" text-anchor="middle" class="t-wait">espera el lock</text><text x="14" y="206" class="mono t-muted sm">t3</text><line x1="168" y1="202" x2="388" y2="202" class="ln k-good"/><polygon points="392,202 383,197 383,207" class="h-good"/><text x="280" y="194" text-anchor="middle" class="mono t-fg">COMMIT</text><text x="280" y="220" text-anchor="middle" class="t-good">lock liberado</text><text x="14" y="260" class="mono t-muted sm">t4</text><line x1="408" y1="256" x2="628" y2="256" class="ln k-n"/><polygon points="632,256 623,251 623,261" class="h-n"/><text x="520" y="248" text-anchor="middle" class="mono t-fg">re-evalúa: 10 &lt; 10 falso</text><text x="520" y="274" text-anchor="middle" class="t-muted">0 filas actualizadas</text><text x="14" y="314" class="mono t-muted sm">t5</text><rect x="110.5" y="298" width="99" height="24" rx="12" class="pill p-good"/><text x="160" y="314" text-anchor="middle" class="t-good b">200 activado</text><rect x="568" y="298" width="144" height="24" rx="12" class="pill p-good"/><text x="640" y="314" text-anchor="middle" class="t-good b">409 límite de flota</text><rect x="40" y="352" width="700" height="40" rx="8" class="out out-good"/><text x="390" y="377" text-anchor="middle" class="t-good b">Exactamente 10 activos, con el CHECK como red de seguridad</text></svg></div><p class="panel-cap">Una sola sentencia. La activación 2 espera el lock de la fila; cuando la 1 confirma, Postgres <strong>vuelve a evaluar el WHERE</strong> sobre la versión nueva de la fila: 10 &lt; 10 es falso, así que actualiza 0 filas.</p></div>
+  <figcaption>Dos activaciones en una flota con <code>max_active = 10</code> que ya tiene 9 choferes activos.</figcaption>
+  <ul class="legend" aria-label="Referencias">
+  <li><span class="sw sw-lock"></span>tiene el lock</li>
+  <li><span class="sw sw-wait"></span>esperando</li>
+  <li><span class="sw sw-bad"></span>estado incorrecto</li>
+  <li><span class="sw sw-good"></span>resultado correcto</li>
+</ul>
+</figure>
+    </div>
+
+    <div class="sub">
+      <h3>El SQL</h3>
+      <pre class="code"><code><span class="c">-- Activar: una sola sentencia, sin SELECT previo.</span>
+UPDATE fleets
+   SET active_count = active_count + 1
+ WHERE id = $1
+   AND active_count &lt; max_active
+RETURNING active_count;
+<span class="c">-- 0 filas → 409 LIMITE_DE_FLOTA</span>
+
+<span class="c">-- Desactivar: en la misma transacción que cambia el estado del chofer.</span>
+UPDATE fleets
+   SET active_count = active_count - 1
+ WHERE id = $1 AND active_count &gt; 0;
+
+<span class="c">-- Red de seguridad: la BD rechaza cualquier escritura que rompa el límite.</span>
+ALTER TABLE fleets ADD CONSTRAINT active_count_en_rango
+  CHECK (active_count &gt;= 0 AND active_count &lt;= max_active);</code></pre>
+      <p>Si al desactivar no se decrementa en la misma transacción, el contador se desincroniza y la flota termina bloqueada con menos choferes reales que el límite. Test: 50 activaciones concurrentes con límite 10 deben dar exactamente 10 activos.</p>
+    </div>
+
+    <div class="sub">
+      <h3>Aislamiento entre flotas</h3>
+      <ul class="plain">
+        <li>El <code>admin_flota</code> tiene un claim <code>fleetId</code> en su JWT.</li>
+        <li><strong>Todas</strong> las consultas filtran por ese <code>fleetId</code> en el caso de uso, no solo en la ruta. Así ningún endpoint nuevo se olvida del filtro.</li>
+        <li>Pedir un recurso de otra flota devuelve <strong>404 y no 403</strong>. Un 403 confirmaría que el recurso existe. Es lo primero que va a probar el grupo atacante (IDOR), y hay un test para cada endpoint de flota.</li>
+      </ul>
+    </div>
+
+    <div class="sub">
+      <h3>Zonas</h3>
+      <ul class="plain">
+        <li>Las zonas son polígonos PostGIS en location, con <code>GET /zones/resolve?lat&amp;lng</code>.</li>
+        <li>Qué zonas tiene habilitadas cada flota vive en drivers (<code>fleet_zones</code>) y llega a dispatch por eventos, como proyección de lectura.</li>
+        <li>dispatch solo le ofrece el viaje a choferes cuya flota tiene habilitada la zona de origen. Sin llamadas síncronas en el camino caliente.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="defensa">
+    <div class="flow">
+      <span class="eyebrow">Para la defensa oral</span>
+      <h2>Preguntas probables</h2>
+      <p>Seguramente pidan mostrar el SQL que se ejecuta (el log de queries de Prisma está activado) y explicar el diagrama de tiempos de cada carrera con el bug y con la solución. Probá responder antes de abrir cada una.</p>
+    </div>
+    <div class="faq">
+<details><summary>¿Por qué <code>FOR UPDATE</code> y no un mutex en Node?</summary><p>Un mutex vive dentro de un proceso. Con dos réplicas de dispatch, o después de un reinicio, cada proceso tiene el suyo y no se ven. El lock de Postgres está en la fila, que es lo único que comparten todas las réplicas, y se libera solo con COMMIT o ROLLBACK.</p></details>
+<details><summary>¿Qué pasa si hay dos réplicas de dispatch?</summary><p>Nada cambia. Las dos hablan con el mismo Postgres, así que la segunda transacción espera el lock igual que si vinieran del mismo proceso. Por eso los tests de concurrencia usan conexiones separadas del pool.</p></details>
+<details><summary>¿Por qué no un lock en Redis?</summary><p>Un lock en Redis vence por TTL. Si el proceso se pausa (GC, red lenta) más que el TTL, otro proceso toma el lock y los dos creen tenerlo. Además no es atómico con la escritura del dato: el lock está en Redis y la solicitud en Postgres.</p></details>
+<details><summary>¿Por qué no hay deadlock?</summary><p>Porque todos los caminos bloquean primero la solicitud, y el chofer no es un lock de fila sino una restricción única. Sin un segundo lock no se puede formar un ciclo de espera.</p></details>
+<details><summary>¿Consideraron bloqueo optimista?</summary><p>Sí, es la alternativa del ADR 4: <code>UPDATE … WHERE id = $1 AND version = $2</code> y, si actualiza 0 filas, 409 o reintento. Funciona, pero con muchos choferes compitiendo por la misma solicitud genera reintentos y los tests son menos deterministas. Elegimos pesimista porque la fila disputada es una sola y la transacción es corta.</p></details>
+<details><summary>¿Qué pasa si el proceso muere con el lock tomado?</summary><p>Se cierra la conexión, Postgres hace ROLLBACK de la transacción abierta y libera el lock. No queda nada a medio escribir porque todo, incluido el evento del outbox, estaba en la misma transacción.</p></details>
+<details><summary>¿Qué pasa si el chofer nunca responde la oferta?</summary><p>El vencimiento lo decide el servidor: cada oferta tiene un job diferido en BullMQ que la vence y pasa al siguiente candidato. Si un job se pierde, el sweeper periódico encuentra las ofertas con <code>expires_at</code> vencido. El celular puede estar sin señal y la oferta vence igual.</p></details>
+<details><summary>¿Cómo sabés que la tarea pesada mejoró?</summary><p>Porque la medimos en las mismas condiciones: el mismo simulador, la misma carga y 3 corridas por versión. Lo único que cambia es <code>LOCATION_STRATEGY</code> en <code>composicion.ts</code>. Comparamos p95/p99, req/s y lag del event loop, y explicamos con esos números dónde estaba el cuello de botella.</p></details>
+<details><summary>¿Por qué 404 y no 403 para otra flota?</summary><p>Un 403 confirma que el recurso existe. Con eso un atacante puede enumerar IDs de otras flotas. Con 404 no puede distinguir “no existe” de “no es tuyo”.</p></details>
+<details><summary>¿Para qué el <code>CHECK</code> si ya está el <code>WHERE</code>?</summary><p>Es defensa en profundidad. El WHERE protege el camino que escribimos hoy; el CHECK protege contra un bug futuro, un script manual o una migración que alguien escriba sin pensar en la carrera.</p></details>
+    </div>
+  </section>
+
+  <footer>Basado en PLAN.md del repositorio app-viajes. Los nombres de tablas y códigos de error son los del plan y pueden cambiar en la implementación.</footer>
+</div>
+
+<script>
+document.querySelectorAll('[data-swap]').forEach(function (fig) {
+  var buttons = fig.querySelectorAll('.seg-btn');
+  function show(btn) {
+    buttons.forEach(function (b) {
+      var on = b === btn;
+      b.setAttribute('aria-pressed', String(on));
+      document.getElementById(b.dataset.panel).hidden = !on;
+    });
+  }
+  buttons.forEach(function (b) { b.addEventListener('click', function () { show(b); }); });
+  show(buttons[0]);
+});
+</script>
