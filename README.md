@@ -9,6 +9,7 @@ Documentación:
 - [docs/arquitectura.md](docs/arquitectura.md): por qué es un monorepo de microservicios y no un monolito.
 - [docs/eventos.md](docs/eventos.md): RabbitMQ, outbox/inbox y el catálogo de eventos.
 - [docs/reparto.md](docs/reparto.md): quién hace qué (Ivan, Agos, Maxi), dependencias y reglas de colaboración.
+- [docs/identity.md](docs/identity.md): contrato de identity, usuarios de prueba y comandos para PowerShell.
 - [docs/repaso-problemas-centrales.html](docs/repaso-problemas-centrales.html): repaso de 6.3, 6.6 y la variante G con diagramas de tiempos (abrir en el navegador).
 
 ## Estado
@@ -17,7 +18,8 @@ Documentación:
 |---|---|
 | `packages/kernel`, `packages/contracts`, `packages/platform` | listo (config, logs con requestId, errores, validación, JWT, health/ready, apagado ordenado) |
 | `services/dispatch` — asignación única (6.3) | listo, con tests de concurrencia contra Postgres |
-| identity, drivers, location, trips, payments, notifications, reservations, gateway, realtime, web | pendiente |
+| `services/identity` (M1) | **parcial:** registro, login, JWT RS256, JWKS, seed y límite de intentos de login. Faltan refresh con rotación, logout y revocación ([detalle](docs/identity.md)) |
+| drivers, location, trips, payments, notifications, reservations, gateway, realtime, web | pendiente |
 
 ## Requisitos
 
@@ -34,14 +36,17 @@ npm run typecheck
 npm test                    # dominio en memoria + integración/concurrencia contra Postgres
 ```
 
-Solo los tests de dominio (sin Docker): `npm run test:dominio -w @viajes/dispatch`.
+Solo los tests de dominio (sin Docker): `npm run test:dominio -w @viajes/dispatch` o `-w @viajes/identity`.
 
-Correr dispatch en desarrollo (sin identity todavía, la verificación de JWT necesita un JWKS):
+Correr identity y dispatch en desarrollo desde PowerShell (paso a paso en [docs/identity.md](docs/identity.md)). Cada servicio en su terminal, con `.env` cargado y su puerto fijo (identity 3001, dispatch 3005):
 
-```bash
-cd services/dispatch
-DATABASE_URL=postgresql://dispatch_svc:dispatch_dev@localhost:5434/dispatch npx prisma migrate deploy
-npm run dev:dispatch        # con las variables de .env exportadas
+```powershell
+npm run claves -w @viajes/identity
+npm run local -- identity migrate:deploy
+npm run local -- dispatch migrate:deploy
+npm run local -- identity seed
+npm run local -- identity
+npm run local -- dispatch
 ```
 
 `DISPATCH_LOG_SQL=1` muestra cada query en el log, incluido el `SELECT ... FOR UPDATE`.

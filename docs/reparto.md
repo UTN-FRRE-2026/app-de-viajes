@@ -17,7 +17,7 @@ Cada integrante es **dueño** de uno de los tres problemas centrales y de los se
 - dispatch con la asignación única: `FOR UPDATE`, reserva única del chofer, cancelación, vencimiento por barrido y 63 tests.
 - docker-compose, Dockerfile, CI, una base por servicio, ADR 0004, `docs/arquitectura.md` y `docs/eventos.md`.
 
-**Fase 1 (hasta el Control 3, ~18/11):**
+**Fase 1 (hasta el Control 3, fecha a confirmar):**
 - [ ] **Mensajería en `platform`:** relay del outbox hacia `viajes.events`, consumidor con inbox, declaración de colas, bindings y DLQ, y propagación de `x-request-id`. Lo usan todos los servicios, así que va **primero**.
 - [ ] **Idempotency-Key en `platform`:** lock con `SET NX` en Redis, registro en la misma transacción que el efecto, y 422 si la misma clave llega con otro body. Maxi lo necesita para payments.
 - [ ] **Resto de dispatch:**
@@ -28,7 +28,7 @@ Cada integrante es **dueño** de uno de los tres problemas centrales y de los se
 - [ ] **trips (M6):** máquina de estados con las transiciones explícitas y un test por cada una, arribo, inicio con QR de un solo uso, fin, cancelaciones e historial no destructivo.
 - [ ] ADRs 1 (TypeScript + ESM), 6 (microservicios + RabbitMQ) y 11 (vencimiento de ofertas).
 
-**Fase 2 (hasta el congelamiento, ~02/12):**
+**Fase 2 (hasta el congelamiento, fecha a confirmar):**
 - [ ] **reservations (M9):** viajes programados, recordatorios y activación idempotente hacia dispatch.
 - [ ] **Deploy:** imagen Docker liviana (hoy pesa 724 MB), Coolify con HTTPS y la colección Bruno de la demo.
 - [ ] **PWA:** pantallas de pasajero (pedir viaje, estimación, seguimiento en vivo) y de operador.
@@ -42,6 +42,7 @@ Cada integrante es **dueño** de uno de los tres problemas centrales y de los se
   - refresh con rotación, revocación con denylist de `jti` en Redis que **falla cerrado**, y `/.well-known/jwks.json`;
   - seed con un usuario de prueba por rol.
   - **Contrato ya fijado:** `packages/platform/src/autenticacion.ts` espera esos claims y estos roles: `pasajero | chofer | operador | admin | admin_flota`.
+  - **Avance (04/11, parcial, sigue abierto):** registro, login, JWKS, seed y límite de intentos de login, ver [identity.md](identity.md). Faltan refresh con rotación, logout y revocación.
 - [ ] **drivers (M3) + Variante G:**
   - choferes, vehículos, documentación y habilitación;
   - flotas, zonas habilitadas por flota y reporte por flota;
@@ -102,7 +103,7 @@ Cada integrante es **dueño** de uno de los tres problemas centrales y de los se
 5. **Un test de concurrencia tiene que fallar cuando se saca la protección.** Si no falla, el test no prueba nada; ver la demora en `services/dispatch/tests/soporte/demora.ts`.
 6. **Siguen el patrón de dispatch:** `src/dominio` sin dependencias de infraestructura, `composicion.ts` como único lugar que elige adaptadores, tests de dominio en memoria y tests de concurrencia contra Postgres real.
 
-## Fase 3 (ataque, ~09/12, y entrega, ~16/12)
+## Fase 3 (ataque, fecha a confirmar, y entrega final, 02/12/2026)
 
 - **Ataque cruzado al grupo 8,** cada uno sobre su especialidad:
   - Agos: autenticación, IDOR y rate limit;

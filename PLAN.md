@@ -9,16 +9,16 @@ Hay que construir una plataforma de viajes al estilo de las apps conocidas (sin 
 
 Decisiones ya tomadas: **TypeScript + ESM**, **Express 5**, **PostgreSQL + Prisma**, **RabbitMQ + Redis**, **Zod**, **Zustand**, **React PWA**, **Docker Compose**, deploy en **VPS con Coolify**. Cada módulo es un **microservicio con hexagonal adentro**.
 
-**Cronograma** (las semanas se cuentan desde el 23/09/2026; plan escrito el 21/10, actualizado el 28/10):
-- Control 1 «Diseño»: ~07/10 (ya pasó, verificar que esté cubierto).
-- **Control 2 «Núcleo»: ~28/10.**
-- Control 3 «Problema difícil»: ~18/11.
-- Congelamiento: ~02/12.
-- Ataque: ~09/12.
-- Entrega: ~16/12.
-- Defensa: ~23/12.
+**Cronograma** (las semanas se cuentan desde el 23/09/2026; plan escrito el 21/10, actualizado el 28/10 y el 04/11):
+- **Entrega final: 02/12/2026 (confirmada).**
+- Control 1 «Diseño»: fecha a confirmar (verificar que esté cubierto).
+- Control 2 «Núcleo»: fecha a confirmar.
+- Control 3 «Problema difícil»: fecha a confirmar.
+- Congelamiento: fecha a confirmar.
+- Ataque: fecha a confirmar.
+- Defensa: fecha a confirmar.
 
-Las fechas reales se confirman en el aula virtual.
+Las fechas pendientes se confirman en el aula virtual.
 
 ## Estado al 28/10
 
@@ -35,7 +35,9 @@ Las fechas reales se confirman en el aula virtual.
 - Versiones fijadas: Prisma 7.10.1 (driver adapter `pg`), TypeScript 5.9, vitest 4. Postgres escucha en el puerto 5434 del host.
 - Columnas de estado `text` con `CHECK` en vez de enums de Postgres, para no necesitar casts en el SQL crudo.
 
-**Pendiente de la Fase 0:** identity, drivers con flotas, ADRs 1 a 3, `modelo.md`, probar el CI en GitHub y achicar la imagen Docker (hoy pesa 724 MB).
+**Pendiente de la Fase 0:** completar identity, drivers con flotas, ADRs 1 a 3, `modelo.md`, probar el CI en GitHub y achicar la imagen Docker (hoy pesa 724 MB).
+
+**Actualización 04/11:** primer incremento de identity (M1), **parcial**: registro, login, JWT RS256, JWKS, seed y límite de intentos de login. Faltan refresh con rotación, logout y revocación. Detalle en [docs/identity.md](docs/identity.md).
 
 ---
 
@@ -181,7 +183,7 @@ app-viajes/
   - Zod `.strict()` en body, params, query y headers relevantes. Es una lista blanca, así que `__proto__` y `constructor` se rechazan como claves no declaradas, sin depender de una lista negra.
   - Límite de tamaño de body.
   - Prisma y `$queryRaw` con plantillas parametrizadas.
-  - Rate limit 429 con headers `RateLimit-*` en login, solicitud de viaje y ubicación.
+  - Rate limit 429 con headers `RateLimit-*` en login, solicitud de viaje y ubicación. El de login vive en identity (Redis, falla cerrado), porque todavía no existe el gateway.
   - Helmet y CORS limitado a los orígenes de la PWA.
   - `npm audit` en CI.
 - **Observabilidad:**
@@ -256,14 +258,14 @@ app-viajes/
 
 ## 7. Hoja de ruta (la idea es que los 3 integrantes commiteen en todas las áreas, con PR y revisión)
 
-**Fase 0 — antes del Control 2 (~28/10):**
+**Fase 0 — antes del Control 2 (fecha a confirmar):**
 - Esqueleto del monorepo, `packages/platform` completo (config, logger+ALS, errores, health/ready, SIGTERM, JWT), docker-compose e infra.
 - identity completo.
 - drivers básico, con flotas.
 - Dominio de dispatch con tests en memoria.
 - ADRs 1 a 3, `modelo.md` y CI básico.
 
-**Fase 1 — antes del Control 3 (~18/11):**
+**Fase 1 — antes del Control 3 (fecha a confirmar):**
 - dispatch con la asignación real y sus tests de concurrencia.
 - location en sus dos versiones, el simulador y la primera medición.
 - trips con la máquina de estados.
@@ -272,7 +274,7 @@ app-viajes/
 - Outbox/inbox con RabbitMQ.
 - ADRs 4, 5, 8, 9 y 11.
 
-**Fase 2 — antes del Congelamiento (~02/12):**
+**Fase 2 — antes del Congelamiento (fecha a confirmar):**
 - realtime con SSE, notifications y reservations (M9).
 - Tests de seguridad: IDOR, prototype pollution, SQLi y rate limit.
 - PWA.

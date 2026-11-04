@@ -22,5 +22,6 @@ for s in $servicios; do
   crear_base "$s" "${s}_svc"
 done
 
-# Base para los tests de integración y concurrencia de dispatch.
+# Bases para los tests de integración y concurrencia.
 crear_base dispatch_test dispatch_svc
+crear_base identity_test identity_svc

@@ -20,8 +20,17 @@ jobs:
         options: >-
           --health-cmd "pg_isready -U dispatch_svc -d dispatch_test"
           --health-interval 5s --health-timeout 3s --health-retries 20
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 3s --health-retries 20
     env:
       DATABASE_URL_TEST: postgresql://dispatch_svc:dispatch_dev@localhost:5434/dispatch_test
+      IDENTITY_DATABASE_URL_TEST: postgresql://identity_svc:identity_dev@localhost:5434/identity_test
+      REDIS_URL_TEST: redis://localhost:6379/15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -29,6 +38,12 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Crear la base de test de identity
+        env:
+          PGPASSWORD: dispatch_dev
+        run: |
+          psql -h localhost -p 5434 -U dispatch_svc -d dispatch_test -c "CREATE ROLE identity_svc LOGIN PASSWORD 'identity_dev'"
+          psql -h localhost -p 5434 -U dispatch_svc -d dispatch_test -c "CREATE DATABASE identity_test OWNER identity_svc"
       - run: npm run typecheck
       - run: npm run lint
       - run: npm test

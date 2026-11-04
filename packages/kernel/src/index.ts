@@ -2,9 +2,9 @@
 
 /**
  * Categoría del error, independiente del transporte. La capa HTTP la traduce
- * (NO_ENCONTRADO → 404, CONFLICTO → 409, INVALIDO → 422, PROHIBIDO → 403).
+ * (NO_ENCONTRADO → 404, CONFLICTO → 409, INVALIDO → 422, PROHIBIDO → 403, NO_AUTENTICADO → 401).
  */
-export type TipoError = 'NO_ENCONTRADO' | 'CONFLICTO' | 'INVALIDO' | 'PROHIBIDO';
+export type TipoError = 'NO_ENCONTRADO' | 'CONFLICTO' | 'INVALIDO' | 'PROHIBIDO' | 'NO_AUTENTICADO';
 
 export class ErrorDeDominio extends Error {
   constructor(

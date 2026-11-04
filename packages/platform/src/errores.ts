@@ -20,6 +20,7 @@ const estadoPorTipo: Record<TipoError, number> = {
   CONFLICTO: 409,
   INVALIDO: 422,
   PROHIBIDO: 403,
+  NO_AUTENTICADO: 401,
 };
 
 function cuerpo(code: string, message: string) {
