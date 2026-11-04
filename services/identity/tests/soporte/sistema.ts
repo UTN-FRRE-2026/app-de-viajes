@@ -57,7 +57,7 @@ export async function levantarIdentity({
     redis,
     casos: sistema.casos,
     async limpiar() {
-      await prisma.$executeRawUnsafe('TRUNCATE users');
+      await prisma.$executeRawUnsafe('TRUNCATE users, refresh_tokens');
       await redis.flushdb();
     },
     async cerrar() {

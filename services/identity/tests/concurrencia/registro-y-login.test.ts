@@ -56,4 +56,28 @@ describe('concurrencia contra Postgres y Redis reales', () => {
     expect(contar(estados, 429)).toBe(50 - MAX_EMAIL);
     expect(hasher.verificaciones).toBe(MAX_EMAIL);
   });
+
+  // Protección: el UPDATE condicional sobre used_at. Con "leer y después marcar", varios pedidos
+  // verían el token sin usar y cada uno sacaría su propia rama de la sesión.
+  it('20 refresh simultáneos con el mismo token → 1 rota, 19 cuentan como reuso y la familia queda revocada', async () => {
+    await request(d.url).post('/registro').send(datosRegistro()).expect(201);
+    const { body: sesion } = await request(d.url)
+      .post('/login')
+      .send({ email: 'ana@viajes.test', contrasena: datosRegistro().contrasena })
+      .expect(200);
+
+    const respuestas = await Promise.all(
+      Array.from({ length: 20 }, () => request(d.url).post('/refresh').send({ refreshToken: sesion.refreshToken })),
+    );
+    const estados = respuestas.map((r) => r.status);
+    expect(contar(estados, 200)).toBe(1);
+    expect(contar(estados, 401)).toBe(19);
+
+    // Un solo token nuevo en la base, y revocado junto con el resto.
+    expect(await d.prisma.refreshToken.count()).toBe(2);
+    expect(await d.prisma.refreshToken.count({ where: { revocadoEn: null } })).toBe(0);
+    const ganador = respuestas.find((r) => r.status === 200);
+    const despues = await request(d.url).post('/refresh').send({ refreshToken: ganador?.body.refreshToken });
+    expect(despues.status).toBe(401);
+  });
 });

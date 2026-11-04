@@ -22,6 +22,25 @@ model Usuario {
   // Referencia a una flota de drivers: sin FK porque esa base es de otro servicio.
   fleetId        String?  @map("fleet_id") @db.Uuid
   creadoEn       DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  refreshTokens  RefreshToken[]
 
   @@map("users")
+}
+
+// Solo la huella SHA-256: con una copia de la base no se puede renovar ninguna sesión.
+model RefreshToken {
+  huella     String    @id @map("token_hash")
+  // Borrar el usuario borra sus sesiones.
+  usuarioId  String    @map("user_id") @db.Uuid
+  usuario    Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  // Todos los tokens que salen de un mismo login: se revocan juntos.
+  familiaId  String    @map("family_id") @db.Uuid
+  creadoEn   DateTime  @map("created_at") @db.Timestamptz(3)
+  expiraEn   DateTime  @map("expires_at") @db.Timestamptz(3)
+  usadoEn    DateTime? @map("used_at") @db.Timestamptz(3)
+  revocadoEn DateTime? @map("revoked_at") @db.Timestamptz(3)
+
+  @@index([familiaId])
+  @@index([usuarioId])
+  @@map("refresh_tokens")
 }
