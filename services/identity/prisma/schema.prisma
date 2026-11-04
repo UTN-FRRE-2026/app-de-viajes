@@ -1,0 +1,27 @@
+// Esquema de identity. El rol es `text` con CHECK (agregado a mano en la migración),
+// igual que los estados de dispatch.
+
+generator client {
+  provider               = "prisma-client"
+  output                 = "../src/infra/db/generated"
+  moduleFormat           = "esm"
+  importFileExtension    = "js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Usuario {
+  id             String   @id @db.Uuid
+  // Siempre en minúsculas (CHECK): así la unicidad no depende de mayúsculas.
+  email          String   @unique
+  hashContrasena String   @map("password_hash")
+  nombre         String   @map("name")
+  rol            String   @map("role")
+  // Referencia a una flota de drivers: sin FK porque esa base es de otro servicio.
+  fleetId        String?  @map("fleet_id") @db.Uuid
+  creadoEn       DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@map("users")
+}

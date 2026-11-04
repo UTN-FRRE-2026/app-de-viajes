@@ -38,6 +38,29 @@ services:
       timeout: 5s
       retries: 20
 
+  identity:
+    build:
+      context: .
+      args:
+        SERVICE: identity
+    image: ghcr.io/grupo7/viajes-identity:${VERSION:-0.1.0}
+    environment:
+      PUERTO: "3001"
+      IDENTITY_PERSISTENCIA: postgres
+      IDENTITY_DATABASE_URL: postgresql://identity_svc:${DB_PASSWORD_IDENTITY:-identity_dev}@postgres:5432/identity
+      REDIS_URL: redis://redis:6379
+      JWT_ISSUER: viajes-identity
+      JWT_AUDIENCE: viajes
+      # Con :- y no :? para que `npm run infra:up` funcione sin la clave. Si falta, identity no arranca y lo dice.
+      IDENTITY_JWT_CLAVE_PRIVADA_B64: ${IDENTITY_JWT_CLAVE_PRIVADA_B64:-}
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
   dispatch:
     build:
       context: .
