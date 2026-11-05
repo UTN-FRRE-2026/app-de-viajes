@@ -42,7 +42,7 @@ Cada integrante es **dueño** de uno de los tres problemas centrales y de los se
   - refresh con rotación, revocación con denylist de `jti` en Redis que **falla cerrado**, y `/.well-known/jwks.json`;
   - seed con un usuario de prueba por rol.
   - **Contrato ya fijado:** `packages/platform/src/autenticacion.ts` espera esos claims y estos roles: `pasajero | chofer | operador | admin | admin_flota`.
-  - **Avance (04/11, parcial, sigue abierto):** registro, login, JWKS, seed y límite de intentos de login, ver [identity.md](identity.md). Faltan refresh con rotación, logout y revocación.
+  - **Avance (04/11, parcial, sigue abierto):** registro, login, JWKS, seed, límite de intentos de login y refresh con rotación (con detección de reuso), ver [identity.md](identity.md). Faltan logout y revocación.
 - [ ] **drivers (M3) + Variante G:**
   - choferes, vehículos, documentación y habilitación;
   - flotas, zonas habilitadas por flota y reporte por flota;

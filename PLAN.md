@@ -37,7 +37,7 @@ Las fechas pendientes se confirman en el aula virtual.
 
 **Pendiente de la Fase 0:** completar identity, drivers con flotas, ADRs 1 a 3, `modelo.md`, probar el CI en GitHub y achicar la imagen Docker (hoy pesa 724 MB).
 
-**Actualización 04/11:** primer incremento de identity (M1), **parcial**: registro, login, JWT RS256, JWKS, seed y límite de intentos de login. Faltan refresh con rotación, logout y revocación. Detalle en [docs/identity.md](docs/identity.md).
+**Actualización 04/11:** identity (M1) sigue **parcial**: registro, login, JWT RS256, JWKS, seed, límite de intentos de login y refresh con rotación (con detección de reuso). Faltan logout y revocación. Detalle en [docs/identity.md](docs/identity.md).
 
 ---
 
