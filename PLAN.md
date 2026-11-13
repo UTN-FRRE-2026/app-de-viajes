@@ -26,7 +26,7 @@ El **TP Integrador** dejó de ser la plataforma distribuida de 9 módulos (M1–
 |---|---|
 | ProgIV 1.4 (y la copia en el Integrador): «el frontend no suma nota». La rúbrica del Integrador le da 5 puntos y Playwright (10) lo necesita. | Se hace un frontend **mínimo**, después del núcleo. |
 | ProgIV admite autocannon o k6; el Integrador pide k6. | **k6 para todo**: simulador de choferes, mediciones de 6.6 y escenarios de estrés. |
-| El Integrador cita `docs/ataque.md`, «sección 8» y «el cronograma de la sección 10», pero no trae esas secciones. | Siguen vigentes por ProgIV. Para el Integrador no hay fechas: **preguntar**. |
+| El Integrador cita `docs/ataque.md`, «sección 8» y «el cronograma de la sección 10», pero no trae esas secciones. | Siguen vigentes por ProgIV. La única fecha confirmada es la entrega final del 02/12/2026; el resto, **preguntar**. |
 | La sección 6 se titula «Comisión 1» y el resto del texto dice que viajes es de la Comisión 2. «17. Artefactos» es la sección 7. | Errores de tipeo. Somos el grupo 7 de la tabla de 6 (Stabile, Jara, Sanchez → variante G). |
 | La tabla de 6 tiene 8 grupos, pero 6.7 define una variante I para un «grupo 9». | Si existe el grupo 9, cambia el emparejamiento del ataque (hoy: atacamos al 8, nos ataca el 6). **Preguntar.** |
 | El Integrador dice «versión preliminar». | Puede cambiar otra vez: la rúbrica se implementa en capas que no tocan el núcleo. |
@@ -39,7 +39,7 @@ Por qué:
 - Ningún enunciado pide ya microservicios. ProgIV pide «un solo sistema», «levantar el servidor» y «un único archivo de composición».
 - El problema central (6.3) bloquea viaje y chofer en **una transacción**. Con todo en una base desaparecen el outbox/inbox, las proyecciones y los consumidores idempotentes que solo existían para coordinar servicios.
 - El CI tiene que levantar el sistema completo para Playwright, y la cátedra lo levanta desde un clon limpio.
-- Somos tres y quedan unas cinco semanas.
+- Somos tres y la entrega final es el 02/12/2026.
 
 Queda registrado en un ADR nuevo (0006) que marca como reemplazada la decisión de microservicios: es un ADR con una alternativa descartada de verdad.
 
@@ -82,7 +82,7 @@ ESLint: `src/modulos/*/dominio/**` no importa infraestructura (regla actual, con
 | `packages/kernel`, `platform`, `contracts` | Igual | Sumar a `platform`: helmet, CORS, rate limit genérico, log por pedido, métricas, idempotencia, validación de encabezados |
 | `services/dispatch` (dominio, repositorio, 63 tests) | `modulos/viajes` | `git mv`. `SolicitudViaje` pasa a ser el viaje completo (ver 3.1) |
 | `services/identity` (registro, login, argon2id, RS256, límite de login, seed) | `modulos/identidad` | `git mv`. El token se verifica con la clave pública local (`verificadorJwksLocal` ya existe); `fleet_id` gana su FK |
-| PR #3 (refresh con rotación) | Mergear **antes** de mover carpetas | Tiene CI verde; después sería un rebase doloroso |
+| Refresh con rotación y detección de reuso (PR #3, mergeado) | `modulos/identidad` | Se mueve con el resto de identity |
 | Tabla `outbox` | Se conserva | Es la fuente de los eventos de tiempo real; ya no hay relay a RabbitMQ ni inbox |
 | Barrido de ofertas vencidas | Se conserva tal cual | No hace falta BullMQ: el vencimiento ya no depende del cliente |
 | `docker-compose.yml`, `infra/postgres/init` | Simplificar | Fuera `rabbitmq`, `dispatch` e `identity`; entra `api`. Bases `viajes` y `viajes_test`, con un usuario que no es superusuario |
@@ -160,7 +160,7 @@ ESLint: `src/modulos/*/dominio/**` no importa infraestructura (regla actual, con
 
 ## 4. Requisitos de ProgIV: estado al 13/11
 
-✅ hecho · 🟡 parcial · ⬜ falta. El CI está en verde en `main`. Con el PR #3 hay 188 tests: 63 de dispatch y 125 de identity.
+✅ hecho · 🟡 parcial · ⬜ falta. El CI está en verde en `main`. Hay 188 tests: 63 de dispatch y 125 de identity.
 
 | Requisito | Estado | Qué falta |
 |---|---|---|
@@ -259,21 +259,25 @@ Dos detalles: el simulador necesita 500 tokens y el límite de login por IP (30 
 
 ## 6. Hoja de ruta
 
-Fechas estimadas contando las semanas desde el 23/09. **Si la cátedra cuenta desde el inicio de cada semana, todo cae una semana antes** (el Control 3 sería esta semana): confirmar en el aula virtual.
+**Única fecha confirmada: entrega final el 02/12/2026.** Los controles, el congelamiento, el ataque cruzado y la defensa no tienen fecha confirmada ([consulta 5](docs/consultas-catedra.md)); tampoco la entrega y el coloquio del Integrador (consulta 4). Todo el trabajo se planifica para terminar el 02/12. Las fechas de corte de las fases son **metas internas del grupo**, no fechas de la cátedra, y se reacomodan cuando la cátedra confirme las suyas.
 
-### Fase A — hasta el Control 3 (~18/11): «problema difícil»
+Del 13/11 al 02/12 quedan 19 días. No alcanza para todo con holgura: el orden de recorte del final de esta sección es parte del plan.
 
-Se muestra: carrera principal con su test (ya está) y tarea pesada en dos versiones con la primera medición.
+### Fase A — meta interna 18/11: «problema difícil»
+
+Es lo que pide el Control 3: carrera principal con su test (ya está) y tarea pesada en dos versiones con la primera medición.
 
 - [ ] Confirmar con la cátedra si se exigen microservicios ([consulta 1](docs/consultas-catedra.md)). El resto de la fase no depende de la respuesta.
-- [ ] Mergear el PR #3 y, **con esa respuesta**, consolidar en `services/api` (Ivan). Durante esos dos días no se mergea otra cosa.
+- [ ] **Con esa respuesta**, consolidar en `services/api` (Ivan). Durante esos dos días no se mergea otra cosa.
 - [ ] `npm run setup`, `dev`, `start`; Compose simplificado; secuencia de 2.4 probada en un clon limpio (Ivan).
 - [ ] `ubicacion` en sus dos versiones, con adaptador en memoria primero (Maxi).
 - [ ] `carga/choferes.js`, `carga/solicitudes.js`, `/metrics` con el lag y **primera medición** en `docs/mediciones.md` (Maxi).
 - [ ] `flotas`: choferes, vehículos, flotas y la carrera G con su test (Agos).
 - [ ] ADR 0001, 0002, 0003, 0005 y 0006; 0004 con el formato corregido.
 
-### Fase B — hasta el congelamiento (~02/12): sistema completo y publicado
+### Fase B — meta interna 25/11: sistema completo y publicado
+
+Al cerrar esta fase el sistema tiene que poder congelarse para el ataque cruzado, cuando la cátedra lo fije.
 
 - [ ] `viajes`: estados completos, historial, panel del operador con búsqueda (Ivan).
 - [ ] Idempotency-Key y SSE (Ivan).
@@ -281,26 +285,28 @@ Se muestra: carrera principal con su test (ya está) y tarea pesada en dos versi
 - [ ] Seguridad transversal: helmet, CORS, rate limit, encabezados, log por pedido y los tests que faltan del bloque 5 (Agos).
 - [ ] `tarifas`, cobro simulado y adaptadores de mapas y pagos con timeout (Maxi).
 - [ ] Caché en Redis, retención de ubicaciones y privacidad del seguimiento (Maxi).
-- [ ] Frontend: base y login (Agos), pasajero y operador (Ivan), chofer (Maxi).
+- [ ] Frontend mínimo: base y login (Agos), pasajero y operador (Ivan), chofer (Maxi).
 - [ ] `modelo.md`, `api.md`, tabla de roles, colección de la demo y usuarios de prueba.
 - [ ] Despliegue accesible para el grupo atacante y tag `congelado`.
 
-### Fase C — semana de ataque (~02/12 a ~09/12)
+### Fase C — del 25/11 a la entrega del 02/12: rúbrica del Integrador y cierre
 
-El entorno publicado no se toca. En ramas aparte, sin cambiar la API:
-- [ ] Bitácora del ataque al grupo 8 en `docs/ataque.md`: Agos (autenticación, acceso a recursos ajenos, rate limit), Ivan (carreras e idempotencia), Maxi (validación, montos, operaciones costosas).
 - [ ] Playwright y job `e2e` (Agos, Ivan).
 - [ ] Job `sast` y corrección de lo que encuentre (Ivan).
 - [ ] Grafana Cloud y dashboards; `estres.js` y `carrera.js` (Maxi).
-
-### Fase D — hasta la entrega (~16/12)
-
-- [ ] Hallazgos recibidos: causa raíz, commit y un test que falla antes y pasa después (el dueño del módulo).
 - [ ] Mediciones finales, tres corridas por escenario, con conclusión (Maxi).
 - [ ] ADR restantes: 0007 SSE, 0008 búsqueda geográfica, 0009 límite por flota, 0010 idempotencia, 0011 vencimiento de ofertas, 0012 inventario de carreras.
-- [ ] Autoevaluación de ProgIV 10.6 completa, clon limpio en otra máquina y tag `entrega-final` (Ivan).
+- [ ] Autoevaluación de ProgIV 10.6 completa, clon limpio en otra máquina y tag `entrega-final` **el 02/12** (Ivan).
 
-### Defensa (~23/12) y coloquio del Integrador (sin fecha)
+### Ataque cruzado — fecha a confirmar
+
+Se hace cuando la cátedra lo fije; el entorno publicado no se toca durante esa semana.
+- [ ] Bitácora del ataque en `docs/ataque.md`: Agos (autenticación, acceso a recursos ajenos, rate limit), Ivan (carreras e idempotencia), Maxi (validación, montos, operaciones costosas).
+- [ ] Hallazgos recibidos: causa raíz, commit y un test que falla antes y pasa después (el dueño del módulo).
+
+Si la cátedra lo ubica antes del 02/12, desplaza trabajo de la Fase C y se recorta según el orden de abajo. Si queda después de la entrega, hay que preguntar cómo entran las correcciones, porque lo posterior al tag `entrega-final` no se corrige.
+
+### Defensa de ProgIV y coloquio del Integrador — fechas a confirmar
 
 Cada dueño le explica su parte a los otros dos. Ensayar los cuatro tipos de pregunta de ProgIV 9.2 (predicción, diagnóstico, modificación en vivo, justificación de un ADR) y, para el Integrador, interpretar en vivo el pipeline, k6 y los dashboards.
 

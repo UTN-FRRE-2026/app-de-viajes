@@ -21,7 +21,7 @@ Documentación:
 |---|---|
 | `packages/kernel`, `packages/contracts`, `packages/platform` | listo (config, logs con requestId, errores, validación, JWT, health/ready, apagado ordenado) |
 | `services/dispatch` — asignación única (6.3) | listo, con tests de concurrencia contra Postgres |
-| `services/identity` (M1) | **parcial:** registro, login, JWT RS256, JWKS, seed y límite de intentos de login. Faltan refresh con rotación, logout y revocación ([detalle](docs/identity.md)) |
+| `services/identity` (M1) | **parcial:** registro, login, JWT RS256, JWKS, seed, límite de intentos de login y refresh con rotación. Faltan logout y revocación ([detalle](docs/identity.md)) |
 | drivers, location, trips, payments, notifications, reservations, gateway, realtime, web | pendiente |
 
 ## Requisitos

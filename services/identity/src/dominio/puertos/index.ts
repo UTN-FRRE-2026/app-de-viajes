@@ -4,6 +4,54 @@ export interface RepositorioUsuarios {
   /** false si el email ya existe. La unicidad la garantiza la base, no un chequeo previo. */
   insertar(usuario: Usuario): Promise<boolean>;
   buscarPorEmail(email: string): Promise<Usuario | null>;
+  buscarPorId(id: string): Promise<Usuario | null>;
+}
+
+/**
+ * Un refresh token tal como se guarda: solo la huella (SHA-256), nunca el valor.
+ * Los tokens que nacen de un mismo login forman una familia: la familia es la sesión.
+ */
+export interface RefreshGuardado {
+  huella: string;
+  usuarioId: string;
+  familiaId: string;
+  creadoEn: Date;
+  expiraEn: Date;
+}
+
+export type ResultadoRotacion =
+  | { resultado: 'rotado'; usuarioId: string }
+  /** El token ya se había usado: alguien tiene una copia. */
+  | { resultado: 'reusado'; familiaId: string }
+  /** No existe, venció o la familia está revocada. */
+  | { resultado: 'invalido' };
+
+export interface RepositorioSesiones {
+  crear(refresh: RefreshGuardado): Promise<void>;
+  /**
+   * Atómico: marca `huellaActual` como usada y guarda `nuevo` en la misma familia y para el mismo usuario.
+   * Con pedidos simultáneos con el mismo token, uno solo rota: el resto ve el token ya usado.
+   * `nuevo.creadoEn` es el momento de la rotación: contra él se mide el vencimiento del actual.
+   */
+  rotar(huellaActual: string, nuevo: Pick<RefreshGuardado, 'huella' | 'creadoEn' | 'expiraEn'>): Promise<ResultadoRotacion>;
+  /**
+   * Revoca todos los tokens de la familia, usados o no. Idempotente.
+   * No corre a la vez que un `rotar` de la misma familia: un token creado por una rotación en curso
+   * también queda revocado.
+   */
+  revocarFamilia(familiaId: string, ahora: Date): Promise<void>;
+}
+
+export interface SecretoRefresh {
+  /** Lo que recibe el cliente. */
+  token: string;
+  /** Lo que se guarda. */
+  huella: string;
+}
+
+export interface GeneradorRefresh {
+  nuevo(): SecretoRefresh;
+  huella(token: string): string;
 }
 
 export interface HasherContrasenas {

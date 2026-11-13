@@ -1,6 +1,6 @@
 # identity (M1): primer incremento
 
-> **Estado: parcial.** Funcionan registro, login, JWT RS256, JWKS, seed y límite de intentos de login. M1 **no está terminado**: faltan refresh con rotación, logout y revocación. Ver [Pendiente](#pendiente).
+> **Estado: parcial.** Funcionan registro, login, JWT RS256, JWKS, seed, límite de intentos de login y refresh con rotación. M1 **no está terminado**: faltan logout y revocación. Ver [Pendiente](#pendiente).
 
 ## Endpoints
 
@@ -32,13 +32,36 @@ Registro público. Solo crea `pasajero` y `chofer`.
 
 | Respuesta | Cuándo |
 |---|---|
-| `200 {token, tipo:"Bearer", expiraEnSegundos, usuario:{id,email,nombre,rol,fleetId?,creadoEn}}` | Credenciales correctas. Con `Cache-Control: no-store` |
+| `200 {token, tipo:"Bearer", expiraEnSegundos, refreshToken, refreshExpiraEnSegundos, usuario:{id,email,nombre,rol,fleetId?,creadoEn}}` | Credenciales correctas. Abre una sesión nueva (ver [`POST /refresh`](#post-refresh)). Con `Cache-Control: no-store` |
 | `400 VALIDACION` | Body inválido. No consume intentos |
 | `401 CREDENCIALES_INVALIDAS` | Email inexistente o contraseña incorrecta: misma respuesta, y en el primer caso igual corre un argon2 señuelo |
 | `429 DEMASIADOS_INTENTOS` | Se superó el límite. Con `Retry-After` |
 | `503 LIMITE_NO_DISPONIBLE` | Redis no responde: **falla cerrado**, no se verifica ninguna contraseña |
 
 Toda respuesta que pasó por el contador trae `RateLimit-Limit`, `RateLimit-Remaining` y `RateLimit-Reset`.
+
+### `POST /refresh`
+
+```json
+{ "refreshToken": "..." }
+```
+
+| Respuesta | Cuándo |
+|---|---|
+| `200` | Igual que el login, con un access token y un refresh **nuevos**. El refresh enviado ya no sirve. Con `Cache-Control: no-store` |
+| `400 VALIDACION` | Falta `refreshToken`, no es texto, supera 256 caracteres o hay otra clave |
+| `401 REFRESH_INVALIDO` | No existe, venció, la sesión está revocada o el token ya se había usado: misma respuesta en todos los casos |
+
+- **Refresh opaco**, no JWT: 32 bytes aleatorios en base64url (43 caracteres). En `refresh_tokens` se guarda solo su SHA-256, así que con una copia de la base no se puede renovar ninguna sesión. Un hash rápido alcanza porque no hay nada que adivinar.
+- **Sesión = familia.** Cada login abre una familia, y cada refresh crea el siguiente token de esa misma familia. Las sesiones de otros dispositivos son familias distintas.
+- **Rotación.** Cada refresh sirve una sola vez. El plazo (`IDENTITY_REFRESH_TTL_SEGUNDOS`, 7 días por defecto) se renueva en cada rotación: es lo máximo que se puede estar sin usar la app.
+- **Detección de reuso.** Si llega un refresh ya usado, alguien tiene una copia. No se puede saber si es el dueño o el ladrón, así que se **revoca la familia entera** y los dos tienen que volver a hacer login. Las otras sesiones del usuario no se tocan.
+- **Atomicidad.** El token se marca como usado con un `UPDATE ... WHERE used_at IS NULL` dentro de la misma transacción que crea el siguiente. Con pedidos simultáneos con el mismo token, uno solo rota y el resto cuenta como reuso. Lo cubre el test de concurrencia.
+- **Rotación y revocación no se cruzan.** Las dos toman un lock por familia (`pg_advisory_xact_lock`) antes de tocar las filas. Sin él, una revocación que llega mientras se rota el token actual espera esa fila y, al seguir, no ve el token recién creado: quedaría vivo después de detectar el reuso. También lo cubre un test de concurrencia.
+- **Consecuencia para el cliente:** dos refresh en paralelo con el mismo token cierran la sesión. El cliente web tiene que serializarlos: un único refresh en curso, y el resto de los pedidos espera su resultado.
+- El access token nuevo toma el rol y el `fleetId` **actuales** del usuario, no los del login.
+- Sin límite de intentos: con 256 bits no hay fuerza bruta posible.
+- Borrar un usuario borra sus refresh tokens (FK con `ON DELETE CASCADE`).
 
 ### `GET /.well-known/jwks.json`
 
@@ -61,7 +84,7 @@ JWT firmado con RS256. Encabezado `{alg, kid, typ}`, donde `kid` es el thumbprin
 | `iat`, `exp` | 15 minutos de vida (`JWT_TTL_SEGUNDOS`) |
 | `jti` | UUID. Queda listo para la denylist de revocación, que todavía no existe |
 
-Es el contrato de `packages/platform/src/autenticacion.ts`, que no se modificó. Como no hay refresh, al vencer hay que volver a hacer login.
+Es el contrato de `packages/platform/src/autenticacion.ts`, que no se modificó. Al vencer, el cliente pide uno nuevo con `POST /refresh`.
 
 ## Contraseñas
 
@@ -227,6 +250,24 @@ Cada pasajero admite una sola solicitud activa, y el chofer queda ocupado hasta 
 Invoke-RestMethod -Method Post "$dispatch/solicitudes/$($solicitud.id)/cancelar" -ContentType 'application/json' -Headers $conPasajero -Body '{}' | Select-Object estado
 ```
 
+**9. Renovar la sesión y probar el reuso**
+
+```powershell
+function Renovar($refresh) {
+  $body = @{ refreshToken = $refresh } | ConvertTo-Json
+  Invoke-RestMethod -Method Post "$identity/refresh" -ContentType 'application/json' -Body $body
+}
+$renovada = Renovar $pasajero.refreshToken
+# El access token nuevo sirve en dispatch: 2xx
+Estado { Invoke-RestMethod -Method Post "$dispatch/solicitudes" -ContentType 'application/json' -Headers @{ Authorization = "Bearer $($renovada.token)" } -Body $viaje }
+# El refresh viejo ya se usó: 401, y revoca la sesión
+Estado { Renovar $pasajero.refreshToken }
+# Por eso el nuevo tampoco sirve: 401
+Estado { Renovar $renovada.refreshToken }
+```
+
+El 2xx crea otra solicitud: para repetir la prueba, cancelala como en el paso 8, usando `$renovada.token`.
+
 ## Tests
 
 ```powershell
@@ -264,9 +305,10 @@ docker compose exec -T postgres psql -U postgres -c "REVOKE ALL ON DATABASE iden
 
 Este incremento **no** incluye:
 
-- **Refresh token con rotación.**
-- **Logout.**
-- **Revocación:** denylist de `jti` en Redis que falla cerrado. Hasta entonces, un token robado vale hasta que vence, como máximo 15 minutos.
+- **Logout.** El repositorio ya sabe revocar una familia, que es lo que tiene que hacer el logout con el refresh.
+- **Revocación del access token:** denylist de `jti` en Redis que falla cerrado. Hasta entonces, un access token robado vale hasta que vence, como máximo 15 minutos, aunque se haya revocado su sesión por reuso.
+- Limpieza de `refresh_tokens`: las filas vencidas y usadas no se borran nunca. Hace falta un job que borre las vencidas hace más de un tiempo, y que conserve las usadas mientras sigan vigentes sus familias, porque de ellas depende la detección de reuso.
+- Límite absoluto de la sesión: como el plazo se renueva en cada rotación, una sesión que se usa seguido no vence nunca.
 - `trust proxy` cuando exista el gateway. Sin eso, todos los pedidos que pasen por el gateway compartirían el contador de IP.
 - Límite de pedidos en `/registro`: hoy cada registro cuesta un argon2 y no tiene freno.
 - Rotación de claves: el JWKS publica una sola clave.

@@ -1,6 +1,6 @@
 # Reparto del desarrollo — Ivan, Agos y Maxi
 
-Actualizado el 13/11/2026 para el [plan v2](../PLAN.md) (monolito modular y rúbrica nueva del Integrador). Las fases y las fechas están en la sección 6 del plan.
+Actualizado el 13/11/2026 para el [plan v2](../PLAN.md) (monolito modular y rúbrica nueva del Integrador). Las fases están en la sección 6 del plan. La única fecha confirmada es la **entrega final del 02/12/2026**; los cortes de fase son metas internas.
 
 Cada integrante es **dueño** de un problema central y de los módulos que lo rodean. Ser dueño no es trabajar solo: la defensa y el coloquio son **individuales** y cualquiera puede tener que explicar cualquier parte.
 
@@ -13,7 +13,7 @@ Cada integrante es **dueño** de un problema central y de los módulos que lo ro
 ## Ivan
 
 **Fase A**
-- [ ] Mergear el PR #3 (refresh) y consolidar `services/dispatch` y `services/identity` en `services/api` con `git mv`: un esquema de Prisma, una composición, verificación del token con la clave local.
+- [ ] Con la respuesta de la cátedra sobre microservicios, consolidar `services/dispatch` y `services/identity` en `services/api` con `git mv`: un esquema de Prisma, una composición, verificación del token con la clave local.
 - [ ] Compose sin RabbitMQ y con `api`; bases `viajes` y `viajes_test`.
 - [ ] `npm run setup` (migra, genera la clave si falta, siembra), `dev` y `start`. Tiene que andar en Windows y en Linux.
 - [ ] ADR 0001 (TypeScript + ESM) y 0006 (monolito modular); 0004 con el formato de la sección 7.1.
@@ -26,7 +26,7 @@ Cada integrante es **dueño** de un problema central y de los módulos que lo ro
 - [ ] Frontend: pantallas de pasajero y de operador.
 - [ ] Despliegue y tag `congelado`.
 
-**Fases C y D**
+**Fase C y ataque cruzado**
 - [ ] Jobs `e2e` y `sast` en el CI.
 - [ ] Ataque al grupo 8: carreras e idempotencia.
 - [ ] ADR 0011 y 0012; autoevaluación 10.6 y tag `entrega-final`.
@@ -46,14 +46,14 @@ Cada integrante es **dueño** de un problema central y de los módulos que lo ro
 - [ ] Frontend: proyecto base (Vite, router, stores, cliente HTTP, componente de errores), login y pantallas de admin de flota.
 - [ ] Tabla de roles y permisos en el README.
 
-**Fases C y D**
+**Fase C y ataque cruzado**
 - [ ] Playwright: los cinco flujos de la sección 5.3 del plan.
 - [ ] Ataque al grupo 8: autenticación, recursos ajenos y rate limit.
 - [ ] ADR 0007 (SSE frente a WebSocket, con Ivan) y 0009 (límite por flota).
 
 ## Maxi
 
-**Fase A (es lo que se muestra en el Control 3)**
+**Fase A (es lo que pide el Control 3)**
 - [ ] `ubicacion` ingenua: un `INSERT` por ping y haversine en JavaScript sobre todos los choferes.
 - [ ] `ubicacion` optimizada: Redis `GEOADD` / `GEOSEARCH`, vencimiento contra choferes fantasma, historial por cola con escritura en lotes. Se elige con `UBICACION_ESTRATEGIA`.
 - [ ] `/metrics` con el lag del event loop (`monitorEventLoopDelay`) y memoria.
@@ -69,7 +69,7 @@ Cada integrante es **dueño** de un problema central y de los módulos que lo ro
 - [ ] Caché en Redis de tarifas y zonas, con invalidación.
 - [ ] Frontend: pantallas del chofer.
 
-**Fases C y D**
+**Fase C y ataque cruzado**
 - [ ] Grafana Cloud: Alloy en un perfil de Compose, métricas de negocio y tres dashboards exportados.
 - [ ] `carga/estres.js` y `carga/carrera.js`; mediciones finales con tres corridas.
 - [ ] Ataque al grupo 8: validación, montos y operaciones costosas.
