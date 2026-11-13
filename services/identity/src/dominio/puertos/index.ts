@@ -34,7 +34,11 @@ export interface RepositorioSesiones {
    * `nuevo.creadoEn` es el momento de la rotación: contra él se mide el vencimiento del actual.
    */
   rotar(huellaActual: string, nuevo: Pick<RefreshGuardado, 'huella' | 'creadoEn' | 'expiraEn'>): Promise<ResultadoRotacion>;
-  /** Revoca todos los tokens de la familia, usados o no. Idempotente. */
+  /**
+   * Revoca todos los tokens de la familia, usados o no. Idempotente.
+   * No corre a la vez que un `rotar` de la misma familia: un token creado por una rotación en curso
+   * también queda revocado.
+   */
   revocarFamilia(familiaId: string, ahora: Date): Promise<void>;
 }
 

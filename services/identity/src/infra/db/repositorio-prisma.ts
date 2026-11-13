@@ -32,6 +32,14 @@ export class RepositorioUsuariosPrisma implements RepositorioUsuarios {
   }
 }
 
+/**
+ * Lock por familia, hasta el fin de la transacción. Lo toman la rotación y la revocación, así
+ * nunca corren a la vez sobre la misma sesión. Los locks de fila no alcanzan: una revocación que
+ * espera la fila del token en rotación no ve, al seguir, el token que esa rotación acaba de crear.
+ */
+const bloquearFamilia = (tx: Pick<PrismaClient, '$executeRaw'>, familiaId: string) =>
+  tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${familiaId}, 0))`;
+
 export class RepositorioSesionesPrisma implements RepositorioSesiones {
   constructor(private readonly prisma: PrismaClient) {}
 
@@ -44,6 +52,10 @@ export class RepositorioSesionesPrisma implements RepositorioSesiones {
     nuevo: Pick<RefreshGuardado, 'huella' | 'creadoEn' | 'expiraEn'>,
   ): Promise<ResultadoRotacion> {
     return this.prisma.$transaction(async (tx) => {
+      const previo = await tx.refreshToken.findUnique({ where: { huella: huellaActual }, select: { familiaId: true } });
+      if (!previo) return { resultado: 'invalido' };
+      // Orden fijo: primero la familia, después la fila del token.
+      await bloquearFamilia(tx, previo.familiaId);
       // UPDATE condicional y no "leer y después marcar": con dos pedidos simultáneos, el segundo
       // espera el lock de la fila, vuelve a evaluar el WHERE con used_at ya cargado y no actualiza nada.
       const { count } = await tx.refreshToken.updateMany({
@@ -64,6 +76,10 @@ export class RepositorioSesionesPrisma implements RepositorioSesiones {
   }
 
   async revocarFamilia(familiaId: string, ahora: Date): Promise<void> {
-    await this.prisma.refreshToken.updateMany({ where: { familiaId, revocadoEn: null }, data: { revocadoEn: ahora } });
+    await this.prisma.$transaction(async (tx) => {
+      // Con el lock tomado, el UPDATE ve todo lo que confirmaron las rotaciones anteriores.
+      await bloquearFamilia(tx, familiaId);
+      await tx.refreshToken.updateMany({ where: { familiaId, revocadoEn: null }, data: { revocadoEn: ahora } });
+    });
   }
 }

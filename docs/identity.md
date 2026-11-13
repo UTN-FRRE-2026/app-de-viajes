@@ -57,6 +57,7 @@ Toda respuesta que pasó por el contador trae `RateLimit-Limit`, `RateLimit-Rema
 - **Rotación.** Cada refresh sirve una sola vez. El plazo (`IDENTITY_REFRESH_TTL_SEGUNDOS`, 7 días por defecto) se renueva en cada rotación: es lo máximo que se puede estar sin usar la app.
 - **Detección de reuso.** Si llega un refresh ya usado, alguien tiene una copia. No se puede saber si es el dueño o el ladrón, así que se **revoca la familia entera** y los dos tienen que volver a hacer login. Las otras sesiones del usuario no se tocan.
 - **Atomicidad.** El token se marca como usado con un `UPDATE ... WHERE used_at IS NULL` dentro de la misma transacción que crea el siguiente. Con pedidos simultáneos con el mismo token, uno solo rota y el resto cuenta como reuso. Lo cubre el test de concurrencia.
+- **Rotación y revocación no se cruzan.** Las dos toman un lock por familia (`pg_advisory_xact_lock`) antes de tocar las filas. Sin él, una revocación que llega mientras se rota el token actual espera esa fila y, al seguir, no ve el token recién creado: quedaría vivo después de detectar el reuso. También lo cubre un test de concurrencia.
 - **Consecuencia para el cliente:** dos refresh en paralelo con el mismo token cierran la sesión. El cliente web tiene que serializarlos: un único refresh en curso, y el resto de los pedidos espera su resultado.
 - El access token nuevo toma el rol y el `fleetId` **actuales** del usuario, no los del login.
 - Sin límite de intentos: con 256 bits no hay fuerza bruta posible.
