@@ -1,5 +1,7 @@
 # Arquitectura: monorepo de microservicios
 
+> **En revisión (13/11/2026).** Este documento describe la arquitectura de microservicios del plan original. El enunciado del Integrador cambió y el [plan v2](../PLAN.md) propone un monolito modular; falta que la cátedra confirme si exige microservicios ([consultas](consultas-catedra.md)). Hasta entonces el código sigue como se describe acá.
+
 ## ¿Monorepo no es lo mismo que monolito?
 
 No. Son dos decisiones independientes:

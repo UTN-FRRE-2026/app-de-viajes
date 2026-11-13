@@ -5,9 +5,12 @@ Monorepo con npm workspaces: cada servicio es independiente (su propia base, su 
 
 Plan completo: [PLAN.md](PLAN.md). Decisiones: [docs/adr](docs/adr).
 
+> **Arquitectura en revisión (13/11/2026).** El enunciado del Integrador cambió. El plan v2 propone pasar a un solo backend modular, pero falta que la cátedra confirme si exige microservicios: ver [docs/consultas-catedra.md](docs/consultas-catedra.md). Este README describe el código tal como está hoy.
+
 Documentación:
 - [docs/arquitectura.md](docs/arquitectura.md): por qué es un monorepo de microservicios y no un monolito.
 - [docs/eventos.md](docs/eventos.md): RabbitMQ, outbox/inbox y el catálogo de eventos.
+- [docs/consultas-catedra.md](docs/consultas-catedra.md): preguntas pendientes para la cátedra y qué asumimos mientras tanto.
 - [docs/reparto.md](docs/reparto.md): quién hace qué (Ivan, Agos, Maxi), dependencias y reglas de colaboración.
 - [docs/identity.md](docs/identity.md): contrato de identity, usuarios de prueba y comandos para PowerShell.
 - [docs/repaso-problemas-centrales.html](docs/repaso-problemas-centrales.html): repaso de 6.3, 6.6 y la variante G con diagramas de tiempos (abrir en el navegador).
@@ -35,6 +38,8 @@ npm run lint
 npm run typecheck
 npm test                    # dominio en memoria + integración/concurrencia contra Postgres
 ```
+
+Si `npm test` falla con «No pude migrar la base de test», el volumen de Postgres es anterior a esa base: las bases se crean solo la primera vez que arranca el contenedor. Se arregla recreándolo con `docker compose down -v` y `npm run infra:up` (borra los datos locales). Y si falta un paquete, `npm install` otra vez: cada servicio nuevo suma dependencias.
 
 Solo los tests de dominio (sin Docker): `npm run test:dominio -w @viajes/dispatch` o `-w @viajes/identity`.
 
