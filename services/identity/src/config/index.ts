@@ -31,6 +31,8 @@ export const EsquemaConfig = z
     JWT_ISSUER: z.string().min(1),
     JWT_AUDIENCE: z.string().min(1),
     JWT_TTL_SEGUNDOS: z.coerce.number().int().min(60).max(3600).default(900),
+    // Cada rotación renueva el plazo: es lo máximo que se puede estar sin usar la app antes de volver a entrar.
+    IDENTITY_REFRESH_TTL_SEGUNDOS: z.coerce.number().int().min(900).max(2_592_000).default(604_800),
     IDENTITY_JWT_CLAVE_PRIVADA_B64: clavePrivadaRsa,
     // Los mínimos son el piso de OWASP para argon2id: se puede subir, no bajar.
     ARGON2_MEMORIA_KIB: z.coerce.number().int().min(19_456).default(19_456),

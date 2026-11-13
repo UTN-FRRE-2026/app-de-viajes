@@ -1,15 +1,11 @@
-import { normalizarEmail, type UsuarioPublico } from '../entidades/index.js';
+import { normalizarEmail } from '../entidades/index.js';
 import { CredencialesInvalidas } from '../errores/index.js';
-import type { TokenEmitido } from '../puertos/index.js';
 import type { DependenciasIdentidad } from './dependencias.js';
+import { armarSesion, vencimientoRefresh, type Sesion } from './sesion.js';
 
 export interface EntradaLogin {
   email: string;
   contrasena: string;
-}
-
-export interface Sesion extends TokenEmitido {
-  usuario: UsuarioPublico;
 }
 
 export function iniciarSesion(deps: DependenciasIdentidad) {
@@ -21,12 +17,16 @@ export function iniciarSesion(deps: DependenciasIdentidad) {
     }
     if (!(await deps.hasher.verificar(usuario.hashContrasena, contrasena))) throw new CredencialesInvalidas();
 
-    const token = await deps.emisor.emitir({
-      sub: usuario.id,
-      rol: usuario.rol,
-      // Solo `admin_flota` tiene flota: el resto de los tokens no lleva el claim.
-      ...(usuario.fleetId ? { fleetId: usuario.fleetId } : {}),
+    // Cada login abre una familia nueva: las sesiones de otros dispositivos no se tocan.
+    const ahora = deps.reloj.ahora();
+    const refresh = deps.refresh.nuevo();
+    await deps.sesiones.crear({
+      huella: refresh.huella,
+      usuarioId: usuario.id,
+      familiaId: deps.ids.nuevo(),
+      creadoEn: ahora,
+      expiraEn: vencimientoRefresh(deps, ahora),
     });
-    return { ...token, usuario: usuario.aPublico() };
+    return armarSesion(deps, usuario, refresh);
   };
 }

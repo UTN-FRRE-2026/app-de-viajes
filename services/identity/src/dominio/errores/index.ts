@@ -18,3 +18,10 @@ export class CredencialesInvalidas extends ErrorDeDominio {
     super('CREDENCIALES_INVALIDAS', 'NO_AUTENTICADO', 'Email o contraseña incorrectos');
   }
 }
+
+/** Mismo error si no existe, venció, fue revocado o se reusó: el cliente solo puede volver a hacer login. */
+export class RefreshInvalido extends ErrorDeDominio {
+  constructor() {
+    super('REFRESH_INVALIDO', 'NO_AUTENTICADO', 'La sesión no es válida. Volvé a iniciar sesión');
+  }
+}

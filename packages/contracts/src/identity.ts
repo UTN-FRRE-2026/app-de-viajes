@@ -24,3 +24,9 @@ export const LoginBody = z.strictObject({
   contrasena: z.string().min(1).max(CONTRASENA_MAX),
 });
 export type LoginBody = z.infer<typeof LoginBody>;
+
+// Opaco, no es un JWT: identity lo busca por su SHA-256. El máximo solo acota el body.
+export const RefreshBody = z.strictObject({
+  refreshToken: z.string().min(1).max(256),
+});
+export type RefreshBody = z.infer<typeof RefreshBody>;
