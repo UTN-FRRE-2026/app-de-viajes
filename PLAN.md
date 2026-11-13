@@ -26,9 +26,9 @@ El **TP Integrador** dejó de ser la plataforma distribuida de 9 módulos (M1–
 
 | Qué dice | Cómo lo tomamos |
 |---|---|
-| ProgIV 1.4 (y la copia en el Integrador): «el frontend no suma nota». La rúbrica del Integrador le da 5 puntos y Playwright (10) lo necesita. | Se hace un frontend **mínimo**, después del núcleo. |
-| ProgIV admite autocannon o k6; el Integrador pide k6. | **k6 para todo**: simulador de choferes, mediciones de 6.6 y escenarios de estrés. |
-| El Integrador cita `docs/ataque.md`, «sección 8» y «el cronograma de la sección 10», pero no trae esas secciones. | Siguen vigentes por ProgIV. La única fecha confirmada es la entrega final del 02/12/2026; el resto, **preguntar**. |
+| ProgIV 1.4 (y la copia en el Integrador): «el frontend no suma nota». La rúbrica del Integrador le da 5 puntos y Playwright (10) lo necesita. | Se hace un frontend **mínimo**, después del núcleo. La cátedra confirmó que alcanza: lo que importa es el backend y DevOps. |
+| ProgIV admite autocannon o k6; el Integrador pide k6. | **k6 para todo**: simulador de choferes, mediciones de 6.6 y escenarios de estrés. La cátedra confirmó que un escenario de k6 propio vale como simulador. |
+| El Integrador cita `docs/ataque.md`, «sección 8» y «el cronograma de la sección 10», pero no trae esas secciones. | Siguen vigentes por ProgIV: la cátedra confirmó que hay ataque cruzado. Las fechas se fueron corriendo y el plan no depende de ellas (sección 6). |
 | La sección 6 se titula «Comisión 1» y el resto del texto dice que viajes es de la Comisión 2. «17. Artefactos» es la sección 7. | Errores de tipeo. Somos el grupo 7 de la tabla de 6 (Stabile, Jara, Sanchez → variante G). |
 | La tabla de 6 tiene 8 grupos, pero 6.7 define una variante I para un «grupo 9». | Si existe el grupo 9, cambia el emparejamiento del ataque (hoy: atacamos al 8, nos ataca el 6). **Preguntar.** |
 | Ningún documento menciona microservicios, pero el profesor confirmó de palabra que exige tres como mínimo. | Se hacen tres (sección 2). Pedir la confirmación por escrito. |
@@ -38,7 +38,7 @@ El **TP Integrador** dejó de ser la plataforma distribuida de 9 módulos (M1–
 
 **Respuesta de la cátedra (verbal):** el sistema tiene que tener **como mínimo tres microservicios**, cada uno corriendo en **su propio contenedor**. Pueden compartir la base de datos. El monolito modular queda **descartado**: el profesor dijo expresamente que no lo quiere. Como ninguno de los dos enunciados lo dice, conviene pedirlo por escrito ([consulta 1](docs/consultas-catedra.md)).
 
-Nos quedamos en el mínimo: tres servicios. Somos tres y la entrega es el 02/12/2026.
+Nos quedamos en el mínimo: tres servicios. Somos tres y queda poco tiempo.
 
 | Servicio | Qué resuelve | Estado | Dueño |
 |---|---|---|---|
@@ -235,13 +235,20 @@ El ADR 0006 registra la decisión con sus alternativas reales: monolito modular 
 
 ### 5.1 Tres temas de las exposiciones (15)
 
-La cátedra publicó 20 temas. Elegimos los tres que ProgIV ya obliga a resolver, así no agregan trabajo:
+La cátedra confirmó que los temas **los elige el grupo, pueden ser cualquiera, y cada tema cuenta por separado**: una fila de la lista con dos temas vale por dos. «Idempotencia y deduplicación», que expusimos nosotros, son dos temas.
 
-| Tema (pregunta guía) | Dónde queda en el proyecto | Demostración |
+Declaramos tres que ProgIV ya obliga a resolver, así no agregan trabajo:
+
+| Tema | Dónde queda en el proyecto | Demostración |
 |---|---|---|
-| **Condiciones de carrera y control de concurrencia** («¿cómo impedir que dos procesos asignen el mismo recurso?») | Asignación única (6.3), **ya hecha**, y la carrera G | Test de 50 aceptaciones: 1 gana. Sacar el `FOR UPDATE` y ver cómo falla |
-| **Idempotencia y deduplicación** (nuestra exposición) | `Idempotency-Key` (3.5) | La misma petición dos veces y veinte en simultáneo: un solo efecto |
-| **Redis: caché y datos efímeros** (nuestra exposición; «¿qué datos conviene mantener en memoria y cómo evitar información obsoleta?») | Posiciones de choferes en Redis GEO con vencimiento (6.6); caché de tarifas y zonas con invalidación al editarlas | Chofer que deja de reportar y desaparece de la búsqueda; HIT, MISS e invalidación |
+| **Idempotencia** (nuestra exposición) | `Idempotency-Key` con la respuesta guardada (3.5) | La misma petición dos veces: un solo efecto y la misma respuesta. La misma clave con otro cuerpo: 422 |
+| **Deduplicación** (nuestra exposición) | `SET NX` en Redis para pedidos en vuelo; eventos de SSE con id y `Last-Event-ID` | Veinte pedidos iguales en simultáneo: uno se procesa y el resto se descarta. Reconexión sin eventos repetidos |
+| **Condiciones de carrera** («¿cómo impedir que dos procesos asignen el mismo recurso?») | Asignación única (6.3), **ya hecha**, y la carrera G | Test de 50 aceptaciones: 1 gana. Sacar el `FOR UPDATE` y ver cómo falla |
+
+Con el mismo trabajo quedan cubiertos tres más, que sirven de margen:
+- **Control de concurrencia**: bloqueo pesimista en la asignación y `UPDATE` condicional en el límite por flota.
+- **Redis: caché** de tarifas y zonas, con invalidación al editarlas (HIT, MISS e invalidación).
+- **Redis: datos efímeros**: posiciones de choferes en Redis GEO con vencimiento; el chofer que deja de reportar desaparece de la búsqueda.
 
 De reserva, también cubiertos por lo obligatorio:
 - **Monolito modular y microservicios**: la decisión de la sección 2 y el ADR 0006.
@@ -271,9 +278,9 @@ Evidencias: reporte HTML, trazas y capturas como artefactos del CI y en `docs/ev
 
 ### 5.4 CI y SAST (10)
 
-Jobs: `verificar` (typecheck, lint, tests; ya existe), `e2e` (compose, `setup`, Playwright, sube el reporte), `sast` (Semgrep con reglas de JavaScript, TypeScript, Node y OWASP; sube SARIF) y `npm audit`. Los cuatro son obligatorios para mergear.
+Jobs: `verificar` (typecheck, lint, tests; ya existe), `e2e` (compose, `setup`, Playwright, sube el reporte), `sast` (Codacy o SonarCloud; si no se puede, Semgrep) y `npm audit`. Los cuatro son obligatorios para mergear.
 
-Se usa **Semgrep** y no CodeQL porque el repositorio es privado y CodeQL en privados necesita GitHub Advanced Security.
+En clase se vieron **Codacy y SonarCloud**, así que es lo primero que se prueba. Falta verificar si sus planes gratuitos aceptan nuestro repositorio privado. Si no, se usa Semgrep, que corre en GitHub Actions sin depender de un servicio externo. CodeQL queda afuera: en repositorios privados necesita GitHub Advanced Security.
 
 ### 5.5 k6 (10)
 
@@ -299,11 +306,9 @@ Dos detalles: el simulador necesita 500 tokens y el límite de login por IP (30 
 
 ## 6. Hoja de ruta
 
-**Única fecha confirmada: entrega final el 02/12/2026.** Los controles, el congelamiento, el ataque cruzado y la defensa no tienen fecha confirmada ([consulta 5](docs/consultas-catedra.md)); tampoco la entrega y el coloquio del Integrador (consulta 4). Todo el trabajo se planifica para terminar el 02/12. Las fechas de corte de las fases son **metas internas del grupo**, no fechas de la cátedra, y se reacomodan cuando la cátedra confirme las suyas.
+**Las fases van por orden, no por fecha.** El cronograma de la cátedra se fue corriendo durante la cursada y puede volver a cambiar, así que este plan no depende de ninguna fecha. La última entrega final informada fue el 02/12/2026 y sirve solo de referencia. Cuando la cátedra fije una fecha, se ve en qué fase estamos y se recorta según el orden del final de esta sección.
 
-Del 13/11 al 02/12 quedan 19 días. No alcanza para todo con holgura: el orden de recorte del final de esta sección es parte del plan.
-
-### Fase A — meta interna 18/11: «problema difícil»
+### Fase A — «problema difícil»
 
 Es lo que pide el Control 3: carrera principal con su test (ya está) y tarea pesada en dos versiones con la primera medición.
 
@@ -316,7 +321,7 @@ Es lo que pide el Control 3: carrera principal con su test (ya está) y tarea pe
 - [ ] flotas en dispatch: choferes, vehículos, flotas y la carrera G con su test (Agos).
 - [ ] ADR 0001, 0002, 0003, 0005 y 0006; 0004 con el formato corregido.
 
-### Fase B — meta interna 25/11: sistema completo y publicado
+### Fase B — sistema completo y publicado
 
 Al cerrar esta fase el sistema tiene que poder congelarse para el ataque cruzado, cuando la cátedra lo fije.
 
@@ -331,24 +336,24 @@ Al cerrar esta fase el sistema tiene que poder congelarse para el ataque cruzado
 - [ ] `modelo.md`, `api.md`, tabla de roles, colección de la demo y usuarios de prueba.
 - [ ] Despliegue accesible para el grupo atacante y tag `congelado`.
 
-### Fase C — del 25/11 a la entrega del 02/12: rúbrica del Integrador y cierre
+### Fase C — rúbrica del Integrador y cierre
 
 - [ ] Playwright y job `e2e` (Agos, Ivan).
 - [ ] Job `sast` y corrección de lo que encuentre (Ivan).
 - [ ] Grafana Cloud y dashboards; `estres.js` y `carrera.js` (Maxi).
 - [ ] Mediciones finales, tres corridas por escenario, con conclusión (Maxi).
 - [ ] ADR restantes: 0007 SSE, 0008 búsqueda geográfica, 0009 límite por flota, 0010 idempotencia, 0011 vencimiento de ofertas, 0012 inventario de carreras.
-- [ ] Autoevaluación de ProgIV 10.6 completa, clon limpio en otra máquina y tag `entrega-final` **el 02/12** (Ivan).
+- [ ] Autoevaluación de ProgIV 10.6 completa, clon limpio en otra máquina y tag `entrega-final` (Ivan).
 
-### Ataque cruzado — fecha a confirmar
+### Ataque cruzado — cuando lo fije la cátedra
 
 Se hace cuando la cátedra lo fije; el entorno publicado no se toca durante esa semana.
 - [ ] Bitácora del ataque en `docs/ataque.md`: Agos (autenticación, acceso a recursos ajenos, rate limit), Ivan (carreras e idempotencia), Maxi (validación, montos, operaciones costosas).
 - [ ] Hallazgos recibidos: causa raíz, commit y un test que falla antes y pasa después (el dueño del módulo).
 
-Si la cátedra lo ubica antes del 02/12, desplaza trabajo de la Fase C y se recorta según el orden de abajo. Si queda después de la entrega, hay que preguntar cómo entran las correcciones, porque lo posterior al tag `entrega-final` no se corrige.
+Si cae antes de terminar la Fase C, desplaza ese trabajo y se recorta según el orden de abajo.
 
-### Defensa de ProgIV y coloquio del Integrador — fechas a confirmar
+### Defensa de ProgIV y coloquio del Integrador
 
 Cada dueño le explica su parte a los otros dos. Ensayar los cuatro tipos de pregunta de ProgIV 9.2 (predicción, diagnóstico, modificación en vivo, justificación de un ADR) y, para el Integrador, interpretar en vivo el pipeline, k6 y los dashboards.
 
@@ -370,4 +375,4 @@ Cada dueño le explica su parte a los otros dos. Ensayar los cuatro tipos de pre
 
 ## 8. Preguntas para la cátedra
 
-Están en [docs/consultas-catedra.md](docs/consultas-catedra.md), con lo que asumimos mientras tanto y el lugar para anotar cada respuesta. La primera (microservicios) ya está respondida; ninguna de las que quedan frena trabajo.
+Están en [docs/consultas-catedra.md](docs/consultas-catedra.md), con lo que asumimos mientras tanto y el lugar para anotar cada respuesta. Casi todas están respondidas. Quedan abiertas el emparejamiento del ataque cruzado y el acceso a Grafana Cloud; ninguna frena trabajo.

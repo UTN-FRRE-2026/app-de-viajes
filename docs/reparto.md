@@ -1,14 +1,14 @@
 # Reparto del desarrollo — Ivan, Agos y Maxi
 
-Actualizado el 13/11/2026 para el [plan v2](../PLAN.md) (tres microservicios y rúbrica nueva del Integrador). Las fases están en la sección 6 del plan. La única fecha confirmada es la **entrega final del 02/12/2026**; los cortes de fase son metas internas.
+Actualizado el 13/11/2026 para el [plan v2](../PLAN.md) (tres microservicios y rúbrica nueva del Integrador). Las fases están en la sección 6 del plan. Las fases van por orden y no dependen de fechas: el cronograma de la cátedra se fue corriendo.
 
 Cada integrante es **dueño** de un problema central y de los módulos que lo rodean. Ser dueño no es trabajar solo: la defensa y el coloquio son **individuales** y cualquiera puede tener que explicar cualquier parte.
 
 | | Problema central | Módulos y transversales | Rúbrica del Integrador | ADR |
 |---|---|---|---|---|
-| **Ivan** | 6.3 Asignación única | dispatch (viajes), idempotencia, tiempo real (SSE), Compose y nginx, despliegue | CI + SAST; temas «condiciones de carrera» e «idempotencia y deduplicación» | 0001, 0004 ✅, 0006, 0011, 0012 |
+| **Ivan** | 6.3 Asignación única | dispatch (viajes), idempotencia, tiempo real (SSE), Compose y nginx, despliegue | CI + SAST; temas «idempotencia», «deduplicación» y «condiciones de carrera» | 0001, 0004 ✅, 0006, 0011, 0012 |
 | **Agos** | Variante G: flotas y zonas | identity, flotas (dentro de dispatch), seguridad transversal, base del frontend | Playwright; frontend | 0002, 0003, 0007, 0009 |
-| **Maxi** | 6.6 Tarea pesada | location, tarifas (dentro de dispatch), métricas | k6; Grafana Cloud; tema «Redis: caché y datos efímeros» | 0005, 0008, 0010 |
+| **Maxi** | 6.6 Tarea pesada | location, tarifas (dentro de dispatch), métricas | k6; Grafana Cloud; temas de margen «Redis: caché» y «datos efímeros» | 0005, 0008, 0010 |
 
 ## Ivan
 
