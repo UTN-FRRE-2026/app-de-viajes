@@ -1,8 +1,8 @@
 # Plan v2 — Plataforma de viajes (Grupo 7 · Variante G: Flotas y zonas operativas)
 
-Reescrito el 13/11/2026. Reemplaza al plan de microservicios del 21/10 (queda en el historial de Git).
+Reescrito el 13/11/2026. Reemplaza al plan de nueve microservicios del 21/10 (queda en el historial de Git).
 
-> **Pendiente de confirmar con la cátedra** si el Integrador exige microservicios. Las preguntas y lo que asumimos mientras tanto están en [docs/consultas-catedra.md](docs/consultas-catedra.md). Hasta tener esa respuesta, el código sigue como está (dos servicios: `identity` y `dispatch`) y no se consolida.
+> **La cátedra confirmó de palabra que exige como mínimo tres microservicios, cada uno en su contenedor.** El monolito modular que proponía la primera versión de este plan quedó descartado. La arquitectura es `identity`, `dispatch` y `location` (sección 2). Las demás consultas siguen abiertas en [docs/consultas-catedra.md](docs/consultas-catedra.md).
 
 ## 1. Qué cambió
 
@@ -18,6 +18,8 @@ El **TP Integrador** dejó de ser la plataforma distribuida de 9 módulos (M1–
 
 **Ya no se exige:** los 9 módulos, un contrato OpenAPI por módulo, RabbitMQ, una base por servicio, imágenes OCI con semver, integración con módulos de otros grupos y la matriz de trazabilidad.
 
+**Se sigue exigiendo, aunque el documento no lo diga:** un mínimo de tres microservicios, cada uno en su contenedor (confirmado de palabra por la cátedra).
+
 **Se suma:** frontend con framework (antes era opcional), Playwright, SAST en el CI, k6, Grafana Cloud y tres temas de las exposiciones.
 
 ### Inconsistencias entre los documentos (cómo las resolvemos)
@@ -29,43 +31,73 @@ El **TP Integrador** dejó de ser la plataforma distribuida de 9 módulos (M1–
 | El Integrador cita `docs/ataque.md`, «sección 8» y «el cronograma de la sección 10», pero no trae esas secciones. | Siguen vigentes por ProgIV. La única fecha confirmada es la entrega final del 02/12/2026; el resto, **preguntar**. |
 | La sección 6 se titula «Comisión 1» y el resto del texto dice que viajes es de la Comisión 2. «17. Artefactos» es la sección 7. | Errores de tipeo. Somos el grupo 7 de la tabla de 6 (Stabile, Jara, Sanchez → variante G). |
 | La tabla de 6 tiene 8 grupos, pero 6.7 define una variante I para un «grupo 9». | Si existe el grupo 9, cambia el emparejamiento del ataque (hoy: atacamos al 8, nos ataca el 6). **Preguntar.** |
+| Ningún documento menciona microservicios, pero el profesor confirmó de palabra que exige tres como mínimo. | Se hacen tres (sección 2). Pedir la confirmación por escrito. |
 | El Integrador dice «versión preliminar». | Puede cambiar otra vez: la rúbrica se implementa en capas que no tocan el núcleo. |
 
-## 2. Decisión: monolito modular
+## 2. Decisión: tres microservicios
 
-**Un solo backend Express** (`services/api`), con módulos internos, **una base Postgres** y Redis. Sin RabbitMQ, sin gateway y sin servicio de tiempo real aparte.
+**Respuesta de la cátedra (verbal):** el sistema tiene que tener **como mínimo tres microservicios**, cada uno corriendo en **su propio contenedor**. Pueden compartir la base de datos. El monolito modular queda **descartado**: el profesor dijo expresamente que no lo quiere. Como ninguno de los dos enunciados lo dice, conviene pedirlo por escrito ([consulta 1](docs/consultas-catedra.md)).
 
-Por qué:
-- Ningún enunciado pide ya microservicios. ProgIV pide «un solo sistema», «levantar el servidor» y «un único archivo de composición».
-- El problema central (6.3) bloquea viaje y chofer en **una transacción**. Con todo en una base desaparecen el outbox/inbox, las proyecciones y los consumidores idempotentes que solo existían para coordinar servicios.
-- El CI tiene que levantar el sistema completo para Playwright, y la cátedra lo levanta desde un clon limpio.
-- Somos tres y la entrega final es el 02/12/2026.
+Nos quedamos en el mínimo: tres servicios. Somos tres y la entrega es el 02/12/2026.
 
-Queda registrado en un ADR nuevo (0006) que marca como reemplazada la decisión de microservicios: es un ADR con una alternativa descartada de verdad.
+| Servicio | Qué resuelve | Estado | Dueño |
+|---|---|---|---|
+| **identity** (3001) | Registro, login, JWT RS256, refresh, roles, JWKS | Hecho en su mayor parte | Agos |
+| **dispatch** (3005) | **viajes:** solicitud, ofertas, asignación única (6.3), estados, historial, tiempo real. **flotas:** choferes, vehículos, flotas, zonas y límite (variante G). **tarifas:** tarifa y cobro simulado | Viajes parcial; flotas y tarifas faltan | Ivan (viajes), Agos (flotas), Maxi (tarifas) |
+| **location** (3004) | Pings de ubicación, búsqueda de candidatos, tarea pesada (6.6), retención | Falta | Maxi |
+
+Por qué estos límites:
+- **identity y dispatch ya existen como servicios separados**, con su contenedor, su base y sus tests en el CI. No se mueve código: la consolidación en `services/api` queda cancelada.
+- **location es el tercero porque es la tarea pesada.** 500 choferes mandan 250 pings por segundo; en un proceso propio no le sacan event loop a la asignación de viajes. Es un argumento que se mide: el lag de dispatch con el simulador corriendo.
+- **flotas y tarifas quedan dentro de dispatch** porque comparten transacción con el viaje. El filtro de candidatos por flota y zona, la liberación del chofer y el cobro al finalizar se resuelven en una sola base. Separarlos obligaría a transacciones distribuidas que nadie pide.
+
+### Bases de datos
+
+La cátedra permite compartir la base. Mantenemos lo que ya está construido: **un contenedor Postgres con una base y un usuario por servicio** (`identity`, `dispatch`; se agrega `location`). No cuesta trabajo nuevo y evita el acoplamiento por datos: ningún servicio lee tablas de otro.
+
+### Cómo se comunican
+
+| De → a | Mecanismo | Para qué |
+|---|---|---|
+| dispatch y location → identity | JWKS (`/.well-known/jwks.json`), **ya hecho** | Verificar el token sin llamar a identity en cada pedido |
+| dispatch → location | HTTP interno `GET /interno/candidatos`, con timeout y token de servicio | Choferes cercanos al origen |
+| location → dispatch | Redis Pub/Sub, un canal por chofer | Posición en vivo para el seguimiento |
+| dispatch → web | SSE | Estados del viaje y posición del chofer |
+
+- **Sin RabbitMQ.** Nadie lo exige y ningún código lo usa: sale del Compose. La tabla `outbox` se conserva en dispatch como fuente de los eventos de tiempo real.
+- **Candidatos:** location devuelve los choferes más cercanos, ordenados por distancia. dispatch los filtra en su propia base: habilitado, disponible, sin viaje activo y de una flota con la zona del origen habilitada. Así location no necesita saber nada de flotas ni de viajes. Si el filtro deja pocos, se pide un lote más grande; va en el ADR 0008.
+- **Si location no responde** dentro del timeout, la solicitud devuelve 503 y no crea el viaje (falla cerrado).
+- **Si identity se cae,** dispatch y location siguen verificando tokens con las claves que tienen en caché.
+- **`fleetId`:** identity lo guarda sin clave foránea (la flota vive en dispatch) y lo pone en el token del `admin_flota`. dispatch valida que la flota exista cuando se usa.
+
+### Punto de entrada
+
+Un contenedor **web** (nginx) sirve el frontend y hace de reverse proxy: `/api/identity/`, `/api/viajes/` y `/api/ubicacion/`. Es el único puerto que se publica al grupo atacante.
+- `/interno/*` y `/metrics` no pasan por nginx.
+- SSE necesita `proxy_buffering off`.
+- Los servicios tienen que confiar en el `X-Forwarded-For` de nginx (`trust proxy`), o el límite de tasa por IP vería una sola IP.
 
 ```
- Web React (apps/web) ── REST + SSE ──▶ api (Express 5, services/api)
-                                         ├─ identidad   registro, login, JWT, roles
-                                         ├─ flotas      choferes, vehículos, flotas, zonas, límite (variante G)
-                                         ├─ ubicacion   pings, búsqueda de candidatos, seguimiento (6.6)
-                                         ├─ viajes      solicitud, ofertas, asignación única (6.3), estados, historial
-                                         └─ tarifas     tarifa, cobro simulado
-                                        Postgres + PostGIS (una base) · Redis (GEO, idempotencia, rate limit, pub/sub)
- k6 (carga/) ──▶ api      Playwright (e2e/) ──▶ web      Grafana Alloy ──▶ Grafana Cloud (opcional, por perfil)
+ Navegador ──▶ web (nginx: React + reverse proxy) ─┬─▶ identity  (3001) ── base identity
+                                                   ├─▶ dispatch  (3005) ── base dispatch (PostGIS)
+                                                   └─▶ location  (3004) ── base location · Redis GEO
+ dispatch ── HTTP interno ──▶ location        location ── Redis Pub/Sub ──▶ dispatch ── SSE ──▶ navegador
+ dispatch, location ── JWKS ──▶ identity      Redis: GEO, idempotencia, rate limit, caché, pub/sub
+ k6 (carga/) ──▶ servicios     Playwright (e2e/) ──▶ web     Grafana Alloy ──▶ Grafana Cloud (opcional, por perfil)
 ```
+
+Contenedores del Compose: `postgres`, `redis`, `identity`, `dispatch`, `location`, `web` y, con el perfil `obs`, `alloy`.
 
 ### Estructura objetivo
 
 ```
 packages/kernel · platform · contracts      se conservan
-services/api/
-  prisma/schema.prisma + migrations/        una sola base
-  src/modulos/<modulo>/dominio/             entidades, casos de uso, puertos, errores
-  src/modulos/<modulo>/infra/               http, db, memoria, externos
-  src/modulos/<modulo>/index.ts             lo único que otro módulo puede importar
-  src/config/ · src/composicion.ts · src/servidor.ts
+services/identity/                          como está
+services/dispatch/                          viajes (como está) + flotas + tarifas
+services/location/                          nuevo, con la misma forma que los otros dos
+  prisma/ · src/dominio/ · src/infra/ · src/config/ · src/composicion.ts · src/servidor.ts
   tests/{dominio,integracion,seguridad,concurrencia}/
-apps/web/            React + Vite + Zustand
+apps/web/            React + Vite + Zustand, servido por nginx
 e2e/                 Playwright
 carga/               k6: simulador de choferes, carga y estrés
 observabilidad/      configuración de Alloy y dashboards exportados (JSON)
@@ -73,29 +105,31 @@ demo/                colección de requests de la demo
 docs/                adr/, modelo.md, api.md, mediciones.md, ataque.md, evidencias/
 ```
 
-ESLint: `src/modulos/*/dominio/**` no importa infraestructura (regla actual, con el glob nuevo) y un módulo no importa el interior de otro, solo su `index.ts`.
+Dentro de dispatch, flotas y tarifas respetan las mismas capas (`dominio/`, `infra/`), con una subcarpeta por módulo donde haga falta. La regla de ESLint que impide al dominio importar infraestructura no cambia.
 
 ### Qué pasa con lo que ya está hecho
 
 | Hoy | Destino | Trabajo |
 |---|---|---|
-| `packages/kernel`, `platform`, `contracts` | Igual | Sumar a `platform`: helmet, CORS, rate limit genérico, log por pedido, métricas, idempotencia, validación de encabezados |
-| `services/dispatch` (dominio, repositorio, 63 tests) | `modulos/viajes` | `git mv`. `SolicitudViaje` pasa a ser el viaje completo (ver 3.1) |
-| `services/identity` (registro, login, argon2id, RS256, límite de login, seed) | `modulos/identidad` | `git mv`. El token se verifica con la clave pública local (`verificadorJwksLocal` ya existe); `fleet_id` gana su FK |
-| Refresh con rotación y detección de reuso (PR #3, mergeado) | `modulos/identidad` | Se mueve con el resto de identity |
-| Tabla `outbox` | Se conserva | Es la fuente de los eventos de tiempo real; ya no hay relay a RabbitMQ ni inbox |
-| Barrido de ofertas vencidas | Se conserva tal cual | No hace falta BullMQ: el vencimiento ya no depende del cliente |
-| `docker-compose.yml`, `infra/postgres/init` | Simplificar | Fuera `rabbitmq`, `dispatch` e `identity`; entra `api`. Bases `viajes` y `viajes_test`, con un usuario que no es superusuario |
-| `Dockerfile` genérico | Igual | `SERVICE=api` |
-| CI (typecheck, lint, tests, audit) | Ampliar | Jobs de E2E y SAST |
-| ADR 0004 | Ajustar formato | Le faltan «quiénes participaron» y «qué nos haría cambiar de decisión»; sacar las menciones a M5 y a eventos |
-| `docs/arquitectura.md`, `docs/eventos.md`, README | Reescribir | Describen microservicios |
+| `packages/kernel`, `platform`, `contracts` | Igual | Sumar a `platform`: helmet, CORS, rate limit genérico, log por pedido, métricas, idempotencia, validación de encabezados y cliente HTTP interno con timeout. Sumar a `contracts` el contrato de location |
+| `services/identity` (registro, login, refresh, argon2id, RS256, JWKS, seed) | Igual | Logout y revocación |
+| `services/dispatch` (dominio, repositorio, 63 tests) | Igual | `SolicitudViaje` pasa a ser el viaje completo (ver 3.1); se agregan flotas y tarifas |
+| Verificación de tokens por JWKS | Igual | La usa también location |
+| Tabla `outbox` | Se conserva | Fuente de los eventos de tiempo real; sin relay a RabbitMQ ni inbox |
+| Barrido de ofertas vencidas | Se conserva tal cual | No hace falta BullMQ |
+| `docker-compose.yml`, `infra/postgres/init` | Ajustar | Fuera `rabbitmq`; entran `location` y `web`; base y usuario `location` |
+| `Dockerfile` genérico | Igual | `SERVICE=location` |
+| CI (typecheck, lint, tests, audit) | Ampliar | Base de test de location; jobs de E2E y SAST |
+| ADR 0004 | Ajustar formato | Le faltan «quiénes participaron» y «qué nos haría cambiar de decisión»; sacar las menciones a M5 |
+| `docs/arquitectura.md`, `docs/eventos.md`, README | Actualizar | Describen nueve servicios y RabbitMQ |
 
-**Se descarta del plan anterior:** passengers (M2), notifications con PDF y tickets (M8), reservations (M9: los viajes programados son la variante B, no la nuestra), gateway, realtime como servicio, QR de un solo uso, reintegros y liquidación, JWKS remoto, denylist de `jti`, RabbitMQ, BullMQ, PWA instalable, imágenes en GHCR y `trazabilidad.md`.
+El ADR 0006 registra la decisión con sus alternativas reales: monolito modular (descartado por la cátedra), los nueve servicios del plan original (descartados por tiempo) y otros límites posibles, como flotas dentro de identity.
 
-## 3. Diseño por módulo
+**Se descarta del plan original:** los servicios separados de drivers, trips y payments (quedan dentro de dispatch) y passengers (M2: el pasajero es un usuario de identity), notifications con PDF y tickets (M8), reservations (M9: los viajes programados son la variante B, no la nuestra), realtime como servicio, el gateway propio (lo reemplaza nginx), QR de un solo uso, reintegros y liquidación, denylist de `jti`, RabbitMQ con inbox, BullMQ, PWA instalable, imágenes en GHCR y `trazabilidad.md`.
 
-### 3.1 viajes — asignación única (6.3) y ciclo de vida
+## 3. Diseño por servicio y módulo
+
+### 3.1 dispatch · viajes — asignación única (6.3) y ciclo de vida
 
 - Una sola entidad con toda la máquina de estados, en la misma fila que ya se bloquea:
 
@@ -115,9 +149,9 @@ ESLint: `src/modulos/*/dominio/**` no importa infraestructura (regla actual, con
 - Mecanismo de asignación, sin cambios: `FOR UPDATE` de la solicitud, después la reserva única del chofer, siempre en ese orden.
 - Un test por cada transición válida y por cada inválida.
 - Historial por pasajero y por chofer, y panel del operador con viajes en curso. El panel lleva una **búsqueda por texto**, que es donde va el test de inyección SQL.
-- Candidatos: el puerto `BuscadorCandidatos` pasa de la lista fija a `ubicacion`, filtrado por la zona del origen y las flotas habilitadas.
+- Candidatos: el puerto `BuscadorCandidatos` pasa de la lista fija a un adaptador HTTP contra location, con timeout. El resultado se filtra en dispatch por disponibilidad, zona del origen y flotas habilitadas (sección 2).
 
-### 3.2 ubicacion — tarea pesada (6.6) y búsqueda geográfica (6.4)
+### 3.2 location — tarea pesada (6.6) y búsqueda geográfica (6.4)
 
 - **Ingenua** (`UBICACION_ESTRATEGIA=ingenua`): un `INSERT` por ping, y la búsqueda trae todos los choferes y calcula haversine en JavaScript, de forma sincrónica.
 - **Final** (`optimizada`, cambia solo en `composicion.ts`):
@@ -127,10 +161,11 @@ ESLint: `src/modulos/*/dominio/**` no importa infraestructura (regla actual, con
   - De las cuatro estrategias de 3.3 es la **cola**, más un índice geográfico. Va en el ADR 0005.
 - El ADR 0008 compara Redis GEO, PostGIS y geohash (6.4 pide al menos dos opciones con su costo).
 - Retención: puntos crudos solo durante el viaje, conservados 30 días; pings de choferes sin viaje, descartados a las 24 h.
-- Seguimiento: la posición del chofer solo la ve su pasajero actual, y la del pasajero solo su chofer asignado. Con test.
+- Seguimiento: location publica cada posición en un canal de Redis por chofer. dispatch es quien sabe qué viaje tiene cada chofer, así que la regla de privacidad se aplica ahí: la posición del chofer solo la ve su pasajero actual, y la del pasajero solo su chofer asignado. Con test.
+- `GET /interno/candidatos` solo acepta el token de servicio y no se publica por nginx.
 - Tiempo declarado hasta la asignación bajo carga: lo fija el grupo **antes** de medir y va como hipótesis.
 
-### 3.3 flotas — variante G
+### 3.3 dispatch · flotas — variante G
 
 - Choferes con vehículo y habilitación que otorga el admin. Disponible / no disponible.
 - Flotas con `admin_flota`. El `fleetId` sale del token y se filtra **en el caso de uso**. Pedir algo de otra flota devuelve 404, con test.
@@ -138,7 +173,7 @@ ESLint: `src/modulos/*/dominio/**` no importa infraestructura (regla actual, con
 - **Carrera G:** `UPDATE fleets SET active_count = active_count + 1 WHERE id = $1 AND active_count < max_active RETURNING ...`, más `CHECK (active_count <= max_active)`. Test: 50 activaciones simultáneas con límite 10 dejan exactamente 10.
 - Reporte por flota: choferes activos, viajes y facturación.
 
-### 3.4 tarifas
+### 3.4 dispatch · tarifas
 
 - Una sola función para la estimación y la tarifa final, en **centavos enteros**. Se guarda por qué difieren.
 - Tests de borde: distancia cero y viaje que supera el máximo.
@@ -151,10 +186,11 @@ ESLint: `src/modulos/*/dominio/**` no importa infraestructura (regla actual, con
   - `SET NX` en Redis mientras el pedido está en vuelo; el duplicado concurrente recibe 409;
   - registro en Postgres **en la misma transacción que el efecto**, con hash del cuerpo y la respuesta;
   - el reintento recibe la respuesta guardada; la misma clave con otro cuerpo, 422.
+  - El middleware va en `platform`; cada servicio guarda los registros en su propia base.
   - Hoy no existe en ningún endpoint.
-- **Tiempo real por SSE**, en el mismo proceso:
+- **Tiempo real por SSE**, en dispatch:
   - un relay lee el `outbox` y publica en Redis Pub/Sub; el endpoint SSE se suscribe solo a los viajes del usuario;
-  - los pings de un chofer con viaje activo se publican en el canal de ese viaje;
+  - mientras el viaje está activo, el endpoint se suscribe también al canal de posición del chofer asignado, que publica location;
   - al reconectar, el cliente pide el estado actual (`GET /viajes/:id`) y se vuelve a suscribir con `Last-Event-ID`.
 - **Inventario de carreras** (bloque 6, punto 1), en un ADR: aceptar contra aceptar, aceptar contra cancelar, chofer con dos viajes, pasajero con dos solicitudes, vencimiento contra aceptación, activación de choferes, email duplicado en el registro, clave de idempotencia duplicada y doble finalización con doble cobro.
 
@@ -164,18 +200,18 @@ ESLint: `src/modulos/*/dominio/**` no importa infraestructura (regla actual, con
 
 | Requisito | Estado | Qué falta |
 |---|---|---|
-| **B1** Arranque reproducible | 🟡 | La secuencia de 2.4 **hoy falla**: `.env.example` trae vacía la clave RS256 y hay que migrar a mano. Faltan `npm run setup`, `dev` y `start` en la raíz. `setup` genera la clave si no existe y tiene que andar en Windows y Linux (script de Node, no bash) |
-| **B2** Hexagonal | ✅ | Mantenerlo en cada módulo nuevo. Puertos con doble adaptador: mapas, pagos, notificador, publicador de eventos |
+| **B1** Arranque reproducible | 🟡 | La secuencia de 2.4 **hoy falla**: `.env.example` trae vacía la clave RS256 y hay que migrar a mano. Faltan `npm run setup`, `dev` y `start` en la raíz. `setup` migra las tres bases, genera la clave si no existe y tiene que andar en Windows y Linux (script de Node, no bash) |
+| **B2** Hexagonal | ✅ | Mantenerlo en location y en los módulos nuevos de dispatch. Puertos con doble adaptador: mapas, pagos, notificador, publicador de eventos |
 | **B3** Configuración y ciclo de vida | ✅ | Preparar la demo de SIGTERM con un pedido lento |
 | **B4** Errores y logs | 🟡 | No hay **log por pedido** (método, ruta, estado, duración): hoy solo se loguean los errores, y no se puede relacionar pedido y error por `requestId` |
 | **B5** Autenticación | ✅ | argon2id con costo declarado, RS256 |
-| **B5** Autorización por recurso | 🟡 | Hecha y testeada en viajes. Falta en flotas, ubicación e historial |
+| **B5** Autorización por recurso | 🟡 | Hecha y testeada en viajes. Falta en flotas, location e historial |
 | **B5** Tres roles con tabla en el README | 🟡 | Hay cinco roles en código; falta la tabla |
 | **B5** Validación con esquema | 🟡 | Cuerpo, parámetros y query sí. Falta validar **encabezados** (`Idempotency-Key`) |
 | **B5** Prototype pollution | 🟡 | Solo se prueba `__proto__` en la raíz. Falta `constructor.prototype` y posiciones anidadas |
 | **B5** Inyección SQL | 🟡 | Consultas parametrizadas sí. Falta el test con una carga típica en un campo de búsqueda |
 | **B5** Límite de tasa | 🟡 | Solo en login. Falta en solicitud de viaje y ubicación, con 429 y encabezados |
-| **B5** Helmet y CORS | ⬜ | Estaban pensados para el gateway: van en `crearApp` |
+| **B5** Helmet y CORS | ⬜ | Estaban pensados para el gateway: van en `crearApp` de `platform`, así los heredan los tres servicios. Detrás de nginx el frontend queda en el mismo origen |
 | **B5** `npm audit` | ✅ | En el CI |
 | **B6** ADR de carreras + test de 50 | ✅ | Falta el inventario completo (3.5) |
 | **B6** Idempotencia | ⬜ | 3.5 |
@@ -208,10 +244,12 @@ La cátedra publicó 20 temas. Elegimos los tres que ProgIV ya obliga a resolver
 | **Redis: caché y datos efímeros** (nuestra exposición; «¿qué datos conviene mantener en memoria y cómo evitar información obsoleta?») | Posiciones de choferes en Redis GEO con vencimiento (6.6); caché de tarifas y zonas con invalidación al editarlas | Chofer que deja de reportar y desaparece de la búsqueda; HIT, MISS e invalidación |
 
 De reserva, también cubiertos por lo obligatorio:
-- **OAuth 2.0/OIDC, JWT y autorización**: JWT RS256 y autorización por recurso ya están; no hay OAuth ni OIDC.
-- **Docker Compose**: ya se usa, pero el tema dice «sistema distribuido» y tenemos un solo backend.
+- **Monolito modular y microservicios**: la decisión de la sección 2 y el ADR 0006.
+- **OAuth 2.0/OIDC, JWT y autorización entre servicios**: JWT RS256 verificado por JWKS en dispatch y location, y token de servicio para las rutas internas; no hay OAuth ni OIDC.
+- **Docker Compose para un sistema distribuido**: tres servicios, nginx, Postgres y Redis con healthchecks y orden de arranque.
+- **API Gateway y reverse proxy**: nginx como punto de entrada único.
+- **Publicación/suscripción y eventos**: Redis Pub/Sub entre location y dispatch, y hacia el SSE.
 - **Bulkhead, rate limiting y backpressure**: solo tendríamos el rate limiting.
-- **Publicación/suscripción y eventos**: Redis Pub/Sub alimenta el SSE.
 - **Logs, métricas y trazas**: se superpone con el ítem de Grafana Cloud; no conviene contarlo dos veces.
 
 Quedó afuera circuit breaker: ya no hace falta como tema. Los adaptadores de mapas y pagos llevan igual timeout y fallan cerrado (ProgIV 3.7).
@@ -247,13 +285,15 @@ En `carga/`, corriendo con la imagen `grafana/k6`:
 
 Cada escenario tiene umbrales, tres corridas de 30 s o más, y los resúmenes van a `docs/mediciones.md`, con hipótesis escrita antes.
 
+El simulador le pega a location directamente, no a través de nginx. Mientras corre, se registra el lag del event loop de **dispatch**: es la evidencia de que separar location protege la asignación.
+
 Dos detalles: el simulador necesita 500 tokens y el límite de login por IP (30 cada 15 minutos) lo bloquearía, así que el seed de carga los emite o se sube el límite en ese entorno. Y `/health` se mide en paralelo, como pide el bloque 7.
 
 ### 5.6 Grafana Cloud (10)
 
-- `/metrics` con `prom-client`: latencia por ruta, lag del event loop (`monitorEventLoopDelay`), memoria, y métricas de negocio (solicitudes, asignaciones, ofertas vencidas, tiempo hasta la asignación, pings por segundo).
+- `/metrics` en los tres servicios, desde `platform`, con `prom-client`: latencia por ruta, lag del event loop (`monitorEventLoopDelay`), memoria, y métricas de negocio (solicitudes, asignaciones, ofertas vencidas, tiempo hasta la asignación, pings por segundo).
 - **Grafana Alloy** en un perfil de Compose (`--profile obs`) envía métricas y los logs JSON a Grafana Cloud.
-- Dashboards: salud del servicio, despacho y tarea pesada. Se exportan como JSON a `observabilidad/`.
+- Dashboards: salud de los tres servicios, despacho y tarea pesada. Se exportan como JSON a `observabilidad/`.
 - Las credenciales van solo en `.env`. **Sin ellas el sistema levanta igual**: lo exigen la secuencia de 2.4 y la defensa sin internet.
 - `/metrics` no queda expuesto al grupo atacante.
 
@@ -267,12 +307,13 @@ Del 13/11 al 02/12 quedan 19 días. No alcanza para todo con holgura: el orden d
 
 Es lo que pide el Control 3: carrera principal con su test (ya está) y tarea pesada en dos versiones con la primera medición.
 
-- [ ] Confirmar con la cátedra si se exigen microservicios ([consulta 1](docs/consultas-catedra.md)). El resto de la fase no depende de la respuesta.
-- [ ] **Con esa respuesta**, consolidar en `services/api` (Ivan). Durante esos dos días no se mergea otra cosa.
-- [ ] `npm run setup`, `dev`, `start`; Compose simplificado; secuencia de 2.4 probada en un clon limpio (Ivan).
-- [ ] `ubicacion` en sus dos versiones, con adaptador en memoria primero (Maxi).
+- [x] Confirmar con la cátedra si se exigen microservicios: sí, tres como mínimo.
+- [ ] Esqueleto de `services/location` (health, config, composición, base, CI) y Compose sin RabbitMQ y con `location` (Ivan). Es lo primero: destraba a Maxi.
+- [ ] `npm run setup`, `dev`, `start` para los tres servicios; secuencia de 2.4 probada en un clon limpio (Ivan).
+- [ ] Contrato de `GET /interno/candidatos` en `contracts` y adaptador HTTP con timeout en dispatch (Ivan, Maxi).
+- [ ] location en sus dos versiones, con adaptador en memoria primero (Maxi).
 - [ ] `carga/choferes.js`, `carga/solicitudes.js`, `/metrics` con el lag y **primera medición** en `docs/mediciones.md` (Maxi).
-- [ ] `flotas`: choferes, vehículos, flotas y la carrera G con su test (Agos).
+- [ ] flotas en dispatch: choferes, vehículos, flotas y la carrera G con su test (Agos).
 - [ ] ADR 0001, 0002, 0003, 0005 y 0006; 0004 con el formato corregido.
 
 ### Fase B — meta interna 25/11: sistema completo y publicado
@@ -286,6 +327,7 @@ Al cerrar esta fase el sistema tiene que poder congelarse para el ataque cruzado
 - [ ] `tarifas`, cobro simulado y adaptadores de mapas y pagos con timeout (Maxi).
 - [ ] Caché en Redis, retención de ubicaciones y privacidad del seguimiento (Maxi).
 - [ ] Frontend mínimo: base y login (Agos), pasajero y operador (Ivan), chofer (Maxi).
+- [ ] Contenedor `web` con nginx como punto de entrada único (Ivan).
 - [ ] `modelo.md`, `api.md`, tabla de roles, colección de la demo y usuarios de prueba.
 - [ ] Despliegue accesible para el grupo atacante y tag `congelado`.
 
@@ -320,11 +362,12 @@ Cada dueño le explica su parte a los otros dos. Ensayar los cuatro tipos de pre
 4. Un error provocado: respuesta sin detalles internos, y pedido y error encontrados por `requestId`.
 5. Tests de concurrencia: 50 aceptaciones dejan 1 asignación; cancelar contra aceptar; 50 activaciones con límite 10 dejan 10. Cada uno **falla si se saca la protección**.
 6. La misma `Idempotency-Key` dos veces: un solo efecto.
-7. Demo de 6.8: ciclo completo con seguimiento, oferta que vence con el chofer desconectado, ubicación ajena rechazada, 500 choferes con medición antes y después, variante G con su carrera.
-8. `npm run test:e2e` en verde, y el pipeline completo en verde en GitHub.
-9. k6 en versión ingenua y optimizada, con los números en `docs/mediciones.md`.
-10. Dashboards de Grafana Cloud mostrando una corrida de k6.
+7. `docker compose ps` muestra `identity`, `dispatch` y `location` en contenedores separados. Con location detenido, la solicitud de viaje devuelve 503 y el login sigue andando.
+8. Demo de 6.8: ciclo completo con seguimiento, oferta que vence con el chofer desconectado, ubicación ajena rechazada, 500 choferes con medición antes y después, variante G con su carrera.
+9. `npm run test:e2e` en verde, y el pipeline completo en verde en GitHub.
+10. k6 en versión ingenua y optimizada, con los números en `docs/mediciones.md`.
+11. Dashboards de Grafana Cloud mostrando una corrida de k6.
 
 ## 8. Preguntas para la cátedra
 
-Están en [docs/consultas-catedra.md](docs/consultas-catedra.md), con lo que asumimos mientras tanto y el lugar para anotar cada respuesta. La primera (si se exigen microservicios) es la única que frena trabajo: bloquea la consolidación de la Fase A.
+Están en [docs/consultas-catedra.md](docs/consultas-catedra.md), con lo que asumimos mientras tanto y el lugar para anotar cada respuesta. La primera (microservicios) ya está respondida; ninguna de las que quedan frena trabajo.

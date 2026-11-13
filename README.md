@@ -5,12 +5,12 @@ Monorepo con npm workspaces: cada servicio es independiente (su propia base, su 
 
 Plan completo: [PLAN.md](PLAN.md). Decisiones: [docs/adr](docs/adr).
 
-> **Arquitectura en revisión (13/11/2026).** El enunciado del Integrador cambió. El plan v2 propone pasar a un solo backend modular, pero falta que la cátedra confirme si exige microservicios: ver [docs/consultas-catedra.md](docs/consultas-catedra.md). Este README describe el código tal como está hoy.
+> **Arquitectura (13/11/2026).** El enunciado del Integrador cambió y la cátedra confirmó que exige como mínimo tres microservicios. Quedan `identity`, `dispatch` (viajes, flotas y tarifas) y `location`: ver la sección 2 del [plan](PLAN.md). Este README describe el código tal como está hoy.
 
 Documentación:
 - [docs/arquitectura.md](docs/arquitectura.md): por qué es un monorepo de microservicios y no un monolito.
-- [docs/eventos.md](docs/eventos.md): RabbitMQ, outbox/inbox y el catálogo de eventos.
-- [docs/consultas-catedra.md](docs/consultas-catedra.md): preguntas pendientes para la cátedra y qué asumimos mientras tanto.
+- [docs/eventos.md](docs/eventos.md): diseño de eventos del plan original, con RabbitMQ (ya no vigente).
+- [docs/consultas-catedra.md](docs/consultas-catedra.md): consultas a la cátedra, respuestas y qué asumimos en las que siguen abiertas.
 - [docs/reparto.md](docs/reparto.md): quién hace qué (Ivan, Agos, Maxi), dependencias y reglas de colaboración.
 - [docs/identity.md](docs/identity.md): contrato de identity, usuarios de prueba y comandos para PowerShell.
 - [docs/repaso-problemas-centrales.html](docs/repaso-problemas-centrales.html): repaso de 6.3, 6.6 y la variante G con diagramas de tiempos (abrir en el navegador).
@@ -22,7 +22,7 @@ Documentación:
 | `packages/kernel`, `packages/contracts`, `packages/platform` | listo (config, logs con requestId, errores, validación, JWT, health/ready, apagado ordenado) |
 | `services/dispatch` — asignación única (6.3) | listo, con tests de concurrencia contra Postgres |
 | `services/identity` (M1) | **parcial:** registro, login, JWT RS256, JWKS, seed, límite de intentos de login y refresh con rotación. Faltan logout y revocación ([detalle](docs/identity.md)) |
-| drivers, location, trips, payments, notifications, reservations, gateway, realtime, web | pendiente |
+| `services/location`, flotas y tarifas (dentro de dispatch), `web` (React + nginx) | pendiente |
 
 ## Requisitos
 

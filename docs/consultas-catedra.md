@@ -2,11 +2,11 @@
 
 Armadas el 13/11/2026 al comparar los dos enunciados (TP Final ProgIV v1.0 y TP Integrador v2.0 preliminar). Completar la columna **Respuesta** con lo que diga la cátedra, quién lo dijo y la fecha. El [plan](../PLAN.md) se ajusta con esas respuestas.
 
-La consulta 1 es la única que **frena trabajo**: hasta tenerla no se mueven `services/dispatch` ni `services/identity`.
+La consulta 1 ya está respondida. Ninguna de las que quedan frena trabajo.
 
 | # | Consulta | Por qué importa | Qué asumimos mientras tanto | Respuesta |
 |---|---|---|---|---|
-| 1 | **¿El Integrador exige microservicios? ¿Cuántos?** En el grupo se recuerda que se habló de tres. | Ninguno de los dos documentos los menciona. Define toda la arquitectura. | Un solo backend modular. No se consolida nada hasta la respuesta. Si son tres: identidad · viajes (con flotas y tarifas) · ubicación. | |
+| 1 | **¿El Integrador exige microservicios? ¿Cuántos?** En el grupo se recuerda que se habló de tres. | Ninguno de los dos documentos los menciona. Define toda la arquitectura. | Un solo backend modular. No se consolida nada hasta la respuesta. Si son tres: identidad · viajes (con flotas y tarifas) · ubicación. | **Sí: tres como mínimo, cada uno en su propio contenedor. Pueden compartir la base de datos. No quiere un monolito modular.** Respuesta verbal del profesor; falta anotar quién y qué día, y pedirla por escrito. |
 | 2 | **¿Los tres temas de las exposiciones los elige el grupo? ¿Pueden ser los dos que expusimos nosotros más uno que ProgIV ya exige?** | Son 15 puntos. | Elegimos: condiciones de carrera y control de concurrencia · idempotencia y deduplicación · Redis: caché y datos efímeros. | |
 | 3 | **¿«Tres temas» son tres filas de la lista de 20?** Varias exposiciones cubrieron dos temas juntos. | Cambia cuánto hay que implementar. | Tres filas de la lista. | |
 | 4 | **Fechas del Integrador:** entrega y coloquio. ¿Tiene controles o ataque cruzado propios? ¿La entrega del 02/12 vale también para el Integrador? | El documento nuevo no trae cronograma y cita secciones (8 y 10) que no incluye. | Que se entrega todo junto el 02/12/2026. | |
@@ -17,7 +17,9 @@ La consulta 1 es la única que **frena trabajo**: hasta tenerla no se mueven `se
 | 9 | **SAST:** ¿hay una herramienta esperada (se vieron Codacy y SonarCloud en clase)? | El repositorio es privado. | Semgrep en GitHub Actions. | |
 | 10 | **k6 y el simulador de 6.6:** ¿vale como «simulador propio» un escenario de k6 escrito por nosotros? | ProgIV pide un simulador propio de 500 choferes; el Integrador pide k6. | Sí: un solo escenario de k6 cumple las dos cosas. | |
 
-## Cómo cambia el plan según la respuesta 1
+## Qué cambió con la respuesta 1
 
-- **No se exigen microservicios:** se sigue el plan tal como está (sección 2).
-- **Se exigen tres:** identity y dispatch quedan como servicios separados, como hoy; dispatch absorbe flotas y tarifas, y ubicación es el tercero. Vuelve la mensajería entre servicios (el `outbox` ya existe) y hace falta un punto de entrada único para el frontend. Los temas de exposición podrían cambiar a favor de «base de datos por servicio» o «publicación/suscripción».
+- El monolito modular quedó descartado y la consolidación en `services/api` se canceló.
+- La arquitectura es de tres servicios: `identity`, `dispatch` (viajes, flotas y tarifas) y `location`. Está en la sección 2 del [plan](../PLAN.md).
+- Aunque se permite compartir la base, mantenemos una base por servicio dentro del mismo Postgres, porque ya está hecho así.
+- Los tres temas de exposición elegidos no cambian. Ahora también quedan cubiertos, como reserva, «monolito modular y microservicios», «Docker Compose para un sistema distribuido» y «API Gateway y reverse proxy».
