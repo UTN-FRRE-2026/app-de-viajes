@@ -30,7 +30,7 @@ El **TP Integrador** dejó de ser la plataforma distribuida de 9 módulos (M1–
 | ProgIV admite autocannon o k6; el Integrador pide k6. | **k6 para todo**: simulador de choferes, mediciones de 6.6 y escenarios de estrés. La cátedra confirmó que un escenario de k6 propio vale como simulador. |
 | El Integrador cita `docs/ataque.md`, «sección 8» y «el cronograma de la sección 10», pero no trae esas secciones. | Siguen vigentes por ProgIV: la cátedra confirmó que hay ataque cruzado. Las fechas se fueron corriendo y el plan no depende de ellas (sección 6). |
 | La sección 6 se titula «Comisión 1» y el resto del texto dice que viajes es de la Comisión 2. «17. Artefactos» es la sección 7. | Errores de tipeo. Somos el grupo 7 de la tabla de 6 (Stabile, Jara, Sanchez → variante G). |
-| La tabla de 6 tiene 8 grupos, pero 6.7 define una variante I para un «grupo 9». | Si existe el grupo 9, cambia el emparejamiento del ataque (hoy: atacamos al 8, nos ataca el 6). **Preguntar.** |
+| La tabla de 6 tiene 8 grupos, pero 6.7 define una variante I para un «grupo 9». | El emparejamiento del enunciado no corre: la modalidad del ataque todavía no está definida (ver «Ataque cruzado» en la sección 6). |
 | Ningún documento menciona microservicios, pero el profesor confirmó de palabra que exige tres como mínimo. | Se hacen tres (sección 2). Pedir la confirmación por escrito. |
 | El Integrador dice «versión preliminar». | Puede cambiar otra vez: la rúbrica se implementa en capas que no tocan el núcleo. |
 
@@ -72,7 +72,7 @@ La cátedra permite compartir la base. Mantenemos lo que ya está construido: **
 
 ### Punto de entrada
 
-Un contenedor **web** (nginx) sirve el frontend y hace de reverse proxy: `/api/identity/`, `/api/viajes/` y `/api/ubicacion/`. Es el único puerto que se publica al grupo atacante.
+Un contenedor **web** (nginx) sirve el frontend y hace de reverse proxy: `/api/identity/`, `/api/viajes/` y `/api/ubicacion/`. Es el único puerto que se publica a los grupos atacantes.
 - `/interno/*` y `/metrics` no pasan por nginx.
 - SSE necesita `proxy_buffering off`.
 - Los servicios tienen que confiar en el `X-Forwarded-For` de nginx (`trust proxy`), o el límite de tasa por IP vería una sola IP.
@@ -303,7 +303,7 @@ Dos detalles: el simulador necesita 500 tokens y el límite de login por IP (30 
 - Dashboards: salud de los tres servicios, despacho y tarea pesada. Se exportan como JSON a `observabilidad/`.
 - La cátedra solo necesita acceso al repositorio: los dashboards exportados y las capturas en `docs/evidencias/` son la evidencia, y se muestra en vivo en el coloquio.
 - Las credenciales van solo en `.env`. **Sin ellas el sistema levanta igual**: lo exigen la secuencia de 2.4 y la defensa sin internet.
-- `/metrics` no queda expuesto al grupo atacante.
+- `/metrics` no queda expuesto a los grupos atacantes.
 
 ## 6. Hoja de ruta
 
@@ -336,7 +336,7 @@ Al cerrar esta fase el sistema tiene que poder congelarse para el ataque cruzado
 - [ ] Contenedor `web` con nginx como punto de entrada único (Ivan).
 - [ ] `modelo.md`, `api.md`, tabla de roles, colección de la demo y usuarios de prueba.
 - [ ] README y `docs/arquitectura.md` al día: tecnologías usadas y para qué, arquitectura, comunicación entre servicios y despliegue. La cátedra evalúa desde el repositorio y quiere ver ahí todo lo que se hizo y se usó.
-- [ ] Despliegue accesible para el grupo atacante y tag `congelado`.
+- [ ] Despliegue accesible para los grupos atacantes y tag `congelado`.
 
 ### Fase C — rúbrica del Integrador y cierre
 
@@ -349,8 +349,9 @@ Al cerrar esta fase el sistema tiene que poder congelarse para el ataque cruzado
 
 ### Ataque cruzado — cuando lo fije la cátedra
 
-Se hace cuando la cátedra lo fije; el entorno publicado no se toca durante esa semana.
-- [ ] Bitácora del ataque en `docs/ataque.md`: Agos (autenticación, acceso a recursos ajenos, rate limit), Ivan (carreras e idempotencia), Maxi (validación, montos, operaciones costosas).
+La cátedra todavía no definió la modalidad. Lo más probable es que **todos los grupos ataquen a uno por vez, rotando**, hasta que todos hayan sido atacados por todos. Nos preparamos para ese caso, que es el más exigente: atacamos a todos los demás grupos y nos atacan todos. El entorno publicado no se toca mientras nos atacan.
+- [ ] Guía de ataque reutilizable: la misma lista de pruebas se corre contra cada grupo, con scripts donde se pueda (Ivan, Agos, Maxi).
+- [ ] Bitácora del ataque en `docs/ataque.md`, con una sección por grupo atacado: Agos (autenticación, acceso a recursos ajenos, rate limit), Ivan (carreras e idempotencia), Maxi (validación, montos, operaciones costosas).
 - [ ] Hallazgos recibidos: causa raíz, commit y un test que falla antes y pasa después (el dueño del módulo).
 
 Si cae antes de terminar la Fase C, desplaza ese trabajo y se recorta según el orden de abajo.
@@ -377,4 +378,4 @@ Cada dueño le explica su parte a los otros dos. Ensayar los cuatro tipos de pre
 
 ## 8. Preguntas para la cátedra
 
-Están en [docs/consultas-catedra.md](docs/consultas-catedra.md), con lo que asumimos mientras tanto y el lugar para anotar cada respuesta. Casi todas están respondidas. Queda abierto solo contra qué grupo es el ataque cruzado, y no frena trabajo.
+Están en [docs/consultas-catedra.md](docs/consultas-catedra.md), con lo que asumimos mientras tanto y el lugar para anotar cada respuesta. Casi todas están respondidas. Queda abierta solo la modalidad del ataque cruzado, y no frena trabajo.

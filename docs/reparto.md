@@ -30,7 +30,7 @@ Cada integrante es **dueño** de un problema central y de los módulos que lo ro
 
 **Fase C y ataque cruzado**
 - [ ] Jobs `e2e` y `sast` en el CI.
-- [ ] Ataque al grupo 8: carreras e idempotencia.
+- [ ] Ataque a los otros grupos: carreras e idempotencia.
 - [ ] ADR 0011 y 0012; autoevaluación 10.6 y tag `entrega-final`.
 
 ## Agos
@@ -51,7 +51,7 @@ Cada integrante es **dueño** de un problema central y de los módulos que lo ro
 
 **Fase C y ataque cruzado**
 - [ ] Playwright: los cinco flujos de la sección 5.3 del plan.
-- [ ] Ataque al grupo 8: autenticación, recursos ajenos y rate limit.
+- [ ] Ataque a los otros grupos: autenticación, recursos ajenos y rate limit.
 - [ ] ADR 0007 (SSE frente a WebSocket, con Ivan) y 0009 (límite por flota).
 
 ## Maxi
@@ -76,7 +76,7 @@ Cada integrante es **dueño** de un problema central y de los módulos que lo ro
 **Fase C y ataque cruzado**
 - [ ] Grafana Cloud: Alloy en un perfil de Compose, métricas de negocio y tres dashboards exportados.
 - [ ] `carga/estres.js` y `carga/carrera.js`; mediciones finales con tres corridas.
-- [ ] Ataque al grupo 8: validación, montos y operaciones costosas.
+- [ ] Ataque a los otros grupos: validación, montos y operaciones costosas.
 - [ ] ADR 0008 (búsqueda geográfica) y 0010 (idempotencia, con Ivan).
 
 ## Dependencias
