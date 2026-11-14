@@ -2,7 +2,7 @@
 
 Armadas el 13/11/2026 al comparar los dos enunciados (TP Final ProgIV v1.0 y TP Integrador v2.0 preliminar). Completar la columna **Respuesta** con lo que diga la cátedra, quién lo dijo y la fecha. El [plan](../PLAN.md) se ajusta con esas respuestas.
 
-Respuestas verbales de la cátedra; falta anotar quién respondió y qué día. Quedan abiertas dos: contra qué grupo es el ataque cruzado (6) y el acceso a Grafana Cloud (8). Ninguna frena trabajo.
+Respuestas verbales de la cátedra; falta anotar quién respondió y qué día. Queda abierta una: contra qué grupo es el ataque cruzado (6). No frena trabajo.
 
 | # | Consulta | Por qué importa | Qué asumimos mientras tanto | Respuesta |
 |---|---|---|---|---|
@@ -13,8 +13,8 @@ Respuestas verbales de la cátedra; falta anotar quién respondió y qué día. 
 | 5 | **Fechas del Control 3, el congelamiento, el ataque cruzado y la defensa de ProgIV.** Si el ataque queda después del 02/12, ¿cómo entran las correcciones de los hallazgos? | Lo único confirmado es la entrega final del 02/12/2026. El enunciado pone congelamiento y ataque dos y una semana antes de la entrega, y las correcciones dentro de la entrega. | Metas internas: tarea pesada medida el 18/11 y sistema completo y publicado el 25/11, listo para congelar cuando lo pidan. | **Ídem 4.** Hay ataque cruzado, sin fecha fija por ahora. |
 | 6 | **¿Existe el grupo 9 en nuestra comisión?** | La tabla de la sección 6 tiene 8 grupos, pero 6.7 define una variante para un grupo 9. Cambia a quién atacamos y quién nos ataca. | Atacamos al grupo 8 y nos ataca el 6. | **Hay ataque cruzado con integrantes de otros grupos.** Sigue abierto contra qué grupo nos toca. |
 | 7 | **Frontend:** ¿alcanza con una interfaz mínima para los 5 puntos? | ProgIV dice que el frontend no suma nota; la rúbrica del Integrador le da 5 puntos. | Interfaz mínima en React, la necesaria para las pruebas de Playwright. | **Sí, alcanza con una interfaz mínima.** Lo importante es el backend y DevOps. |
-| 8 | **Grafana Cloud:** ¿la cátedra necesita acceso a nuestro stack, o alcanza con mostrarlo en el coloquio y dejar los dashboards exportados? | Las credenciales no pueden ir al repositorio, y el sistema tiene que levantar sin ellas. | Se muestra en vivo; dashboards exportados como JSON y capturas en `docs/evidencias/`. | Sin respuesta todavía. |
-| 9 | **SAST:** ¿hay una herramienta esperada (se vieron Codacy y SonarCloud en clase)? | El repositorio es privado. | Semgrep en GitHub Actions. | **Se vieron Codacy y SonarCloud.** No se indicó una obligatoria. Se prueba primero una de las dos; si el plan gratuito no acepta el repositorio privado, Semgrep. |
+| 8 | **Grafana Cloud:** ¿la cátedra necesita acceso a nuestro stack, o alcanza con mostrarlo en el coloquio y dejar los dashboards exportados? | Las credenciales no pueden ir al repositorio, y el sistema tiene que levantar sin ellas. | Se muestra en vivo; dashboards exportados como JSON y capturas en `docs/evidencias/`. | **Solo necesita acceso al repositorio.** Quiere ver ahí todo lo que hicimos y usamos: tecnologías, arquitectura, despliegue. (Según lo que recordamos; no fue una respuesta textual.) |
+| 9 | **SAST:** ¿hay una herramienta esperada (se vieron Codacy y SonarCloud en clase)? | El repositorio es privado. | Semgrep en GitHub Actions. | **No pidió una en particular** (según lo que recordamos). Codacy y SonarCloud se vieron en clase. Usamos Semgrep. |
 | 10 | **k6 y el simulador de 6.6:** ¿vale como «simulador propio» un escenario de k6 escrito por nosotros? | ProgIV pide un simulador propio de 500 choferes; el Integrador pide k6. | Sí: un solo escenario de k6 cumple las dos cosas. | **Sí:** un escenario de k6 escrito por nosotros vale como simulador propio. |
 
 ## Qué cambió con la respuesta 1

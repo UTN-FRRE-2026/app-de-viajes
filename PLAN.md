@@ -278,9 +278,9 @@ Evidencias: reporte HTML, trazas y capturas como artefactos del CI y en `docs/ev
 
 ### 5.4 CI y SAST (10)
 
-Jobs: `verificar` (typecheck, lint, tests; ya existe), `e2e` (compose, `setup`, Playwright, sube el reporte), `sast` (Codacy o SonarCloud; si no se puede, Semgrep) y `npm audit`. Los cuatro son obligatorios para mergear.
+Jobs: `verificar` (typecheck, lint, tests; ya existe), `e2e` (compose, `setup`, Playwright, sube el reporte), `sast` (Semgrep con reglas de JavaScript, TypeScript, Node y OWASP; sube SARIF) y `npm audit`. Los cuatro son obligatorios para mergear.
 
-En clase se vieron **Codacy y SonarCloud**, así que es lo primero que se prueba. Falta verificar si sus planes gratuitos aceptan nuestro repositorio privado. Si no, se usa Semgrep, que corre en GitHub Actions sin depender de un servicio externo. CodeQL queda afuera: en repositorios privados necesita GitHub Advanced Security.
+La cátedra no pidió una herramienta en particular. Se usa **Semgrep**: corre dentro de GitHub Actions, funciona con el repositorio privado y no depende de una cuenta externa. En clase se vieron Codacy y SonarCloud; cambiar a una de ellas es reemplazar un job. CodeQL queda afuera: en repositorios privados necesita GitHub Advanced Security.
 
 ### 5.5 k6 (10)
 
@@ -301,6 +301,7 @@ Dos detalles: el simulador necesita 500 tokens y el límite de login por IP (30 
 - `/metrics` en los tres servicios, desde `platform`, con `prom-client`: latencia por ruta, lag del event loop (`monitorEventLoopDelay`), memoria, y métricas de negocio (solicitudes, asignaciones, ofertas vencidas, tiempo hasta la asignación, pings por segundo).
 - **Grafana Alloy** en un perfil de Compose (`--profile obs`) envía métricas y los logs JSON a Grafana Cloud.
 - Dashboards: salud de los tres servicios, despacho y tarea pesada. Se exportan como JSON a `observabilidad/`.
+- La cátedra solo necesita acceso al repositorio: los dashboards exportados y las capturas en `docs/evidencias/` son la evidencia, y se muestra en vivo en el coloquio.
 - Las credenciales van solo en `.env`. **Sin ellas el sistema levanta igual**: lo exigen la secuencia de 2.4 y la defensa sin internet.
 - `/metrics` no queda expuesto al grupo atacante.
 
@@ -334,6 +335,7 @@ Al cerrar esta fase el sistema tiene que poder congelarse para el ataque cruzado
 - [ ] Frontend mínimo: base y login (Agos), pasajero y operador (Ivan), chofer (Maxi).
 - [ ] Contenedor `web` con nginx como punto de entrada único (Ivan).
 - [ ] `modelo.md`, `api.md`, tabla de roles, colección de la demo y usuarios de prueba.
+- [ ] README y `docs/arquitectura.md` al día: tecnologías usadas y para qué, arquitectura, comunicación entre servicios y despliegue. La cátedra evalúa desde el repositorio y quiere ver ahí todo lo que se hizo y se usó.
 - [ ] Despliegue accesible para el grupo atacante y tag `congelado`.
 
 ### Fase C — rúbrica del Integrador y cierre
@@ -375,4 +377,4 @@ Cada dueño le explica su parte a los otros dos. Ensayar los cuatro tipos de pre
 
 ## 8. Preguntas para la cátedra
 
-Están en [docs/consultas-catedra.md](docs/consultas-catedra.md), con lo que asumimos mientras tanto y el lugar para anotar cada respuesta. Casi todas están respondidas. Quedan abiertas el emparejamiento del ataque cruzado y el acceso a Grafana Cloud; ninguna frena trabajo.
+Están en [docs/consultas-catedra.md](docs/consultas-catedra.md), con lo que asumimos mientras tanto y el lugar para anotar cada respuesta. Casi todas están respondidas. Queda abierto solo contra qué grupo es el ataque cruzado, y no frena trabajo.
