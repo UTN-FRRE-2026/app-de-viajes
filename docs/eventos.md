@@ -1,5 +1,7 @@
 # Eventos y comunicación entre servicios
 
+> **Ya no vigente (13/11/2026).** Este documento describe la mensajería del plan original, con RabbitMQ. El [plan v2](../PLAN.md) mantiene tres microservicios pero sin RabbitMQ: se comunican por HTTP interno y Redis Pub/Sub (sección 2). Se reescribe cuando esté implementado el tiempo real.
+
 Los servicios no se llaman entre sí para avisar que algo pasó: **publican un evento**, RabbitMQ lo guarda y cada servicio interesado lo procesa cuando puede. El que publica no sabe quién escucha.
 
 ## Topología en RabbitMQ
