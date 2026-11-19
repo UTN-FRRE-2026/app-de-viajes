@@ -43,5 +43,12 @@ export function rutasIdentidad(casos: CasosDeUso, limitador: LimitadorLogin, log
     responderSesion(res, await casos.renovarSesion((req.body as RefreshBody).refreshToken));
   });
 
+  // Cierra la sesión del refresh enviado. 204 también si el token no existe: es idempotente y no
+  // revela qué tokens existen. No pide el access token, así funciona aunque ya haya vencido.
+  r.post('/logout', validar({ body: RefreshBody }), async (req, res) => {
+    await casos.cerrarSesion((req.body as RefreshBody).refreshToken);
+    res.status(204).end();
+  });
+
   return r;
 }

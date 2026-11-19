@@ -109,6 +109,18 @@ describe('dispatch real acepta los tokens de identity', () => {
     expect(usuario).toMatchObject({ rol: 'admin_flota', fleetId: expect.any(String) });
     expect((await pedirViaje(await tokenDe('admin.flota@viajes.test'))).status).toBe(403);
   });
+
+  // Comportamiento elegido: logout cierra la sesión (refresh), no invalida el access ya emitido.
+  // dispatch verifica solo la firma y el vencimiento, así que lo sigue aceptando hasta su exp.
+  it('después del logout, el access token ya emitido sigue sirviendo en dispatch hasta vencer', async () => {
+    const res = await request(d.url).post('/login').send({ email: 'ana@viajes.test', contrasena: CONTRASENA }).expect(200);
+    await request(d.url).post('/logout').send({ refreshToken: res.body.refreshToken }).expect(204);
+    await request(d.url).post('/refresh').send({ refreshToken: res.body.refreshToken }).expect(401);
+
+    // 404 y no 401: dispatch autenticó el token y buscó la solicitud.
+    const lectura = await request(urlDispatch).get(`/solicitudes/${randomUUID()}`).set('Authorization', `Bearer ${res.body.token}`);
+    expect(lectura.status).toBe(404);
+  });
 });
 
 describe('dispatch real rechaza lo que no firmó identity', () => {
