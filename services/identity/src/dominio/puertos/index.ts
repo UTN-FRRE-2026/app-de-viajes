@@ -40,6 +40,8 @@ export interface RepositorioSesiones {
    * también queda revocado.
    */
   revocarFamilia(familiaId: string, ahora: Date): Promise<void>;
+  /** La familia (sesión) de un token, en cualquier estado: vigente, usado, vencido o revocado. null si no existe. */
+  familiaDe(huella: string): Promise<string | null>;
 }
 
 export interface SecretoRefresh {

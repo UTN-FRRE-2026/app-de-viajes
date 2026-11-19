@@ -47,6 +47,11 @@ export class RepositorioSesionesPrisma implements RepositorioSesiones {
     await this.prisma.refreshToken.create({ data: refresh });
   }
 
+  async familiaDe(huella: string): Promise<string | null> {
+    const fila = await this.prisma.refreshToken.findUnique({ where: { huella }, select: { familiaId: true } });
+    return fila?.familiaId ?? null;
+  }
+
   rotar(
     huellaActual: string,
     nuevo: Pick<RefreshGuardado, 'huella' | 'creadoEn' | 'expiraEn'>,

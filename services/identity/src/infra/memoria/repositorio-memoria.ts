@@ -40,6 +40,10 @@ export class RepositorioSesionesMemoria implements RepositorioSesiones {
     this.tokens.set(refresh.huella, { ...refresh, usadoEn: null, revocadoEn: null });
   }
 
+  async familiaDe(huella: string): Promise<string | null> {
+    return this.tokens.get(huella)?.familiaId ?? null;
+  }
+
   async rotar(
     huellaActual: string,
     nuevo: Pick<RefreshGuardado, 'huella' | 'creadoEn' | 'expiraEn'>,

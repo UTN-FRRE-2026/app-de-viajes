@@ -1,3 +1,4 @@
+import { cerrarSesion } from './cerrar-sesion.js';
 import type { DependenciasIdentidad } from './dependencias.js';
 import { iniciarSesion } from './iniciar-sesion.js';
 import { registrarUsuario } from './registrar-usuario.js';
@@ -11,6 +12,7 @@ export function crearCasosDeUso(deps: DependenciasIdentidad) {
     registrarUsuario: registrarUsuario(deps),
     iniciarSesion: iniciarSesion(deps),
     renovarSesion: renovarSesion(deps),
+    cerrarSesion: cerrarSesion(deps),
     clavesPublicas: () => deps.emisor.clavesPublicas(),
   };
 }

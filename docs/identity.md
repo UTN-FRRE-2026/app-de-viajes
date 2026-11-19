@@ -1,6 +1,6 @@
-# identity (M1): primer incremento
+# identity
 
-> **Estado: parcial.** Funcionan registro, login, JWT RS256, JWKS, seed, límite de intentos de login y refresh con rotación. M1 **no está terminado**: faltan logout y revocación. Ver [Pendiente](#pendiente).
+> **Estado:** funcionan registro, login, JWT RS256, JWKS, seed, límite de intentos de login, refresh con rotación y logout. La revocación inmediata del access token quedó fuera por decisión del plan v2 (ver [`POST /logout`](#post-logout)). Las mejoras que faltan están en [Pendiente](#pendiente).
 
 ## Endpoints
 
@@ -63,6 +63,27 @@ Toda respuesta que pasó por el contador trae `RateLimit-Limit`, `RateLimit-Rema
 - Sin límite de intentos: con 256 bits no hay fuerza bruta posible.
 - Borrar un usuario borra sus refresh tokens (FK con `ON DELETE CASCADE`).
 
+### `POST /logout`
+
+```json
+{ "refreshToken": "..." }
+```
+
+| Respuesta | Cuándo |
+|---|---|
+| `204`, sin cuerpo | La sesión de ese refresh quedó cerrada. También si el token no existe o la sesión ya estaba cerrada: es idempotente y no revela qué tokens existen |
+| `400 VALIDACION` | Igual que en `/refresh`: falta `refreshToken`, no es texto, está vacío, supera 256 caracteres o hay otra clave |
+| `500 INTERNO` | Postgres falló al revocar. **La sesión puede seguir abierta**: el cliente tiene que reintentar. Nunca se responde `204` sin haber revocado |
+
+- **Cierra solo esa sesión.** Revoca la familia del refresh enviado, es decir, la sesión de ese dispositivo. Las sesiones que el usuario abrió con otros logins son otras familias y siguen funcionando.
+- **Sirve cualquier refresh de la sesión**, aunque ya se haya usado o vencido. Con uno viejo, `/refresh` ya revocaría todo por reuso, así que esto no habilita ningún ataque nuevo.
+- **No pide el access token.** Así funciona aunque ya haya vencido, que es lo normal en quien vuelve a la app después de un rato.
+- **Logout y refresh al mismo tiempo.** El logout usa la misma revocación que la detección de reuso, con el lock por familia. Si una renovación de esa sesión está en curso, el logout la espera y revoca también el token que esa renovación acaba de crear: la renovación responde `200`, pero su refresh ya no sirve. Lo cubre un test de concurrencia.
+- **El access token ya emitido no se invalida.** Sigue valiendo hasta su `exp`, que depende de `JWT_TTL_SEGUNDOS` (15 minutos por defecto). dispatch lo verifica solo con la firma y el vencimiento, usando el JWKS, sin consultar a identity. Al cerrar sesión, el cliente tiene que descartarlo.
+  - Es una decisión: el plan v2 descarta la denylist de `jti`, y ninguna consigna exige invalidarlo al instante.
+  - Si hiciera falta, habría que cambiar los servicios consumidores, no solo identity: una denylist en Redis consultada por `autenticar` en `platform` (fallando cerrado si Redis no responde) o una consulta a identity en cada pedido. La alternativa sin código es bajar `JWT_TTL_SEGUNDOS`.
+- Sin límite de intentos, igual que `/refresh`: con 256 bits no hay nada que adivinar.
+
 ### `GET /.well-known/jwks.json`
 
 `{"keys":[{"kty":"RSA","n":"...","e":"AQAB","kid":"...","alg":"RS256","use":"sig"}]}` con `Cache-Control: public, max-age=300`. Solo la parte pública. Dispatch lo consume con `verificadorJwks`.
@@ -81,10 +102,10 @@ JWT firmado con RS256. Encabezado `{alg, kid, typ}`, donde `kid` es el thumbprin
 | `rol` | `pasajero`, `chofer`, `operador`, `admin` o `admin_flota` |
 | `fleetId` | Solo en `admin_flota` |
 | `iss`, `aud` | `JWT_ISSUER` y `JWT_AUDIENCE`, las mismas variables que usa dispatch |
-| `iat`, `exp` | 15 minutos de vida (`JWT_TTL_SEGUNDOS`) |
-| `jti` | UUID. Queda listo para la denylist de revocación, que todavía no existe |
+| `iat`, `exp` | La vida del token la fija `JWT_TTL_SEGUNDOS`: 15 minutos (900 s) por defecto, configurable entre 60 y 3600 s |
+| `jti` | UUID único por token. Hoy no se usa para revocar (ver [`POST /logout`](#post-logout)) |
 
-Es el contrato de `packages/platform/src/autenticacion.ts`, que no se modificó. Al vencer, el cliente pide uno nuevo con `POST /refresh`.
+Es el contrato de `packages/platform/src/autenticacion.ts`, que no se modificó. Al vencer, el cliente pide uno nuevo con `POST /refresh`. El logout no lo acorta: un access token vale hasta su `exp`.
 
 ## Contraseñas
 
@@ -268,6 +289,33 @@ Estado { Renovar $renovada.refreshToken }
 
 El 2xx crea otra solicitud: para repetir la prueba, cancelala como en el paso 8, usando `$renovada.token`.
 
+**10. Cerrar una sesión sin cortar las demás**
+
+Usa `Entrar` (paso 1), `Estado` (paso 6) y `Renovar` (paso 9). Solo se muestran códigos HTTP: ningún token.
+
+```powershell
+function Cerrar($refresh) {
+  $body = @{ refreshToken = $refresh } | ConvertTo-Json
+  $r = Invoke-WebRequest -UseBasicParsing -Method Post "$identity/logout" -ContentType 'application/json' -Body $body
+  "HTTP $($r.StatusCode)"
+}
+# Dos sesiones del mismo pasajero, como dos dispositivos
+$sesionA = Entrar 'pasajero@viajes.test'
+$sesionB = Entrar 'pasajero@viajes.test'
+# Cerrar la sesión A: 204
+Cerrar $sesionA.refreshToken
+# A ya no se puede renovar: 401
+Estado { Renovar $sesionA.refreshToken }
+# B sigue funcionando: 2xx
+Estado { Renovar $sesionB.refreshToken }
+# El access token de A sigue valiendo hasta su exp: 404 (dispatch lo aceptó; la solicitud no existe)
+Estado { Invoke-RestMethod "$dispatch/solicitudes/00000000-0000-4000-8000-0000000000aa" -Headers @{ Authorization = "Bearer $($sesionA.token)" } }
+# Cerrar de nuevo la misma sesión: 204, es idempotente
+Cerrar $sesionA.refreshToken
+```
+
+Esperado, en orden: `HTTP 204`, `HTTP 401`, `HTTP 2xx`, `HTTP 404` y `HTTP 204`. El 404 sale `401` solo si el access token de A ya venció, es decir, si pasó más de `JWT_TTL_SEGUNDOS` desde el login (15 minutos por defecto).
+
 ## Tests
 
 ```powershell
@@ -303,10 +351,10 @@ docker compose exec -T postgres psql -U postgres -c "REVOKE ALL ON DATABASE iden
 
 ## Pendiente
 
-Este incremento **no** incluye:
+Queda fuera:
 
-- **Logout.** El repositorio ya sabe revocar una familia, que es lo que tiene que hacer el logout con el refresh.
-- **Revocación del access token:** denylist de `jti` en Redis que falla cerrado. Hasta entonces, un access token robado vale hasta que vence, como máximo 15 minutos, aunque se haya revocado su sesión por reuso.
+- **Revocación inmediata del access token.** El plan v2 descarta la denylist de `jti`. Un access token robado vale hasta que vence (`JWT_TTL_SEGUNDOS`, 15 minutos por defecto), aunque su sesión se haya cerrado o revocado por reuso. Ver [`POST /logout`](#post-logout).
+- Cerrar todas las sesiones de un usuario a la vez («salir de todos los dispositivos»). Ninguna consigna lo pide.
 - Limpieza de `refresh_tokens`: las filas vencidas y usadas no se borran nunca. Hace falta un job que borre las vencidas hace más de un tiempo, y que conserve las usadas mientras sigan vigentes sus familias, porque de ellas depende la detección de reuso.
 - Límite absoluto de la sesión: como el plazo se renueva en cada rotación, una sesión que se usa seguido no vence nunca.
 - `trust proxy` cuando exista el gateway. Sin eso, todos los pedidos que pasen por el gateway compartirían el contador de IP.
