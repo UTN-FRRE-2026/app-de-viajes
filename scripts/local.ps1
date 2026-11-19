@@ -8,7 +8,7 @@
 # heredado, entonces identity y dispatch no se pueden afectar entre si.
 param(
   [Parameter(Mandatory = $true, Position = 0)]
-  [ValidateSet('identity', 'dispatch')]
+  [ValidateSet('identity', 'dispatch', 'location')]
   [string]$Servicio,
 
   [Parameter(Position = 1)]
@@ -17,7 +17,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-$puertos = @{ identity = 3001; dispatch = 3005 }
+$puertos = @{ identity = 3001; dispatch = 3005; location = 3004 }
 $raiz = Split-Path -Parent $PSScriptRoot
 $rutaEnv = Join-Path $raiz '.env'
 

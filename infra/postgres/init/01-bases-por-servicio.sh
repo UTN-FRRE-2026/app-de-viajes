@@ -25,3 +25,4 @@ done
 # Bases para los tests de integración y concurrencia.
 crear_base dispatch_test dispatch_svc
 crear_base identity_test identity_svc
+crear_base location_test location_svc

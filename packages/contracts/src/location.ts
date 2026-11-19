@@ -1,0 +1,38 @@
+import { z } from 'zod';
+import { Coordenada } from './dispatch.js';
+
+// Contrato de location. Lo usan location (valida lo que recibe) y dispatch (valida lo que le devuelven).
+
+/** El chofer informa su posición. El chofer sale del token, nunca del body. */
+export const UbicacionBody = Coordenada;
+export type UbicacionBody = z.infer<typeof UbicacionBody>;
+
+/** Encabezado del token de servicio de las rutas `/interno/*` (en minúsculas, como lo lee Express). */
+export const ENCABEZADO_TOKEN_SERVICIO = 'x-token-servicio';
+
+export const LIMITE_CANDIDATOS_MAX = 100;
+export const RADIO_MAX_METROS = 50_000;
+
+// En la query todo llega como texto. Un valor vacío no puede convertirse en 0: lat=0 es una coordenada válida.
+const numero = () => z.string().trim().min(1).pipe(z.coerce.number());
+
+export const CandidatosQuery = z.strictObject({
+  lat: numero().pipe(z.number().min(-90).max(90)),
+  lng: numero().pipe(z.number().min(-180).max(180)),
+  limite: numero().pipe(z.number().int().min(1).max(LIMITE_CANDIDATOS_MAX)).default(10),
+  radioMetros: numero().pipe(z.number().int().min(1).max(RADIO_MAX_METROS)).default(5000),
+});
+export type CandidatosQuery = z.infer<typeof CandidatosQuery>;
+
+export const Candidato = z.strictObject({
+  choferId: z.uuid(),
+  distanciaMetros: z.number().int().nonnegative(),
+  actualizadaEn: z.iso.datetime(),
+});
+
+/**
+ * Ordenados de menor a mayor distancia. Si vienen menos que `limite`, no hay más choferes vigentes
+ * dentro del radio: dispatch puede dejar de pedir.
+ */
+export const CandidatosRespuesta = z.strictObject({ candidatos: z.array(Candidato) });
+export type CandidatosRespuesta = z.infer<typeof CandidatosRespuesta>;

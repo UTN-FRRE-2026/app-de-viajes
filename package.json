@@ -19,6 +19,7 @@
     "build": "npm run build --workspaces --if-present",
     "dev:dispatch": "npm run dev -w @viajes/dispatch",
     "dev:identity": "npm run dev -w @viajes/identity",
+    "dev:location": "npm run dev -w @viajes/location",
     "seed": "npm run seed -w @viajes/identity",
     "local": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/local.ps1"
   },

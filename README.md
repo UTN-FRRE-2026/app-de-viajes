@@ -13,6 +13,7 @@ Documentación:
 - [docs/consultas-catedra.md](docs/consultas-catedra.md): consultas a la cátedra, respuestas y qué asumimos en las que siguen abiertas.
 - [docs/reparto.md](docs/reparto.md): quién hace qué (Ivan, Agos, Maxi), dependencias y reglas de colaboración.
 - [docs/identity.md](docs/identity.md): contrato de identity, usuarios de prueba y comandos para PowerShell.
+- [docs/location.md](docs/location.md): contrato de location, propuesta de integración con dispatch y prueba manual en PowerShell.
 - [docs/repaso-problemas-centrales.html](docs/repaso-problemas-centrales.html): repaso de 6.3, 6.6 y la variante G con diagramas de tiempos (abrir en el navegador).
 
 ## Estado
@@ -21,8 +22,9 @@ Documentación:
 |---|---|
 | `packages/kernel`, `packages/contracts`, `packages/platform` | listo (config, logs con requestId, errores, validación, JWT, health/ready, apagado ordenado) |
 | `services/dispatch` — asignación única (6.3) | listo, con tests de concurrencia contra Postgres |
-| `services/identity` (M1) | **parcial:** registro, login, JWT RS256, JWKS, seed, límite de intentos de login y refresh con rotación. Faltan logout y revocación ([detalle](docs/identity.md)) |
-| `services/location`, flotas y tarifas (dentro de dispatch), `web` (React + nginx) | pendiente |
+| `services/identity` | listo para el alcance acordado: registro, login, JWT RS256, JWKS, seed, límite de intentos de login, refresh con rotación y logout ([detalle](docs/identity.md)) |
+| `services/location` | **primer avance:** ubicación de los choferes y búsqueda de cercanos con la versión ingenua (Postgres). dispatch todavía no lo usa ([detalle](docs/location.md)) |
+| flotas y tarifas (dentro de dispatch), `web` (React + nginx) | pendiente |
 
 ## Requisitos
 
@@ -39,18 +41,20 @@ npm run typecheck
 npm test                    # dominio en memoria + integración/concurrencia contra Postgres
 ```
 
-Si `npm test` falla con «No pude migrar la base de test», el volumen de Postgres es anterior a esa base: las bases se crean solo la primera vez que arranca el contenedor. Se arregla recreándolo con `docker compose down -v` y `npm run infra:up` (borra los datos locales). Y si falta un paquete, `npm install` otra vez: cada servicio nuevo suma dependencias.
+Si `npm test` falla con «No pude migrar la base de test», el volumen de Postgres es anterior a esa base: el script de init crea las bases solo la primera vez que arranca el contenedor. Se crea la que falta **sin borrar datos**, con el comando idempotente de [docs/location.md](docs/location.md#primera-vez) (cambiando el nombre de la base) o el de [docs/identity.md](docs/identity.md#problemas-frecuentes). No hace falta `docker compose down -v`, que borra todos los datos locales. Y si falta un paquete, `npm install` otra vez: cada servicio nuevo suma dependencias.
 
-Solo los tests de dominio (sin Docker): `npm run test:dominio -w @viajes/dispatch` o `-w @viajes/identity`.
+Solo los tests de dominio (sin Docker): `npm run test:dominio -w @viajes/dispatch`, `-w @viajes/identity` o `-w @viajes/location`.
 
-Correr identity y dispatch en desarrollo desde PowerShell (paso a paso en [docs/identity.md](docs/identity.md)). Cada servicio en su terminal, con `.env` cargado y su puerto fijo (identity 3001, dispatch 3005):
+Correr los servicios en desarrollo desde PowerShell (paso a paso en [docs/identity.md](docs/identity.md) y [docs/location.md](docs/location.md)). Cada servicio en su terminal, con `.env` cargado y su puerto fijo (identity 3001, location 3004, dispatch 3005):
 
 ```powershell
 npm run claves -w @viajes/identity
 npm run local -- identity migrate:deploy
+npm run local -- location migrate:deploy
 npm run local -- dispatch migrate:deploy
 npm run local -- identity seed
 npm run local -- identity
+npm run local -- location
 npm run local -- dispatch
 ```
 

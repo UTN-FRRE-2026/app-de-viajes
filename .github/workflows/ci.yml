@@ -30,6 +30,7 @@ jobs:
     env:
       DATABASE_URL_TEST: postgresql://dispatch_svc:dispatch_dev@localhost:5434/dispatch_test
       IDENTITY_DATABASE_URL_TEST: postgresql://identity_svc:identity_dev@localhost:5434/identity_test
+      LOCATION_DATABASE_URL_TEST: postgresql://location_svc:location_dev@localhost:5434/location_test
       REDIS_URL_TEST: redis://localhost:6379/15
     steps:
       - uses: actions/checkout@v4
@@ -38,12 +39,14 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Crear la base de test de identity
+      - name: Crear las bases de test de identity y location
         env:
           PGPASSWORD: dispatch_dev
         run: |
           psql -h localhost -p 5434 -U dispatch_svc -d dispatch_test -c "CREATE ROLE identity_svc LOGIN PASSWORD 'identity_dev'"
           psql -h localhost -p 5434 -U dispatch_svc -d dispatch_test -c "CREATE DATABASE identity_test OWNER identity_svc"
+          psql -h localhost -p 5434 -U dispatch_svc -d dispatch_test -c "CREATE ROLE location_svc LOGIN PASSWORD 'location_dev'"
+          psql -h localhost -p 5434 -U dispatch_svc -d dispatch_test -c "CREATE DATABASE location_test OWNER location_svc"
       - run: npm run typecheck
       - run: npm run lint
       - run: npm test

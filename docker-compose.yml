@@ -61,6 +61,27 @@ services:
       redis:
         condition: service_healthy
 
+  location:
+    build:
+      context: .
+      args:
+        SERVICE: location
+    image: ghcr.io/grupo7/viajes-location:${VERSION:-0.1.0}
+    environment:
+      PUERTO: "3004"
+      UBICACION_ESTRATEGIA: ingenua
+      LOCATION_DATABASE_URL: postgresql://location_svc:${DB_PASSWORD_LOCATION:-location_dev}@postgres:5432/location
+      JWKS_URL: http://identity:3001/.well-known/jwks.json
+      JWT_ISSUER: viajes-identity
+      JWT_AUDIENCE: viajes
+      # Con :- para que `npm run infra:up` funcione sin él. Si falta, location no arranca y lo dice.
+      LOCATION_TOKEN_SERVICIO: ${LOCATION_TOKEN_SERVICIO:-}
+    ports:
+      - "3004:3004"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   dispatch:
     build:
       context: .
