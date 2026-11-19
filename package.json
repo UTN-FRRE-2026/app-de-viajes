@@ -22,6 +22,11 @@
     "seed": "npm run seed -w @viajes/identity",
     "local": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/local.ps1"
   },
+  "overrides": {
+    "@prisma/config": {
+      "effect": "3.22.1"
+    }
+  },
   "devDependencies": {
     "@types/node": "22.20.5",
     "eslint": "10.13.0",
