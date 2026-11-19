@@ -1,0 +1,27 @@
+// Esquema de location, versión ingenua: un INSERT por ping, sin índice geográfico.
+// Los CHECK de rangos se agregan a mano en la migración.
+
+generator client {
+  provider               = "prisma-client"
+  output                 = "../src/infra/db/generated"
+  moduleFormat           = "esm"
+  importFileExtension    = "js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Ping {
+  id           BigInt   @id @default(autoincrement())
+  // El chofer es el `sub` del token de identity: sin FK, esa base es de otro servicio.
+  choferId     String   @map("driver_id") @db.Uuid
+  lat          Float
+  lng          Float
+  // Hora del servidor, no la del celular: así no se puede "rejuvenecer" una posición.
+  registradoEn DateTime @map("recorded_at") @db.Timestamptz(3)
+
+  // La búsqueda toma la última posición de cada chofer (DISTINCT ON).
+  @@index([choferId, registradoEn(sort: Desc)])
+  @@map("pings")
+}
