@@ -1,8 +1,9 @@
 # ADR 0004 — Asignación única: `FOR UPDATE` de la solicitud + restricción única del chofer
 
-- **Estado:** aceptada
-- **Fecha:** 2026-10-28
-- **Servicio:** dispatch (M5) — problema 6.3
+- **Estado:** aceptado
+- **Fecha:** 2026-10-28 (PR #1). Formato completado el 2026-11-20.
+- **Quiénes participaron:** Ivan (dueño de 6.3). El PR #1 se mergeó sin revisión; revisión de este ADR: Agos y Maxi.
+- **Servicio:** dispatch — problema 6.3
 
 ## Contexto
 
@@ -78,3 +79,9 @@ Si, por ejemplo, la cancelación bloqueara primero al chofer y después la solic
 Los tests agregan una demora de 15 ms dentro de la transacción, después de leer la solicitud (`tests/soporte/demora.ts`). Sin esa demora, una transacción dura ~1 ms y los pedidos llegan escalonados, así que la carrera casi no se da.
 
 Lo comprobamos sacando el `FOR UPDATE`: el test de las 50 aceptaciones seguía en verde. Con la demora, sacar el `FOR UPDATE` hace fallar dos tests, y sacar la reserva del chofer hace fallar otros dos.
+
+## Qué nos haría cambiar de decisión
+
+- **La espera del lock domina la latencia.** Si una solicitud llegara a recibir cientos de aceptaciones a la vez, las aceptaciones se harían en fila y ocuparían conexiones del pool. Hoy se ofrece a 3 choferes por tanda (`OFERTAS_SIMULTANEAS`), así que no pasa. Si la medición de `carga/carrera.js` muestra esperas o timeouts del pool, pasaríamos al bloqueo optimista (`UPDATE ... WHERE version = $v`) para la invariante 1, y la restricción única del chofer seguiría igual para la invariante 2.
+- **La reserva del chofer y la solicitud dejan de estar en la misma base.** Por ejemplo, si choferes o flotas pasaran a otro servicio (ver [ADR 0006](0006-tres-microservicios.md)). La restricción única ya no podría estar en la misma transacción, y haría falta una reserva con compensación (saga) o mover la tabla de asignación con el chofer.
+- **Aparece un `deadlock detected` en los logs o en un test.** Significaría que algún caso de uso nuevo rompió el orden de los locks (primero la solicitud, nunca dos solicitudes). Se corrige el caso de uso, no esta decisión.
