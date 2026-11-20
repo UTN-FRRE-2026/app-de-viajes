@@ -74,6 +74,9 @@ services:
       JWT_ISSUER: viajes-carga
       JWT_AUDIENCE: viajes-carga
       LOCATION_TOKEN_SERVICIO: "${CARGA_TOKEN_SERVICIO:?falta CARGA_TOKEN_SERVICIO}"
+      # Bearer de /metrics. En este entorno descartable se reusa el token de servicio de carga: medir.ps1
+      # es el único que lo usa y no hace falta otro secreto.
+      METRICAS_TOKEN: "${CARGA_TOKEN_SERVICIO:?falta CARGA_TOKEN_SERVICIO}"
     ports:
       - "127.0.0.1:53004:3004"
     cpus: 1

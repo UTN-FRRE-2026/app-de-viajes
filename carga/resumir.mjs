@@ -10,7 +10,28 @@ if (!carpeta || !existsSync(carpeta)) {
 }
 
 const leer = (ruta) => readFileSync(ruta, 'utf8').replace(/^﻿/, '');
-const metrica = (texto, nombre) => Number(texto.match(new RegExp(`^${nombre.replace(/[{}"=.]/g, '\\$&')} ([\\d.]+)`, 'm'))?.[1] ?? NaN);
+// Series de /metrics (formato de texto de Prometheus): nombre, etiquetas (en cualquier orden) y valor.
+const series = (texto) =>
+  texto
+    .split(/\r?\n/)
+    .map((l) => l.match(/^([a-zA-Z_:][\w:]*)(?:\{(.*)\})?\s+(\S+)/))
+    .filter(Boolean)
+    .map(([, nombre, etiquetas = '', valor]) => ({
+      nombre,
+      etiquetas: Object.fromEntries([...etiquetas.matchAll(/(\w+)="((?:[^"\\]|\\.)*)"/g)].map((e) => [e[1], e[2]])),
+      valor: Number(valor),
+    }));
+// El primer nombre que aparezca con esas etiquetas (las demás etiquetas, como `servicio`, no importan).
+// Varios nombres para leer el formato actual y el de las evidencias del 19/11, que no tenían
+// `servicio` y llevaban el prefijo `location_` en el lag.
+const metrica = (texto, nombres, etiquetas = {}) => {
+  const todas = series(texto);
+  for (const nombre of nombres) {
+    const s = todas.find((x) => x.nombre === nombre && Object.entries(etiquetas).every(([k, v]) => x.etiquetas[k] === v));
+    if (s) return s.valor;
+  }
+  return NaN;
+};
 const mb = (s) => {
   const [n, u] = [parseFloat(s), s.replace(/[\d.\s]/g, '')];
   return u.startsWith('GiB') ? n * 1024 : u.startsWith('KiB') ? n / 1024 : n;
@@ -64,9 +85,9 @@ const corridas = readdirSync(carpeta, { withFileTypes: true })
       saludP99: v('http_req_duration{escenario:salud,fase:medicion}', 'p(99)'),
       pingsPorS: rps('pings_aceptados{fase:medicion}'),
       errores: v('http_req_failed{fase:medicion}', 'rate') * 100,
-      lagP99: metrica(metricas, 'location_event_loop_lag_ms{quantile="0.99"}'),
-      lagMax: metrica(metricas, 'location_event_loop_lag_max_ms'),
-      rssMb: metrica(metricas, 'process_resident_memory_bytes') / 1048576,
+      lagP99: metrica(metricas, ['event_loop_lag_ms', 'location_event_loop_lag_ms'], { quantile: '0.99' }),
+      lagMax: metrica(metricas, ['event_loop_lag_max_ms', 'location_event_loop_lag_max_ms']),
+      rssMb: metrica(metricas, ['process_resident_memory_bytes']) / 1048576,
       memLocationMb: memLocation,
       cpuLocationProm: prom(de('viajes-carga-location-1').map((s) => parseFloat(s[2]))),
       cpuLocationMax: maxCpu('viajes-carga-location-1'),

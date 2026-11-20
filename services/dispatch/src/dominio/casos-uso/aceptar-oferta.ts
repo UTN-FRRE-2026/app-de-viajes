@@ -23,9 +23,11 @@ export function aceptarOferta(deps: DependenciasDespacho) {
     const previa = await deps.repo.obtenerOferta(ofertaId);
     if (!previa || previa.choferId !== choferId) throw new OfertaNoEncontrada();
 
-    return deps.repo.enTransaccion(async (tx) => {
+    let creadaEn: Date | undefined;
+    const datos = await deps.repo.enTransaccion(async (tx) => {
       const solicitud = await tx.obtenerSolicitudParaActualizar(previa.solicitudId);
       if (!solicitud) throw new SolicitudNoEncontrada();
+      creadaEn = solicitud.creadaEn;
 
       // Releer DESPUÉS del lock: mientras esperábamos, otra transacción pudo cancelarla o vencerla.
       const ofertas = await tx.ofertasDeSolicitud(solicitud.id);
@@ -55,5 +57,8 @@ export function aceptarOferta(deps: DependenciasDespacho) {
       });
       return solicitud.aDatos();
     });
+    // Ya confirmada: el tiempo hasta la asignación cierra después del COMMIT, no antes.
+    if (creadaEn) deps.metricas?.asignacion(deps.reloj.ahora().getTime() - creadaEn.getTime());
+    return datos;
   };
 }

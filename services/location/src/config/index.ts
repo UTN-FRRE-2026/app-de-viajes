@@ -1,3 +1,4 @@
+import { tokenMetricas } from '@viajes/platform';
 import { z } from 'zod';
 
 export const EsquemaConfig = z
@@ -18,8 +19,10 @@ export const EsquemaConfig = z
     JWKS_URL: z.string().url(),
     JWT_ISSUER: z.string().min(1),
     JWT_AUDIENCE: z.string().min(1),
-    // Secreto compartido con dispatch para /interno/* y /metrics. Nunca se loguea ni se devuelve.
+    // Secreto compartido con dispatch para /interno/*. Nunca se loguea ni se devuelve.
     LOCATION_TOKEN_SERVICIO: z.string().min(32, 'tiene que tener al menos 32 caracteres').max(256),
+    // Bearer de GET /metrics (Alloy). El mismo en los tres servicios: el .env es compartido.
+    METRICAS_TOKEN: tokenMetricas,
     UBICACION_VIGENCIA_SEGUNDOS: z.coerce.number().int().min(5).max(600).default(30),
     // Versión optimizada: historial por cola y purga del índice.
     LOCATION_HISTORIAL_LOTE: z.coerce.number().int().min(1).max(5000).default(500),

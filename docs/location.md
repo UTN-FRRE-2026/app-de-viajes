@@ -71,14 +71,16 @@ En la optimizada, un `503` por Postgres no significa que el servicio esté parad
 
 ### `GET /metrics`
 
-Con `X-Token-Servicio`, igual que las rutas internas. Formato de texto de Prometheus:
+Lo monta `platform`, igual en los tres servicios: `Authorization: Bearer <METRICAS_TOKEN>`. Sin el encabezado o con otro valor, `401 TOKEN_METRICAS_INVALIDO`. El token de servicio **no** sirve acá: cada secreto abre una sola cosa. Formato de texto de Prometheus; todas las series llevan `servicio="location"`:
 
 | Métrica | Qué es |
 |---|---|
-| `location_event_loop_lag_ms{quantile="0.5"\|"0.99"}`, `location_event_loop_lag_max_ms` | Lag del event loop desde el arranque, con `monitorEventLoopDelay` (resolución de 10 ms, ya descontada) |
+| `event_loop_lag_ms{quantile="0.5"\|"0.99"}`, `event_loop_lag_max_ms`, `event_loop_lag_mean_ms` | Lag del event loop desde el arranque, con `monitorEventLoopDelay` (resolución de 10 ms, ya descontada). Hasta el 20/11 se llamaba `location_event_loop_lag_*`, sin `servicio`: `carga/resumir.mjs` lee los dos formatos |
 | `process_resident_memory_bytes`, `nodejs_heap_used_bytes` | Memoria |
-| `location_historial_en_cola`, `location_historial_pendientes` | Optimizada: entradas en el stream y entradas leídas sin confirmar |
-| `location_historial_descartados_total`, `location_historial_ocupacion` | Optimizada: entradas que no entraron por cola llena, y uso de la cola (de 0 a 1) |
+| `http_request_duration_seconds{metodo, ruta, estado}` | Histograma de duración por ruta (el patrón, nunca la URL con ids; `sin_ruta` si ningún handler atendió el pedido) |
+| `location_estrategia{estrategia}` | Estrategia con la que corre (siempre 1) |
+| `location_historial_en_cola`, `location_historial_pendientes` | Optimizada: entradas en el stream y entradas leídas sin confirmar. `carga/medir.ps1` las usa para esperar el drenaje y **falla si no las encuentra** |
+| `location_historial_descartados_total`, `location_historial_ocupacion`, `location_historial_max_cola` | Optimizada: entradas que no entraron por cola llena, uso de la cola (de 0 a 1) y su tope |
 
 ## Versión optimizada (`UBICACION_ESTRATEGIA=optimizada`)
 
@@ -356,5 +358,5 @@ npm run test:dominio -w @viajes/location
    - límite de pedidos en `/ubicaciones`;
    - retención del historial;
    - publicación por Redis para el seguimiento, con su regla de privacidad;
-   - `/metrics` en `platform` con `prom-client` para Grafana;
+   - Alloy y los dashboards de Grafana sobre el `/metrics` de `platform` (ya hecho);
    - ADR 0008 (Redis GEO frente a PostGIS frente a geohash), con los números de [docs/mediciones.md](mediciones.md).

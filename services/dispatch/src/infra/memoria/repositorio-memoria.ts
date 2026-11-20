@@ -1,4 +1,4 @@
-import { Oferta, SolicitudViaje, type DatosOferta, type DatosSolicitud } from '../../dominio/entidades/index.js';
+import { Oferta, SolicitudViaje, type DatosOferta, type RegistroSolicitud } from '../../dominio/entidades/index.js';
 import type { EventoDispatch, RepositorioDespacho, TransaccionDespacho } from '../../dominio/puertos/index.js';
 
 /** Cola de espera simple: quien llega segundo espera a que el primero suelte. */
@@ -28,7 +28,7 @@ const ACTIVAS = new Set(['BUSCANDO', 'ASIGNADO']);
  * en Postgres espera a ver si el primero confirma o hace rollback.
  */
 export class RepositorioDespachoMemoria implements RepositorioDespacho {
-  readonly solicitudes = new Map<string, DatosSolicitud>();
+  readonly solicitudes = new Map<string, RegistroSolicitud>();
   readonly ofertas = new Map<string, DatosOferta>();
   /** choferId → solicitudId */
   readonly asignaciones = new Map<string, string>();
@@ -63,7 +63,7 @@ export class RepositorioDespachoMemoria implements RepositorioDespacho {
   async enTransaccion<T>(trabajo: (tx: TransaccionDespacho) => Promise<T>): Promise<T> {
     const soltar: Array<() => void> = [];
     const tomados = new Set<string>();
-    const solicitudes = new Map<string, DatosSolicitud>();
+    const solicitudes = new Map<string, RegistroSolicitud>();
     const ofertas = new Map<string, DatosOferta>();
     const eventos: EventoDispatch[] = [];
     const reservas = new Map<string, string>();
@@ -95,11 +95,11 @@ export class RepositorioDespachoMemoria implements RepositorioDespacho {
         if (yaActiva || this.pasajerosReservados.has(s.pasajeroId)) return false;
         this.pasajerosReservados.add(s.pasajeroId);
         pasajeros.add(s.pasajeroId);
-        solicitudes.set(s.id, s.aDatos());
+        solicitudes.set(s.id, s.aRegistro());
         return true;
       },
       guardarSolicitud: async (s) => {
-        solicitudes.set(s.id, s.aDatos());
+        solicitudes.set(s.id, s.aRegistro());
       },
       guardarOfertas: async (lista) => {
         for (const o of lista) ofertas.set(o.id, o.aDatos());

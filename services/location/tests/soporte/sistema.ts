@@ -11,6 +11,7 @@ import { crearEmisorTokens } from './tokens.js';
 
 /** Un secreto distinto en cada corrida: los tests nunca usan ni muestran el del .env. */
 export const TOKEN_SERVICIO = randomBytes(32).toString('base64url');
+export const TOKEN_METRICAS = randomBytes(32).toString('base64url');
 
 export function configTest(extra: Record<string, string> = {}) {
   return EsquemaConfig.parse({
@@ -22,6 +23,7 @@ export function configTest(extra: Record<string, string> = {}) {
     JWT_ISSUER: 'viajes-identity-test',
     JWT_AUDIENCE: 'viajes',
     LOCATION_TOKEN_SERVICIO: TOKEN_SERVICIO,
+    METRICAS_TOKEN: TOKEN_METRICAS,
     // En los tests el consumidor del historial se maneja a mano: espera corta para no frenar el cierre.
     LOCATION_HISTORIAL_ESPERA_MS: '100',
     ...extra,
@@ -54,6 +56,7 @@ export async function levantarLocation(reemplazos: Reemplazos = {}, config: Reco
     historial: sistema.historial,
     ...tokens,
     servicio: { 'X-Token-Servicio': TOKEN_SERVICIO },
+    conMetricas: { Authorization: `Bearer ${TOKEN_METRICAS}` },
     async limpiar() {
       await prisma.$executeRawUnsafe('TRUNCATE pings');
     },

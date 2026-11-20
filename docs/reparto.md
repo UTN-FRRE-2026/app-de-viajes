@@ -60,7 +60,7 @@ Cada integrante es **dueño** de un problema central y de los módulos que lo ro
 - [x] location ingenua: un `INSERT` por ping y haversine en JavaScript sobre todos los choferes.
 - [x] location optimizada: Redis `GEOADD` / `GEOSEARCH`, vencimiento contra choferes fantasma, historial por cola con escritura en lotes. Se elige con `UBICACION_ESTRATEGIA`.
 - [x] `GET /interno/candidatos`, protegido con el token de servicio.
-- [ ] `/metrics` en `platform` con el lag del event loop (`monitorEventLoopDelay`) y memoria, para los tres servicios. Hecho solo en location.
+- [x] `/metrics` en `platform` con el lag del event loop (`monitorEventLoopDelay`) y memoria, para los tres servicios. Suma la duración por ruta y, en dispatch, solicitudes, asignaciones, ofertas vencidas y tiempo hasta la asignación.
 - [ ] `carga/choferes.js` (500 choferes cada 2 s) y `carga/solicitudes.js`. Hecho como `carga/ubicaciones.js`; falta `carga/solicitudes.js`.
 - [x] Hipótesis con número y primera medición en `docs/mediciones.md`.
 - [x] ADR 0005 (tarea pesada).

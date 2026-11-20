@@ -4,7 +4,7 @@ import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { alNorte, OBELISCO } from '../soporte/memoria.js';
 import { borrarPrefijo, crearRedisTest } from '../soporte/redis.js';
-import { levantarLocation, TOKEN_SERVICIO, type Location } from '../soporte/sistema.js';
+import { levantarLocation, TOKEN_METRICAS, TOKEN_SERVICIO, type Location } from '../soporte/sistema.js';
 
 let redis: Redis;
 beforeAll(() => {
@@ -44,15 +44,19 @@ describe('location optimizada por HTTP', () => {
     expect(res.body.chequeos).toEqual({ postgres: 'ok', migraciones: 'ok', redis: 'ok' });
   });
 
-  it('/metrics exige el token de servicio e informa el lag y la cola', async () => {
+  it('/metrics exige el token de métricas e informa el lag y la cola', async () => {
     expect((await request(d.url).get('/metrics')).status).toBe(401);
-    const res = await request(d.url).get('/metrics').set(d.servicio);
+    // El token de servicio ya no abre /metrics: cada secreto sirve para una sola cosa.
+    expect((await request(d.url).get('/metrics').set(d.servicio)).status).toBe(401);
+    const res = await request(d.url).get('/metrics').set(d.conMetricas);
     expect(res.status).toBe(200);
-    expect(res.text).toMatch(/location_event_loop_lag_ms\{quantile="0.99"\} \d/);
-    expect(res.text).toMatch(/location_historial_en_cola \d+/);
-    expect(res.text).toMatch(/location_historial_descartados_total \d+/);
-    expect(res.text).toContain('location_estrategia{estrategia="optimizada"} 1');
+    expect(res.text).toMatch(/event_loop_lag_ms\{quantile="0.99",servicio="location"\} \d/);
+    expect(res.text).toMatch(/location_historial_en_cola\{servicio="location"\} \d+/);
+    expect(res.text).toMatch(/location_historial_pendientes\{servicio="location"\} \d+/);
+    expect(res.text).toMatch(/location_historial_descartados_total\{servicio="location"\} \d+/);
+    expect(res.text).toContain('location_estrategia{estrategia="optimizada",servicio="location"} 1');
     expect(res.text).not.toContain(TOKEN_SERVICIO);
+    expect(res.text).not.toContain(TOKEN_METRICAS);
   });
 });
 

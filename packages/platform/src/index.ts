@@ -9,3 +9,4 @@ export * from './apagado.js';
 export * from './app.js';
 export * from './seguridad.js';
 export * from './cliente-interno.js';
+export * from './metricas.js';

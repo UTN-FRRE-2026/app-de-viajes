@@ -18,20 +18,32 @@ export interface DatosSolicitud {
 }
 
 /**
+ * Lo que se guarda: los datos públicos más `creadaEn`, que es interno (no sale en las respuestas).
+ * `creadaEn` es el momento en que el pasajero pidió el viaje, tomado antes de buscar candidatos:
+ * de ahí se mide el tiempo hasta la asignación.
+ */
+export interface RegistroSolicitud extends DatosSolicitud {
+  creadaEn: Date;
+}
+
+/**
  * Transiciones válidas:
  *   BUSCANDO → ASIGNADO | CANCELADO_PASAJERO | SIN_CHOFERES
  *   ASIGNADO → CANCELADO_PASAJERO | COMPLETADA
  * Cualquier otra lanza un error de dominio.
  */
 export class SolicitudViaje {
-  private constructor(private datos: DatosSolicitud) {}
+  private constructor(
+    private datos: DatosSolicitud,
+    readonly creadaEn: Date,
+  ) {}
 
-  static nueva(id: string, pasajeroId: string, origen: Coordenada, destino: Coordenada): SolicitudViaje {
-    return new SolicitudViaje({ id, pasajeroId, origen, destino, estado: 'BUSCANDO', choferId: null, version: 0 });
+  static nueva(id: string, pasajeroId: string, origen: Coordenada, destino: Coordenada, creadaEn: Date): SolicitudViaje {
+    return new SolicitudViaje({ id, pasajeroId, origen, destino, estado: 'BUSCANDO', choferId: null, version: 0 }, creadaEn);
   }
 
-  static reconstruir(datos: DatosSolicitud): SolicitudViaje {
-    return new SolicitudViaje({ ...datos });
+  static reconstruir({ creadaEn, ...datos }: RegistroSolicitud): SolicitudViaje {
+    return new SolicitudViaje(datos, new Date(creadaEn));
   }
 
   get id() {
@@ -85,8 +97,14 @@ export class SolicitudViaje {
     this.cambiar({ estado: 'COMPLETADA' });
   }
 
+  /** Lo que ve el cliente: sin `creadaEn`. */
   aDatos(): DatosSolicitud {
     return { ...this.datos };
+  }
+
+  /** Lo que se guarda: con `creadaEn`. */
+  aRegistro(): RegistroSolicitud {
+    return { ...this.datos, creadaEn: new Date(this.creadaEn) };
   }
 
   private cambiar(cambios: Partial<DatosSolicitud>): void {

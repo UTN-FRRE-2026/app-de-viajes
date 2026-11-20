@@ -13,6 +13,7 @@ const base = {
   JWT_ISSUER: 'viajes-identity',
   JWT_AUDIENCE: 'viajes',
   IDENTITY_JWT_CLAVE_PRIVADA_B64: CLAVE,
+  METRICAS_TOKEN: 'm'.repeat(40),
 };
 
 const variablesConError = (entorno: Record<string, string | undefined>) => {
@@ -24,6 +25,11 @@ describe('configuración', () => {
   it('con lo mínimo arranca con los parámetros de OWASP y el puerto 3001', () => {
     const c = EsquemaConfig.parse(base);
     expect(c).toMatchObject({ PUERTO: 3001, ARGON2_MEMORIA_KIB: 19_456, ARGON2_ITERACIONES: 2, ARGON2_PARALELISMO: 1 });
+  });
+
+  it('sin token de métricas, o con uno corto, nombra la variable', () => {
+    expect(variablesConError({ ...base, METRICAS_TOKEN: undefined })).toEqual(['METRICAS_TOKEN']);
+    expect(variablesConError({ ...base, METRICAS_TOKEN: 'corto' })).toEqual(['METRICAS_TOKEN']);
   });
 
   it('sin clave privada nombra la variable', () => {

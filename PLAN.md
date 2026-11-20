@@ -298,7 +298,7 @@ Dos detalles: el simulador necesita 500 tokens y el límite de login por IP (30 
 
 ### 5.6 Grafana Cloud (10)
 
-- `/metrics` en los tres servicios, desde `platform`, con `prom-client`: latencia por ruta, lag del event loop (`monitorEventLoopDelay`), memoria, y métricas de negocio (solicitudes, asignaciones, ofertas vencidas, tiempo hasta la asignación, pings por segundo).
+- `/metrics` en los tres servicios, desde `platform`, con `prom-client`: latencia por ruta, lag del event loop (`monitorEventLoopDelay`), memoria, y métricas de negocio (solicitudes, asignaciones, ofertas vencidas, tiempo hasta la asignación, pings por segundo). **Hecho**, salvo pings por segundo. Se protege con `Authorization: Bearer <METRICAS_TOKEN>`, que Alloy manda con `bearer_token`. El tiempo hasta la asignación va desde antes de buscar candidatos hasta el COMMIT de la aceptación.
 - **Grafana Alloy** en un perfil de Compose (`--profile obs`) envía métricas y los logs JSON a Grafana Cloud.
 - Dashboards: salud de los tres servicios, despacho y tarea pesada. Se exportan como JSON a `observabilidad/`.
 - La cátedra solo necesita acceso al repositorio: los dashboards exportados y las capturas en `docs/evidencias/` son la evidencia, y se muestra en vivo en el coloquio.
@@ -318,7 +318,7 @@ Es lo que pide el Control 3: carrera principal con su test (ya está) y tarea pe
 - [x] `npm run setup`, `dev`, `start` para los tres servicios; secuencia probada en un clon limpio (Ivan). Falta repetirla en Windows.
 - [x] Contrato de `GET /interno/candidatos` en `contracts` y adaptador HTTP con timeout en dispatch (Ivan, Maxi).
 - [x] location en sus dos versiones, con adaptador en memoria primero (Agos #7, Maxi #8).
-- [ ] `carga/choferes.js`, `carga/solicitudes.js`, `/metrics` con el lag y **primera medición** en `docs/mediciones.md` (Maxi). Hecho: `carga/ubicaciones.js`, `/metrics` de location y la primera medición. Falta: `carga/solicitudes.js` y `/metrics` en dispatch e identity.
+- [ ] `carga/choferes.js`, `carga/solicitudes.js`, `/metrics` con el lag y **primera medición** en `docs/mediciones.md` (Maxi). Hecho: `carga/ubicaciones.js`, la primera medición y `/metrics` en los tres servicios desde `platform`, con el tiempo hasta la asignación en dispatch. Falta: `carga/solicitudes.js`.
 - [ ] flotas en dispatch: choferes, vehículos, flotas y la carrera G con su test (Agos).
 - [ ] ADR 0001, 0002, 0003, 0005 y 0006; 0004 con el formato corregido. Hechos: 0001, 0004, 0005 y 0006. Faltan 0002 y 0003 (Agos).
 

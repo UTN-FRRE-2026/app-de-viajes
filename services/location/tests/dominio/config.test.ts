@@ -8,6 +8,7 @@ const base = {
   JWT_ISSUER: 'viajes-identity',
   JWT_AUDIENCE: 'viajes',
   LOCATION_TOKEN_SERVICIO: TOKEN,
+  METRICAS_TOKEN: 'm'.repeat(40),
 };
 
 const variablesConError = (entorno: Record<string, string | undefined>) => {
@@ -26,6 +27,11 @@ describe('configuración', () => {
 
   it('sin token de servicio nombra la variable', () => {
     expect(variablesConError({ ...base, LOCATION_TOKEN_SERVICIO: undefined })).toEqual(['LOCATION_TOKEN_SERVICIO']);
+  });
+
+  it('sin token de métricas, o con uno corto, nombra la variable', () => {
+    expect(variablesConError({ ...base, METRICAS_TOKEN: undefined })).toEqual(['METRICAS_TOKEN']);
+    expect(variablesConError({ ...base, METRICAS_TOKEN: 'corto' })).toEqual(['METRICAS_TOKEN']);
   });
 
   it('un token de servicio corto se rechaza, y el mensaje no repite el valor', () => {

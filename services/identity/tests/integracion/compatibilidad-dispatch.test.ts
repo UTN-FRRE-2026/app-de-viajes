@@ -1,5 +1,5 @@
 import { spawn, type ChildProcess } from 'node:child_process';
-import { generateKeyPairSync, randomUUID } from 'node:crypto';
+import { generateKeyPairSync, randomBytes, randomUUID } from 'node:crypto';
 import { createServer } from 'node:net';
 import { fileURLToPath } from 'node:url';
 import { verificadorJwks } from '@viajes/platform';
@@ -77,6 +77,7 @@ beforeAll(async () => {
       JWKS_URL: `${d.url}/.well-known/jwks.json`,
       JWT_ISSUER: ISSUER,
       JWT_AUDIENCE: AUDIENCE,
+      METRICAS_TOKEN: randomBytes(32).toString('base64url'),
     },
     stdio: ['ignore', 'ignore', 'pipe'],
   });

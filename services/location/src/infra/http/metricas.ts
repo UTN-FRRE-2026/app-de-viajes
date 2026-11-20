@@ -1,49 +1,50 @@
-import { monitorEventLoopDelay } from 'node:perf_hooks';
-import type { RequestHandler } from 'express';
+import { Gauge, type Metricas } from '@viajes/platform';
 import type { EstadoHistorial } from '../redis/historial.js';
 
-const RESOLUCION_MS = 10;
-
 /**
- * monitorEventLoopDelay registra cuánto tardó en dispararse su timer, que se programa cada
- * RESOLUCION_MS: con el proceso en reposo da ~10 ms en Linux, no 0. El lag real es lo que excede la
- * resolución, y eso es lo que se publica (comprobado: un bloqueo de 200 ms da un máximo de ~210 ms
- * crudo, ~200 ms ajustado).
+ * Métricas propias de location, en el mismo Registry que las comunes de `platform` (lag, memoria,
+ * duración HTTP). La espera del historial en `carga/medir.ps1` depende de `location_historial_en_cola`
+ * y `location_historial_pendientes`: si se renombran, hay que cambiar también ese script.
  */
-const lagMs = (ns: number) => (Number.isFinite(ns) ? Math.max(0, ns / 1e6 - RESOLUCION_MS) : 0);
+export function registrarMetricasLocation(
+  { registro }: Metricas,
+  estrategia: string,
+  historial?: () => Promise<EstadoHistorial>,
+): void {
+  new Gauge({
+    name: 'location_estrategia',
+    help: 'Estrategia de 6.6 con la que corre el proceso (siempre 1).',
+    labelNames: ['estrategia'] as const,
+    registers: [registro],
+    collect() {
+      this.set({ estrategia }, 1);
+    },
+  });
+  if (!historial) return;
 
-/**
- * /metrics en formato de texto de Prometheus, sin dependencias. El lag del event loop se mide desde
- * que arranca el proceso (para cada medición se reinicia el contenedor). Más adelante se pasa a
- * `platform` con prom-client para Grafana.
- */
-export function rutaMetricas(estrategia: string, historial?: () => Promise<EstadoHistorial>): RequestHandler {
-  const lag = monitorEventLoopDelay({ resolution: RESOLUCION_MS });
-  lag.enable();
+  // Una sola consulta a Redis por scrape: prom-client llama a los cinco collect() juntos, antes de
+  // esperar a ninguno, así que comparten la misma promesa. Al resolverse, el próximo scrape consulta de nuevo.
+  let enCurso: Promise<EstadoHistorial> | undefined;
+  const estado = () =>
+    (enCurso ??= historial().finally(() => {
+      enCurso = undefined;
+    }));
 
-  return async (_req, res) => {
-    const mem = process.memoryUsage();
-    const lineas = [
-      `# HELP location_event_loop_lag_ms Lag del event loop desde el arranque (monitorEventLoopDelay, sin los ${RESOLUCION_MS} ms de resolución).`,
-      '# TYPE location_event_loop_lag_ms summary',
-      `location_event_loop_lag_ms{quantile="0.5"} ${lagMs(lag.percentile(50)).toFixed(3)}`,
-      `location_event_loop_lag_ms{quantile="0.99"} ${lagMs(lag.percentile(99)).toFixed(3)}`,
-      `location_event_loop_lag_max_ms ${lagMs(lag.max).toFixed(3)}`,
-      `location_event_loop_lag_mean_ms ${lagMs(lag.mean).toFixed(3)}`,
-      `process_resident_memory_bytes ${mem.rss}`,
-      `nodejs_heap_used_bytes ${mem.heapUsed}`,
-      `location_estrategia{estrategia="${estrategia}"} 1`,
-    ];
-    if (historial) {
-      const h = await historial();
-      lineas.push(
-        `location_historial_en_cola ${h.enCola}`,
-        `location_historial_pendientes ${h.pendientes}`,
-        `location_historial_descartados_total ${h.descartados}`,
-        `location_historial_ocupacion ${h.ocupacion.toFixed(6)}`,
-        `location_historial_max_cola ${h.maxCola}`,
-      );
-    }
-    res.set('Cache-Control', 'no-store').type('text/plain; version=0.0.4').send(lineas.join('\n') + '\n');
-  };
+  const series: Array<[string, string, (e: EstadoHistorial) => number]> = [
+    ['location_historial_en_cola', 'Pings en el stream del historial, todavía sin escribir en Postgres.', (e) => e.enCola],
+    ['location_historial_pendientes', 'Pings leídos por el consumidor y todavía sin confirmar.', (e) => e.pendientes],
+    ['location_historial_descartados_total', 'Pings descartados del historial por cola llena.', (e) => e.descartados],
+    ['location_historial_ocupacion', 'Ocupación de la cola del historial (0 a 1).', (e) => e.ocupacion],
+    ['location_historial_max_cola', 'Tope de la cola del historial.', (e) => e.maxCola],
+  ];
+  for (const [name, help, valor] of series) {
+    new Gauge({
+      name,
+      help,
+      registers: [registro],
+      async collect() {
+        this.set(valor(await estado()));
+      },
+    });
+  }
 }

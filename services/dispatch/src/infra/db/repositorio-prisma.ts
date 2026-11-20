@@ -19,6 +19,7 @@ interface FilaSolicitud {
   destination_lng: number;
   driver_id: string | null;
   version: number;
+  created_at: Date;
 }
 
 type ModeloSolicitud = {
@@ -31,6 +32,7 @@ type ModeloSolicitud = {
   destinoLng: number;
   choferId: string | null;
   version: number;
+  creadaEn: Date;
 };
 
 type ModeloOferta = { id: string; solicitudId: string; choferId: string; estado: string; venceEn: Date };
@@ -44,6 +46,7 @@ function aSolicitud(m: ModeloSolicitud): SolicitudViaje {
     destino: { lat: m.destinoLat, lng: m.destinoLng },
     choferId: m.choferId,
     version: m.version,
+    creadaEn: m.creadaEn,
   });
 }
 
@@ -58,6 +61,7 @@ function filaASolicitud(f: FilaSolicitud): SolicitudViaje {
     destinoLng: f.destination_lng,
     choferId: f.driver_id,
     version: f.version,
+    creadaEn: f.created_at,
   });
 }
 
@@ -75,7 +79,8 @@ function transaccion(tx: Prisma.TransactionClient): TransaccionDespacho {
     async obtenerSolicitudParaActualizar(id) {
       // Bloquea la fila hasta COMMIT/ROLLBACK. Otra transacción que pida el mismo lock espera acá.
       const filas = await tx.$queryRaw<FilaSolicitud[]>`
-        SELECT id, passenger_id, status, origin_lat, origin_lng, destination_lat, destination_lng, driver_id, version
+        SELECT id, passenger_id, status, origin_lat, origin_lng, destination_lat, destination_lng, driver_id, version,
+               created_at
         FROM ride_requests
         WHERE id = ${id}::uuid
         FOR UPDATE`;
@@ -90,11 +95,12 @@ function transaccion(tx: Prisma.TransactionClient): TransaccionDespacho {
     async insertarSolicitud(s) {
       // Si el pasajero ya tiene una activa, el índice único parcial lo impide y no se inserta nada.
       // ON CONFLICT DO NOTHING en vez de capturar el error: la transacción no queda abortada.
+      // created_at sale del Reloj del dominio (antes de buscar candidatos), no del now() de la base.
       const filas = await tx.$queryRaw<{ id: string }[]>`
-        INSERT INTO ride_requests (id, passenger_id, status, origin_lat, origin_lng, destination_lat, destination_lng, version)
+        INSERT INTO ride_requests (id, passenger_id, status, origin_lat, origin_lng, destination_lat, destination_lng, version, created_at)
         VALUES (${s.id}::uuid, ${s.pasajeroId}::uuid, ${s.estado},
                 ${s.origen.lat}::float8, ${s.origen.lng}::float8, ${s.destino.lat}::float8, ${s.destino.lng}::float8,
-                ${s.version})
+                ${s.version}, ${s.creadaEn}::timestamptz)
         ON CONFLICT DO NOTHING
         RETURNING id`;
       return filas.length === 1;

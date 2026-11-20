@@ -43,6 +43,19 @@ export interface BuscadorCandidatos {
   buscar(origen: Coordenada, opciones: { excluir: string[]; limite: number }): Promise<string[]>;
 }
 
+/**
+ * Métricas de negocio. Los casos de uso las registran **después** de que la transacción confirmó:
+ * lo que hace rollback no se cuenta.
+ */
+export interface MetricasDespacho {
+  /** Solicitud creada: con ofertas, o directamente SIN_CHOFERES. */
+  solicitudCreada(resultado: 'con_ofertas' | 'sin_choferes'): void;
+  /** Asignación confirmada, con el tiempo desde que el pasajero la pidió (antes de buscar candidatos). */
+  asignacion(msDesdeSolicitud: number): void;
+  /** Ofertas que el barrido marcó como vencidas. */
+  ofertasVencidas(cantidad: number): void;
+}
+
 export interface ParametrosDespacho {
   ofertasSimultaneas: number;
   ttlOfertaMs: number;

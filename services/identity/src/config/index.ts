@@ -1,4 +1,5 @@
 import { createPrivateKey, type KeyObject } from 'node:crypto';
+import { tokenMetricas } from '@viajes/platform';
 import { z } from 'zod';
 
 const BITS_MINIMOS_RSA = 2048;
@@ -42,6 +43,8 @@ export const EsquemaConfig = z
     IDENTITY_LOGIN_MAX_POR_IP: z.coerce.number().int().min(1).default(30),
     IDENTITY_LOGIN_VENTANA_SEGUNDOS: z.coerce.number().int().min(1).default(900),
     APAGADO_TIMEOUT_MS: z.coerce.number().int().positive().default(10_000),
+    // Bearer de GET /metrics (Alloy). El mismo en los tres servicios: el .env es compartido.
+    METRICAS_TOKEN: tokenMetricas,
   })
   .refine((c) => c.IDENTITY_PERSISTENCIA !== 'postgres' || c.IDENTITY_DATABASE_URL, {
     path: ['IDENTITY_DATABASE_URL'],
