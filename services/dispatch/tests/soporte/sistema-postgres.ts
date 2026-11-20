@@ -19,6 +19,7 @@ export function configTest(extra: Record<string, string> = {}) {
     JWT_ISSUER: 'viajes-identity-test',
     JWT_AUDIENCE: 'viajes',
     OFERTAS_SIMULTANEAS: '50',
+    DISPATCH_BUSCADOR: 'fijo',
     ...extra,
   });
 }

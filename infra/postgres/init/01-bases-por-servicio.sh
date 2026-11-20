@@ -4,7 +4,7 @@
 # Contraseña: DB_PASSWORD_<SERVICIO> si está definida; si no, "<servicio>_dev" (solo desarrollo).
 set -euo pipefail
 
-servicios="identity passengers drivers location dispatch trips payments notifications reservations"
+servicios="identity location dispatch"
 
 crear_base() {
   local base="$1" usuario="$2"

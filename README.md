@@ -13,7 +13,7 @@ Documentación:
 - [docs/consultas-catedra.md](docs/consultas-catedra.md): consultas a la cátedra, respuestas y qué asumimos en las que siguen abiertas.
 - [docs/reparto.md](docs/reparto.md): quién hace qué (Ivan, Agos, Maxi), dependencias y reglas de colaboración.
 - [docs/identity.md](docs/identity.md): contrato de identity, usuarios de prueba y comandos para PowerShell.
-- [docs/location.md](docs/location.md): contrato de location, versiones ingenua y optimizada, propuesta de integración con dispatch y prueba manual en PowerShell.
+- [docs/location.md](docs/location.md): contrato de location, versiones ingenua y optimizada, contrato con dispatch y prueba manual en PowerShell.
 - [docs/mediciones.md](docs/mediciones.md): informe de mediciones de 6.6 (k6, ingenua frente a optimizada); cómo reproducirlas en [carga/README.md](carga/README.md).
 - [docs/adr](docs/adr): decisiones de arquitectura (0004 asignación única, 0005 tarea pesada).
 - [docs/repaso-problemas-centrales.html](docs/repaso-problemas-centrales.html): repaso de 6.3, 6.6 y la variante G con diagramas de tiempos (abrir en el navegador).
@@ -37,7 +37,7 @@ Node 22 o superior, Docker con Compose.
 ```bash
 cp .env.example .env
 npm install
-npm run infra:up            # postgres (puerto 5434 del host), redis, rabbitmq
+npm run infra:up            # postgres (puerto 5434 del host) y redis
 npm run lint
 npm run typecheck
 npm test                    # dominio en memoria + integración/concurrencia contra Postgres

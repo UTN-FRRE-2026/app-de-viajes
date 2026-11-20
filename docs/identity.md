@@ -157,7 +157,7 @@ npm run local -- identity seed
 
 - Si ya tenías un `.env`, agregale las variables nuevas de la sección `identity` de `.env.example`: copiar no lo reemplaza.
 - `npm run claves` agrega la clave privada al `.env` sin mostrarla, y no toca una clave que ya exista.
-- Para probar el flujo completo, `DISPATCH_CANDIDATOS_DEMO` tiene que tener el id del chofer de prueba, como en `.env.example`.
+- Para probar el flujo completo, dispatch busca candidatos en location (el chofer de prueba tiene que haber informado su posición hace menos de 30 s). Sin location, `DISPATCH_BUSCADOR=fijo` y `DISPATCH_CANDIDATOS_DEMO` con el id del chofer de prueba, como en `.env.example`.
 
 ### Correr los servicios
 

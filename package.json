@@ -12,7 +12,7 @@
     "services/*"
   ],
   "scripts": {
-    "infra:up": "docker compose up -d postgres redis rabbitmq",
+    "infra:up": "docker compose up -d postgres redis",
     "lint": "eslint .",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm test --workspaces --if-present",

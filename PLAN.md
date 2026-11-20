@@ -314,11 +314,11 @@ Dos detalles: el simulador necesita 500 tokens y el límite de login por IP (30 
 Es lo que pide el Control 3: carrera principal con su test (ya está) y tarea pesada en dos versiones con la primera medición.
 
 - [x] Confirmar con la cátedra si se exigen microservicios: sí, tres como mínimo.
-- [ ] Esqueleto de `services/location` (health, config, composición, base, CI) y Compose sin RabbitMQ y con `location` (Ivan). Es lo primero: destraba a Maxi.
+- [x] Esqueleto de `services/location` (health, config, composición, base, CI) y Compose sin RabbitMQ y con `location`. El esqueleto lo hizo Agos (#7); el Compose sin RabbitMQ, Ivan.
 - [ ] `npm run setup`, `dev`, `start` para los tres servicios; secuencia de 2.4 probada en un clon limpio (Ivan).
-- [ ] Contrato de `GET /interno/candidatos` en `contracts` y adaptador HTTP con timeout en dispatch (Ivan, Maxi).
-- [ ] location en sus dos versiones, con adaptador en memoria primero (Maxi).
-- [ ] `carga/choferes.js`, `carga/solicitudes.js`, `/metrics` con el lag y **primera medición** en `docs/mediciones.md` (Maxi).
+- [x] Contrato de `GET /interno/candidatos` en `contracts` y adaptador HTTP con timeout en dispatch (Ivan, Maxi).
+- [x] location en sus dos versiones, con adaptador en memoria primero (Agos #7, Maxi #8).
+- [ ] `carga/choferes.js`, `carga/solicitudes.js`, `/metrics` con el lag y **primera medición** en `docs/mediciones.md` (Maxi). Hecho: `carga/ubicaciones.js`, `/metrics` de location y la primera medición. Falta: `carga/solicitudes.js` y `/metrics` en dispatch e identity.
 - [ ] flotas en dispatch: choferes, vehículos, flotas y la carrera G con su test (Agos).
 - [ ] ADR 0001, 0002, 0003, 0005 y 0006; 0004 con el formato corregido.
 
