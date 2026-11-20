@@ -67,7 +67,7 @@ La cátedra permite compartir la base. Mantenemos lo que ya está construido: **
 - **Sin RabbitMQ.** Nadie lo exige y ningún código lo usa: sale del Compose. La tabla `outbox` se conserva en dispatch como fuente de los eventos de tiempo real.
 - **Candidatos:** location devuelve los choferes más cercanos, ordenados por distancia. dispatch los filtra en su propia base: habilitado, disponible, sin viaje activo y de una flota con la zona del origen habilitada. Así location no necesita saber nada de flotas ni de viajes. Si el filtro deja pocos, se pide un lote más grande; va en el ADR 0008.
 - **Si location no responde** dentro del timeout, la solicitud devuelve 503 y no crea el viaje (falla cerrado).
-- **Si identity se cae,** dispatch y location siguen verificando tokens con las claves que tienen en caché.
+- **Si identity se cae,** dispatch y location siguen verificando tokens con las claves que ya bajaron, pero solo mientras sigan en la caché de `jose` (unos 10 minutos por defecto). Después, los tokens dejan de verificarse hasta que identity vuelva.
 - **`fleetId`:** identity lo guarda sin clave foránea (la flota vive en dispatch) y lo pone en el token del `admin_flota`. dispatch valida que la flota exista cuando se usa.
 
 ### Punto de entrada
@@ -120,7 +120,7 @@ Dentro de dispatch, flotas y tarifas respetan las mismas capas (`dominio/`, `inf
 | `docker-compose.yml`, `infra/postgres/init` | Ajustar | Fuera `rabbitmq`; entran `location` y `web`; base y usuario `location` |
 | `Dockerfile` genérico | Igual | `SERVICE=location` |
 | CI (typecheck, lint, tests, audit) | Ampliar | Base de test de location; jobs de E2E y SAST |
-| ADR 0004 | Ajustar formato | Le faltan «quiénes participaron» y «qué nos haría cambiar de decisión»; sacar las menciones a M5 |
+| ADR 0004 | Formato corregido | Tiene «quiénes participaron» y «qué nos haría cambiar de decisión»; sin menciones a M5 |
 | `docs/arquitectura.md`, `docs/eventos.md`, README | Actualizar | Describen nueve servicios y RabbitMQ |
 
 El ADR 0006 registra la decisión con sus alternativas reales: monolito modular (descartado por la cátedra), los nueve servicios del plan original (descartados por tiempo) y otros límites posibles, como flotas dentro de identity.
@@ -225,7 +225,7 @@ El ADR 0006 registra la decisión con sus alternativas reales: monolito modular 
 | **6.5** Tiempo real | ⬜ | 3.5 |
 | **6.6** Simulador de 500 choferes y mediciones | ⬜ | 3.2 y 5.5 |
 | **6.7 G** Flotas y zonas | ⬜ | 3.3 |
-| **7.1** Seis ADR o más | 🟡 | Solo el 0004, y con el formato incompleto |
+| **7.1** Seis ADR o más | 🟡 | Hay cuatro: 0001, 0004, 0005 y 0006 |
 | **7.2** `docs/mediciones.md` | ⬜ | Cubre la tarea pesada **y también la carrera principal** |
 | **7.3** Historial de Git | 🟡 | **Maxi todavía no tiene commits.** El PR #1 se mergeó sin revisión |
 | **2.5** README, `modelo.md`, `api.md`, `ataque.md` | ⬜ | — |
@@ -320,7 +320,7 @@ Es lo que pide el Control 3: carrera principal con su test (ya está) y tarea pe
 - [x] location en sus dos versiones, con adaptador en memoria primero (Agos #7, Maxi #8).
 - [ ] `carga/choferes.js`, `carga/solicitudes.js`, `/metrics` con el lag y **primera medición** en `docs/mediciones.md` (Maxi). Hecho: `carga/ubicaciones.js`, `/metrics` de location y la primera medición. Falta: `carga/solicitudes.js` y `/metrics` en dispatch e identity.
 - [ ] flotas en dispatch: choferes, vehículos, flotas y la carrera G con su test (Agos).
-- [ ] ADR 0001, 0002, 0003, 0005 y 0006; 0004 con el formato corregido.
+- [ ] ADR 0001, 0002, 0003, 0005 y 0006; 0004 con el formato corregido. Hechos: 0001, 0004, 0005 y 0006. Faltan 0002 y 0003 (Agos).
 
 ### Fase B — sistema completo y publicado
 

@@ -6,9 +6,9 @@ Cada integrante es **dueño** de un problema central y de los módulos que lo ro
 
 | | Problema central | Módulos y transversales | Rúbrica del Integrador | ADR |
 |---|---|---|---|---|
-| **Ivan** | 6.3 Asignación única | dispatch (viajes), idempotencia, tiempo real (SSE), Compose y nginx, despliegue | CI + SAST; temas «idempotencia», «deduplicación» y «condiciones de carrera» | 0001, 0004 ✅, 0006, 0011, 0012 |
+| **Ivan** | 6.3 Asignación única | dispatch (viajes), idempotencia, tiempo real (SSE), Compose y nginx, despliegue | CI + SAST; temas «idempotencia», «deduplicación» y «condiciones de carrera» | 0001 ✅, 0004 ✅, 0006 ✅, 0011, 0012 |
 | **Agos** | Variante G: flotas y zonas | identity, flotas (dentro de dispatch), seguridad transversal, base del frontend | Playwright; frontend | 0002, 0003, 0007, 0009 |
-| **Maxi** | 6.6 Tarea pesada | location, tarifas (dentro de dispatch), métricas | k6; Grafana Cloud; temas de margen «Redis: caché» y «datos efímeros» | 0005, 0008, 0010 |
+| **Maxi** | 6.6 Tarea pesada | location, tarifas (dentro de dispatch), métricas | k6; Grafana Cloud; temas de margen «Redis: caché» y «datos efímeros» | 0005 ✅, 0008, 0010 |
 
 ## Ivan
 
@@ -17,7 +17,7 @@ Cada integrante es **dueño** de un problema central y de los módulos que lo ro
 - [x] Compose sin RabbitMQ y con `location`; base y usuario `location` en `infra/postgres/init`.
 - [x] `npm run setup` (migra las tres bases, genera la clave si falta, siembra), `dev` y `start`. Tiene que andar en Windows y en Linux. Probado en Linux con un clon limpio; falta probarlo en Windows.
 - [x] Con Maxi: contrato de `GET /interno/candidatos` en `contracts`, cliente HTTP interno con timeout y token de servicio en `platform`, y adaptador de `BuscadorCandidatos` en dispatch.
-- [ ] ADR 0001 (TypeScript + ESM) y 0006 (tres microservicios y sus límites); 0004 con el formato de la sección 7.1.
+- [x] ADR 0001 (TypeScript + ESM) y 0006 (tres microservicios y sus límites); 0004 con el formato de la sección 7.1.
 
 **Fase B**
 - [ ] viajes: `EN_CAMINO`, `EN_CURSO`, `CANCELADO_CHOFER`, cancelación del operador con motivo, finalizar liberando al chofer en la misma transacción, y un test por transición.

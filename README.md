@@ -15,7 +15,7 @@ Documentación:
 - [docs/identity.md](docs/identity.md): contrato de identity, usuarios de prueba y comandos para PowerShell.
 - [docs/location.md](docs/location.md): contrato de location, versiones ingenua y optimizada, contrato con dispatch y prueba manual en PowerShell.
 - [docs/mediciones.md](docs/mediciones.md): informe de mediciones de 6.6 (k6, ingenua frente a optimizada); cómo reproducirlas en [carga/README.md](carga/README.md).
-- [docs/adr](docs/adr): decisiones de arquitectura (0004 asignación única, 0005 tarea pesada).
+- [docs/adr](docs/adr): decisiones de arquitectura (0001 TypeScript y ESM, 0004 asignación única, 0005 tarea pesada, 0006 tres microservicios).
 - [docs/repaso-problemas-centrales.html](docs/repaso-problemas-centrales.html): repaso de 6.3, 6.6 y la variante G con diagramas de tiempos (abrir en el navegador).
 
 ## Estado
