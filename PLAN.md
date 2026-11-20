@@ -211,7 +211,7 @@ El ADR 0006 registra la decisión con sus alternativas reales: monolito modular 
 | **B5** Prototype pollution | 🟡 | Solo se prueba `__proto__` en la raíz. Falta `constructor.prototype` y posiciones anidadas |
 | **B5** Inyección SQL | 🟡 | Consultas parametrizadas sí. Falta el test con una carga típica en un campo de búsqueda |
 | **B5** Límite de tasa | 🟡 | Solo en login. Falta en solicitud de viaje y ubicación, con 429 y encabezados |
-| **B5** Helmet y CORS | ⬜ | Estaban pensados para el gateway: van en `crearApp` de `platform`, así los heredan los tres servicios. Detrás de nginx el frontend queda en el mismo origen |
+| **B5** Helmet, CSP y CORS | 🟡 | Hecho: helmet en `crearApp` de `platform`, con una CSP que lo niega todo (`default-src 'none'`), así la heredan los tres servicios; con test en cada uno. Falta: CORS y la CSP de la página en nginx (Fase B). Detrás de nginx el frontend queda en el mismo origen |
 | **B5** `npm audit` | ✅ | En el CI |
 | **B6** ADR de carreras + test de 50 | ✅ | Falta el inventario completo (3.5) |
 | **B6** Idempotencia | ⬜ | 3.5 |
@@ -329,11 +329,11 @@ Al cerrar esta fase el sistema tiene que poder congelarse para el ataque cruzado
 - [ ] `viajes`: estados completos, historial, panel del operador con búsqueda (Ivan).
 - [ ] Idempotency-Key y SSE (Ivan).
 - [ ] Zonas, candidatos filtrados por flota y zona, reporte, aislamiento entre flotas (Agos).
-- [ ] Seguridad transversal: helmet, CORS, rate limit, encabezados, log por pedido y los tests que faltan del bloque 5 (Agos).
+- [ ] Seguridad transversal: CORS, rate limit, encabezados, log por pedido y los tests que faltan del bloque 5 (Agos).
 - [ ] `tarifas`, cobro simulado y adaptadores de mapas y pagos con timeout (Maxi).
 - [ ] Caché en Redis, retención de ubicaciones y privacidad del seguimiento (Maxi).
 - [ ] Frontend mínimo: base y login (Agos), pasajero y operador (Ivan), chofer (Maxi).
-- [ ] Contenedor `web` con nginx como punto de entrada único (Ivan).
+- [ ] Contenedor `web` con nginx como punto de entrada único (Ivan). Lleva la **CSP de la página** (punto extra que ofreció la cátedra): `default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'`. El build de Vite no necesita scripts en línea; si se usa un mapa, se suma su servidor de teselas a `img-src`. Test en Playwright: la página carga sin violaciones de CSP en la consola.
 - [ ] `modelo.md`, `api.md`, tabla de roles, colección de la demo y usuarios de prueba.
 - [ ] README y `docs/arquitectura.md` al día: tecnologías usadas y para qué, arquitectura, comunicación entre servicios y despliegue. La cátedra evalúa desde el repositorio y quiere ver ahí todo lo que se hizo y se usó.
 - [ ] Despliegue accesible para los grupos atacantes y tag `congelado`.

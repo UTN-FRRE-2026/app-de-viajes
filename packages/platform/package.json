@@ -17,6 +17,7 @@
   "dependencies": {
     "@viajes/kernel": "0.1.0",
     "express": "5.3.0",
+    "helmet": "8.3.0",
     "jose": "6.2.13",
     "pino": "10.4.0",
     "zod": "4.6.7"

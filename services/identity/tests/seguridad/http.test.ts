@@ -115,3 +115,15 @@ describe('JWKS', () => {
     for (const privado of ['d', 'p', 'q', 'dp', 'dq', 'qi']) expect(clave).not.toHaveProperty(privado);
   });
 });
+
+describe('encabezados de seguridad (CSP y helmet)', () => {
+  it.each(['/health', '/no-existe'])('%s → CSP que niega todo, nosniff y sin x-powered-by', async (ruta) => {
+    const res = await request(d.url).get(ruta);
+    expect(res.headers['content-security-policy']).toBe(
+      "default-src 'none';frame-ancestors 'none';base-uri 'none';form-action 'none'",
+    );
+    expect(res.headers['x-content-type-options']).toBe('nosniff');
+    expect(res.headers['x-frame-options']).toBe('SAMEORIGIN');
+    expect(res.headers['x-powered-by']).toBeUndefined();
+  });
+});
