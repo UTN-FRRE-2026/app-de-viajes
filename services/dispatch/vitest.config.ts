@@ -12,6 +12,11 @@ export default defineConfig({
       },
       {
         resolve,
+        // Adaptadores contra otros servicios, con un servidor HTTP falso: no necesitan base.
+        test: { name: 'externos', include: ['tests/externos/**/*.test.ts'] },
+      },
+      {
+        resolve,
         test: {
           name: 'postgres',
           include: ['tests/{integracion,concurrencia,seguridad}/**/*.test.ts'],

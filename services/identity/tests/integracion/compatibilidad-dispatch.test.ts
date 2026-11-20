@@ -71,6 +71,8 @@ beforeAll(async () => {
       PUERTO: String(puerto),
       NIVEL_LOG: 'silent',
       DISPATCH_PERSISTENCIA: 'memoria',
+      // Esta prueba es sobre los tokens: los candidatos no importan, así que no hace falta location.
+      DISPATCH_BUSCADOR: 'fijo',
       DISPATCH_CANDIDATOS_DEMO: '',
       JWKS_URL: `${d.url}/.well-known/jwks.json`,
       JWT_ISSUER: ISSUER,

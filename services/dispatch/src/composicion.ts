@@ -9,6 +9,7 @@ import { crearPrisma } from './infra/db/cliente.js';
 import { RepositorioDespachoPrisma } from './infra/db/repositorio-prisma.js';
 import { chequeosBase } from './infra/db/salud.js';
 import { BuscadorCandidatosFijo } from './infra/externos/buscador-fijo.js';
+import { BuscadorCandidatosLocation } from './infra/externos/buscador-location.js';
 import { idsAleatorios, relojSistema } from './infra/externos/sistema.js';
 import { rutasDespacho } from './infra/http/rutas.js';
 import { RepositorioDespachoMemoria } from './infra/memoria/repositorio-memoria.js';
@@ -30,6 +31,21 @@ export interface Sistema {
 
 const carpetaMigraciones = fileURLToPath(new URL('../prisma/migrations', import.meta.url));
 
+/**
+ * Candidatos: location en serio, o la lista fija para una demo sin location. location no entra en
+ * /ready: si se cae, el login y las consultas siguen; solo la búsqueda responde 503 (falla cerrado).
+ */
+function crearBuscador(config: Config, logger: Logger): BuscadorCandidatos {
+  if (config.DISPATCH_BUSCADOR === 'fijo') return new BuscadorCandidatosFijo(config.DISPATCH_CANDIDATOS_DEMO);
+  return new BuscadorCandidatosLocation({
+    urlBase: config.LOCATION_URL as string,
+    tokenServicio: config.LOCATION_TOKEN_SERVICIO as string,
+    timeoutMs: config.LOCATION_TIMEOUT_MS,
+    radioMetros: config.DISPATCH_RADIO_BUSQUEDA_METROS,
+    logger,
+  });
+}
+
 /** Único lugar que conoce los adaptadores concretos. */
 export function componer(config: Config, logger: Logger, reemplazos: Reemplazos = {}): Sistema {
   let repo: RepositorioDespacho;
@@ -49,7 +65,7 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
 
   const casos = crearCasosDeUso({
     repo,
-    buscador: reemplazos.buscador ?? new BuscadorCandidatosFijo(config.DISPATCH_CANDIDATOS_DEMO),
+    buscador: reemplazos.buscador ?? crearBuscador(config, logger),
     reloj: reemplazos.reloj ?? relojSistema,
     ids: idsAleatorios,
     parametros: {

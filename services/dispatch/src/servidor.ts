@@ -9,7 +9,7 @@ const sistema = componer(config, logger);
 const detenerBarrido = iniciarBarrido(sistema.casos.vencerOfertas, config.BARRIDO_INTERVALO_MS, logger);
 
 const servidor = sistema.app.listen(config.PUERTO, () => {
-  logger.info({ puerto: config.PUERTO, persistencia: config.DISPATCH_PERSISTENCIA }, 'dispatch escuchando');
+  logger.info({ puerto: config.PUERTO, persistencia: config.DISPATCH_PERSISTENCIA, buscador: config.DISPATCH_BUSCADOR }, 'dispatch escuchando');
 });
 
 registrarApagadoOrdenado({

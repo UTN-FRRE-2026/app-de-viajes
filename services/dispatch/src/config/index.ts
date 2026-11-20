@@ -20,11 +20,26 @@ export const EsquemaConfig = z
     OFERTA_TTL_SEGUNDOS: z.coerce.number().int().min(1).default(15),
     BARRIDO_INTERVALO_MS: z.coerce.number().int().min(100).default(2000),
     APAGADO_TIMEOUT_MS: z.coerce.number().int().positive().default(10_000),
+    // Candidatos: `location` (el servicio real) o `fijo` (lista de DISPATCH_CANDIDATOS_DEMO, para demos sin location).
+    DISPATCH_BUSCADOR: z.enum(['location', 'fijo']).default('location'),
     DISPATCH_CANDIDATOS_DEMO: listaUuids,
+    LOCATION_URL: z.string().url().optional(),
+    // Mismo secreto y mismo nombre que en location: el .env es compartido.
+    LOCATION_TOKEN_SERVICIO: z.string().min(32, 'tiene que tener al menos 32 caracteres').max(256).optional(),
+    LOCATION_TIMEOUT_MS: z.coerce.number().int().min(50).max(10_000).default(1000),
+    DISPATCH_RADIO_BUSQUEDA_METROS: z.coerce.number().int().min(100).max(50_000).default(5000),
   })
   .refine((c) => c.DISPATCH_PERSISTENCIA !== 'postgres' || c.DATABASE_URL, {
     path: ['DATABASE_URL'],
     message: 'es obligatoria cuando DISPATCH_PERSISTENCIA=postgres',
+  })
+  .refine((c) => c.DISPATCH_BUSCADOR !== 'location' || c.LOCATION_URL, {
+    path: ['LOCATION_URL'],
+    message: 'es obligatoria cuando DISPATCH_BUSCADOR=location',
+  })
+  .refine((c) => c.DISPATCH_BUSCADOR !== 'location' || c.LOCATION_TOKEN_SERVICIO, {
+    path: ['LOCATION_TOKEN_SERVICIO'],
+    message: 'es obligatoria cuando DISPATCH_BUSCADOR=location',
   });
 
 export type Config = z.infer<typeof EsquemaConfig>;

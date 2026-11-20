@@ -7,3 +7,4 @@ export * from './autenticacion.js';
 export * from './salud.js';
 export * from './apagado.js';
 export * from './app.js';
+export * from './cliente-interno.js';

@@ -1,6 +1,6 @@
 # location
 
-> **Estado:** el servicio corre en su contenedor (puerto 3004). Recibe la ubicación de los choferes y responde a dispatch qué choferes están cerca de un origen. Tiene las dos versiones de 6.6: la **ingenua** sobre PostgreSQL, que queda como referencia, y la **optimizada** con Redis GEO e historial en lotes. Se elige con `UBICACION_ESTRATEGIA`. La comparación con k6 está en [docs/mediciones.md](mediciones.md). dispatch todavía **no** lo llama: sigue con `buscador-fijo` hasta el PR de integración (ver [Contrato con dispatch](#contrato-con-dispatch-a-revisar-con-iván)).
+> **Estado:** el servicio corre en su contenedor (puerto 3004). Recibe la ubicación de los choferes y responde a dispatch qué choferes están cerca de un origen. Tiene las dos versiones de 6.6: la **ingenua** sobre PostgreSQL, que queda como referencia, y la **optimizada** con Redis GEO e historial en lotes. Se elige con `UBICACION_ESTRATEGIA`. La comparación con k6 está en [docs/mediciones.md](mediciones.md). dispatch lo llama para buscar candidatos (ver [Contrato con dispatch](#contrato-con-dispatch)).
 
 ## Quién es dueño de cada dato
 
@@ -146,25 +146,27 @@ Es la línea de base que pide 6.6 para medir con k6:
 - **Estrategia `memoria`.** Sirve para los tests y para correr sin base.
 - **Su cuello de botella.** Bajo carga, cada `INSERT` espera el `fsync` de su propio commit (`WALWrite`/`WALSync`). Los `INSERT` ocupan el pool de conexiones y las búsquedas esperan detrás. Ver [docs/mediciones.md](mediciones.md).
 
-## Contrato con dispatch (a revisar con Iván)
+## Contrato con dispatch
 
-dispatch ya tiene el puerto `BuscadorCandidatos.buscar(origen, { excluir, limite })`. Lo llama **fuera de la transacción** al crear la solicitud y en el barrido de ofertas vencidas. El PR de integración agrega un adaptador HTTP que llama a `GET /interno/candidatos`.
+dispatch llama a `GET /interno/candidatos` desde el adaptador `BuscadorCandidatosLocation` (`services/dispatch/src/infra/externos/buscador-location.ts`), que implementa el puerto `BuscadorCandidatos.buscar(origen, { excluir, limite })`. Lo usa **fuera de la transacción**, al crear la solicitud y en el barrido de ofertas vencidas. El cliente HTTP es el de `platform` (`crearClienteInterno`): timeout siempre y respuesta validada con `CandidatosRespuesta`.
 
-**Decisiones a acordar antes de integrar:**
+**Decidido e implementado:**
 
-1. **Token de servicio.** Propuesta: un secreto compartido en `X-Token-Servicio` (`LOCATION_TOKEN_SERVICIO` en los dos servicios). La alternativa es un JWT de servicio emitido por identity, pero suma un rol nuevo y cambios en identity y en `platform`.
-2. **Timeout del adaptador.** Propuesta: 1 s.
-3. **Si location no responde** (timeout, error de red o 5xx):
-   - `POST /solicitudes` responde `503 UBICACION_NO_DISPONIBLE` y **no crea el viaje**. Falla cerrado, y como la búsqueda va antes de la transacción, no queda nada a medias.
-   - El barrido **no** marca `SIN_CHOFERES`: `infra/barrido.ts` ya registra el error y reintenta en la pasada siguiente. Mientras tanto, la oferta vencida no se puede aceptar, porque el vencimiento se decide con el reloj.
-   - Un 4xx de location es un error de programación en dispatch: se loguea y también da 503.
-4. **`excluir`.** Lo resuelve dispatch: location no recibe la lista de choferes ya ofrecidos.
+1. **Token de servicio:** secreto compartido en `X-Token-Servicio`, con la misma variable `LOCATION_TOKEN_SERVICIO` en los dos servicios. Un JWT de servicio emitido por identity sumaba un rol nuevo y cambios en identity sin una ganancia que hoy haga falta.
+2. **Timeout:** 1 s (`LOCATION_TIMEOUT_MS`). Radio de búsqueda: 5 km (`DISPATCH_RADIO_BUSQUEDA_METROS`).
+3. **Si location no responde** (timeout, error de red, 5xx, 4xx o respuesta fuera de contrato):
+   - `POST /solicitudes` responde `503 UBICACION_NO_DISPONIBLE` y **no crea el viaje** ni escribe eventos. Falla cerrado, y como la búsqueda va antes de la transacción, no queda nada a medias.
+   - El barrido **no** marca `SIN_CHOFERES`: registra el error y reintenta en la pasada siguiente. Mientras tanto, la oferta vencida no se puede aceptar, porque el vencimiento se decide con el reloj.
+   - Un 4xx de location es un error de programación en dispatch (token o contrato mal configurado): se loguea como `error`, no como `warn`, y también da 503.
+   - location **no** está en el `/ready` de dispatch: con location caído, el login, las consultas y las aceptaciones siguen andando.
+4. **`excluir`:** lo resuelve dispatch. Pide `limite + excluidos` (mínimo 10, máximo 100) y saca a los ya ofrecidos. Con solo ese filtro, un lote completo siempre deja `limite` aptos, así que alcanza con un pedido.
+5. **Para demos sin location**, `DISPATCH_BUSCADOR=fijo` vuelve a la lista de `DISPATCH_CANDIDATOS_DEMO`.
 
-### Qué pasa si dispatch descarta todo el primer lote
+Tests: `services/dispatch/tests/externos/buscador-location.test.ts` (contra un location falso: pedido, orden, excluidos y cada forma de fallar) y `tests/integracion/location.test.ts` (dispatch completo con Postgres: 201 con ofertas, 503 sin viaje creado, `/ready` y el barrido).
 
-dispatch filtra a los candidatos por disponibilidad, viaje activo, flota y zona. Puede pasar que los N más cercanos no sirvan, aunque haya choferes aptos un poco más lejos. Si dispatch pidiera un solo lote, marcaría `SIN_CHOFERES` de más.
+### Pendiente para cuando dispatch filtre por flota y zona: lotes crecientes
 
-**Propuesta para el PR de integración, lotes crecientes:**
+Cuando entre el filtro de Agos (disponibilidad, viaje activo, flota y zona), puede pasar que los N más cercanos no sirvan aunque haya choferes aptos un poco más lejos. Con un solo lote, dispatch marcaría `SIN_CHOFERES` de más. La propuesta, sin cambiar el contrato:
 
 1. Pedir `limite = necesarios + excluidos`, con un mínimo de 10.
 2. Filtrar en dispatch: excluidos, no disponibles, con viaje activo, de otra flota o zona.
@@ -172,36 +174,32 @@ dispatch filtra a los candidatos por disponibilidad, viaje activo, flota y zona.
 4. Si no alcanzan y location devolvió el lote **completo** (tantos como `limite`), puede haber más: pedir de nuevo con el doble de `limite`, hasta el máximo de 100.
 5. Si location devolvió **menos** que `limite`, no hay más vigentes en el radio: se ofrece a los que quedaron y, si no queda ninguno, `SIN_CHOFERES`.
 
-Son como máximo 5 pedidos (10, 20, 40, 80 y 100) y no hace falta cambiar este contrato. Si el filtro de flota y zona se vuelve el cuello de botella, la mejora sería mandarle a location la zona del origen: eso sí cambia el contrato, y no hace falta para empezar.
+Son como máximo 5 pedidos (10, 20, 40, 80 y 100). Si el filtro de flota y zona se vuelve el cuello de botella, la mejora sería mandarle a location la zona del origen: eso sí cambia el contrato.
 
-### Para revisar con Iván: el tope por consulta y qué pasa si se agota
+### Pendiente: el tope por consulta y qué pasa si se agota
 
 **El tope.** location devuelve como máximo **100 candidatos por consulta** (`LIMITE_CANDIDATOS_MAX` en `packages/contracts/src/location.ts`) y busca en un radio máximo de 50 km.
 
 - Acota la respuesta y el trabajo por pedido, para que una consulta no pueda pedir los 500 choferes del simulador.
-- En la versión ingenua el costo casi no depende del tope, porque igual recorre todas las posiciones vigentes. En la optimizada (`GEOSEARCH ... COUNT n`) sí crece con `n`.
-- Hay que confirmar si 100 alcanza: dispatch ofrece a 3 choferes por tanda (`OFERTAS_SIMULTANEAS`).
+- En la versión ingenua el costo casi no depende del tope, porque igual recorre todas las posiciones vigentes. En la optimizada, `GEOSEARCH` trae todos los choferes del radio (sin `COUNT`) y el dominio corta en `limite`: el costo crece con los choferes que haya en el radio, no con el tope.
+- Con `OFERTAS_SIMULTANEAS=3`, 100 alcanza de sobra mientras el único filtro sea `excluir`.
 
-**El caso borde.** dispatch pide los 100 más cercanos y su filtro (no disponible, con viaje activo, de otra flota o de otra zona) los descarta **a todos**. Puede haber choferes aptos más lejos, pero location no puede devolverlos sin cambiar el contrato.
+**El caso borde.** Con el filtro de flota y zona, dispatch podría pedir los 100 más cercanos y descartarlos **a todos**. Puede haber choferes aptos más lejos, pero location no puede devolverlos sin cambiar el contrato.
 
 **Qué hace dispatch hoy:** `ofrecerACandidatos` recibe una lista vacía y pasa la solicitud a `SIN_CHOFERES` en ese mismo momento.
 
 **Propuesta, la más simple:** mantener ese comportamiento también en este caso.
 
 - Que 100 choferes vigentes y cercanos sean todos no aptos indica un problema de datos o de configuración de flotas y zonas, no un faltante de choferes. Insistir no lo arregla.
-- dispatch lo registra en el log con un motivo propio (`tope_agotado`, distinto de «location no devolvió nadie»), con la cantidad descartada por cada filtro, para que se vea en las métricas y en la demo.
+- dispatch lo registra en el log con un motivo propio (`tope_agotado`, distinto de «location no devolvió nadie»), con la cantidad descartada por cada filtro.
 - El pasajero recibe la misma respuesta que con `SIN_CHOFERES` y puede volver a pedir.
 
-**Alternativas, si a Iván no le cierra:**
+**Alternativas:**
 
-- **Seguir buscando:** dejar la solicitud en `BUSCANDO` y que el barrido reintente hasta un plazo, por ejemplo 60 s desde la creación, antes de pasarla a `SIN_CHOFERES`. Cambia el dominio de dispatch, porque hoy una tanda vacía termina la búsqueda.
+- **Seguir buscando:** dejar la solicitud en `BUSCANDO` y que el barrido reintente hasta un plazo, por ejemplo 60 s desde la creación. Cambia el dominio de dispatch, porque hoy una tanda vacía termina la búsqueda.
 - **Filtrar en location:** mandar la zona del origen o la flota en la consulta. Cambia el contrato y le hace saber a location de flotas, que hoy no conoce.
 
-Hay que decidir antes de integrar:
-
-1. si el tope de 100 alcanza;
-2. si tope agotado sin aptos equivale a `SIN_CHOFERES` o a seguir buscando;
-3. el nombre del motivo en el log.
+Se decide junto con el filtro de flota y zona (Agos e Iván).
 
 ## Levantarlo desde PowerShell
 
@@ -351,7 +349,7 @@ npm run test:dominio -w @viajes/location
 
 ## Lo que sigue
 
-1. **Integración con dispatch** (Iván, una vez acordado el contrato): adaptador HTTP de `BuscadorCandidatos` con timeout, `503` si location no responde, lotes crecientes y variables en el Compose. Con eso se mide el tiempo hasta la asignación que pide 6.6.
+1. **Medir de punta a punta** con dispatch integrado: tiempo hasta la asignación que pide 6.6 (con la hipótesis escrita antes) y lag del event loop de dispatch mientras corre el simulador. Lotes crecientes cuando entre el filtro de flota y zona.
 2. **Después:**
    - límite de pedidos en `/ubicaciones`;
    - retención del historial;

@@ -13,10 +13,10 @@ Cada integrante es **dueño** de un problema central y de los módulos que lo ro
 ## Ivan
 
 **Fase A**
-- [ ] Esqueleto de `services/location` con la forma de los otros dos: health, config, composición, Prisma, verificación de tokens por JWKS y base de test en el CI. **Es lo primero: destraba a Maxi.**
-- [ ] Compose sin RabbitMQ y con `location`; base y usuario `location` en `infra/postgres/init`.
+- [x] Esqueleto de `services/location` con la forma de los otros dos: health, config, composición, Prisma, verificación de tokens por JWKS y base de test en el CI. Lo hizo Agos (#7).
+- [x] Compose sin RabbitMQ y con `location`; base y usuario `location` en `infra/postgres/init`.
 - [ ] `npm run setup` (migra las tres bases, genera la clave si falta, siembra), `dev` y `start`. Tiene que andar en Windows y en Linux.
-- [ ] Con Maxi: contrato de `GET /interno/candidatos` en `contracts`, cliente HTTP interno con timeout y token de servicio en `platform`, y adaptador de `BuscadorCandidatos` en dispatch.
+- [x] Con Maxi: contrato de `GET /interno/candidatos` en `contracts`, cliente HTTP interno con timeout y token de servicio en `platform`, y adaptador de `BuscadorCandidatos` en dispatch.
 - [ ] ADR 0001 (TypeScript + ESM) y 0006 (tres microservicios y sus límites); 0004 con el formato de la sección 7.1.
 
 **Fase B**
@@ -46,7 +46,7 @@ Cada integrante es **dueño** de un problema central y de los módulos que lo ro
 - [ ] En `platform`, para los tres servicios: helmet, CORS restringido, rate limit genérico con 429 y encabezados, validación de encabezados y log por pedido.
 - [ ] Tests del bloque 5 que faltan: `constructor.prototype` y claves anidadas, inyección SQL en la búsqueda, rate limit en solicitud y ubicación, acceso a recursos ajenos en cada módulo.
 - [ ] Frontend: proyecto base (Vite, router, stores, cliente HTTP, componente de errores), login y pantallas de admin de flota.
-- [ ] identity: logout y revocación.
+- [x] identity: logout y revocación. Lo hizo Maxi (#5).
 - [ ] Tabla de roles y permisos en el README.
 
 **Fase C y ataque cruzado**
@@ -57,13 +57,13 @@ Cada integrante es **dueño** de un problema central y de los módulos que lo ro
 ## Maxi
 
 **Fase A (es lo que pide el Control 3)**
-- [ ] location ingenua: un `INSERT` por ping y haversine en JavaScript sobre todos los choferes.
-- [ ] location optimizada: Redis `GEOADD` / `GEOSEARCH`, vencimiento contra choferes fantasma, historial por cola con escritura en lotes. Se elige con `UBICACION_ESTRATEGIA`.
-- [ ] `GET /interno/candidatos`, protegido con el token de servicio.
-- [ ] `/metrics` en `platform` con el lag del event loop (`monitorEventLoopDelay`) y memoria, para los tres servicios.
-- [ ] `carga/choferes.js` (500 choferes cada 2 s) y `carga/solicitudes.js`.
-- [ ] Hipótesis con número y primera medición en `docs/mediciones.md`.
-- [ ] ADR 0005 (tarea pesada).
+- [x] location ingenua: un `INSERT` por ping y haversine en JavaScript sobre todos los choferes.
+- [x] location optimizada: Redis `GEOADD` / `GEOSEARCH`, vencimiento contra choferes fantasma, historial por cola con escritura en lotes. Se elige con `UBICACION_ESTRATEGIA`.
+- [x] `GET /interno/candidatos`, protegido con el token de servicio.
+- [ ] `/metrics` en `platform` con el lag del event loop (`monitorEventLoopDelay`) y memoria, para los tres servicios. Hecho solo en location.
+- [ ] `carga/choferes.js` (500 choferes cada 2 s) y `carga/solicitudes.js`. Hecho como `carga/ubicaciones.js`; falta `carga/solicitudes.js`.
+- [x] Hipótesis con número y primera medición en `docs/mediciones.md`.
+- [x] ADR 0005 (tarea pesada).
 
 **Fase B**
 - [ ] Publicación de cada posición en el canal de Redis del chofer; política de retención.
@@ -83,8 +83,8 @@ Cada integrante es **dueño** de un problema central y de los módulos que lo ro
 
 | Quién espera | Qué | De quién | Cuándo |
 |---|---|---|---|
-| Maxi (location) | Esqueleto de `services/location` | Ivan | Primer día de la Fase A |
-| Ivan (viajes) | `GET /interno/candidatos` | Maxi | Contrato fijado en la Fase A; mientras tanto, `buscador-fijo` |
+| Maxi (location) | Esqueleto de `services/location` | Ivan | ✅ Lo hizo Agos (#7) |
+| Ivan (viajes) | `GET /interno/candidatos` | Maxi | ✅ Integrado (adaptador `buscador-location`) |
 | Ivan (viajes) | Chofer → flota → zonas habilitadas, para filtrar candidatos en dispatch | Agos | Inicio de la Fase B |
 | Ivan (SSE) | Posiciones publicadas en Redis | Maxi | Fase B |
 | Maxi (cobro) | Idempotency-Key en `platform` | Ivan | Antes de arrancar el cobro |
