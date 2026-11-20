@@ -1,6 +1,6 @@
 # location
 
-> **Estado: primer avance.** El servicio corre en su contenedor (puerto 3004). Recibe la ubicación de los choferes y responde a dispatch qué choferes están cerca de un origen, con la **versión ingenua** de 6.6 sobre PostgreSQL. dispatch todavía **no** lo llama: sigue con `buscador-fijo` hasta el PR de integración (ver [Contrato con dispatch](#contrato-con-dispatch-a-revisar-con-iván)).
+> **Estado:** el servicio corre en su contenedor (puerto 3004). Recibe la ubicación de los choferes y responde a dispatch qué choferes están cerca de un origen. Tiene las dos versiones de 6.6: la **ingenua** sobre PostgreSQL, que queda como referencia, y la **optimizada** con Redis GEO e historial en lotes. Se elige con `UBICACION_ESTRATEGIA`. La comparación con k6 está en [docs/mediciones.md](mediciones.md). dispatch todavía **no** lo llama: sigue con `buscador-fijo` hasta el PR de integración (ver [Contrato con dispatch](#contrato-con-dispatch-a-revisar-con-iván)).
 
 ## Quién es dueño de cada dato
 
@@ -56,7 +56,86 @@ Lleva `X-Token-Servicio: <secreto compartido>`. Esta ruta **no se publica por ng
 
 ### `GET /health` y `GET /ready`
 
-Los de `platform`. `/ready` responde 503 si Postgres no responde o si hay migraciones pendientes.
+Los de `platform`. `/health` solo dice que el proceso vive; el healthcheck de Docker usa ese.
+
+**Qué informa `/ready` según la estrategia:**
+
+| Situación | Ingenua | Optimizada |
+|---|---|---|
+| Todo bien | `200`, con `postgres`, `migraciones` | `200`, con `postgres`, `migraciones` y `redis` en `ok` |
+| **Postgres caído** | `503 {"estado":"no_listo","chequeos":{"postgres":"<error>","migraciones":"<error>"}}`. Los pings y las búsquedas también fallan | `503` con `postgres` y `migraciones` en error y `redis: ok`. **Los pings siguen entrando (`204`) y la búsqueda funciona**, pero el historial se acumula en Redis hasta que Postgres vuelva |
+| Redis caído | `200` (no usa Redis) | `503` con `redis` en error. Pings y búsquedas responden `503 UBICACION_NO_DISPONIBLE`: falla cerrado |
+| Migraciones pendientes | `503` con `migraciones pendientes: …` | igual |
+
+En la optimizada, un `503` por Postgres no significa que el servicio esté parado: significa «el historial no se está escribiendo». Conviene alertar, porque la cola tiene un tope (ver [Cola llena](#cola-llena)).
+
+### `GET /metrics`
+
+Con `X-Token-Servicio`, igual que las rutas internas. Formato de texto de Prometheus:
+
+| Métrica | Qué es |
+|---|---|
+| `location_event_loop_lag_ms{quantile="0.5"\|"0.99"}`, `location_event_loop_lag_max_ms` | Lag del event loop desde el arranque, con `monitorEventLoopDelay` (resolución de 10 ms, ya descontada) |
+| `process_resident_memory_bytes`, `nodejs_heap_used_bytes` | Memoria |
+| `location_historial_en_cola`, `location_historial_pendientes` | Optimizada: entradas en el stream y entradas leídas sin confirmar |
+| `location_historial_descartados_total`, `location_historial_ocupacion` | Optimizada: entradas que no entraron por cola llena, y uso de la cola (de 0 a 1) |
+
+## Versión optimizada (`UBICACION_ESTRATEGIA=optimizada`)
+
+Necesita `REDIS_URL` además de `LOCATION_DATABASE_URL`. Implementa el mismo puerto que la ingenua (`RepositorioUbicaciones`), así que las rutas, el contrato y los casos de uso no cambian.
+
+**Qué guarda en Redis** (prefijo `LOCATION_REDIS_PREFIJO`, por defecto `location:`):
+
+| Clave | Tipo | Para qué |
+|---|---|---|
+| `location:pos` | HASH `choferId → "lat\|lng\|tsMs"` | Última posición con las coordenadas **originales**: con estas se calcula la distancia |
+| `location:geo` | GEO | Índice para encontrar los candidatos del radio. Sus coordenadas vienen cuantizadas: no se usan para la distancia |
+| `location:visto` | ZSET `choferId → tsMs` | Vencimiento y purga |
+| `location:fuera-geo` | SET | Choferes con latitud fuera de ±85,05112878°, que Redis GEO no acepta. Normalmente vacío |
+| `location:historial` | STREAM | Pings pendientes de escribir en Postgres |
+| `location:historial:descartados` | contador | Pings que no entraron al historial por cola llena |
+
+**Un ping.** Un script Lua escribe todo junto, de forma atómica:
+- si es más nuevo que la posición guardada, actualiza `pos`, `geo` (o `fuera-geo`) y `visto`; un ping más viejo que llega tarde no la pisa;
+- además, lo encola en el stream del historial.
+
+No toca Postgres.
+
+**Una búsqueda.**
+1. `GEOSEARCH` con un radio de `radio × 1,001 + 1 m` trae los candidatos. Se suman los de `fuera-geo` y, si el origen está fuera de ±85,05°, se evalúan todas las posiciones.
+2. Se descartan las vencidas, aunque la purga todavía no haya pasado.
+3. La distancia exacta, el radio, el orden y el desempate los resuelve **el dominio**, con las coordenadas originales: la misma función que usan la ingenua y la de memoria.
+
+**Por qué ese margen.** Redis mide sobre una esfera de 6 372 797,6 m y el dominio, sobre una de 6 371 008,8 m: las distancias de Redis son un 0,028 % más largas. Además, cada punto se guarda como un geohash de 52 bits, con hasta ~0,34 m de error. El margen cubre unas 3,5 veces lo primero y 3 veces lo segundo; lo que entra de más lo descarta el dominio. Hay tests que fallan si se quita el margen.
+
+**Purga.** Cada `LOCATION_PURGA_INTERVALO_MS` (10 s) un script Lua borra de las cuatro estructuras a los choferes vencidos, para que el índice no crezca sin límite.
+
+**Historial: cola y escritura en lotes.**
+- Un consumidor dentro del mismo proceso lee el stream con su **propia conexión** a Redis (`XREADGROUP BLOCK`), de a `LOCATION_HISTORIAL_LOTE` entradas (500).
+- Escribe cada lote con un solo `INSERT` (`createMany`) en la misma tabla `pings`, y después confirma (`XACK`) y borra (`XDEL`).
+- **Sin duplicados:** cada fila guarda el id de su entrada del stream en `stream_id`, que es único, y el `INSERT` usa `skipDuplicates`. Si un lote se escribió pero no se llegó a confirmar, reescribirlo no duplica.
+- **Si Postgres falla:** no confirma nada; las entradas quedan pendientes y se reintentan con espera creciente, hasta 5 s.
+- **Recuperación durante la ejecución:** antes de leer nuevas, cada vuelta reintenta **sus propios pendientes**. Cada `LOCATION_HISTORIAL_RECLAMO_MS` (30 s) hace `XAUTOCLAIM` de lo que otro consumidor dejó sin confirmar más de 30 s, por ejemplo una instancia que murió. No hace falta reiniciar nada.
+
+<a id="cola-llena"></a>
+**Cola llena.** El stream tiene un tope de `LOCATION_HISTORIAL_MAX` entradas (500 000, unos 33 minutos de pings a 250 por segundo sin Postgres).
+- Al llegar al tope, **la posición vigente se sigue actualizando**: el servicio no se corta. La entrada **no** se encola y se suma al contador `historial:descartados`.
+- No se recortan entradas viejas, porque pueden estar pendientes.
+- **Cómo se detecta:**
+  - en `/metrics` (`location_historial_ocupacion` y `location_historial_descartados_total`);
+  - en el log, con un aviso al pasar el 80 % y un error, como máximo una vez por minuto, mientras haya descartes;
+  - `/ready` ya estaba en `503` si la causa es Postgres.
+
+**Qué queda en Redis después de un apagado.** Con SIGTERM, location deja de recibir pedidos, termina la vuelta en curso y vacía lo que pueda del historial (hasta 5 s), y recién después cierra Redis y Postgres. Lo que no alcance a escribir queda en Redis:
+
+| Qué queda | Qué pasa al volver a arrancar |
+|---|---|
+| Las posiciones (`pos`, `geo`, `visto`, `fuera-geo`) | Siguen sirviendo para buscar mientras estén vigentes (30 s). Las vencidas no aparecen y las borra la próxima purga |
+| Entradas del stream **sin leer** | Las lee la nueva instancia apenas arranca |
+| Entradas **leídas y sin confirmar** (el proceso murió a mitad de un lote) | Quedan pendientes a nombre de la instancia anterior. La nueva las reclama con `XAUTOCLAIM` después de 30 s de inactividad y las escribe sin duplicar (`stream_id`) |
+| El contador de descartados | Se conserva: es acumulado |
+
+Si se pierde el propio Redis (sin persistencia), se pierden las posiciones, que se reponen solas con los pings siguientes, y el historial que todavía no se había escrito.
 
 ## Versión ingenua (`UBICACION_ESTRATEGIA=ingenua`)
 
@@ -65,9 +144,7 @@ Es la línea de base que pide 6.6 para medir con k6:
 - **Pings.** Cada ping es un `INSERT` en `pings(driver_id, lat, lng, recorded_at)`, aunque el chofer mande uno cada 2 s. Es también el historial.
 - **Búsqueda.** Trae la última posición de **todos** los choferes vigentes (`DISTINCT ON (driver_id)`, que usa el índice `(driver_id, recorded_at DESC)`). Después calcula la distancia (haversine) y ordena **en JavaScript**, dentro del event loop. No hay índice geográfico.
 - **Estrategia `memoria`.** Sirve para los tests y para correr sin base.
-- **Estrategia `optimizada`.** Con Redis GEO, entra en el PR de la tarea pesada. Implementa el mismo puerto (`RepositorioUbicaciones`) y tiene que pasar los mismos tests (`tests/soporte/casos-compartidos.ts`). No cambia el contrato ni las rutas.
-
-Queda pendiente para la tarea pesada: la retención del historial, el límite de pedidos en `/ubicaciones` y `/metrics`.
+- **Su cuello de botella.** Bajo carga, cada `INSERT` espera el `fsync` de su propio commit (`WALWrite`/`WALSync`). Los `INSERT` ocupan el pool de conexiones y las búsquedas esperan detrás. Ver [docs/mediciones.md](mediciones.md).
 
 ## Contrato con dispatch (a revisar con Iván)
 
@@ -259,19 +336,25 @@ npm run test:dominio -w @viajes/location
 ```
 
 - `test:dominio` no necesita Docker.
-- `npm test` usa la base `location_test` (ver [Primera vez](#primera-vez)).
-- Las reglas de búsqueda están en `tests/soporte/casos-compartidos.ts` y corren contra cada estrategia: hoy, memoria e ingenua.
+- `npm test` usa la base `location_test` (ver [Primera vez](#primera-vez)) y la base 14 de Redis (`LOCATION_REDIS_URL_TEST`), con un prefijo propio por suite.
+- **Mismas reglas para las tres estrategias:** `tests/soporte/casos-compartidos.ts` corre contra memoria, ingenua y optimizada.
+- **Equivalencia** (`tests/integracion/equivalencia.test.ts`):
+  - 300 choferes y 200 búsquedas generados con una semilla fija dan resultados idénticos en las tres: ids, orden, distancias y fechas;
+  - también el borde del radio (r − 0,5, r − 0,3, r + 0,3 y r + 0,9 m), los empates y las diferencias de centímetros;
+  - y las latitudes polares y el antimeridiano.
+- **Historial** (`tests/integracion/historial.test.ts`):
+  - Postgres cae y vuelve, y no quedan duplicados;
+  - la escritura sale bien y falla la confirmación;
+  - una instancia muere con entradas pendientes y otra las recupera;
+  - el apagado vacía la cola;
+  - la cola llena se detecta.
 
 ## Lo que sigue
 
-1. **Integración con dispatch** (Iván, una vez acordado el contrato): adaptador HTTP de `BuscadorCandidatos` con timeout, `503` si location no responde, lotes crecientes y variables en el Compose.
-2. **Tarea pesada** (Maxi):
-   - estrategia `optimizada` con Redis `GEOADD`/`GEOSEARCH`, vencimiento e historial por cola con escritura en lotes;
-   - `/metrics` con el lag del event loop;
-   - `carga/choferes.js` (500 choferes cada 2 s) con un seed de 500 tokens de chofer;
-   - primera medición en `docs/mediciones.md`.
-3. **Después:**
+1. **Integración con dispatch** (Iván, una vez acordado el contrato): adaptador HTTP de `BuscadorCandidatos` con timeout, `503` si location no responde, lotes crecientes y variables en el Compose. Con eso se mide el tiempo hasta la asignación que pide 6.6.
+2. **Después:**
    - límite de pedidos en `/ubicaciones`;
    - retención del historial;
    - publicación por Redis para el seguimiento, con su regla de privacidad;
-   - ADR 0005 y 0008.
+   - `/metrics` en `platform` con `prom-client` para Grafana;
+   - ADR 0008 (Redis GEO frente a PostGIS frente a geohash), con los números de [docs/mediciones.md](mediciones.md).

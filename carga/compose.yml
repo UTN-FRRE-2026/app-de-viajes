@@ -1,0 +1,87 @@
+# Entorno AISLADO para medir location con k6. Proyecto propio (`viajes-carga`): su Postgres, su
+# Redis, su JWKS y sus credenciales. No comparte volumen, puertos ni red con el entorno de desarrollo
+# (`app-viajes`). Las credenciales las genera `node carga/preparar.mjs` en carga/.secretos/.
+#
+#   docker compose -p viajes-carga -f carga/compose.yml --env-file carga/.secretos/carga.env up -d --wait
+#
+# Lo maneja carga/medir.ps1: no hace falta levantarlo a mano.
+name: viajes-carga
+
+x-etiquetas: &etiquetas
+  app-viajes.entorno: carga
+
+services:
+  postgres:
+    image: postgis/postgis:16-3.4
+    labels: *etiquetas
+    environment:
+      POSTGRES_USER: carga
+      POSTGRES_PASSWORD: "${CARGA_PG_PASSWORD:?falta CARGA_PG_PASSWORD, correr node carga/preparar.mjs}"
+      POSTGRES_DB: location_carga
+    # Sin volumen con nombre: los datos de carga son descartables.
+    ports:
+      - "127.0.0.1:55434:5432"
+    cpus: 2
+    mem_limit: 1g
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U carga -d location_carga"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  redis:
+    image: redis:7-alpine
+    labels: *etiquetas
+    cpus: 1
+    mem_limit: 512m
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  # Sirve solo la clave PÚBLICA de carga. location de carga valida los tokens contra este JWKS,
+  # nunca contra identity.
+  jwks:
+    image: node:22-alpine
+    labels: *etiquetas
+    command:
+      - node
+      - -e
+      - "const fs=require('fs');require('http').createServer((q,r)=>{r.setHeader('content-type','application/json');r.end(fs.readFileSync('/jwks/jwks.json'))}).listen(8080)"
+    volumes:
+      - ./.secretos/jwks.json:/jwks/jwks.json:ro
+    cpus: 0.25
+    mem_limit: 64m
+
+  location:
+    build:
+      context: ..
+      args:
+        SERVICE: location
+    image: viajes-location:carga
+    labels: *etiquetas
+    environment:
+      PUERTO: "3004"
+      # info: location no loguea cada pedido; así quedan en el log el arranque y el apagado ordenado.
+      NIVEL_LOG: info
+      UBICACION_ESTRATEGIA: "${ESTRATEGIA:?falta ESTRATEGIA (ingenua u optimizada)}"
+      LOCATION_DATABASE_URL: postgresql://carga:${CARGA_PG_PASSWORD}@postgres:5432/location_carga
+      DB_POOL_MAX: "10"
+      REDIS_URL: redis://redis:6379
+      LOCATION_REDIS_PREFIJO: "carga:location:"
+      JWKS_URL: http://jwks:8080/jwks.json
+      JWT_ISSUER: viajes-carga
+      JWT_AUDIENCE: viajes-carga
+      LOCATION_TOKEN_SERVICIO: "${CARGA_TOKEN_SERVICIO:?falta CARGA_TOKEN_SERVICIO}"
+    ports:
+      - "127.0.0.1:53004:3004"
+    cpus: 1
+    mem_limit: 512m
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      jwks:
+        condition: service_started

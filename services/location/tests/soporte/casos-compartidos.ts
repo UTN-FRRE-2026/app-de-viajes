@@ -62,6 +62,17 @@ export function probarCasosDeUbicacion(nombre: string, crearRepo: () => Promise<
       expect(await buscar()).toEqual([]);
     });
 
+    it('un ping con hora más vieja que llega tarde no pisa la posición nueva', async () => {
+      const chofer = randomUUID();
+      s.reloj.avanzar(5000);
+      await s.casos.registrarUbicacion({ choferId: chofer, ...alNorte(300) });
+      s.reloj.avanzar(-3000); // un reintento lento que se había mandado antes
+      await s.casos.registrarUbicacion({ choferId: chofer, ...alNorte(4500) });
+      s.reloj.avanzar(3000);
+      const [c] = await buscar();
+      expect(c?.distanciaMetros).toBeLessThan(400);
+    });
+
     it('sin choferes cerca devuelve una lista vacía, no un error', async () => {
       expect(await buscar()).toEqual([]);
     });
