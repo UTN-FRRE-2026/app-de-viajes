@@ -25,42 +25,43 @@ Documentación:
 | `packages/kernel`, `packages/contracts`, `packages/platform` | listo (config, logs con requestId, errores, validación, JWT, health/ready, apagado ordenado) |
 | `services/dispatch` — asignación única (6.3) | listo, con tests de concurrencia contra Postgres |
 | `services/identity` | listo para el alcance acordado: registro, login, JWT RS256, JWKS, seed, límite de intentos de login, refresh con rotación y logout ([detalle](docs/identity.md)) |
-| `services/location` | ubicación de los choferes y búsqueda de cercanos, en versión ingenua (Postgres) y optimizada (Redis GEO + historial en lotes), medidas con k6 ([detalle](docs/location.md), [mediciones](docs/mediciones.md)). dispatch todavía no lo usa |
+| `services/location` | ubicación de los choferes y búsqueda de cercanos, en versión ingenua (Postgres) y optimizada (Redis GEO + historial en lotes), medidas con k6 ([detalle](docs/location.md), [mediciones](docs/mediciones.md)). dispatch lo usa para buscar candidatos |
 | flotas y tarifas (dentro de dispatch), `web` (React + nginx) | pendiente |
 
 ## Requisitos
 
-Node 22 o superior, Docker con Compose.
+Node 22 o superior y Docker con Compose. Los comandos son los mismos en Windows (PowerShell) y en Linux.
 
-## Levantar y correr los tests
+## Levantar el sistema
 
 ```bash
-cp .env.example .env
 npm install
-npm run infra:up            # postgres (puerto 5434 del host) y redis
-npm run lint
-npm run typecheck
-npm test                    # dominio en memoria + integración/concurrencia contra Postgres
+npm run setup     # .env, clave RS256, Postgres y Redis, bases que falten, migraciones y usuarios de prueba
+npm run dev       # identity (3001), location (3004) y dispatch (3005) en una terminal, con recarga
 ```
 
-Si `npm test` falla con «No pude migrar la base de test», el volumen de Postgres es anterior a esa base: el script de init crea las bases solo la primera vez que arranca el contenedor. Se crea la que falta **sin borrar datos**, con el comando idempotente de [docs/location.md](docs/location.md#primera-vez) (cambiando el nombre de la base) o el de [docs/identity.md](docs/identity.md#problemas-frecuentes). No hace falta `docker compose down -v`, que borra todos los datos locales. Y si falta un paquete, `npm install` otra vez: cada servicio nuevo suma dependencias.
-
-Solo los tests de dominio (sin Docker): `npm run test:dominio -w @viajes/dispatch`, `-w @viajes/identity` o `-w @viajes/location`.
-
-Correr los servicios en desarrollo desde PowerShell (paso a paso en [docs/identity.md](docs/identity.md) y [docs/location.md](docs/location.md)). Cada servicio en su terminal, con `.env` cargado y su puerto fijo (identity 3001, location 3004, dispatch 3005):
-
-```powershell
-npm run claves -w @viajes/identity
-npm run local -- identity migrate:deploy
-npm run local -- location migrate:deploy
-npm run local -- dispatch migrate:deploy
-npm run local -- identity seed
-npm run local -- identity
-npm run local -- location
-npm run local -- dispatch
-```
+- **`npm run setup`** se puede correr las veces que haga falta: cada paso es idempotente y ninguno borra datos.
+  - Si no hay `.env`, lo copia de `.env.example`. Si hay uno viejo, le **agrega** las variables nuevas de `.env.example` y avisa cuáles, sin tocar las que ya tenía.
+  - Genera la clave RS256 de identity si falta.
+  - Levanta Postgres y Redis con Docker Compose y crea las bases que falten. El script de init de Postgres solo corre con el volumen vacío; un volumen anterior a un servicio queda sin su base. No hace falta `docker compose down -v`, que borra todos los datos.
+  - Genera el cliente de Prisma, migra las tres bases de desarrollo y carga los usuarios de prueba ([docs/identity.md](docs/identity.md)).
+  - Con `npm run setup -- --sin-docker` no toca Docker: Postgres y Redis los provee otro, por ejemplo el CI.
+- **`npm run dev`** levanta los tres servicios en una sola terminal, con el `.env` cargado. Cada línea va con el nombre del servicio adelante. Ctrl+C los apaga ordenados. Si uno se cae, apaga los otros dos y sale con error. Si un puerto está ocupado, lo dice antes de arrancar.
+- **`npm start`** hace lo mismo con el código compilado (`npm run build` antes).
+- **En contenedores**, en lugar de `npm run dev` o `npm start`: `docker compose up -d --build`. Usan las mismas bases ya migradas y la clave del `.env`.
+- **Un solo servicio**, con el `.env` cargado y su puerto fijo: `npm run local -- identity` (o `location`, `dispatch`; solo en PowerShell). Más detalles en [docs/identity.md](docs/identity.md) y [docs/location.md](docs/location.md).
 
 `DISPATCH_LOG_SQL=1` muestra cada query en el log, incluido el `SELECT ... FOR UPDATE`.
+
+## Tests
+
+```bash
+npm run lint
+npm run typecheck
+npm test          # dominio en memoria + integración/concurrencia contra Postgres y Redis
+```
+
+`npm test` usa las bases `*_test` que crea `npm run setup`. Solo los tests de dominio, sin Docker: `npm run test:dominio -w @viajes/dispatch` (o `-w @viajes/identity`, `-w @viajes/location`).
 
 ## Estructura
 

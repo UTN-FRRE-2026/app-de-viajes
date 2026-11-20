@@ -144,6 +144,8 @@ Requisitos: Node 22 o superior, Docker Desktop con el motor en marcha. Todos los
 
 ### Primera vez
 
+> **Lo más corto:** `npm run setup` hace todos los pasos de esta sección (`.env`, clave, bases que falten, migraciones y seed) y `npm run dev` levanta los tres servicios; ver el [README](../README.md#levantar-el-sistema). Los pasos de abajo sirven para entender qué hace o para hacerlo a mano.
+
 ```powershell
 if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 npm ci
