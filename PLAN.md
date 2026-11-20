@@ -200,7 +200,7 @@ El ADR 0006 registra la decisión con sus alternativas reales: monolito modular 
 
 | Requisito | Estado | Qué falta |
 |---|---|---|
-| **B1** Arranque reproducible | 🟡 | La secuencia de 2.4 **hoy falla**: `.env.example` trae vacía la clave RS256 y hay que migrar a mano. Faltan `npm run setup`, `dev` y `start` en la raíz. `setup` migra las tres bases, genera la clave si no existe y tiene que andar en Windows y Linux (script de Node, no bash) |
+| **B1** Arranque reproducible | ✅ | `npm run setup` (script de Node: `.env`, clave RS256, Postgres y Redis, bases que falten, migraciones y seed), `npm run dev` y `npm start`. Probado en un clon limpio con un volumen vacío, en Linux. Falta repetirlo en Windows |
 | **B2** Hexagonal | ✅ | Mantenerlo en location y en los módulos nuevos de dispatch. Puertos con doble adaptador: mapas, pagos, notificador, publicador de eventos |
 | **B3** Configuración y ciclo de vida | ✅ | Preparar la demo de SIGTERM con un pedido lento |
 | **B4** Errores y logs | 🟡 | No hay **log por pedido** (método, ruta, estado, duración): hoy solo se loguean los errores, y no se puede relacionar pedido y error por `requestId` |
@@ -315,7 +315,7 @@ Es lo que pide el Control 3: carrera principal con su test (ya está) y tarea pe
 
 - [x] Confirmar con la cátedra si se exigen microservicios: sí, tres como mínimo.
 - [x] Esqueleto de `services/location` (health, config, composición, base, CI) y Compose sin RabbitMQ y con `location`. El esqueleto lo hizo Agos (#7); el Compose sin RabbitMQ, Ivan.
-- [ ] `npm run setup`, `dev`, `start` para los tres servicios; secuencia de 2.4 probada en un clon limpio (Ivan).
+- [x] `npm run setup`, `dev`, `start` para los tres servicios; secuencia probada en un clon limpio (Ivan). Falta repetirla en Windows.
 - [x] Contrato de `GET /interno/candidatos` en `contracts` y adaptador HTTP con timeout en dispatch (Ivan, Maxi).
 - [x] location en sus dos versiones, con adaptador en memoria primero (Agos #7, Maxi #8).
 - [ ] `carga/choferes.js`, `carga/solicitudes.js`, `/metrics` con el lag y **primera medición** en `docs/mediciones.md` (Maxi). Hecho: `carga/ubicaciones.js`, `/metrics` de location y la primera medición. Falta: `carga/solicitudes.js` y `/metrics` en dispatch e identity.
@@ -364,7 +364,7 @@ Cada dueño le explica su parte a los otros dos. Ensayar los cuatro tipos de pre
 
 ## 7. Verificación
 
-1. Clon limpio en otra máquina: `cp .env.example .env`, `docker compose up -d`, `npm run setup`, `npm test`, `npm start` y la colección de la demo.
+1. Clon limpio en otra máquina: `npm install`, `npm run setup`, `npm test`, `npm start` (o `docker compose up -d --build`) y la colección de la demo.
 2. Borrar una variable: el proceso sale con código distinto de cero y nombra la variable.
 3. SIGTERM durante un pedido lento: el log muestra que terminó antes de salir.
 4. Un error provocado: respuesta sin detalles internos, y pedido y error encontrados por `requestId`.

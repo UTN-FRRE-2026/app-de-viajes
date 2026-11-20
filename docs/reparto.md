@@ -15,7 +15,7 @@ Cada integrante es **dueño** de un problema central y de los módulos que lo ro
 **Fase A**
 - [x] Esqueleto de `services/location` con la forma de los otros dos: health, config, composición, Prisma, verificación de tokens por JWKS y base de test en el CI. Lo hizo Agos (#7).
 - [x] Compose sin RabbitMQ y con `location`; base y usuario `location` en `infra/postgres/init`.
-- [ ] `npm run setup` (migra las tres bases, genera la clave si falta, siembra), `dev` y `start`. Tiene que andar en Windows y en Linux.
+- [x] `npm run setup` (migra las tres bases, genera la clave si falta, siembra), `dev` y `start`. Tiene que andar en Windows y en Linux. Probado en Linux con un clon limpio; falta probarlo en Windows.
 - [x] Con Maxi: contrato de `GET /interno/candidatos` en `contracts`, cliente HTTP interno con timeout y token de servicio en `platform`, y adaptador de `BuscadorCandidatos` en dispatch.
 - [ ] ADR 0001 (TypeScript + ESM) y 0006 (tres microservicios y sus límites); 0004 con el formato de la sección 7.1.
 

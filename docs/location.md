@@ -207,6 +207,8 @@ Requisitos: lo de [docs/identity.md](identity.md#levantarlo-desde-powershell) (D
 
 ### Primera vez
 
+> **Lo más corto:** `npm run setup` hace todos los pasos de esta sección (`.env`, clave, bases que falten, migraciones y seed) y `npm run dev` levanta los tres servicios; ver el [README](../README.md#levantar-el-sistema). Los pasos de abajo sirven para entender qué hace o para hacerlo a mano.
+
 1. Si tu `.env` es anterior a location, agregale la sección `location` de `.env.example`. `LOCATION_TOKEN_SERVICIO` de ese archivo es **solo para desarrollo**; en cualquier entorno publicado va uno aleatorio.
 
 2. Creá `location_test` **sin borrar datos**. El script de init solo corre con el volumen vacío, así que si tu Postgres ya estaba inicializado no la creó. La base `location` y el usuario `location_svc` ya existen, porque los crea el mismo script. Este comando es idempotente: si la base ya existe, no hace nada.
