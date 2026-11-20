@@ -1,0 +1,17 @@
+﻿{
+    "estrategia":  "ingenua",
+    "corrida":  3,
+    "inicio":  "2026-11-19T22:07:28",
+    "medicion_s":  300,
+    "calentamiento_s":  30,
+    "pings_enviados":  42759,
+    "pings_aceptados":  42759,
+    "pings_fallidos":  0,
+    "pings_omitidos_k6":  39742,
+    "historial_filas":  42759,
+    "historial_stream_ids_distintos":  0,
+    "historial_descartados":  0,
+    "historial_drenaje_ms":  0,
+    "codigo_k6":  99,
+    "commit":  "27b619b"
+}

@@ -1,0 +1,9 @@
+﻿# HELP location_event_loop_lag_ms Lag del event loop desde el arranque (monitorEventLoopDelay, sin los 10 ms de resolución).
+# TYPE location_event_loop_lag_ms summary
+location_event_loop_lag_ms{quantile="0.5"} 0.134
+location_event_loop_lag_ms{quantile="0.99"} 6.859
+location_event_loop_lag_max_ms 120.810
+location_event_loop_lag_mean_ms 0.574
+process_resident_memory_bytes 144539648
+nodejs_heap_used_bytes 48139464
+location_estrategia{estrategia="ingenua"} 1

@@ -43,4 +43,16 @@ describe('configuración', () => {
   it('una estrategia desconocida se rechaza', () => {
     expect(variablesConError({ ...base, UBICACION_ESTRATEGIA: 'magia' })).toEqual(['UBICACION_ESTRATEGIA']);
   });
+
+  it('la optimizada exige Redis y también Postgres (para el historial)', () => {
+    expect(variablesConError({ ...base, UBICACION_ESTRATEGIA: 'optimizada' })).toEqual(['LOCATION_DATABASE_URL', 'REDIS_URL']);
+  });
+
+  it('el prefijo de Redis tiene un formato fijo, y el de carga es válido', () => {
+    const ok = { ...base, UBICACION_ESTRATEGIA: 'memoria' };
+    expect(variablesConError({ ...ok, LOCATION_REDIS_PREFIJO: 'carga:location:' })).toEqual([]);
+    for (const malo of ['location', '*:', 'Location:', 'a b:']) {
+      expect(variablesConError({ ...ok, LOCATION_REDIS_PREFIJO: malo }), malo).toEqual(['LOCATION_REDIS_PREFIJO']);
+    }
+  });
 });

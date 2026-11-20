@@ -31,6 +31,7 @@ jobs:
       DATABASE_URL_TEST: postgresql://dispatch_svc:dispatch_dev@localhost:5434/dispatch_test
       IDENTITY_DATABASE_URL_TEST: postgresql://identity_svc:identity_dev@localhost:5434/identity_test
       LOCATION_DATABASE_URL_TEST: postgresql://location_svc:location_dev@localhost:5434/location_test
+      LOCATION_REDIS_URL_TEST: redis://localhost:6379/14
       REDIS_URL_TEST: redis://localhost:6379/15
     steps:
       - uses: actions/checkout@v4

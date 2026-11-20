@@ -71,6 +71,8 @@ services:
       PUERTO: "3004"
       UBICACION_ESTRATEGIA: ingenua
       LOCATION_DATABASE_URL: postgresql://location_svc:${DB_PASSWORD_LOCATION:-location_dev}@postgres:5432/location
+      # Solo lo usa la estrategia optimizada.
+      REDIS_URL: redis://redis:6379
       JWKS_URL: http://identity:3001/.well-known/jwks.json
       JWT_ISSUER: viajes-identity
       JWT_AUDIENCE: viajes
@@ -80,6 +82,8 @@ services:
       - "3004:3004"
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
 
   dispatch:

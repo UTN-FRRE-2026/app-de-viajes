@@ -2,6 +2,27 @@ import { readdir } from 'node:fs/promises';
 import type { ChequeoListo } from '@viajes/platform';
 import type { PrismaClient } from './generated/client.js';
 
+/**
+ * Un chequeo que no responde también es un fallo. Sin esto, con Postgres colgado (no caído: acepta
+ * la conexión y no contesta) /ready quedaba esperando en vez de responder 503.
+ */
+export function conTiempoLimite(chequeo: ChequeoListo, ms = 2000): ChequeoListo {
+  return {
+    nombre: chequeo.nombre,
+    chequear: async () => {
+      let temporizador: NodeJS.Timeout | undefined;
+      const limite = new Promise<never>((_, rechazar) => {
+        temporizador = setTimeout(() => rechazar(new Error(`sin respuesta en ${ms} ms`)), ms);
+      });
+      try {
+        await Promise.race([chequeo.chequear(), limite]);
+      } finally {
+        clearTimeout(temporizador);
+      }
+    },
+  };
+}
+
 export function chequeosBase(prisma: PrismaClient, carpetaMigraciones: string): ChequeoListo[] {
   return [
     {

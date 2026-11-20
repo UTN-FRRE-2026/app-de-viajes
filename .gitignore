@@ -149,3 +149,6 @@ coverage/
 .env
 *.log
 services/*/src/infra/db/generated/
+
+# Carga (k6): credenciales y tokens de carga. Nunca se versionan.
+carga/.secretos/

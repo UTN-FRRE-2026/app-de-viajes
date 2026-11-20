@@ -1,0 +1,17 @@
+﻿{
+    "estrategia":  "optimizada",
+    "corrida":  3,
+    "inicio":  "2026-11-19T22:13:44",
+    "medicion_s":  300,
+    "calentamiento_s":  30,
+    "pings_enviados":  82489,
+    "pings_aceptados":  82489,
+    "pings_fallidos":  0,
+    "pings_omitidos_k6":  12,
+    "historial_filas":  82489,
+    "historial_stream_ids_distintos":  82489,
+    "historial_descartados":  0,
+    "historial_drenaje_ms":  77,
+    "codigo_k6":  0,
+    "commit":  "27b619b"
+}
