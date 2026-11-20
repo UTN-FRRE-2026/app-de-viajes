@@ -46,8 +46,8 @@ npm run dev       # identity (3001), location (3004) y dispatch (3005) en una te
   - Levanta Postgres y Redis con Docker Compose y crea las bases que falten. El script de init de Postgres solo corre con el volumen vacío; un volumen anterior a un servicio queda sin su base. No hace falta `docker compose down -v`, que borra todos los datos.
   - Genera el cliente de Prisma, migra las tres bases de desarrollo y carga los usuarios de prueba ([docs/identity.md](docs/identity.md)).
   - Con `npm run setup -- --sin-docker` no toca Docker: Postgres y Redis los provee otro, por ejemplo el CI.
-- **`npm run dev`** levanta los tres servicios en una sola terminal, con el `.env` cargado. Cada línea va con el nombre del servicio adelante. Ctrl+C los apaga ordenados. Si uno se cae, apaga los otros dos y sale con error. Si un puerto está ocupado, lo dice antes de arrancar.
-- **`npm start`** hace lo mismo con el código compilado (`npm run build` antes).
+- **`npm run dev`** levanta los tres servicios en una sola terminal, con el `.env` cargado. Cada línea va con el nombre del servicio adelante. Ctrl+C los apaga ordenados. Si uno se cae, los otros siguen y tsx lo reinicia cuando guardás un archivo; el lanzador avisa cuando deja de responder y cuando vuelve. Si un puerto está ocupado, lo dice antes de arrancar.
+- **`npm start`** hace lo mismo con el código compilado (`npm run build` antes). Acá, si uno se cae, apaga los otros dos y sale con error.
 - **En contenedores**, en lugar de `npm run dev` o `npm start`: `docker compose up -d --build`. Usan las mismas bases ya migradas y la clave del `.env`.
 - **Un solo servicio**, con el `.env` cargado y su puerto fijo: `npm run local -- identity` (o `location`, `dispatch`; solo en PowerShell). Más detalles en [docs/identity.md](docs/identity.md) y [docs/location.md](docs/location.md).
 

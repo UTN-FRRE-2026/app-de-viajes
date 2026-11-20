@@ -4,8 +4,14 @@
 //   node scripts/servicios.mjs dev     con recarga (tsx watch, sobre el código fuente)
 //   node scripts/servicios.mjs start   lo compilado (dist/); `npm start` compila antes
 //
-// Ctrl+C los apaga a los tres en orden (SIGTERM: cada uno drena sus pedidos). Si uno termina solo,
-// se apagan los otros dos y se sale con error: mejor ver la falla que quedarse con dos de tres.
+// Ctrl+C los apaga a los tres en orden (SIGTERM: cada uno drena sus pedidos).
+//
+// Si un servicio se cae:
+// - en `start`, se apagan los otros dos y se sale con error: mejor ver la falla que quedarse con dos
+//   de tres;
+// - en `dev`, tsx watch sigue vivo y lo reinicia al guardar un archivo (es lo que se quiere mientras
+//   se programa), así que no se apaga nada. Para que no pase desapercibido, se consulta /health de
+//   cada servicio y se avisa cuando deja de responder y cuando vuelve.
 import { spawn, spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -103,6 +109,46 @@ for (const [i, { nombre, puerto }] of SERVICIOS.entries()) {
     if (hijos.length === 0) process.exit(codigoSalida);
   });
   hijos.push(hijo);
+}
+
+/**
+ * Solo en dev: tsx watch no termina cuando el servidor se cae, así que el `exit` de arriba no se
+ * entera. Se vigila /health: un aviso al caerse (con la causa en las líneas de arriba) y otro al volver.
+ */
+const VIGILANCIA_MS = 2000;
+const ESPERA_ARRANQUE_MS = 60_000;
+async function responde(puerto) {
+  try {
+    return (await fetch(`http://127.0.0.1:${puerto}/health`, { signal: AbortSignal.timeout(1500) })).ok;
+  } catch {
+    return false;
+  }
+}
+if (modo === 'dev') {
+  const inicio = Date.now();
+  const estado = new Map(SERVICIOS.map((s) => [s.nombre, 'arrancando']));
+  const vigilar = setInterval(async () => {
+    if (apagando) return clearInterval(vigilar);
+    for (const { nombre, puerto } of SERVICIOS) {
+      const ok = await responde(puerto);
+      const antes = estado.get(nombre);
+      if (apagando) return;
+      if (ok && antes !== 'arriba') {
+        if (antes === 'caido') console.error(`\n>>> ${nombre} volvió a responder en ${puerto}.\n`);
+        estado.set(nombre, 'arriba');
+      } else if (!ok && antes === 'arriba') {
+        console.error(
+          `\n>>> ${nombre} dejó de responder en ${puerto}. La causa está arriba, en sus líneas. ` +
+            'Corregí y guardá: tsx lo reinicia. Los otros servicios siguen.\n',
+        );
+        estado.set(nombre, 'caido');
+      } else if (!ok && antes === 'arrancando' && Date.now() - inicio > ESPERA_ARRANQUE_MS) {
+        console.error(`\n>>> ${nombre} no arrancó en ${ESPERA_ARRANQUE_MS / 1000} s. La causa está arriba, en sus líneas.\n`);
+        estado.set(nombre, 'caido');
+      }
+    }
+  }, VIGILANCIA_MS);
+  vigilar.unref();
 }
 
 /**
