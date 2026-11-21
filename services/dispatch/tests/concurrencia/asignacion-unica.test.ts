@@ -144,3 +144,78 @@ describe('asignación única (6.3)', () => {
     expect(await d.prisma.solicitudViaje.count({ where: { pasajeroId: pasajero } })).toBe(1);
   });
 });
+
+describe('ciclo del viaje bajo concurrencia', () => {
+  /** Viaje aceptado y llevado hasta EN_CURSO por su chofer. */
+  async function viajeEnCurso() {
+    const pasajero = randomUUID();
+    const chofer = randomUUID();
+    const { solicitudId, ofertas } = await crearSolicitud(pasajero, [chofer]);
+    expect((await aceptar(ofertas[0]!.id, chofer)).status).toBe(200);
+    const comoChofer = await d.auth(chofer, 'chofer');
+    for (const accion of ['en-camino', 'iniciar']) {
+      expect((await request(d.url).post(`/solicitudes/${solicitudId}/${accion}`).set(comoChofer).send({})).status).toBe(200);
+    }
+    return { solicitudId, chofer, comoChofer };
+  }
+
+  const eventosDe = (tipo: string, solicitudId: string) =>
+    d.prisma.eventoOutbox.count({ where: { tipo, payload: { path: ['solicitudId'], equals: solicitudId } } });
+
+  /**
+   * Deja `n` conexiones del pool de Postgres abiertas para que las transacciones simultáneas
+   * arranquen juntas. Sin esto, la primera toma la conexión libre que dejó el paso anterior y
+   * termina antes de que las demás terminen de abrir la suya (abrir una tarda decenas de ms):
+   * no hay carrera y el test pasaría aunque faltara el FOR UPDATE (lo comprobamos sacándolo).
+   * El pg_sleep obliga a que las `n` consultas estén abiertas a la vez, cada una en su conexión.
+   */
+  const abrirConexiones = (n: number) =>
+    Promise.all(Array.from({ length: n }, () => d.prisma.$queryRaw`SELECT 1 AS ok FROM pg_sleep(0.05)`));
+
+  it('20 finalizaciones simultáneas del mismo viaje: 1×200 y 19×409, un solo RideCompleted', async () => {
+    const { solicitudId, comoChofer } = await viajeEnCurso();
+    await abrirConexiones(20);
+    const respuestas = await Promise.all(
+      Array.from({ length: 20 }, () => request(d.url).post(`/solicitudes/${solicitudId}/finalizar`).set(comoChofer).send({})),
+    );
+    expect(respuestas.filter((r) => r.status === 200)).toHaveLength(1);
+    const conflictos = respuestas.filter((r) => r.status === 409);
+    expect(conflictos).toHaveLength(19);
+    expect(new Set(conflictos.map((r) => r.body.error.code))).toEqual(new Set(['TRANSICION_INVALIDA']));
+
+    expect(await eventosDe('RideCompleted', solicitudId)).toBe(1);
+    expect(await d.prisma.asignacionActiva.count()).toBe(0);
+  });
+
+  it('finalizar contra la cancelación del operador: gana uno solo y el chofer queda libre (20 repeticiones)', async () => {
+    const operador = await d.auth(randomUUID(), 'operador');
+    const ganadores = { finalizar: 0, cancelar: 0 };
+
+    for (let i = 0; i < 20; i++) {
+      const { solicitudId, comoChofer } = await viajeEnCurso();
+      await abrirConexiones(2);
+      const [rFin, rCancel] = await Promise.all([
+        request(d.url).post(`/solicitudes/${solicitudId}/finalizar`).set(comoChofer).send({}),
+        request(d.url).post(`/solicitudes/${solicitudId}/cancelar`).set(operador).send({ motivo: 'reclamo del pasajero' }),
+      ]);
+      expect([rFin.status, rCancel.status].sort()).toEqual([200, 409]);
+
+      const s = await d.prisma.solicitudViaje.findUniqueOrThrow({ where: { id: solicitudId } });
+      const completados = await eventosDe('RideCompleted', solicitudId);
+      const cancelados = await eventosDe('RideCancelled', solicitudId);
+      if (rFin.status === 200) {
+        ganadores.finalizar++;
+        expect(s.estado).toBe('COMPLETADA');
+        expect(rCancel.body.error.code).toBe('SOLICITUD_NO_CANCELABLE');
+        expect([completados, cancelados]).toEqual([1, 0]);
+      } else {
+        ganadores.cancelar++;
+        expect(s.estado).toBe('CANCELADO_OPERADOR');
+        expect(rFin.body.error.code).toBe('TRANSICION_INVALIDA');
+        expect([completados, cancelados]).toEqual([0, 1]);
+      }
+      expect(await d.prisma.asignacionActiva.count({ where: { solicitudId } })).toBe(0);
+    }
+    expect(ganadores.finalizar + ganadores.cancelar).toBe(20);
+  });
+});

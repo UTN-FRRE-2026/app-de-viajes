@@ -1,4 +1,10 @@
-import { Oferta, SolicitudViaje, type DatosOferta, type RegistroSolicitud } from '../../dominio/entidades/index.js';
+import {
+  ESTADOS_ACTIVOS,
+  Oferta,
+  SolicitudViaje,
+  type DatosOferta,
+  type RegistroSolicitud,
+} from '../../dominio/entidades/index.js';
 import type { EventoDispatch, RepositorioDespacho, TransaccionDespacho } from '../../dominio/puertos/index.js';
 
 /** Cola de espera simple: quien llega segundo espera a que el primero suelte. */
@@ -15,7 +21,8 @@ class Mutex {
   }
 }
 
-const ACTIVAS = new Set(['BUSCANDO', 'ASIGNADO']);
+// Lo mismo que el índice único parcial ride_requests_una_activa_por_pasajero.
+const ACTIVAS = new Set(ESTADOS_ACTIVOS);
 
 /**
  * Adaptador en memoria para los tests de dominio y para correr sin Postgres.

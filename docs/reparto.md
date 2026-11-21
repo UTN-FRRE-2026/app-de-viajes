@@ -15,12 +15,12 @@ Cada integrante es **dueño** de un problema central y de los módulos que lo ro
 **Fase A**
 - [x] Esqueleto de `services/location` con la forma de los otros dos: health, config, composición, Prisma, verificación de tokens por JWKS y base de test en el CI. Lo hizo Agos (#7).
 - [x] Compose sin RabbitMQ y con `location`; base y usuario `location` en `infra/postgres/init`.
-- [x] `npm run setup` (migra las tres bases, genera la clave si falta, siembra), `dev` y `start`. Tiene que andar en Windows y en Linux. Probado en Linux con un clon limpio; falta probarlo en Windows.
+- [x] `npm run setup` (migra las tres bases, genera la clave si falta, siembra), `dev` y `start`. Tiene que andar en Windows y en Linux. Probado con un clon limpio en los dos.
 - [x] Con Maxi: contrato de `GET /interno/candidatos` en `contracts`, cliente HTTP interno con timeout y token de servicio en `platform`, y adaptador de `BuscadorCandidatos` en dispatch.
 - [x] ADR 0001 (TypeScript + ESM) y 0006 (tres microservicios y sus límites); 0004 con el formato de la sección 7.1.
 
 **Fase B**
-- [ ] viajes: `EN_CAMINO`, `EN_CURSO`, `CANCELADO_CHOFER`, cancelación del operador con motivo, finalizar liberando al chofer en la misma transacción, y un test por transición.
+- [x] viajes: `EN_CAMINO`, `EN_CURSO`, `CANCELADO_CHOFER`, cancelación del operador con motivo, finalizar liberando al chofer en la misma transacción, y un test por transición.
 - [ ] Historial por pasajero y por chofer; panel del operador con búsqueda.
 - [ ] Idempotency-Key en `platform` (Redis `SET NX` + registro en la transacción del efecto).
 - [ ] SSE: relay del `outbox` a Redis Pub/Sub, suscripción solo a viajes propios y al canal de posición del chofer asignado, reconexión con `Last-Event-ID`.
