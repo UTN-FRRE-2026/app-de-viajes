@@ -88,6 +88,14 @@ Toda respuesta que pasó por el contador trae `RateLimit-Limit`, `RateLimit-Rema
 
 `{"keys":[{"kty":"RSA","n":"...","e":"AQAB","kid":"...","alg":"RS256","use":"sig"}]}` con `Cache-Control: public, max-age=300`. Solo la parte pública. Dispatch lo consume con `verificadorJwks`.
 
+### `GET /interno/usuarios/:id`, solo para otros servicios
+
+La usa dispatch para comprobar que el chofer que un admin de flota da de alta es una cuenta real con rol `chofer` ([docs/flotas.md](flotas.md#alta-de-un-chofer)). **No se publica por nginx.**
+
+- Lleva `X-Token-Servicio: <IDENTITY_TOKEN_SERVICIO>`. Sin el encabezado, con otro valor o con el JWT de un usuario: `401 TOKEN_SERVICIO_INVALIDO`, siempre el mismo mensaje. El chequeo es el mismo de location (`exigirTokenServicio`, en `platform`): huellas SHA-256 comparadas en tiempo constante, y el valor nunca se loguea.
+- `200 {"id": "...", "rol": "chofer"}` con `Cache-Control: no-store`. Solo el id y el rol: ni email, ni nombre, ni flota.
+- `404 USUARIO_NO_ENCONTRADO` si no existe; `400` si el id no es un UUID.
+
 ### `GET /health` y `GET /ready`
 
 Los de `platform`. `/ready` responde 503 si falla Postgres, si hay migraciones pendientes o si no responde Redis.

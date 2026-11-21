@@ -9,9 +9,9 @@ export async function crearEmisorTokens() {
   const jwk = { ...(await exportJWK(publicKey)), kid: 'test', alg: 'RS256', use: 'sig' };
   const verificador: VerificadorToken = verificadorJwksLocal({ keys: [jwk] }, OPCIONES);
 
-  /** `vence`: cualquier duración de jose (`5m`, `2s`). */
-  async function firmar(sub: string, rol: Rol, vence = '5m'): Promise<string> {
-    return new SignJWT({ rol })
+  /** `vence`: cualquier duración de jose (`5m`, `2s`). `fleetId`: solo el admin_flota, como en identity. */
+  async function firmar(sub: string, rol: Rol, vence = '5m', fleetId?: string): Promise<string> {
+    return new SignJWT(fleetId ? { rol, fleetId } : { rol })
       .setProtectedHeader({ alg: 'RS256', kid: 'test' })
       .setSubject(sub)
       .setIssuer(OPCIONES.issuer)
@@ -25,5 +25,10 @@ export async function crearEmisorTokens() {
     return { Authorization: `Bearer ${await firmar(sub, rol, vence)}` };
   }
 
-  return { verificador, firmar, auth };
+  /** Un admin_flota con su `fleetId` en el token. */
+  async function authFlota(sub: string, fleetId: string): Promise<{ Authorization: string }> {
+    return { Authorization: `Bearer ${await firmar(sub, 'admin_flota', '5m', fleetId)}` };
+  }
+
+  return { verificador, firmar, auth, authFlota };
 }

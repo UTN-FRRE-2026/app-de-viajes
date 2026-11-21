@@ -30,3 +30,16 @@ export const RefreshBody = z.strictObject({
   refreshToken: z.string().min(1).max(256),
 });
 export type RefreshBody = z.infer<typeof RefreshBody>;
+
+export const Rol = z.enum(['pasajero', 'chofer', 'operador', 'admin', 'admin_flota']);
+export type Rol = z.infer<typeof Rol>;
+
+/**
+ * `GET /interno/usuarios/:id`, solo entre servicios (con token de servicio). Devuelve lo mínimo para
+ * que otro servicio verifique una cuenta: el id y el rol. Ni email, ni nombre, ni flota.
+ * dispatch la usa para comprobar que el chofer que da de alta una flota es una cuenta real de chofer.
+ */
+export const UsuarioInterno = z.strictObject({ id: z.uuid(), rol: Rol });
+export type UsuarioInterno = z.infer<typeof UsuarioInterno>;
+
+export const ParamsUsuarioInterno = z.strictObject({ id: z.uuid() });

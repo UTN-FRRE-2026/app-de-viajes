@@ -45,6 +45,8 @@ export const EsquemaConfig = z
     APAGADO_TIMEOUT_MS: z.coerce.number().int().positive().default(10_000),
     // Bearer de GET /metrics (Alloy). El mismo en los tres servicios: el .env es compartido.
     METRICAS_TOKEN: tokenMetricas,
+    // Secreto compartido con dispatch para /interno/*. Nunca se loguea ni se devuelve.
+    IDENTITY_TOKEN_SERVICIO: z.string().min(32, 'tiene que tener al menos 32 caracteres').max(256),
   })
   .refine((c) => c.IDENTITY_PERSISTENCIA !== 'postgres' || c.IDENTITY_DATABASE_URL, {
     path: ['IDENTITY_DATABASE_URL'],

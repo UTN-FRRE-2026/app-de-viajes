@@ -11,3 +11,4 @@ export * from './seguridad.js';
 export * from './cliente-interno.js';
 export * from './metricas.js';
 export * from './idempotencia.js';
+export * from './token-servicio.js';

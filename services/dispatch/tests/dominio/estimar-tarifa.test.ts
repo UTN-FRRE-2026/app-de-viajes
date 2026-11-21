@@ -58,6 +58,8 @@ describe('tarifa desde la configuración', () => {
     JWT_AUDIENCE: 'viajes',
     DISPATCH_BUSCADOR: 'fijo',
     METRICAS_TOKEN: 'm'.repeat(40),
+    IDENTITY_URL: 'http://identity.invalid',
+    IDENTITY_TOKEN_SERVICIO: 's'.repeat(40),
   };
   const variablesConError = (extra: Record<string, string>) => {
     const r = EsquemaConfig.safeParse({ ...base, ...extra });

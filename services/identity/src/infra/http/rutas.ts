@@ -1,5 +1,5 @@
-import { LoginBody, RefreshBody, RegistroBody } from '@viajes/contracts';
-import { validar, type Logger } from '@viajes/platform';
+import { LoginBody, ParamsUsuarioInterno, RefreshBody, RegistroBody, type UsuarioInterno } from '@viajes/contracts';
+import { exigirTokenServicio, validar, type Logger } from '@viajes/platform';
 import { Router, type Response } from 'express';
 import type { CasosDeUso, Sesion } from '../../dominio/casos-uso/index.js';
 import type { LimitadorLogin } from '../../dominio/puertos/index.js';
@@ -17,8 +17,20 @@ function responderSesion(res: Response, sesion: Sesion) {
   });
 }
 
-export function rutasIdentidad(casos: CasosDeUso, limitador: LimitadorLogin, logger: Logger): Router {
+export function rutasIdentidad(
+  casos: CasosDeUso,
+  limitador: LimitadorLogin,
+  logger: Logger,
+  tokenServicio: string,
+): Router {
   const r = Router();
+
+  // Solo para otros servicios (dispatch), con IDENTITY_TOKEN_SERVICIO. No se publica por nginx.
+  // Devuelve el id y el rol, nada más: alcanza para verificar una cuenta y no expone datos personales.
+  r.get('/interno/usuarios/:id', exigirTokenServicio(tokenServicio), validar({ params: ParamsUsuarioInterno }), async (req, res) => {
+    const usuario: UsuarioInterno = await casos.consultarUsuario(req.params['id'] as string);
+    res.set('Cache-Control', 'no-store').json(usuario);
+  });
 
   r.get('/.well-known/jwks.json', (_req, res) => {
     res.set('Cache-Control', 'public, max-age=300').json({ keys: casos.clavesPublicas() });

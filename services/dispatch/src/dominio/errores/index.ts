@@ -83,3 +83,68 @@ export class CobroNoPendiente extends ErrorDeDominio {
     super('COBRO_NO_PENDIENTE', 'CONFLICTO', `El cobro ya está ${estado}`);
   }
 }
+
+// Flotas (variante G).
+
+/** También cuando el chofer es de otra flota: no revelamos que existe. */
+export class ChoferNoEncontrado extends ErrorDeDominio {
+  constructor() {
+    super('CHOFER_NO_ENCONTRADO', 'NO_ENCONTRADO', 'El chofer no existe');
+  }
+}
+
+export class FlotaNoEncontrada extends ErrorDeDominio {
+  constructor() {
+    super('FLOTA_NO_ENCONTRADA', 'NO_ENCONTRADO', 'La flota no existe');
+  }
+}
+
+/** Un admin_flota cuyo token no trae `fleetId`. */
+export class FlotaNoAsignada extends ErrorDeDominio {
+  constructor() {
+    super('FLOTA_NO_ASIGNADA', 'PROHIBIDO', 'Tu usuario no tiene una flota asignada');
+  }
+}
+
+export class LimiteFlotaAlcanzado extends ErrorDeDominio {
+  constructor() {
+    super('LIMITE_FLOTA_ALCANZADO', 'CONFLICTO', 'La flota ya tiene el máximo de choferes activos');
+  }
+}
+
+export class LimiteMenorQueActivos extends ErrorDeDominio {
+  constructor() {
+    super('LIMITE_MENOR_QUE_ACTIVOS', 'CONFLICTO', 'El límite no puede ser menor que los choferes activos');
+  }
+}
+
+export class ChoferNoHabilitado extends ErrorDeDominio {
+  constructor() {
+    super('CHOFER_NO_HABILITADO', 'CONFLICTO', 'El chofer no está habilitado');
+  }
+}
+
+export class ChoferNoActivo extends ErrorDeDominio {
+  constructor() {
+    super('CHOFER_NO_ACTIVO', 'CONFLICTO', 'El chofer no está activo en su flota');
+  }
+}
+
+export class ChoferYaRegistrado extends ErrorDeDominio {
+  constructor() {
+    super('CHOFER_YA_REGISTRADO', 'CONFLICTO', 'El chofer ya pertenece a una flota');
+  }
+}
+
+export class PatenteYaRegistrada extends ErrorDeDominio {
+  constructor() {
+    super('PATENTE_YA_REGISTRADA', 'CONFLICTO', 'Esa patente ya está registrada');
+  }
+}
+
+/** Mismo error si la cuenta no existe o no es de chofer: no revelamos qué cuentas existen. */
+export class CuentaNoEsChofer extends ErrorDeDominio {
+  constructor() {
+    super('CUENTA_NO_ES_CHOFER', 'INVALIDO', 'El usuario no existe o no es chofer');
+  }
+}

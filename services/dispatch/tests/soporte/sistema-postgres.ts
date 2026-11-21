@@ -8,12 +8,14 @@ import { EsquemaConfig } from '../../src/config/index.js';
 import { crearPrisma } from '../../src/infra/db/cliente.js';
 import { AlmacenIdempotenciaPrisma } from '../../src/infra/db/idempotencia-prisma.js';
 import { RepositorioDespachoPrisma } from '../../src/infra/db/repositorio-prisma.js';
+import { RepositorioFlotasPrisma, type OpcionesFlotasPrisma } from '../../src/infra/db/flotas-prisma.js';
 import { RepositorioTarifasPrisma, type OpcionesTarifasPrisma } from '../../src/infra/db/tarifas-prisma.js';
 import { cacheTarifasRedis, type CacheTarifas } from '../../src/infra/tarifas/proveedor-tarifas.js';
 import { BuscadorCandidatosFijo } from '../../src/infra/externos/buscador-fijo.js';
 import { BusEventosRedis } from '../../src/infra/tiempo-real/bus-redis.js';
 import { HistorialEventosPrisma, relayOutboxPrisma } from '../../src/infra/tiempo-real/outbox-prisma.js';
 import { conDemoraTrasLeer } from './demora.js';
+import { DirectorioFalso } from './directorio-falso.js';
 import { PagosFalso } from './pagos-falso.js';
 import { URL_BD_TEST } from './preparar-bd.js';
 import { crearEmisorTokens } from './tokens.js';
@@ -40,6 +42,9 @@ export function configTest(extra: Record<string, string> = {}) {
     OFERTAS_SIMULTANEAS: '50',
     DISPATCH_BUSCADOR: 'fijo',
     METRICAS_TOKEN: TOKEN_METRICAS,
+    // Los tests reemplazan el directorio de identity (DirectorioFalso): esta URL no se usa.
+    IDENTITY_URL: 'http://identity.invalid',
+    IDENTITY_TOKEN_SERVICIO: TOKEN_METRICAS,
     ...extra,
   });
 }
@@ -66,11 +71,14 @@ export async function levantarDispatch({
   demoraTrasLeerMs = 0,
   idempotencia = (reales) => reales,
   tarifas = {},
+  flotas = {},
   extra = {},
 }: {
   demoraTrasLeerMs?: number;
   idempotencia?: (reales: Idempotencia) => Idempotencia;
   tarifas?: OpcionesTarifasTest;
+  /** Flotas en Postgres; por ejemplo, una demora con el chofer bloqueado para superponer activaciones. */
+  flotas?: OpcionesFlotasPrisma;
   /** Otras variables de entorno de dispatch (por ejemplo, PAGOS_TIMEOUT_MS). */
   extra?: Record<string, string>;
 } = {}) {
@@ -86,6 +94,8 @@ export async function levantarDispatch({
   // Un prefijo por dispatch levantado: los tests no ven el caché de otra corrida.
   const prefijoCache = tarifas.prefijoCache ?? `dispatch-test:tarifas:${randomUUID()}:`;
   const cacheReal = cacheTarifasRedis(redis, { prefijo: prefijoCache, ttlSegundos: 60, timeoutMs: 200 });
+  const repoFlotas = new RepositorioFlotasPrisma(prisma, flotas);
+  const directorio = new DirectorioFalso();
   const sistema = componer(configTest({ ...tarifas.config, ...extra }), logger, {
     verificador: tokens.verificador,
     buscador,
@@ -99,6 +109,8 @@ export async function levantarDispatch({
     repoTarifas,
     cacheTarifas: tarifas.cache ? tarifas.cache(cacheReal) : cacheReal,
     pagos,
+    repoFlotas,
+    directorio,
     eventos: { bus, historial: new HistorialEventosPrisma(prisma), relay: relayOutboxPrisma(prisma, bus) },
   });
 
@@ -115,6 +127,8 @@ export async function levantarDispatch({
     pagos,
     bus,
     casos: sistema.casos,
+    casosFlotas: sistema.casosFlotas,
+    directorio,
     /** Publica lo pendiente del outbox, como hace el servidor cada RELAY_INTERVALO_MS. */
     relay: sistema.relayEventos,
     streams: sistema.streams,
@@ -124,6 +138,9 @@ export async function levantarDispatch({
     ...tokens,
     async limpiar() {
       await prisma.$executeRawUnsafe('TRUNCATE outbox, driver_active_assignment, offers, payments, ride_requests, idempotency_keys');
+    },
+    async limpiarFlotas() {
+      await prisma.$executeRawUnsafe('TRUNCATE drivers, fleets, idempotency_keys');
     },
     /** Deja la base sin tarifa (la próxima lectura vuelve a sembrar) y borra el caché de este dispatch. */
     async limpiarTarifas() {

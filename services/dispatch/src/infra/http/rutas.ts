@@ -19,9 +19,11 @@ import {
   type VerificadorToken,
 } from '@viajes/platform';
 import { Router } from 'express';
+import type { CasosDeFlotas } from '../../dominio/casos-uso/flotas.js';
 import type { CasosDeUso } from '../../dominio/casos-uso/index.js';
 import type { QuienCancela } from '../../dominio/entidades/index.js';
 import type { StreamsEventos } from '../tiempo-real/sse.js';
+import { montarRutasFlotas } from './rutas-flotas.js';
 
 /** El admin cancela como operador: queda CANCELADO_OPERADOR y también tiene que dar motivo. */
 const QUIEN_CANCELA: Partial<Record<Rol, QuienCancela>> = {
@@ -41,6 +43,7 @@ export function rutasDespacho(
   verificar: VerificadorToken,
   streams: StreamsEventos,
   idempotente: ReturnType<typeof crearIdempotencia>,
+  casosFlotas: CasosDeFlotas,
 ): Router {
   const r = Router();
   r.use(autenticar(verificar));
@@ -165,6 +168,9 @@ export function rutasDespacho(
       res.json(solicitud);
     },
   );
+
+  // Flotas (variante G): admin, admin_flota y chofer. Ver rutas-flotas.ts.
+  montarRutasFlotas(r, casosFlotas, idempotente);
 
   return r;
 }

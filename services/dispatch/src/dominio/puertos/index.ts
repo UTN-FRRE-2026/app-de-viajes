@@ -1,5 +1,6 @@
 import type { PayloadEventoDispatch, TipoEventoDispatch } from '@viajes/contracts';
 import type { Cobro, Coordenada, EstadoSolicitud, Oferta, SolicitudViaje } from '../entidades/index.js';
+import type { ChoferFlota, DatosFlota, Flota } from '../flotas/index.js';
 import type { Recorrido } from '../tarifas/calculo.js';
 import type { ParametrosTarifa, TarifaVigente, ValoresTarifa } from '../tarifas/parametros.js';
 
@@ -166,4 +167,47 @@ export interface ResultadoCobro {
  */
 export interface ProcesadorPagos {
   cobrar(pedido: PedidoDeCobro): Promise<ResultadoCobro>;
+}
+
+/**
+ * Flotas (variante G). Todo lo que cambia el cupo va en una transacción; el orden de los locks es
+ * siempre chofer → flota, así activar y liberar no se bloquean entre sí.
+ */
+export interface TransaccionFlotas {
+  /**
+   * Lee el chofer y lo BLOQUEA hasta el final de la transacción (SELECT ... FOR UPDATE). Dos pedidos
+   * sobre el mismo chofer se serializan acá: el segundo ve lo que dejó el primero.
+   */
+  obtenerChoferParaActualizar(id: string): Promise<ChoferFlota | null>;
+  guardarChofer(chofer: ChoferFlota): Promise<void>;
+  /** El chofer ya en alguna flota, o la patente repetida: lo deciden las restricciones únicas de la base. */
+  insertarChofer(chofer: ChoferFlota): Promise<'ok' | 'chofer_existe' | 'patente_existe'>;
+  /**
+   * Carrera G: ocupa un cupo con un UPDATE condicional (`active_count < max_active`), atómico en la
+   * base. false si la flota está llena. Con N activaciones a la vez, solo `max_active` lo logran.
+   */
+  ocuparCupo(flotaId: string): Promise<boolean>;
+  liberarCupo(flotaId: string): Promise<void>;
+  /**
+   * Crea la flota o cambia su nombre y su límite. `limite_menor` si el límite nuevo queda por debajo
+   * de los activos: no se cambia nada.
+   */
+  guardarFlota(flota: DatosFlota): Promise<'ok' | 'limite_menor'>;
+  obtenerFlota(id: string): Promise<Flota | null>;
+}
+
+export interface RepositorioFlotas {
+  /** Si el pedido trae Idempotency-Key, el registro va en esta misma transacción. */
+  enTransaccion<T>(trabajo: (tx: TransaccionFlotas) => Promise<T>): Promise<T>;
+  obtenerFlota(id: string): Promise<Flota | null>;
+  obtenerChofer(id: string): Promise<ChoferFlota | null>;
+  listarChoferes(flotaId: string, pagina: Pagina): Promise<ChoferFlota[]>;
+}
+
+/**
+ * Cuentas de identity. dispatch no tiene la base de identity: le pregunta el rol de un id. null si la
+ * cuenta no existe. El adaptador falla cerrado (503) si identity no responde.
+ */
+export interface DirectorioUsuarios {
+  rolDe(usuarioId: string): Promise<string | null>;
 }

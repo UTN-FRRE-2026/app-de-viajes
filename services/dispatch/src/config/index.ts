@@ -49,6 +49,11 @@ export const EsquemaConfig = z
     LOCATION_TOKEN_SERVICIO: z.string().min(32, 'tiene que tener al menos 32 caracteres').max(256).optional(),
     LOCATION_TIMEOUT_MS: z.coerce.number().int().min(50).max(10_000).default(1000),
     DISPATCH_RADIO_BUSQUEDA_METROS: z.coerce.number().int().min(100).max(50_000).default(5000),
+    // Flotas: el alta de un chofer pregunta a identity (GET /interno/usuarios/:id) si la cuenta existe y
+    // es de chofer. Mismo secreto y mismo nombre que en identity: el .env es compartido.
+    IDENTITY_URL: z.string().url(),
+    IDENTITY_TOKEN_SERVICIO: z.string().min(32, 'tiene que tener al menos 32 caracteres').max(256),
+    IDENTITY_TIMEOUT_MS: z.coerce.number().int().min(50).max(10_000).default(1000),
     // Bearer de GET /metrics (Alloy). El mismo en los tres servicios: el .env es compartido.
     METRICAS_TOKEN: tokenMetricas,
     // Tarifa (docs/tarifas.md). Centavos enteros. Los importes los define el equipo: estos valores

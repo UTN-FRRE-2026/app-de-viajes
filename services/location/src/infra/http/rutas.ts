@@ -1,8 +1,7 @@
 import { CandidatosQuery, UbicacionBody, type CandidatosRespuesta } from '@viajes/contracts';
-import { autenticar, requerirRol, usuarioDe, validar, type VerificadorToken } from '@viajes/platform';
+import { autenticar, exigirTokenServicio, requerirRol, usuarioDe, validar, type VerificadorToken } from '@viajes/platform';
 import { Router } from 'express';
 import type { CasosDeUso } from '../../dominio/casos-uso/index.js';
-import { exigirTokenServicio } from './token-servicio.js';
 
 /** `/metrics` lo monta `platform` (crearApp), con su propio token. */
 export function rutasUbicacion(casos: CasosDeUso, verificar: VerificadorToken, tokenServicio: string): Router {
