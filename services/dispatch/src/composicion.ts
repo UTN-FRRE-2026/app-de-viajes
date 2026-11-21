@@ -45,6 +45,12 @@ import { RepositorioTarifasMemoria } from './infra/memoria/tarifas-memoria.js';
 import { contadorCacheTarifas } from './infra/metricas/prometheus.js';
 import { cacheTarifasRedis, ProveedorTarifasVersionadas, type CacheTarifas } from './infra/tarifas/proveedor-tarifas.js';
 import { semillaDesdeConfig } from './infra/tarifas/tarifas-config.js';
+import { BusEventosMemoria } from './infra/tiempo-real/bus-memoria.js';
+import { BusEventosRedis } from './infra/tiempo-real/bus-redis.js';
+import { EventosMemoria } from './infra/tiempo-real/eventos-memoria.js';
+import { HistorialEventosPrisma, relayOutboxPrisma } from './infra/tiempo-real/outbox-prisma.js';
+import { StreamsEventos } from './infra/tiempo-real/sse.js';
+import type { BusEventos, HistorialEventos, RelayEventos } from './infra/tiempo-real/tipos.js';
 
 /** Reemplazos para tests: cualquier adaptador se puede inyectar desde afuera. */
 export interface Reemplazos {
@@ -62,13 +68,35 @@ export interface Reemplazos {
   pagos?: ProcesadorPagos;
   /** Sin este reemplazo, quien reemplaza el repo recibe la idempotencia en memoria. */
   idempotencia?: { almacen: AlmacenIdempotencia; cerrojo: CerrojoEnVuelo };
+  /** Sin este reemplazo, quien reemplaza el repo recibe un bus en memoria sin historial. */
+  eventos?: TiempoReal;
+}
+
+/** El tiempo real: el bus en vivo, el historial para reponer y el relay del outbox. */
+export interface TiempoReal {
+  bus: BusEventos;
+  historial: HistorialEventos;
+  relay: RelayEventos;
 }
 
 export interface Sistema {
   app: Express;
   casos: CasosDeUso;
   repo: RepositorioDespacho;
+  /** Lo corre el servidor cada RELAY_INTERVALO_MS; los tests, cuando lo necesitan. */
+  relayEventos: RelayEventos;
+  streams: StreamsEventos;
   cerrar: () => Promise<void>;
+}
+
+/** En memoria: sobre los eventos del repositorio en memoria, o vacío si el repo es otro. */
+function tiempoRealEnMemoria(repo: RepositorioDespacho): TiempoReal {
+  const bus = new BusEventosMemoria();
+  if (repo instanceof RepositorioDespachoMemoria) {
+    const eventos = new EventosMemoria(repo, bus);
+    return { bus, historial: eventos, relay: eventos.relay };
+  }
+  return { bus, historial: { desde: async () => [] }, relay: async () => 0 };
 }
 
 const carpetaMigraciones = fileURLToPath(new URL('../prisma/migrations', import.meta.url));
@@ -104,6 +132,8 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
   let repoTarifas: RepositorioTarifas = reemplazos.repoTarifas ?? new RepositorioTarifasMemoria();
   let cacheTarifas: CacheTarifas | null = reemplazos.cacheTarifas ?? null;
 
+  let tiempoReal: TiempoReal | undefined = reemplazos.eventos;
+
   if (reemplazos.repo) {
     repo = reemplazos.repo;
   } else if (config.DISPATCH_PERSISTENCIA === 'memoria') {
@@ -122,12 +152,24 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
       reemplazos.cacheTarifas === undefined
         ? cacheTarifasRedis(redis, { prefijo: 'dispatch:tarifas:', ttlSegundos: config.TARIFAS_CACHE_TTL_SEGUNDOS, timeoutMs: 200 })
         : reemplazos.cacheTarifas;
+    if (!tiempoReal) {
+      const bus = new BusEventosRedis(redis, 'dispatch:eventos:', logger);
+      tiempoReal = { bus, historial: new HistorialEventosPrisma(prisma), relay: relayOutboxPrisma(prisma, bus) };
+    }
     chequeos = [...chequeosBase(prisma, carpetaMigraciones), chequeoRedis(redis)];
     cerrar = async () => {
       redis.disconnect();
       await prisma.$disconnect();
     };
   }
+
+  const eventos = tiempoReal ?? tiempoRealEnMemoria(repo);
+  const streams = new StreamsEventos({
+    bus: eventos.bus,
+    historial: eventos.historial,
+    logger,
+    maxPorUsuario: config.SSE_MAX_POR_USUARIO,
+  });
 
   // Mapas siempre detrás del timeout: el simulado no lo necesita, pero un proveedor real sí, y así
   // la falla cerrado se prueba con el mismo código que va a envolver a ese proveedor.
@@ -197,6 +239,7 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
     rutas: rutasDespacho(
       casos,
       verificador,
+      streams,
       crearIdempotencia({ ...idempotencia, ttlEnVueloMs: config.IDEMPOTENCIA_EN_VUELO_SEGUNDOS * 1000 }),
     ),
     chequeos,
@@ -207,8 +250,12 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
     app,
     casos,
     repo,
+    relayEventos: eventos.relay,
+    streams,
     cerrar: async () => {
       metricas.detener();
+      streams.cerrarTodos();
+      await eventos.bus.cerrar();
       await cerrarConexiones();
     },
   };

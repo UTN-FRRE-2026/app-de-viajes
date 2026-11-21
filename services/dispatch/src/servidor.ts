@@ -7,6 +7,8 @@ const config = cargarConfig(EsquemaConfig);
 const logger = crearLogger('dispatch', config.NIVEL_LOG);
 const sistema = componer(config, logger);
 const detenerBarrido = iniciarBarrido(sistema.casos.vencerOfertas, config.BARRIDO_INTERVALO_MS, logger);
+// Tiempo real: publica en Redis lo nuevo del outbox. Su intervalo es la demora máxima de un evento.
+const detenerRelay = iniciarBarrido(sistema.relayEventos, config.RELAY_INTERVALO_MS, logger, 'eventos publicados', 'debug');
 // El cobro de cada viaje completado: se procesa solo, sin que nadie lo pida. Si el proveedor no
 // contesta, el cobro sigue PENDIENTE y el próximo barrido lo reintenta con la misma clave.
 const detenerCobros = iniciarBarrido(() => sistema.casos.cobrarPendientes(), config.BARRIDO_INTERVALO_MS, logger, 'cobros procesados');
@@ -27,5 +29,7 @@ registrarApagadoOrdenado({
   servidor,
   logger,
   timeoutMs: config.APAGADO_TIMEOUT_MS,
-  alCerrar: [detenerBarrido, detenerCobros, sistema.cerrar],
+  // Los streams SSE no terminan solos: se cortan al empezar, y el cliente se reconecta a otra instancia.
+  alEmpezar: [() => sistema.streams.cerrarTodos()],
+  alCerrar: [detenerBarrido, detenerCobros, detenerRelay, sistema.cerrar],
 });

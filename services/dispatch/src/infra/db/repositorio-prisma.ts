@@ -18,6 +18,7 @@ import type {
 } from '../../dominio/puertos/index.js';
 import { Prisma, type PrismaClient } from './generated/client.js';
 import { registrarEnTransaccion } from './idempotencia-prisma.js';
+import { destinatariosDe } from '../tiempo-real/tipos.js';
 
 interface FilaSolicitud {
   id: string;
@@ -273,6 +274,8 @@ function transaccion(tx: Prisma.TransactionClient): TransaccionDespacho {
           tipo: evento.tipo,
           payload: evento.payload as Prisma.InputJsonObject,
           requestId: requestIdActual() ?? null,
+          // A quién se le entrega por SSE: el pasajero y el chofer del payload.
+          destinatarios: destinatariosDe(evento.payload as Record<string, unknown>),
         },
       });
     },

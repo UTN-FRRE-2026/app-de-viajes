@@ -8,6 +8,8 @@ export interface Usuario {
   id: string;
   rol: Rol;
   fleetId?: string;
+  /** Cuándo vence el token. Una conexión larga (SSE) se cierra ahí, para que el cliente vuelva con uno nuevo. */
+  venceEn?: Date;
 }
 
 /** Puerto: cualquier cosa que convierta un token en un usuario (o falle). */
@@ -32,7 +34,12 @@ function crearVerificador(clave: Parameters<typeof jwtVerify>[1], opciones: Opci
       throw new Error('claims inválidos');
     }
     const fleetId = payload['fleetId'];
-    return { id: payload.sub, rol: rol as Rol, ...(typeof fleetId === 'string' ? { fleetId } : {}) };
+    return {
+      id: payload.sub,
+      rol: rol as Rol,
+      ...(typeof fleetId === 'string' ? { fleetId } : {}),
+      ...(typeof payload.exp === 'number' ? { venceEn: new Date(payload.exp * 1000) } : {}),
+    };
   };
 }
 

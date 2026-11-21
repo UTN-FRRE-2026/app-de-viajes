@@ -10,6 +10,7 @@ export function iniciarBarrido(
   intervaloMs: number,
   logger: Logger,
   que = 'ofertas vencidas procesadas',
+  nivel: 'info' | 'debug' = 'info',
 ): () => Promise<void> {
   let enCurso: Promise<unknown> = Promise.resolve();
   const timer = setInterval(() => {
@@ -17,7 +18,7 @@ export function iniciarBarrido(
     enCurso = enCurso.then(async () => {
       try {
         const n = await tarea();
-        if (n > 0) logger.info({ cantidad: n }, `barrido: ${que}`);
+        if (n > 0) logger[nivel]({ cantidad: n }, `barrido: ${que}`);
       } catch (err) {
         logger.error({ err }, `barrido (${que}): falló`);
       }
