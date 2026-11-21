@@ -23,7 +23,8 @@ Cada integrante es **dueño** de un problema central y de los módulos que lo ro
 - [x] viajes: `EN_CAMINO`, `EN_CURSO`, `CANCELADO_CHOFER`, cancelación del operador con motivo, finalizar liberando al chofer en la misma transacción, y un test por transición.
 - [x] Historial por pasajero y por chofer; panel del operador con búsqueda.
 - [x] Idempotency-Key en `platform` (Redis `SET NX` + registro en la transacción del efecto), aplicada a los seis `POST` de dispatch.
-- [ ] SSE: relay del `outbox` a Redis Pub/Sub, suscripción solo a viajes propios y al canal de posición del chofer asignado, reconexión con `Last-Event-ID`.
+- [x] SSE: relay del `outbox` a Redis Pub/Sub, suscripción solo a viajes propios, reconexión con `Last-Event-ID` ([docs/eventos.md](eventos.md)).
+- [ ] SSE: canal de posición del chofer asignado, cuando location publique las posiciones (con Maxi).
 - [ ] Frontend: pantallas de pasajero y de operador.
 - [ ] Contenedor `web`: nginx que sirve el frontend y hace de reverse proxy a los tres servicios.
 - [ ] Despliegue y tag `congelado`.
@@ -70,7 +71,7 @@ Cada integrante es **dueño** de un problema central y de los módulos que lo ro
 - [ ] Publicación de cada posición en el canal de Redis del chofer; política de retención.
 - [x] tarifas en dispatch: una función en centavos enteros para estimación y tarifa final, con los tests de borde. Estimación por `GET /tarifas/estimacion` ([docs/tarifas.md](tarifas.md)).
 - [x] Configuración de tarifas por el admin: versionada en Postgres, con Idempotency-Key y caché en Redis con invalidación. **La tomó Agostina** (PR 2 de tarifas).
-- [ ] Cobro simulado idempotente (usa la Idempotency-Key de Ivan) que falla cerrado.
+- [x] Cobro simulado idempotente que falla cerrado, con la tarifa final y por qué difiere de la estimación. **Lo hizo Ivan** (PR 3 de tarifas, [docs/tarifas.md](tarifas.md)).
 - [ ] Puertos de mapas y pagos con timeout. Hecho: mapas (simulado, con timeout y falla cerrado). Falta: pagos.
 - [ ] Caché en Redis de tarifas y zonas, con invalidación. Hecho el de tarifas, por versión (Agostina, PR 2 de tarifas). Falta el de zonas.
 - [ ] Frontend: pantallas del chofer.
@@ -89,7 +90,7 @@ Cada integrante es **dueño** de un problema central y de los módulos que lo ro
 | Ivan (viajes) | `GET /interno/candidatos` | Maxi | ✅ Integrado (adaptador `buscador-location`) |
 | Ivan (viajes) | Chofer → flota → zonas habilitadas, para filtrar candidatos en dispatch | Agos | Inicio de la Fase B |
 | Ivan (SSE) | Posiciones publicadas en Redis | Maxi | Fase B |
-| Maxi (cobro) | Idempotency-Key en `platform` | Ivan | ✅ Lista: `idempotente()` en la ruta; el registro va en la transacción del cobro (ver PLAN 3.5) |
+| Maxi (cobro) | Idempotency-Key en `platform` | Ivan | ✅ Usada en el cobro (PR 3 de tarifas, que terminó haciendo Ivan) |
 | Agos (Playwright) | Pantallas de pasajero, chofer y operador | Ivan, Maxi | Fin de la Fase B |
 | Maxi (Grafana) | Log por pedido en JSON | Agos | Fase B |
 

@@ -4,6 +4,8 @@ import {
   SolicitudNoDisponible,
   TransicionInvalida,
 } from '../errores/index.js';
+import { calcularTarifa } from '../tarifas/calculo.js';
+import type { ParametrosTarifa } from '../tarifas/parametros.js';
 
 export type EstadoSolicitud =
   | 'BUSCANDO'
@@ -45,6 +47,37 @@ export interface Coordenada {
   lng: number;
 }
 
+export interface RecorridoViaje {
+  metros: number;
+  segundos: number;
+}
+
+/**
+ * Qué difiere entre el recorrido estimado y el final, cuando el importe cambió. La versión de tarifa
+ * nunca es un motivo: el final se calcula con la misma versión que la estimación (precio congelado).
+ */
+export type MotivoDiferencia = 'DISTANCIA' | 'DURACION';
+
+/** La estimación con la que se pidió el viaje y, al finalizar, la tarifa final. Todo en centavos enteros. */
+export interface TarifaViaje {
+  version: string;
+  moneda: 'ARS';
+  estimadaCentavos: number;
+  recorridoEstimado: RecorridoViaje;
+  finalCentavos: number | null;
+  recorridoFinal: RecorridoViaje | null;
+  /** Vacío si el importe final es igual al estimado, o si el viaje todavía no terminó. */
+  motivosDiferencia: MotivoDiferencia[];
+}
+
+/** Lo que se sabe al crear la solicitud: sale de la misma estimación que `GET /tarifas/estimacion`. */
+export interface TarifaEstimada {
+  version: string;
+  moneda: 'ARS';
+  centavos: number;
+  recorrido: RecorridoViaje;
+}
+
 export interface DatosSolicitud {
   id: string;
   pasajeroId: string;
@@ -54,16 +87,20 @@ export interface DatosSolicitud {
   choferId: string | null;
   /** Solo en las canceladas. Obligatorio cuando cancela el operador. */
   motivoCancelacion: string | null;
+  /** null solo en las solicitudes creadas antes de que se guardara la estimación. */
+  tarifa: TarifaViaje | null;
   version: number;
 }
 
 /**
- * Lo que se guarda: los datos públicos más `creadaEn`, que es interno (no sale en las respuestas).
+ * Lo que se guarda: los datos públicos más dos fechas internas (no salen en las respuestas).
  * `creadaEn` es el momento en que el pasajero pidió el viaje, tomado antes de buscar candidatos:
  * de ahí se mide el tiempo hasta la asignación.
  */
 export interface RegistroSolicitud extends DatosSolicitud {
   creadaEn: Date;
+  /** Cuándo subió el pasajero (iniciar). De acá se mide la duración real del viaje. */
+  iniciadoEn: Date | null;
 }
 
 export interface ResultadoCancelacion {
@@ -87,17 +124,35 @@ export class SolicitudViaje {
   private constructor(
     private datos: DatosSolicitud,
     readonly creadaEn: Date,
+    private iniciadoEn: Date | null,
   ) {}
 
-  static nueva(id: string, pasajeroId: string, origen: Coordenada, destino: Coordenada, creadaEn: Date): SolicitudViaje {
+  static nueva(
+    id: string,
+    pasajeroId: string,
+    origen: Coordenada,
+    destino: Coordenada,
+    creadaEn: Date,
+    estimada: TarifaEstimada,
+  ): SolicitudViaje {
+    const tarifa: TarifaViaje = {
+      version: estimada.version,
+      moneda: estimada.moneda,
+      estimadaCentavos: estimada.centavos,
+      recorridoEstimado: { ...estimada.recorrido },
+      finalCentavos: null,
+      recorridoFinal: null,
+      motivosDiferencia: [],
+    };
     return new SolicitudViaje(
-      { id, pasajeroId, origen, destino, estado: 'BUSCANDO', choferId: null, motivoCancelacion: null, version: 0 },
+      { id, pasajeroId, origen, destino, estado: 'BUSCANDO', choferId: null, motivoCancelacion: null, tarifa, version: 0 },
       creadaEn,
+      null,
     );
   }
 
-  static reconstruir({ creadaEn, ...datos }: RegistroSolicitud): SolicitudViaje {
-    return new SolicitudViaje(datos, new Date(creadaEn));
+  static reconstruir({ creadaEn, iniciadoEn, ...datos }: RegistroSolicitud): SolicitudViaje {
+    return new SolicitudViaje(datos, new Date(creadaEn), iniciadoEn ? new Date(iniciadoEn) : null);
   }
 
   get id() {
@@ -121,6 +176,9 @@ export class SolicitudViaje {
   get motivoCancelacion() {
     return this.datos.motivoCancelacion;
   }
+  get tarifa() {
+    return this.datos.tarifa;
+  }
   get version() {
     return this.datos.version;
   }
@@ -140,14 +198,48 @@ export class SolicitudViaje {
     this.avanzar('ASIGNADO', 'EN_CAMINO');
   }
 
-  /** El pasajero subió: empieza el viaje. */
-  iniciar(): void {
+  /** El pasajero subió: empieza el viaje, y desde acá se mide su duración. */
+  iniciar(ahora: Date): void {
     this.avanzar('EN_CAMINO', 'EN_CURSO');
+    this.iniciadoEn = new Date(ahora);
   }
 
-  /** Llegaron a destino. El llamador libera al chofer en la misma transacción. */
-  finalizar(): void {
-    this.avanzar('EN_CURSO', 'COMPLETADA');
+  /**
+   * Llegaron a destino. El llamador libera al chofer en la misma transacción.
+   *
+   * Tarifa final: la misma `calcularTarifa` que la estimación y **la misma versión**. El precio que
+   * vio el pasajero queda congelado: si el admin cambia la tarifa durante el viaje, no lo afecta.
+   * - Duración: la real, de iniciar a finalizar, redondeada al segundo.
+   * - Distancia: la de mapas entre origen y destino, que es la de la estimación (no cambian). Cuando
+   *   haya un recorrido medido (location), entra acá y puede aparecer el motivo DISTANCIA.
+   */
+  finalizar(ahora: Date, parametros: ParametrosTarifa | null): void {
+    if (this.datos.estado !== 'EN_CURSO') throw new TransicionInvalida(this.datos.estado, 'COMPLETADA');
+    const tarifa = this.datos.tarifa;
+    if (!tarifa) {
+      this.cambiar({ estado: 'COMPLETADA' });
+      return;
+    }
+    if (parametros?.version !== tarifa.version) {
+      throw new Error(`la tarifa final tiene que usar la versión de la estimación (${tarifa.version})`);
+    }
+
+    const estimado = tarifa.recorridoEstimado;
+    const segundos = this.iniciadoEn
+      ? Math.max(0, Math.round((ahora.getTime() - this.iniciadoEn.getTime()) / 1000))
+      : estimado.segundos;
+    const recorridoFinal = { metros: estimado.metros, segundos };
+    const { totalCentavos } = calcularTarifa(parametros, recorridoFinal);
+
+    const motivosDiferencia: MotivoDiferencia[] = [];
+    if (totalCentavos !== tarifa.estimadaCentavos) {
+      if (recorridoFinal.metros !== estimado.metros) motivosDiferencia.push('DISTANCIA');
+      if (recorridoFinal.segundos !== estimado.segundos) motivosDiferencia.push('DURACION');
+    }
+    this.cambiar({
+      estado: 'COMPLETADA',
+      tarifa: { ...tarifa, finalCentavos: totalCentavos, recorridoFinal, motivosDiferencia },
+    });
   }
 
   cancelar(quien: QuienCancela, motivo: string | null = null): ResultadoCancelacion {
@@ -161,14 +253,18 @@ export class SolicitudViaje {
     return { estabaAsignada, choferLiberado: estabaAsignada ? choferId : null };
   }
 
-  /** Lo que ve el cliente: sin `creadaEn`. */
+  /** Lo que ve el cliente: sin las fechas internas. */
   aDatos(): DatosSolicitud {
-    return { ...this.datos };
+    return structuredClone(this.datos);
   }
 
-  /** Lo que se guarda: con `creadaEn`. */
+  /** Lo que se guarda: con `creadaEn` e `iniciadoEn`. */
   aRegistro(): RegistroSolicitud {
-    return { ...this.datos, creadaEn: new Date(this.creadaEn) };
+    return {
+      ...structuredClone(this.datos),
+      creadaEn: new Date(this.creadaEn),
+      iniciadoEn: this.iniciadoEn ? new Date(this.iniciadoEn) : null,
+    };
   }
 
   private avanzar(desde: EstadoSolicitud, hacia: EstadoSolicitud): void {

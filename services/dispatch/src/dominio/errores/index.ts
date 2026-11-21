@@ -69,3 +69,17 @@ export class MotivoRequerido extends ErrorDeDominio {
     super('MOTIVO_REQUERIDO', 'INVALIDO', 'El operador tiene que indicar el motivo de la cancelación');
   }
 }
+
+/** Viaje sin cobro: no existe, es de otro pasajero, o todavía no terminó. */
+export class CobroNoEncontrado extends ErrorDeDominio {
+  constructor() {
+    super('COBRO_NO_ENCONTRADO', 'NO_ENCONTRADO', 'El viaje no tiene un cobro');
+  }
+}
+
+/** Un cobro ya aprobado o rechazado no cambia más. */
+export class CobroNoPendiente extends ErrorDeDominio {
+  constructor(estado: string) {
+    super('COBRO_NO_PENDIENTE', 'CONFLICTO', `El cobro ya está ${estado}`);
+  }
+}

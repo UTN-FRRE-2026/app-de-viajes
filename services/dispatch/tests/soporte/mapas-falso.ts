@@ -38,4 +38,17 @@ export const PARAMETROS_PRUEBA: ParametrosTarifa = Object.freeze({
   maxMetros: 50_000,
 });
 
-export const tarifasFijas = (p: ParametrosTarifa = PARAMETROS_PRUEBA): ProveedorTarifas => ({ vigente: async () => p });
+/**
+ * La vigente es la última de la lista; `porVersion` encuentra cualquiera. Para simular que el admin
+ * cambia la tarifa durante un viaje, se agrega otra versión con `cambiar`.
+ */
+export function tarifasFijas(p: ParametrosTarifa = PARAMETROS_PRUEBA): ProveedorTarifas & { cambiar(nueva: ParametrosTarifa): void } {
+  const versiones = [p];
+  return {
+    vigente: async () => versiones[versiones.length - 1] as ParametrosTarifa,
+    porVersion: async (version) => versiones.find((v) => v.version === version) ?? null,
+    cambiar: (nueva) => {
+      versiones.push(nueva);
+    },
+  };
+}

@@ -4,6 +4,11 @@ import type { Logger } from './logger.js';
 interface OpcionesApagado {
   servidor: Server;
   logger: Logger;
+  /**
+   * Se ejecutan al empezar, antes de drenar: para cortar las conexiones que no terminan solas
+   * (SSE). Si no, el servidor esperaría hasta el timeout. El cliente se reconecta a otra instancia.
+   */
+  alEmpezar?: Array<() => void>;
   /** Se ejecutan en orden después de drenar los pedidos (cerrar Prisma, Redis, Rabbit...). */
   alCerrar: Array<() => Promise<void> | void>;
   timeoutMs: number;
@@ -13,7 +18,7 @@ interface OpcionesApagado {
  * Con SIGTERM/SIGINT: deja de aceptar conexiones, espera los pedidos en curso,
  * cierra los recursos y sale. Si tarda más que el timeout, lo registra y sale con 1.
  */
-export function registrarApagadoOrdenado({ servidor, logger, alCerrar, timeoutMs }: OpcionesApagado): void {
+export function registrarApagadoOrdenado({ servidor, logger, alEmpezar = [], alCerrar, timeoutMs }: OpcionesApagado): void {
   let apagando = false;
 
   const apagar = async (senal: string) => {
@@ -27,6 +32,7 @@ export function registrarApagadoOrdenado({ servidor, logger, alCerrar, timeoutMs
     }, timeoutMs);
     limite.unref();
 
+    for (const cortar of alEmpezar) cortar();
     await new Promise<void>((resolver) => {
       servidor.close(() => resolver());
       servidor.closeIdleConnections();

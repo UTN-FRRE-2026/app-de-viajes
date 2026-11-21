@@ -81,7 +81,16 @@ export class ProveedorTarifasVersionadas implements ProveedorTarifas {
 
   async vigente(): Promise<ParametrosTarifa> {
     const version = await this.versionVigente();
+    const parametros = await this.porVersion(version);
+    if (!parametros) throw new Error(`tarifas: la versión vigente ${version} no existe`);
+    return parametros;
+  }
 
+  /**
+   * Los parámetros de una versión: Redis (HIT) o Postgres (MISS). La usa también la tarifa final,
+   * con la versión guardada en la estimación. Como las versiones no cambian, el caché nunca miente.
+   */
+  async porVersion(version: string): Promise<ParametrosTarifa | null> {
     if (this.o.cache) {
       try {
         const guardada = await this.o.cache.leer(version);
@@ -94,7 +103,7 @@ export class ProveedorTarifasVersionadas implements ProveedorTarifas {
     }
 
     const tarifa = await this.o.repo.porVersion(version);
-    if (!tarifa) throw new Error(`tarifas: la versión vigente ${version} no existe`);
+    if (!tarifa) return null;
     const parametros = soloParametros(tarifa);
     if (this.o.cache) await this.o.cache.guardar(parametros).catch((err: unknown) => this.avisar('escritura', err));
     return parametros;

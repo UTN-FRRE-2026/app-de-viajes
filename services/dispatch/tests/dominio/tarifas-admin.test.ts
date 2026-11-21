@@ -8,6 +8,7 @@ import { RepositorioDespachoMemoria } from '../../src/infra/memoria/repositorio-
 import { RepositorioTarifasMemoria } from '../../src/infra/memoria/tarifas-memoria.js';
 import { ProveedorTarifasVersionadas, type CacheTarifas, type ResultadoCache } from '../../src/infra/tarifas/proveedor-tarifas.js';
 import { MapasFalso } from '../soporte/mapas-falso.js';
+import { PagosFalso } from '../soporte/pagos-falso.js';
 import { DESTINO, ORIGEN, RelojFalso, VALORES_PRUEBA } from '../soporte/memoria.js';
 
 const ADMIN = randomUUID();
@@ -56,6 +57,7 @@ function sistema() {
     parametros: { ofertasSimultaneas: 3, ttlOfertaMs: 15_000 },
     mapas,
     tarifas,
+    pagos: new PagosFalso(),
     repoTarifas,
     semillaTarifa: VALORES_PRUEBA,
   });

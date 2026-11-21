@@ -144,7 +144,25 @@ export const EventosDispatch = {
     motivo: z.string().nullable(),
   }),
   NoDriversFound: z.strictObject({ solicitudId: z.uuid(), pasajeroId: z.uuid() }),
-  RideCompleted: PartesDelViaje,
+  // null solo en un viaje creado antes de que se guardara la estimación.
+  RideCompleted: PartesDelViaje.extend({ tarifaFinalCentavos: z.number().int().min(0).nullable() }),
+  PaymentCaptured: z.strictObject({
+    cobroId: z.uuid(),
+    solicitudId: z.uuid(),
+    pasajeroId: z.uuid(),
+    montoCentavos: z.number().int().min(0),
+    moneda: z.literal('ARS'),
+    referencia: z.string(),
+  }),
+  PaymentDeclined: z.strictObject({
+    cobroId: z.uuid(),
+    solicitudId: z.uuid(),
+    pasajeroId: z.uuid(),
+    montoCentavos: z.number().int().min(0),
+    moneda: z.literal('ARS'),
+    referencia: z.string(),
+    motivo: z.string(),
+  }),
 } as const;
 
 export type TipoEventoDispatch = keyof typeof EventosDispatch;

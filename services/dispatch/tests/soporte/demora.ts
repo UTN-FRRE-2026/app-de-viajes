@@ -16,6 +16,9 @@ export function conDemoraTrasLeer(repo: RepositorioDespacho, ms: number): Reposi
     solicitudesConOfertasVencidas: (ahora, limite) => repo.solicitudesConOfertasVencidas(ahora, limite),
     choferesOfrecidos: (id) => repo.choferesOfrecidos(id),
     listarSolicitudes: (filtro, pagina) => repo.listarSolicitudes(filtro, pagina),
+    obtenerCobro: (id) => repo.obtenerCobro(id),
+    cobrosPendientes: (limite) => repo.cobrosPendientes(limite),
+    registrarFalloCobro: (id, motivo) => repo.registrarFalloCobro(id, motivo),
     enTransaccion: (trabajo) =>
       repo.enTransaccion((tx) =>
         trabajo({

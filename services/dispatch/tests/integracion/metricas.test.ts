@@ -34,7 +34,7 @@ afterAll(async () => {
   await prisma.$disconnect();
 });
 beforeEach(async () => {
-  await prisma.$executeRawUnsafe('TRUNCATE outbox, driver_active_assignment, offers, ride_requests');
+  await prisma.$executeRawUnsafe('TRUNCATE outbox, driver_active_assignment, offers, payments, ride_requests');
 });
 
 const valor = (texto: string, linea: RegExp) => Number(linea.exec(texto)?.[1]);
