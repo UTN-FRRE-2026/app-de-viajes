@@ -22,7 +22,12 @@ $secretos = Join-Path $carga '.secretos'
 $salida = Join-Path $raiz "docs/mediciones/$Fecha/$Estrategia-$Corrida"
 $compose = @('compose', '-p', 'viajes-carga', '-f', (Join-Path $carga 'compose.yml'), '--env-file', (Join-Path $secretos 'carga.env'))
 $k6 = 'grafana/k6:1.8.2'
-$base = 'http://127.0.0.1:53004'
+# Puertos publicados en 127.0.0.1, los mismos que usa compose.yml. Por defecto quedan fuera del rango
+# dinámico de Windows (49152-65535), donde Hyper-V y WSL reservan bloques al arrancar y Docker no puede
+# publicarlos. Se cambian con CARGA_PG_PUERTO y CARGA_LOCATION_PUERTO.
+$puertoPg = if ($env:CARGA_PG_PUERTO) { $env:CARGA_PG_PUERTO } else { '45434' }
+$puertoLocation = if ($env:CARGA_LOCATION_PUERTO) { $env:CARGA_LOCATION_PUERTO } else { '43004' }
+$base = "http://127.0.0.1:$puertoLocation"
 
 Set-Location -LiteralPath $raiz
 New-Item -ItemType Directory -Force $salida | Out-Null
@@ -55,10 +60,27 @@ docker @compose up -d --wait postgres redis jwks | Out-Null
 if ($LASTEXITCODE -ne 0) { Write-Error 'no levantó la infraestructura de carga'; exit 1 }
 
 Paso "migración de location_carga"
-$env:LOCATION_DATABASE_URL = "postgresql://carga:$($env:CARGA_PG_PASSWORD)@127.0.0.1:55434/location_carga"
-npm run migrate:deploy -w @viajes/location --silent 2>&1 | Out-Null
-if ($LASTEXITCODE -ne 0) { Write-Error 'falló la migración de la base de carga'; exit 1 }
+$env:LOCATION_DATABASE_URL = "postgresql://carga:$($env:CARGA_PG_PASSWORD)@127.0.0.1:$puertoPg/location_carga"
+# En Windows, justo después de que `up --wait` crea o recrea Postgres, el puerto publicado puede tardar
+# unos segundos en responder aunque el contenedor ya esté healthy, y Prisma da P1001 («Can't reach
+# database server»). Solo ese error se reintenta, hasta 10 veces cada 2 s. Cualquier otro (contraseña,
+# migración rota) corta enseguida. La salida se muestra sin la contraseña.
+$intentos = 10
+$migrada = $false
+for ($intento = 1; $intento -le $intentos; $intento++) {
+  $salidaMigracion = @(npm run migrate:deploy -w @viajes/location --silent 2>&1 |
+      ForEach-Object { "$_".Replace($env:CARGA_PG_PASSWORD, '***') })
+  if ($LASTEXITCODE -eq 0) { $migrada = $true; break }
+  if (-not ($salidaMigracion -match 'P1001') -or $intento -eq $intentos) { break }
+  Paso "Postgres todavía no responde en 127.0.0.1:$puertoPg (P1001): reintento $($intento + 1) de $intentos en 2 s"
+  Start-Sleep -Seconds 2
+}
 Remove-Item Env:LOCATION_DATABASE_URL
+if (-not $migrada) {
+  $salidaMigracion | Select-Object -Last 8 | ForEach-Object { Write-Output "  $_" }
+  Write-Error 'falló la migración de la base de carga'
+  exit 1
+}
 
 Paso "limpieza (solo entorno de carga)"
 docker @compose stop location 2>$null | Out-Null
