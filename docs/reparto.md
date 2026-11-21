@@ -24,7 +24,7 @@ Cada integrante es **dueño** de un problema central y de los módulos que lo ro
 - [x] Historial por pasajero y por chofer; panel del operador con búsqueda.
 - [x] Idempotency-Key en `platform` (Redis `SET NX` + registro en la transacción del efecto), aplicada a los seis `POST` de dispatch.
 - [x] SSE: relay del `outbox` a Redis Pub/Sub, suscripción solo a viajes propios, reconexión con `Last-Event-ID` ([docs/eventos.md](eventos.md)).
-- [ ] SSE: canal de posición del chofer asignado, cuando location publique las posiciones (con Maxi).
+- [ ] SSE: canal de posición del chofer asignado (con Maxi). location ya publica las posiciones ([docs/location.md](location.md#posición-en-vivo)).
 - [ ] Frontend: pantallas de pasajero y de operador.
 - [ ] Contenedor `web`: nginx que sirve el frontend y hace de reverse proxy a los tres servicios.
 - [ ] Despliegue y tag `congelado`.
@@ -68,7 +68,7 @@ Cada integrante es **dueño** de un problema central y de los módulos que lo ro
 - [x] ADR 0005 (tarea pesada).
 
 **Fase B**
-- [ ] Publicación de cada posición en el canal de Redis del chofer; política de retención.
+- [ ] Publicación de cada posición en el canal de Redis del chofer; política de retención. Hecho: la publicación ([docs/location.md](location.md#posición-en-vivo)). Falta: la retención.
 - [x] tarifas en dispatch: una función en centavos enteros para estimación y tarifa final, con los tests de borde. Estimación por `GET /tarifas/estimacion` ([docs/tarifas.md](tarifas.md)).
 - [x] Configuración de tarifas por el admin: versionada en Postgres, con Idempotency-Key y caché en Redis con invalidación. **La tomó Agostina** (PR 2 de tarifas).
 - [x] Cobro simulado idempotente que falla cerrado, con la tarifa final y por qué difiere de la estimación. **Lo hizo Ivan** (PR 3 de tarifas, [docs/tarifas.md](tarifas.md)).
@@ -89,7 +89,7 @@ Cada integrante es **dueño** de un problema central y de los módulos que lo ro
 | Maxi (location) | Esqueleto de `services/location` | Ivan | ✅ Lo hizo Agos (#7) |
 | Ivan (viajes) | `GET /interno/candidatos` | Maxi | ✅ Integrado (adaptador `buscador-location`) |
 | Ivan (viajes) | Chofer → flota → zonas habilitadas, para filtrar candidatos en dispatch | Agos | Inicio de la Fase B |
-| Ivan (SSE) | Posiciones publicadas en Redis | Maxi | Fase B |
+| Ivan (SSE) | Posiciones publicadas en Redis | Maxi | ✅ Publicadas (canal y contrato en `contracts`); falta la suscripción en dispatch |
 | Maxi (cobro) | Idempotency-Key en `platform` | Ivan | ✅ Usada en el cobro (PR 3 de tarifas, que terminó haciendo Ivan) |
 | Agos (Playwright) | Pantallas de pasajero, chofer y operador | Ivan, Maxi | Fin de la Fase B |
 | Maxi (Grafana) | Log por pedido en JSON | Agos | Fase B |
