@@ -90,6 +90,6 @@ Los esquemas están en [`packages/contracts/src/dispatch.ts`](../packages/contra
 
 ## Pendiente
 
-- **Posición del chofer en vivo.** Mientras el viaje está activo, el stream del pasajero tiene que escuchar también el canal de posición del chofer asignado. Depende de que location publique cada posición en Redis (Maxi). Esas posiciones son efímeras: van sin `id` y no se reponen.
+- **Posición del chofer en vivo.** Mientras el viaje está activo, el stream del pasajero tiene que escuchar también el canal de posición del chofer asignado. **location ya publica** cada posición en `<LOCATION_REDIS_PREFIJO>posicion:<choferId>`, con el payload `PosicionChoferPublicada` (`tipo: "DriverLocationUpdated"`, `choferId`, `lat`, `lng`, `actualizadaEn`) de `packages/contracts/src/location.ts`; detalle y garantías en [docs/location.md](location.md#posición-en-vivo). Falta la suscripción en dispatch (Ivan, con Maxi): `SUBSCRIBE` al canal del chofer asignado, no `PSUBSCRIBE` a todos, y dispatch necesita conocer el prefijo de location. Esas posiciones son efímeras: van sin `id` y no se reponen.
 - **nginx:** `proxy_buffering off` y un `proxy_read_timeout` mayor que el latido, en el contenedor `web`.
 - **ADR 0007** (SSE frente a WebSocket, con Agos).

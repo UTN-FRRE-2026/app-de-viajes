@@ -42,6 +42,8 @@ export async function levantarLocation(reemplazos: Reemplazos = {}, config: Reco
     ...reemplazos,
   });
   const prisma = crearPrisma(URL_BD_TEST, 5);
+  // Sin cola offline, el publicador falla hasta conectarse: los tests arrancan con él listo.
+  await sistema.publicador?.listo();
 
   const servidor: Server = await new Promise((resolver) => {
     const s = sistema.app.listen(0, () => resolver(s));

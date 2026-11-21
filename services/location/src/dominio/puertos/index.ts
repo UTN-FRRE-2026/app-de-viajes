@@ -18,3 +18,19 @@ export interface RepositorioUbicaciones {
   /** Choferes con posición vigente dentro del radio, del más cercano al más lejano. */
   cercanos(busqueda: BusquedaCercanos): Promise<Cercano[]>;
 }
+
+/**
+ * Posición en vivo para el seguimiento (Redis Pub/Sub en producción). Publica en el canal del chofer
+ * solo si el ping no es más viejo que la última posición publicada de ese chofer: devuelve
+ * `atrasada` si lo descartó por eso. Lo que no se escucha, se pierde: no es un historial.
+ */
+export interface PublicadorPosiciones {
+  publicar(ping: Ping): Promise<'publicada' | 'atrasada'>;
+}
+
+/**
+ * Qué pasó con la publicación de un ping. `vencida`: cuando se iba a publicar, ya superaba la vigencia
+ * (no se anuncia una posición fantasma). `error`: falló o no se confirmó a tiempo; el ping igual quedó
+ * guardado.
+ */
+export type ResultadoPublicacion = 'publicada' | 'atrasada' | 'vencida' | 'error';

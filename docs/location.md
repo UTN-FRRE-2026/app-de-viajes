@@ -1,6 +1,6 @@
 # location
 
-> **Estado:** el servicio corre en su contenedor (puerto 3004). Recibe la ubicación de los choferes y responde a dispatch qué choferes están cerca de un origen. Tiene las dos versiones de 6.6: la **ingenua** sobre PostgreSQL, que queda como referencia, y la **optimizada** con Redis GEO e historial en lotes. Se elige con `UBICACION_ESTRATEGIA`. La comparación con k6 está en [docs/mediciones.md](mediciones.md). dispatch lo llama para buscar candidatos (ver [Contrato con dispatch](#contrato-con-dispatch)).
+> **Estado:** el servicio corre en su contenedor (puerto 3004). Recibe la ubicación de los choferes y responde a dispatch qué choferes están cerca de un origen. Tiene las dos versiones de 6.6: la **ingenua** sobre PostgreSQL, que queda como referencia, y la **optimizada** con Redis GEO e historial en lotes. Se elige con `UBICACION_ESTRATEGIA`. La comparación con k6 está en [docs/mediciones.md](mediciones.md). dispatch lo llama para buscar candidatos (ver [Contrato con dispatch](#contrato-con-dispatch)). Cada posición que recibe la publica en vivo por Redis Pub/Sub, en el canal de su chofer (ver [Posición en vivo](#posición-en-vivo)).
 
 ## Quién es dueño de cada dato
 
@@ -30,7 +30,7 @@ Lleva `Authorization: Bearer <access token de identity>` y solo lo acepta el rol
 | `401 NO_AUTENTICADO` | Sin token, token inválido o vencido. El token de servicio tampoco sirve acá |
 | `403 ROL_NO_PERMITIDO` | El token no es de un chofer |
 
-Está pensado para k6: el camino del ping no hace ninguna lectura, solo valida, inserta y responde.
+Está pensado para k6: el camino del ping no hace ninguna lectura, solo valida, inserta y responde. Después de guardar, publica la posición en vivo (ver [Posición en vivo](#posición-en-vivo)); si esa publicación falla, la respuesta sigue siendo `204`.
 
 ### `GET /interno/candidatos`, solo para dispatch
 
@@ -81,6 +81,7 @@ Lo monta `platform`, igual en los tres servicios: `Authorization: Bearer <METRIC
 | `location_estrategia{estrategia}` | Estrategia con la que corre (siempre 1) |
 | `location_historial_en_cola`, `location_historial_pendientes` | Optimizada: entradas en el stream y entradas leídas sin confirmar. `carga/medir.ps1` las usa para esperar el drenaje y **falla si no las encuentra** |
 | `location_historial_descartados_total`, `location_historial_ocupacion`, `location_historial_max_cola` | Optimizada: entradas que no entraron por cola llena, uso de la cola (de 0 a 1) y su tope |
+| `location_posiciones_publicadas_total{resultado}` | Publicaciones de la posición en vivo: `publicada`, `atrasada` (más vieja que la última publicada), `vencida` (superaba la vigencia) o `error` (falló o no se confirmó en 200 ms) |
 
 ## Versión optimizada (`UBICACION_ESTRATEGIA=optimizada`)
 
@@ -147,6 +148,69 @@ Es la línea de base que pide 6.6 para medir con k6:
 - **Búsqueda.** Trae la última posición de **todos** los choferes vigentes (`DISTINCT ON (driver_id)`, que usa el índice `(driver_id, recorded_at DESC)`). Después calcula la distancia (haversine) y ordena **en JavaScript**, dentro del event loop. No hay índice geográfico.
 - **Estrategia `memoria`.** Sirve para los tests y para correr sin base.
 - **Su cuello de botella.** Bajo carga, cada `INSERT` espera el `fsync` de su propio commit (`WALWrite`/`WALSync`). Los `INSERT` ocupan el pool de conexiones y las búsquedas esperan detrás. Ver [docs/mediciones.md](mediciones.md).
+
+## Posición en vivo
+
+Cada ping que se guarda se publica por **Redis Pub/Sub** en el canal de su chofer. dispatch es quien sabe qué viaje tiene cada chofer: se suscribe al canal del chofer asignado mientras el viaje está activo y reenvía la posición por SSE solo a ese pasajero (la regla de privacidad se aplica ahí, ver [docs/eventos.md](eventos.md)). Funciona con las dos estrategias de 6.6: Compose corre la ingenua.
+
+**Canal:** `<LOCATION_REDIS_PREFIJO>posicion:<choferId>`, por ejemplo `location:posicion:00000000-0000-4000-8000-000000000002`; en el entorno de k6, `carga:location:posicion:<choferId>`. Lo arma `canalPosicionChofer(prefijo, choferId)` de `packages/contracts/src/location.ts`. El prefijo hace falta porque Pub/Sub no separa por número de base: sin él, los tests (base 14) y el desarrollo (base 0) compartirían canales.
+
+**Payload** (`PosicionChoferPublicada`, en el mismo archivo):
+
+```json
+{ "tipo": "DriverLocationUpdated", "choferId": "uuid", "lat": -34.6001, "lng": -58.3816, "actualizadaEn": "2026-11-21T12:00:00.000Z" }
+```
+
+- `actualizadaEn` es la hora del servidor al recibir el ping, como en `Candidato`.
+- Es **efímero**: sin `seq`, no se guarda y no se repone. Quien se suscribe recibe la próxima posición (llega en ~2 s).
+- Para dispatch: `SUBSCRIBE` al canal de cada chofer, **no** `PSUBSCRIBE location:posicion:*`. Con un patrón, cada `PUBLISH` (250 por segundo con el simulador) se compara contra él y cada instancia de dispatch recibe las posiciones de todos los choferes.
+
+**Cuándo se publica** (`registrarUbicacion`, igual para todas las estrategias):
+
+1. Se guarda el ping. Si el guardado falla, responde el error y **no se publica nada**.
+2. Si el ping ya superó `UBICACION_VIGENCIA_SEGUNDOS` al momento de publicar (por ejemplo, un guardado que tardó), no se publica: es la misma regla con la que la búsqueda descarta a los fantasmas. Se cuenta como `vencida`.
+3. Un script Lua del publicador (`infra/redis/publicador-posiciones.ts`) compara la hora del ping con la **marca de la última publicada** de ese chofer (`<prefijo>publicada:<choferId>`). Si el ping es más viejo, no publica (`atrasada`). Si no, actualiza la marca y publica, todo de forma atómica. A igual milisegundo publica, como el guardado.
+
+**La garantía, con precisión:**
+
+- **Orden por timestamp respecto de la última publicación, mientras exista su marca.** En cada canal, `actualizadaEn` no retrocede: dos pedidos del mismo chofer que se cruzan (o dos instancias de location) no pueden anunciar una posición vieja después de una nueva. Hace falta porque la hora la pone el servidor al entrar el pedido, pero el `INSERT` o el Lua de un pedido pueden terminar después que los del siguiente.
+- **La marca dura 2 × la vigencia** (60 s) y no necesita purga. Si ya venció, un ping más viejo que el último publicado igual se descarta: para entonces está vencido (paso 2).
+- **Si falla una publicación, el canal puede quedar atrasado respecto del repositorio**: la posición guardada es más nueva que la última anunciada, hasta que se publique el próximo ping. No se reintenta.
+- Supone el mismo reloj en todas las instancias de location (en Compose comparten el host).
+
+**Si falla la publicación, el ping no se compromete:**
+
+- Responde **`204`** igual: la posición ya quedó guardada. El caso de uso atrapa el error.
+- El publicador usa su **propia conexión** a Redis, separada de la que guarda las posiciones, con:
+  - `commandTimeout` de **200 ms**: es lo máximo que el `204` espera a la publicación. **Un timeout significa que faltó la confirmación dentro del plazo, no que no se publicó**: el comando pudo ejecutarse igual (hay un test que lo muestra);
+  - `enableOfflineQueue: false`: sin conexión lista (caída o reconectando), falla en el momento, sin acumular comandos para mandarlos al reconectar ni esperar hasta el timeout en cada ping. (En ioredis 6, lo que vence en la cola tampoco se manda después; lo que cambia es la espera, y no depende de ese detalle);
+  - `maxRetriesPerRequest: 0` y `autoResendUnfulfilledCommands: false`: lo que se mandó y quedó sin respuesta antes de un corte falla en el corte y no se reenvía al reconectar. Una posición mandada tarde sería ruido. Con `maxRetriesPerRequest: 0`, ioredis ya rechaza todo lo pendiente en el corte, así que la segunda opción es redundante hoy: deja explícita la intención si alguien sube los reintentos. El test falla si se quitan las dos.
+- Se cuenta en `location_posiciones_publicadas_total{resultado="error"}` y se avisa en el log como mucho una vez por minuto, con cuántas fallaron.
+- `/ready` no cambia: sin Redis, la ingenua sigue registrando pings; lo único que se cae es el seguimiento. En la optimizada, sin Redis ya fallan los pings (`503`), como antes.
+- Sin `REDIS_URL` (estrategia `memoria`), no hay publicador y el log lo avisa al arrancar.
+
+**Costo medido** (21/11, corrida corta con k6: optimizada, 250 pings/s, 10 s de calentamiento y 60 s de medición, dos corridas alternadas contra `main` sin publicación, en la misma máquina):
+
+| | Sin publicación (`main`) | Con publicación |
+|---|---|---|
+| Pings/s logrados | 250,0 y 250,0 | 250,0 y 250,0 |
+| Errores | 0 % | 0 % |
+| Ping p95 (ms) | 3,4 y 4,1 | 6,4 y 6,9 |
+| Ping p99 (ms) | 18,2 y 27,5 | 43,9 y 45,3 |
+| CPU de location (promedio) | 44 % y 52 % | 57 % y 57 % |
+
+El `204` espera una operación más en Redis: el p95 sube unos 3 ms y el p99 se duplica, sin errores ni pings omitidos. Son corridas de 60 s; para el informe hay que repetirlas con la medición completa de 5 min.
+
+**Tests** (`tests/dominio/publicacion.test.ts`, `tests/integracion/publicacion.test.ts`, con Redis real):
+
+- el mensaje sale en el canal del chofer del token, con el payload del contrato, en las dos estrategias; el canal de otro chofer no recibe nada;
+- si el guardado falla, no se publica;
+- un ping atrasado que termina de guardarse después de uno nuevo no se anuncia, y lo publicado coincide con la posición vigente;
+- 50 pings del mismo chofer cruzados con demoras al azar: lo que llega al canal nunca retrocede;
+- sin marca y con un ping ya vencido, no se publica; con la marca vencida, un ping más viejo que el último publicado se descarta por vencido;
+- falla **solo el publicador** (un proxy TCP delante de su conexión) en la optimizada: con su Redis caído, `204` enseguida y nada se publica tarde al volver; reconectando con el handshake sin terminar, falla en el momento (no espera ni encola); sin respuesta, `204` a los 200 ms aunque la publicación ocurrió; lo pendiente antes de un corte no se reenvía. En todos los casos la posición queda guardada y se cuenta el error.
+
+Comprobado que fallan sin la comparación con la marca, sin guardarla, sin el descarte por vencida, sin aislar la falla, publicando antes de guardar, con cola offline, sin `commandTimeout`, sin `maxRetriesPerRequest: 0` y `autoResendUnfulfilledCommands: false` (las dos juntas) y sin el límite del log.
 
 ## Contrato con dispatch
 
@@ -357,6 +421,6 @@ npm run test:dominio -w @viajes/location
 2. **Después:**
    - límite de pedidos en `/ubicaciones`;
    - retención del historial;
-   - publicación por Redis para el seguimiento, con su regla de privacidad;
+   - ~~publicación por Redis para el seguimiento~~ (hecho, ver [Posición en vivo](#posición-en-vivo)); la regla de privacidad la aplica dispatch al suscribirse;
    - Alloy y los dashboards de Grafana sobre el `/metrics` de `platform` (ya hecho);
    - ADR 0008 (Redis GEO frente a PostGIS frente a geohash), con los números de [docs/mediciones.md](mediciones.md).
