@@ -1,5 +1,7 @@
 import type { PayloadEventoDispatch, TipoEventoDispatch } from '@viajes/contracts';
 import type { Coordenada, EstadoSolicitud, Oferta, SolicitudViaje } from '../entidades/index.js';
+import type { Recorrido } from '../tarifas/calculo.js';
+import type { ParametrosTarifa } from '../tarifas/parametros.js';
 
 export type EventoDispatch = {
   [T in TipoEventoDispatch]: { tipo: T; payload: PayloadEventoDispatch<T> };
@@ -77,4 +79,17 @@ export interface MetricasDespacho {
 export interface ParametrosDespacho {
   ofertasSimultaneas: number;
   ttlOfertaMs: number;
+}
+
+/**
+ * Mapas: distancia y tiempo de manejo entre dos puntos, en enteros no negativos (metros y segundos).
+ * El adaptador corta por timeout y falla cerrado: si no hay recorrido, no hay estimación.
+ */
+export interface ServicioMapas {
+  recorrido(origen: Coordenada, destino: Coordenada): Promise<Recorrido>;
+}
+
+/** Los parámetros de tarifa vigentes. Hoy los lee del `.env`; en el PR 2, de la configuración del admin. */
+export interface ProveedorTarifas {
+  vigente(): Promise<ParametrosTarifa>;
 }

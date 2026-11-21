@@ -17,7 +17,7 @@ import {
 import type { Express } from 'express';
 import { Redis } from 'ioredis';
 import { crearCasosDeUso, type CasosDeUso } from './dominio/casos-uso/index.js';
-import type { BuscadorCandidatos, RepositorioDespacho } from './dominio/puertos/index.js';
+import type { BuscadorCandidatos, ProveedorTarifas, RepositorioDespacho, ServicioMapas } from './dominio/puertos/index.js';
 import type { Config } from './config/index.js';
 import { crearPrisma } from './infra/db/cliente.js';
 import { RepositorioDespachoPrisma } from './infra/db/repositorio-prisma.js';
@@ -25,10 +25,13 @@ import { AlmacenIdempotenciaPrisma } from './infra/db/idempotencia-prisma.js';
 import { chequeoRedis, chequeosBase } from './infra/db/salud.js';
 import { BuscadorCandidatosFijo } from './infra/externos/buscador-fijo.js';
 import { BuscadorCandidatosLocation } from './infra/externos/buscador-location.js';
+import { MapasConTimeout } from './infra/externos/mapas-con-timeout.js';
+import { MapasSimulado } from './infra/externos/mapas-simulado.js';
 import { idsAleatorios, relojSistema } from './infra/externos/sistema.js';
 import { rutasDespacho } from './infra/http/rutas.js';
 import { metricasDespachoPrometheus } from './infra/metricas/prometheus.js';
 import { RepositorioDespachoMemoria } from './infra/memoria/repositorio-memoria.js';
+import { tarifasDesdeConfig } from './infra/tarifas/tarifas-config.js';
 
 /** Reemplazos para tests: cualquier adaptador se puede inyectar desde afuera. */
 export interface Reemplazos {
@@ -36,6 +39,9 @@ export interface Reemplazos {
   buscador?: BuscadorCandidatos;
   reloj?: Reloj;
   repo?: RepositorioDespacho;
+  /** El mapas de adentro: el timeout y la falla cerrado se aplican igual (para probar caídas). */
+  mapas?: ServicioMapas;
+  tarifas?: ProveedorTarifas;
   /** Sin este reemplazo, quien reemplaza el repo recibe la idempotencia en memoria. */
   idempotencia?: { almacen: AlmacenIdempotencia; cerrojo: CerrojoEnVuelo };
 }
@@ -97,6 +103,28 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
     };
   }
 
+  // Mapas siempre detrás del timeout: el simulado no lo necesita, pero un proveedor real sí, y así
+  // la falla cerrado se prueba con el mismo código que va a envolver a ese proveedor.
+  const mapas = new MapasConTimeout(
+    reemplazos.mapas ??
+      new MapasSimulado({
+        factorDesvio: config.MAPAS_FACTOR_DESVIO,
+        velocidadKmh: config.MAPAS_VELOCIDAD_KMH,
+        latenciaMs: config.MAPAS_LATENCIA_SIMULADA_MS,
+      }),
+    config.MAPAS_TIMEOUT_MS,
+    logger,
+  );
+  const tarifas =
+    reemplazos.tarifas ??
+    tarifasDesdeConfig({
+      bajadaCentavos: config.TARIFA_BAJADA_CENTAVOS,
+      centavosPorKm: config.TARIFA_CENTAVOS_POR_KM,
+      centavosPorMinuto: config.TARIFA_CENTAVOS_POR_MINUTO,
+      minimoCentavos: config.TARIFA_MINIMO_CENTAVOS,
+      maxMetros: config.TARIFA_MAX_METROS,
+    });
+
   const metricas = crearMetricas({ servicio: 'dispatch' });
   const casos = crearCasosDeUso({
     repo,
@@ -108,6 +136,8 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
       ttlOfertaMs: config.OFERTA_TTL_SEGUNDOS * 1000,
     },
     metricas: metricasDespachoPrometheus(metricas),
+    mapas,
+    tarifas,
   });
 
   const verificador =

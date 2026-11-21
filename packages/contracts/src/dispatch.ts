@@ -61,6 +61,37 @@ export const PanelQuery = z.strictObject({
 });
 export type PanelQuery = z.infer<typeof PanelQuery>;
 
+// Un número decimal en la query (llega como texto). Vacío, no numérico o repetido: se rechaza.
+const decimal = (min: number, max: number) =>
+  z.string().trim().min(1).pipe(z.coerce.number()).pipe(z.number().finite().min(min).max(max));
+
+/** Estimación de tarifa: es una consulta sin efectos, por eso va por GET y sin Idempotency-Key. */
+export const EstimacionQuery = z.strictObject({
+  origenLat: decimal(-90, 90),
+  origenLng: decimal(-180, 180),
+  destinoLat: decimal(-90, 90),
+  destinoLng: decimal(-180, 180),
+});
+export type EstimacionQuery = z.infer<typeof EstimacionQuery>;
+
+const centavos = z.number().int().min(0);
+
+export const EstimacionRespuesta = z.strictObject({
+  tarifaCentavos: centavos,
+  moneda: z.literal('ARS'),
+  distanciaMetros: z.number().int().min(0),
+  duracionSegundos: z.number().int().min(0),
+  desglose: z.strictObject({
+    bajadaCentavos: centavos,
+    recorridoCentavos: centavos,
+    subtotalCentavos: centavos,
+    minimoCentavos: centavos,
+    minimoAplicado: z.boolean(),
+  }),
+  tarifaVersion: z.string().min(1),
+});
+export type EstimacionRespuesta = z.infer<typeof EstimacionRespuesta>;
+
 const PartesDelViaje =z.strictObject({ solicitudId: z.uuid(), pasajeroId: z.uuid(), choferId: z.uuid() });
 
 // Payloads de los eventos que dispatch escribe en su outbox.

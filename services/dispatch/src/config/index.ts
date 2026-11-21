@@ -1,5 +1,8 @@
 import { tokenMetricas } from '@viajes/platform';
 import { z } from 'zod';
+import { TOPE_IMPORTE_CENTAVOS, TOPE_MAX_METROS } from '../dominio/tarifas/parametros.js';
+
+const centavos = z.coerce.number().int().min(0).max(TOPE_IMPORTE_CENTAVOS);
 
 const listaUuids = z
   .string()
@@ -35,6 +38,20 @@ export const EsquemaConfig = z
     DISPATCH_RADIO_BUSQUEDA_METROS: z.coerce.number().int().min(100).max(50_000).default(5000),
     // Bearer de GET /metrics (Alloy). El mismo en los tres servicios: el .env es compartido.
     METRICAS_TOKEN: tokenMetricas,
+    // Tarifa (docs/tarifas.md). Centavos enteros. Los importes los define el equipo: estos valores
+    // por defecto son DE EJEMPLO. En el PR 2 los configura el admin y estos quedan como semilla.
+    TARIFA_BAJADA_CENTAVOS: centavos.default(150_000),
+    TARIFA_CENTAVOS_POR_KM: centavos.default(80_000),
+    TARIFA_CENTAVOS_POR_MINUTO: centavos.default(15_000),
+    TARIFA_MINIMO_CENTAVOS: centavos.default(250_000),
+    TARIFA_MAX_METROS: z.coerce.number().int().min(1).max(TOPE_MAX_METROS).default(100_000),
+    // Mapas simulado: línea recta × desvío, a velocidad media constante. Una aproximación, no un ruteo.
+    MAPAS_FACTOR_DESVIO: z.coerce.number().min(1).max(3).default(1.3),
+    MAPAS_VELOCIDAD_KMH: z.coerce.number().int().min(5).max(120).default(25),
+    // Si mapas no contesta en este tiempo, la estimación responde 503 (falla cerrado).
+    MAPAS_TIMEOUT_MS: z.coerce.number().int().min(50).max(10_000).default(1000),
+    // Demora artificial del simulado, solo para demostrar el timeout. 0 en uso normal.
+    MAPAS_LATENCIA_SIMULADA_MS: z.coerce.number().int().min(0).max(30_000).default(0),
   })
   .refine((c) => c.DISPATCH_PERSISTENCIA !== 'postgres' || c.DATABASE_URL, {
     path: ['DATABASE_URL'],
