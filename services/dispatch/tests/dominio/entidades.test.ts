@@ -13,6 +13,7 @@ function solicitudEn(estado: EstadoSolicitud) {
     estado,
     choferId: estado === 'ASIGNADO' || estado === 'COMPLETADA' ? CHOFER : null,
     version: 0,
+    creadaEn: new Date('2026-10-28T12:00:00Z'),
   });
 }
 

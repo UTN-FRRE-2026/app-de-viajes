@@ -1,6 +1,13 @@
 import { fileURLToPath } from 'node:url';
 import type { Reloj } from '@viajes/kernel';
-import { crearApp, verificadorJwks, type ChequeoListo, type Logger, type VerificadorToken } from '@viajes/platform';
+import {
+  crearApp,
+  crearMetricas,
+  verificadorJwks,
+  type ChequeoListo,
+  type Logger,
+  type VerificadorToken,
+} from '@viajes/platform';
 import type { Express } from 'express';
 import { crearCasosDeUso, type CasosDeUso } from './dominio/casos-uso/index.js';
 import type { BuscadorCandidatos, RepositorioDespacho } from './dominio/puertos/index.js';
@@ -12,6 +19,7 @@ import { BuscadorCandidatosFijo } from './infra/externos/buscador-fijo.js';
 import { BuscadorCandidatosLocation } from './infra/externos/buscador-location.js';
 import { idsAleatorios, relojSistema } from './infra/externos/sistema.js';
 import { rutasDespacho } from './infra/http/rutas.js';
+import { metricasDespachoPrometheus } from './infra/metricas/prometheus.js';
 import { RepositorioDespachoMemoria } from './infra/memoria/repositorio-memoria.js';
 
 /** Reemplazos para tests: cualquier adaptador se puede inyectar desde afuera. */
@@ -63,6 +71,7 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
     cerrar = () => prisma.$disconnect();
   }
 
+  const metricas = crearMetricas({ servicio: 'dispatch' });
   const casos = crearCasosDeUso({
     repo,
     buscador: reemplazos.buscador ?? crearBuscador(config, logger),
@@ -72,12 +81,27 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
       ofertasSimultaneas: config.OFERTAS_SIMULTANEAS,
       ttlOfertaMs: config.OFERTA_TTL_SEGUNDOS * 1000,
     },
+    metricas: metricasDespachoPrometheus(metricas),
   });
 
   const verificador =
     reemplazos.verificador ??
     verificadorJwks(config.JWKS_URL, { issuer: config.JWT_ISSUER, audience: config.JWT_AUDIENCE });
 
-  const app = crearApp({ logger, rutas: rutasDespacho(casos, verificador), chequeos });
-  return { app, casos, repo, cerrar };
+  const app = crearApp({
+    logger,
+    rutas: rutasDespacho(casos, verificador),
+    chequeos,
+    metricas: { metricas, token: config.METRICAS_TOKEN },
+  });
+  const cerrarConexiones = cerrar;
+  return {
+    app,
+    casos,
+    repo,
+    cerrar: async () => {
+      metricas.detener();
+      await cerrarConexiones();
+    },
+  };
 }

@@ -24,9 +24,9 @@ export function vencerOfertas(deps: DependenciasDespacho) {
             })
           : [];
 
-      await deps.repo.enTransaccion(async (tx) => {
+      const vencidasEnEstaSolicitud = await deps.repo.enTransaccion(async (tx) => {
         const solicitud = await tx.obtenerSolicitudParaActualizar(id);
-        if (!solicitud) return;
+        if (!solicitud) return 0;
         const ofertas = await tx.ofertasDeSolicitud(id);
 
         const vencidas = ofertas.filter((o) => o.vencerSiCorresponde(ahora));
@@ -39,7 +39,7 @@ export function vencerOfertas(deps: DependenciasDespacho) {
         }
 
         // Nueva tanda solo cuando no queda ninguna oferta vigente de la anterior.
-        if (solicitud.estado !== 'BUSCANDO' || ofertas.some((o) => o.estaVigente(ahora))) return;
+        if (solicitud.estado !== 'BUSCANDO' || ofertas.some((o) => o.estaVigente(ahora))) return vencidas.length;
         const yaOfrecidos = new Set(ofertas.map((o) => o.choferId));
         await ofrecerACandidatos(
           tx,
@@ -47,7 +47,10 @@ export function vencerOfertas(deps: DependenciasDespacho) {
           candidatos.filter((c) => !yaOfrecidos.has(c)),
           deps,
         );
+        return vencidas.length;
       });
+      // Después del COMMIT de cada solicitud: si una transacción falla, sus vencidas no se cuentan.
+      if (vencidasEnEstaSolicitud > 0) deps.metricas?.ofertasVencidas(vencidasEnEstaSolicitud);
     }
     return ids.length;
   };

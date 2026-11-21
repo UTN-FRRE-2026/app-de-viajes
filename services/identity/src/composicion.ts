@@ -1,6 +1,6 @@
 import { fileURLToPath } from 'node:url';
 import type { Reloj } from '@viajes/kernel';
-import { crearApp, type ChequeoListo, type Logger } from '@viajes/platform';
+import { crearApp, crearMetricas, type ChequeoListo, type Logger } from '@viajes/platform';
 import type { Express } from 'express';
 import { Redis } from 'ioredis';
 import type { Config } from './config/index.js';
@@ -102,6 +102,21 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
     refreshTtlSegundos: config.IDENTITY_REFRESH_TTL_SEGUNDOS,
   });
 
-  const app = crearApp({ logger, rutas: rutasIdentidad(casos, limitador, logger), chequeos });
-  return { app, casos, repo, cerrar };
+  const metricas = crearMetricas({ servicio: 'identity' });
+  const app = crearApp({
+    logger,
+    rutas: rutasIdentidad(casos, limitador, logger),
+    chequeos,
+    metricas: { metricas, token: config.METRICAS_TOKEN },
+  });
+  const cerrarConexiones = cerrar;
+  return {
+    app,
+    casos,
+    repo,
+    cerrar: async () => {
+      metricas.detener();
+      await cerrarConexiones();
+    },
+  };
 }

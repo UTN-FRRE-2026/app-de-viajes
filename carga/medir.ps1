@@ -34,9 +34,21 @@ foreach ($linea in Get-Content -LiteralPath (Join-Path $secretos 'carga.env')) {
   if ($linea -match '^([A-Z_]+)=(.*)$') { [Environment]::SetEnvironmentVariable($Matches[1], $Matches[2], 'Process') }
 }
 $env:ESTRATEGIA = $Estrategia
-$conServicio = @{ 'X-Token-Servicio' = $env:CARGA_TOKEN_SERVICIO }
+# /metrics pide Bearer con METRICAS_TOKEN; en el entorno de carga es el mismo secreto (ver compose.yml).
+$conMetricas = @{ Authorization = "Bearer $($env:CARGA_TOKEN_SERVICIO)" }
 
 function Paso([string]$texto) { Write-Output ("[{0}] {1}" -f (Get-Date -Format 'HH:mm:ss'), $texto) }
+
+# Valor de una serie de /metrics, con etiquetas o sin ellas (`nombre{servicio="location"} 3` o `nombre 3`).
+# Si la serie no está, la corrida se corta: leerla como 0 daría por terminado el drenaje sin que lo esté.
+function Leer-Serie([string]$texto, [string]$nombre) {
+  $m = [regex]::Match($texto, "(?m)^$([regex]::Escape($nombre))(\{[^}]*\})?[ \t]+([0-9.eE+-]+)[ \t]*\r?$")
+  if (-not $m.Success) {
+    Write-Error "falta la serie $nombre en /metrics de location: no se puede validar el historial"
+    exit 1
+  }
+  return [double]::Parse($m.Groups[2].Value, [Globalization.CultureInfo]::InvariantCulture)
+}
 
 Paso "infraestructura de carga"
 docker @compose up -d --wait postgres redis jwks | Out-Null
@@ -88,27 +100,29 @@ Remove-Item Env:TOKEN_SERVICIO
 Stop-Job $muestreo; Remove-Job $muestreo -Force
 
 Paso "foto de /metrics"
-$metricas = (Invoke-WebRequest -UseBasicParsing "$base/metrics" -Headers $conServicio).Content
+$metricas = (Invoke-WebRequest -UseBasicParsing "$base/metrics" -Headers $conMetricas).Content
 $metricas.TrimEnd() | Set-Content -LiteralPath (Join-Path $salida 'metrics.txt') -Encoding UTF8
 
 $drenajeMs = 0
 if ($Estrategia -eq 'optimizada') {
   Paso "esperando que el historial termine de escribirse"
   $desde = Get-Date
-  for ($i = 0; $i -lt 240; $i++) {
-    $m = (Invoke-WebRequest -UseBasicParsing "$base/metrics" -Headers $conServicio).Content
-    $cola = [int]([regex]::Match($m, 'location_historial_en_cola (\d+)').Groups[1].Value)
-    $pend = [int]([regex]::Match($m, 'location_historial_pendientes (\d+)').Groups[1].Value)
-    if ($cola -eq 0 -and $pend -eq 0) { break }
-    Start-Sleep -Milliseconds 500
+  $drenado = $false
+  for ($i = 0; $i -lt 240 -and -not $drenado; $i++) {
+    $m = (Invoke-WebRequest -UseBasicParsing "$base/metrics" -Headers $conMetricas).Content
+    $cola = Leer-Serie $m 'location_historial_en_cola'
+    $pend = Leer-Serie $m 'location_historial_pendientes'
+    $drenado = ($cola -eq 0 -and $pend -eq 0)
+    if (-not $drenado) { Start-Sleep -Milliseconds 500 }
   }
   $drenajeMs = [int]((Get-Date) - $desde).TotalMilliseconds
+  if (-not $drenado) { Write-Error 'el historial no terminó de escribirse en 2 minutos'; exit 1 }
 }
 
 Paso "conteo del historial"
 $filas = (docker exec viajes-carga-postgres-1 psql -U carga -d location_carga -Atc "SELECT count(*) || ',' || count(stream_id) || ',' || count(DISTINCT stream_id) FROM pings").Trim().Split(',')
 $descartados = 0
-if ($Estrategia -eq 'optimizada') { $descartados = [int]([regex]::Match($metricas, 'location_historial_descartados_total (\d+)').Groups[1].Value) }
+if ($Estrategia -eq 'optimizada') { $descartados = [int](Leer-Serie $metricas 'location_historial_descartados_total') }
 
 $resumen = Get-Content -LiteralPath (Join-Path $salida 'resumen-k6.json') -Raw | ConvertFrom-Json
 function Contar([string]$m) { $x = $resumen.metrics.$m; if ($x) { [int]$x.values.count } else { 0 } }

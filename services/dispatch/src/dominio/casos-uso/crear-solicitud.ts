@@ -11,12 +11,14 @@ export interface Entrada {
 
 export function crearSolicitud(deps: DependenciasDespacho) {
   return async ({ pasajeroId, origen, destino }: Entrada): Promise<DatosSolicitud> => {
+    // El tiempo hasta la asignación se mide desde acá: incluye la búsqueda en location.
+    const creadaEn = deps.reloj.ahora();
     // La búsqueda va FUERA de la transacción: no tiene sentido tener una transacción
     // abierta mientras esperamos a otro servicio.
     const candidatos = await deps.buscador.buscar(origen, { excluir: [], limite: deps.parametros.ofertasSimultaneas });
-    const solicitud = SolicitudViaje.nueva(deps.ids.nuevo(), pasajeroId, origen, destino);
+    const solicitud = SolicitudViaje.nueva(deps.ids.nuevo(), pasajeroId, origen, destino, creadaEn);
 
-    return deps.repo.enTransaccion(async (tx) => {
+    const datos = await deps.repo.enTransaccion(async (tx) => {
       if (!(await tx.insertarSolicitud(solicitud))) throw new SolicitudActivaExistente();
       await tx.registrarEvento({
         tipo: 'RideRequested',
@@ -25,5 +27,7 @@ export function crearSolicitud(deps: DependenciasDespacho) {
       await ofrecerACandidatos(tx, solicitud, candidatos, deps);
       return solicitud.aDatos();
     });
+    deps.metricas?.solicitudCreada(datos.estado === 'SIN_CHOFERES' ? 'sin_choferes' : 'con_ofertas');
+    return datos;
   };
 }

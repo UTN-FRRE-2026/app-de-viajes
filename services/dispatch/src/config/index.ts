@@ -1,3 +1,4 @@
+import { tokenMetricas } from '@viajes/platform';
 import { z } from 'zod';
 
 const listaUuids = z
@@ -28,6 +29,8 @@ export const EsquemaConfig = z
     LOCATION_TOKEN_SERVICIO: z.string().min(32, 'tiene que tener al menos 32 caracteres').max(256).optional(),
     LOCATION_TIMEOUT_MS: z.coerce.number().int().min(50).max(10_000).default(1000),
     DISPATCH_RADIO_BUSQUEDA_METROS: z.coerce.number().int().min(100).max(50_000).default(5000),
+    // Bearer de GET /metrics (Alloy). El mismo en los tres servicios: el .env es compartido.
+    METRICAS_TOKEN: tokenMetricas,
   })
   .refine((c) => c.DISPATCH_PERSISTENCIA !== 'postgres' || c.DATABASE_URL, {
     path: ['DATABASE_URL'],

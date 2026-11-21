@@ -1,4 +1,4 @@
-import { generateKeyPairSync } from 'node:crypto';
+import { generateKeyPairSync, randomBytes } from 'node:crypto';
 import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { crearLogger } from '@viajes/platform';
@@ -19,6 +19,10 @@ export function claveB64(): string {
 
 const CLAVE = claveB64();
 
+/** Un secreto distinto en cada corrida: los tests nunca usan ni muestran el del .env. */
+export const TOKEN_METRICAS = randomBytes(32).toString('base64url');
+export const CON_METRICAS = { Authorization: `Bearer ${TOKEN_METRICAS}` };
+
 export function configTest(extra: Record<string, string> = {}) {
   return EsquemaConfig.parse({
     IDENTITY_PERSISTENCIA: 'postgres',
@@ -28,6 +32,7 @@ export function configTest(extra: Record<string, string> = {}) {
     JWT_ISSUER: ISSUER,
     JWT_AUDIENCE: AUDIENCE,
     IDENTITY_JWT_CLAVE_PRIVADA_B64: CLAVE,
+    METRICAS_TOKEN: TOKEN_METRICAS,
     // Altos por defecto: solo los tests del límite lo bajan.
     IDENTITY_LOGIN_MAX_POR_EMAIL: '100000',
     IDENTITY_LOGIN_MAX_POR_IP: '100000',

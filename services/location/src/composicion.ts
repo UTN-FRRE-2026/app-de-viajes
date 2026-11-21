@@ -1,6 +1,13 @@
 import { fileURLToPath } from 'node:url';
 import type { Reloj } from '@viajes/kernel';
-import { crearApp, verificadorJwks, type ChequeoListo, type Logger, type VerificadorToken } from '@viajes/platform';
+import {
+  crearApp,
+  crearMetricas,
+  verificadorJwks,
+  type ChequeoListo,
+  type Logger,
+  type VerificadorToken,
+} from '@viajes/platform';
 import type { Express } from 'express';
 import type { Redis } from 'ioredis';
 import type { Config } from './config/index.js';
@@ -10,7 +17,7 @@ import { crearPrisma } from './infra/db/cliente.js';
 import { RepositorioUbicacionesIngenuo } from './infra/db/repositorio-ingenuo.js';
 import { chequeosBase, conTiempoLimite } from './infra/db/salud.js';
 import { relojSistema } from './infra/externos/sistema.js';
-import { rutaMetricas } from './infra/http/metricas.js';
+import { registrarMetricasLocation } from './infra/http/metricas.js';
 import { rutasUbicacion } from './infra/http/rutas.js';
 import { RepositorioUbicacionesMemoria } from './infra/memoria/repositorio-memoria.js';
 import { clavesUbicacion } from './infra/redis/claves.js';
@@ -121,11 +128,24 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
     verificadorJwks(config.JWKS_URL, { issuer: config.JWT_ISSUER, audience: config.JWT_AUDIENCE });
 
   const consumidor = historial;
-  const metricas = rutaMetricas(config.UBICACION_ESTRATEGIA, consumidor ? () => consumidor.estado() : undefined);
+  const metricas = crearMetricas({ servicio: 'location' });
+  registrarMetricasLocation(metricas, config.UBICACION_ESTRATEGIA, consumidor ? () => consumidor.estado() : undefined);
   const app = crearApp({
     logger,
-    rutas: rutasUbicacion(casos, verificador, config.LOCATION_TOKEN_SERVICIO, metricas),
+    rutas: rutasUbicacion(casos, verificador, config.LOCATION_TOKEN_SERVICIO),
     chequeos,
+    metricas: { metricas, token: config.METRICAS_TOKEN },
   });
-  return { app, casos, repo, historial, iniciar, cerrar };
+  const cerrarConexiones = cerrar;
+  return {
+    app,
+    casos,
+    repo,
+    historial,
+    iniciar,
+    cerrar: async () => {
+      metricas.detener();
+      await cerrarConexiones();
+    },
+  };
 }

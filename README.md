@@ -53,6 +53,8 @@ npm run dev       # identity (3001), location (3004) y dispatch (3005) en una te
 
 `DISPATCH_LOG_SQL=1` muestra cada query en el log, incluido el `SELECT ... FOR UPDATE`.
 
+**Métricas:** los tres servicios publican `GET /metrics` en formato de Prometheus, con `Authorization: Bearer <METRICAS_TOKEN>` (del `.env`). Incluye el lag del event loop, la memoria y la duración por ruta; dispatch suma solicitudes, asignaciones, ofertas vencidas y el tiempo hasta la asignación. `/metrics` no se publica por nginx.
+
 ## Tests
 
 ```bash

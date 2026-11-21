@@ -1,19 +1,12 @@
 import { CandidatosQuery, UbicacionBody, type CandidatosRespuesta } from '@viajes/contracts';
 import { autenticar, requerirRol, usuarioDe, validar, type VerificadorToken } from '@viajes/platform';
-import { Router, type RequestHandler } from 'express';
+import { Router } from 'express';
 import type { CasosDeUso } from '../../dominio/casos-uso/index.js';
 import { exigirTokenServicio } from './token-servicio.js';
 
-export function rutasUbicacion(
-  casos: CasosDeUso,
-  verificar: VerificadorToken,
-  tokenServicio: string,
-  metricas: RequestHandler,
-): Router {
+/** `/metrics` lo monta `platform` (crearApp), con su propio token. */
+export function rutasUbicacion(casos: CasosDeUso, verificar: VerificadorToken, tokenServicio: string): Router {
   const r = Router();
-
-  // Métricas del proceso y del historial: con el token de servicio, como las rutas internas.
-  r.get('/metrics', exigirTokenServicio(tokenServicio), metricas);
 
   // El chofer informa su posición. El id sale del token: un body con choferId se rechaza (strictObject).
   r.post('/ubicaciones', autenticar(verificar), requerirRol('chofer'), validar({ body: UbicacionBody }), async (req, res) => {

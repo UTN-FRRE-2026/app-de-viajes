@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import type { AddressInfo } from 'node:net';
 import type { Server } from 'node:http';
 import { crearLogger } from '@viajes/platform';
@@ -10,6 +11,10 @@ import { conDemoraTrasLeer } from './demora.js';
 import { URL_BD_TEST } from './preparar-bd.js';
 import { crearEmisorTokens } from './tokens.js';
 
+/** Un secreto distinto en cada corrida: los tests nunca usan ni muestran el del .env. */
+export const TOKEN_METRICAS = randomBytes(32).toString('base64url');
+export const CON_METRICAS = { Authorization: `Bearer ${TOKEN_METRICAS}` };
+
 export function configTest(extra: Record<string, string> = {}) {
   return EsquemaConfig.parse({
     DISPATCH_PERSISTENCIA: 'postgres',
@@ -20,6 +25,7 @@ export function configTest(extra: Record<string, string> = {}) {
     JWT_AUDIENCE: 'viajes',
     OFERTAS_SIMULTANEAS: '50',
     DISPATCH_BUSCADOR: 'fijo',
+    METRICAS_TOKEN: TOKEN_METRICAS,
     ...extra,
   });
 }

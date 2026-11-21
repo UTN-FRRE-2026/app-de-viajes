@@ -40,6 +40,8 @@ services:
       REDIS_URL: redis://redis:6379
       JWT_ISSUER: viajes-identity
       JWT_AUDIENCE: viajes
+      # Bearer de /metrics. Con :- como LOCATION_TOKEN_SERVICIO: si falta, el servicio no arranca y lo dice.
+      METRICAS_TOKEN: ${METRICAS_TOKEN:-}
       # Con :- y no :? para que `npm run infra:up` funcione sin la clave. Si falta, identity no arranca y lo dice.
       IDENTITY_JWT_CLAVE_PRIVADA_B64: ${IDENTITY_JWT_CLAVE_PRIVADA_B64:-}
     ports:
@@ -65,6 +67,8 @@ services:
       JWKS_URL: http://identity:3001/.well-known/jwks.json
       JWT_ISSUER: viajes-identity
       JWT_AUDIENCE: viajes
+      # Bearer de /metrics. Con :- como LOCATION_TOKEN_SERVICIO: si falta, el servicio no arranca y lo dice.
+      METRICAS_TOKEN: ${METRICAS_TOKEN:-}
       # Con :- para que `npm run infra:up` funcione sin él. Si falta, location no arranca y lo dice.
       LOCATION_TOKEN_SERVICIO: ${LOCATION_TOKEN_SERVICIO:-}
     ports:
@@ -88,6 +92,8 @@ services:
       JWKS_URL: http://identity:3001/.well-known/jwks.json
       JWT_ISSUER: viajes-identity
       JWT_AUDIENCE: viajes
+      # Bearer de /metrics. Con :- como LOCATION_TOKEN_SERVICIO: si falta, el servicio no arranca y lo dice.
+      METRICAS_TOKEN: ${METRICAS_TOKEN:-}
       # Candidatos desde location (red interna del Compose; /interno/* no se publica por nginx).
       DISPATCH_BUSCADOR: ${DISPATCH_BUSCADOR:-location}
       LOCATION_URL: http://location:3004

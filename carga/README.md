@@ -42,7 +42,7 @@ node carga/resumir.mjs docs/mediciones/2026-11-19
 | `conteos.json` | Pings enviados, aceptados, omitidos por k6 y con error; filas guardadas en el historial; descartados; cuánto tardó en vaciarse la cola; commit |
 | `resumen-k6.json` | Todas las métricas de k6, separadas por escenario y por fase (calentamiento o medición) |
 | `k6.txt` | Lo que imprimió k6 |
-| `metrics.txt` | `/metrics` de location al terminar k6: lag del event loop desde el arranque, memoria y cola del historial |
+| `metrics.txt` | `/metrics` de location al terminar k6 (con `Authorization: Bearer`): lag del event loop desde el arranque, memoria y cola del historial. Desde el 20/11 las series llevan `servicio="location"` y el lag se llama `event_loop_lag_ms`; `resumir.mjs` lee también el formato anterior |
 | `docker-stats.csv` | CPU y memoria de location, Postgres y Redis, cada 5 s |
 | `location-log.txt` | Últimas líneas del log de location, incluido el apagado ordenado |
 
