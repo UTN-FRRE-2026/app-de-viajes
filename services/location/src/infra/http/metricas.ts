@@ -22,7 +22,7 @@ export function registrarMetricasLocation(
   });
   if (!historial) return;
 
-  // Una sola consulta a Redis por scrape: prom-client llama a los cinco collect() juntos, antes de
+  // Una sola consulta a Redis por scrape: @prometheus-io/client llama a los cinco collect() juntos, antes de
   // esperar a ninguno, así que comparten la misma promesa. Al resolverse, el próximo scrape consulta de nuevo.
   let enCurso: Promise<EstadoHistorial> | undefined;
   const estado = () =>

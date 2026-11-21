@@ -298,7 +298,7 @@ Dos detalles: el simulador necesita 500 tokens y el límite de login por IP (30 
 
 ### 5.6 Grafana Cloud (10)
 
-- `/metrics` en los tres servicios, desde `platform`, con `prom-client`: latencia por ruta, lag del event loop (`monitorEventLoopDelay`), memoria, y métricas de negocio (solicitudes, asignaciones, ofertas vencidas, tiempo hasta la asignación, pings por segundo). **Hecho**, salvo pings por segundo. Se protege con `Authorization: Bearer <METRICAS_TOKEN>`, que Alloy manda con `bearer_token`. El tiempo hasta la asignación va desde antes de buscar candidatos hasta el COMMIT de la aceptación.
+- `/metrics` en los tres servicios, desde `platform`, con `@prometheus-io/client` (antes `prom-client`, que quedó deprecado): latencia por ruta, lag del event loop (`monitorEventLoopDelay`), memoria, y métricas de negocio (solicitudes, asignaciones, ofertas vencidas, tiempo hasta la asignación, pings por segundo). **Hecho**, salvo pings por segundo. Se protege con `Authorization: Bearer <METRICAS_TOKEN>`, que Alloy manda con `bearer_token`. El tiempo hasta la asignación va desde antes de buscar candidatos hasta el COMMIT de la aceptación.
 - **Grafana Alloy** en un perfil de Compose (`--profile obs`) envía métricas y los logs JSON a Grafana Cloud.
 - Dashboards: salud de los tres servicios, despacho y tarea pesada. Se exportan como JSON a `observabilidad/`.
 - La cátedra solo necesita acceso al repositorio: los dashboards exportados y las capturas en `docs/evidencias/` son la evidencia, y se muestra en vivo en el coloquio.

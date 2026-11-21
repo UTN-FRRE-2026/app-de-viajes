@@ -1,7 +1,7 @@
 import { createHash, timingSafeEqual } from 'node:crypto';
 import { monitorEventLoopDelay } from 'node:perf_hooks';
 import { Router, type Request, type RequestHandler } from 'express';
-import { Gauge, Histogram, Registry } from 'prom-client';
+import { Gauge, Histogram, Registry } from '@prometheus-io/client';
 import { z } from 'zod';
 import { ErrorHttp } from './errores.js';
 
@@ -9,7 +9,7 @@ import { ErrorHttp } from './errores.js';
 export const tokenMetricas = z.string().min(32, 'tiene que tener al menos 32 caracteres').max(256);
 
 // Los servicios arman sus métricas propias con estas clases, sobre el mismo Registry.
-export { Counter, Gauge, Histogram, type Registry } from 'prom-client';
+export { Counter, Gauge, Histogram, type Registry } from '@prometheus-io/client';
 
 const RESOLUCION_MS = 10;
 
