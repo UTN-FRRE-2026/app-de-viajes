@@ -67,9 +67,10 @@ Cada integrante es **dueño** de un problema central y de los módulos que lo ro
 
 **Fase B**
 - [ ] Publicación de cada posición en el canal de Redis del chofer; política de retención.
-- [ ] tarifas en dispatch: una función en centavos enteros para estimación y tarifa final, con los tests de borde.
+- [x] tarifas en dispatch: una función en centavos enteros para estimación y tarifa final, con los tests de borde. Estimación por `GET /tarifas/estimacion` ([docs/tarifas.md](tarifas.md)).
+- [ ] Configuración de tarifas por el admin: versionada en Postgres, con Idempotency-Key y caché en Redis con invalidación.
 - [ ] Cobro simulado idempotente (usa la Idempotency-Key de Ivan) que falla cerrado.
-- [ ] Puertos de mapas y pagos con timeout.
+- [ ] Puertos de mapas y pagos con timeout. Hecho: mapas (simulado, con timeout y falla cerrado). Falta: pagos.
 - [ ] Caché en Redis de tarifas y zonas, con invalidación.
 - [ ] Frontend: pantallas del chofer.
 

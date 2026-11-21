@@ -50,6 +50,13 @@ export class TransicionInvalida extends ErrorDeDominio {
   }
 }
 
+/** El recorrido supera el máximo de la tarifa: no se estima ni se acepta. */
+export class ViajeFueraDeRango extends ErrorDeDominio {
+  constructor(maxMetros: number) {
+    super('VIAJE_FUERA_DE_RANGO', 'INVALIDO', `El recorrido supera el máximo permitido (${maxMetros / 1000} km)`);
+  }
+}
+
 export class MotivoRequerido extends ErrorDeDominio {
   constructor() {
     super('MOTIVO_REQUERIDO', 'INVALIDO', 'El operador tiene que indicar el motivo de la cancelación');

@@ -1,4 +1,13 @@
-import { CancelarBody, CrearSolicitudBody, HistorialQuery, PanelQuery, ParamsId, SinBody } from '@viajes/contracts';
+import {
+  CancelarBody,
+  CrearSolicitudBody,
+  EstimacionQuery,
+  HistorialQuery,
+  PanelQuery,
+  ParamsId,
+  SinBody,
+  type EstimacionRespuesta,
+} from '@viajes/contracts';
 import {
   autenticar,
   requerirRol,
@@ -37,6 +46,16 @@ export function rutasDespacho(
     const { origen, destino } = req.body as CrearSolicitudBody;
     const solicitud = await casos.crearSolicitud({ pasajeroId: usuarioDe(req).id, origen, destino });
     res.status(201).json(solicitud);
+  });
+
+  // Estimación de tarifa. Sin efectos: GET y sin Idempotency-Key. El chofer no la necesita.
+  r.get('/tarifas/estimacion', requerirRol('pasajero', 'operador', 'admin'), validar({ query: EstimacionQuery }), async (req, res) => {
+    const { origenLat, origenLng, destinoLat, destinoLng } = req.query as unknown as EstimacionQuery;
+    const estimacion: EstimacionRespuesta = await casos.estimarTarifa({
+      origen: { lat: origenLat, lng: origenLng },
+      destino: { lat: destinoLat, lng: destinoLng },
+    });
+    res.set('Cache-Control', 'no-store').json(estimacion);
   });
 
   // Historial propio: el usuario sale del token, así que nadie puede pedir el de otro.
