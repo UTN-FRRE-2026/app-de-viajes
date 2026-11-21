@@ -1,20 +1,28 @@
 import { fileURLToPath } from 'node:url';
 import type { Reloj } from '@viajes/kernel';
 import {
+  AlmacenIdempotenciaMemoria,
+  CerrojoMemoria,
+  cerrojoRedis,
   crearApp,
+  crearIdempotencia,
   crearMetricas,
   verificadorJwks,
+  type AlmacenIdempotencia,
+  type CerrojoEnVuelo,
   type ChequeoListo,
   type Logger,
   type VerificadorToken,
 } from '@viajes/platform';
 import type { Express } from 'express';
+import { Redis } from 'ioredis';
 import { crearCasosDeUso, type CasosDeUso } from './dominio/casos-uso/index.js';
 import type { BuscadorCandidatos, RepositorioDespacho } from './dominio/puertos/index.js';
 import type { Config } from './config/index.js';
 import { crearPrisma } from './infra/db/cliente.js';
 import { RepositorioDespachoPrisma } from './infra/db/repositorio-prisma.js';
-import { chequeosBase } from './infra/db/salud.js';
+import { AlmacenIdempotenciaPrisma } from './infra/db/idempotencia-prisma.js';
+import { chequeoRedis, chequeosBase } from './infra/db/salud.js';
 import { BuscadorCandidatosFijo } from './infra/externos/buscador-fijo.js';
 import { BuscadorCandidatosLocation } from './infra/externos/buscador-location.js';
 import { idsAleatorios, relojSistema } from './infra/externos/sistema.js';
@@ -28,6 +36,8 @@ export interface Reemplazos {
   buscador?: BuscadorCandidatos;
   reloj?: Reloj;
   repo?: RepositorioDespacho;
+  /** Sin este reemplazo, quien reemplaza el repo recibe la idempotencia en memoria. */
+  idempotencia?: { almacen: AlmacenIdempotencia; cerrojo: CerrojoEnVuelo };
 }
 
 export interface Sistema {
@@ -54,11 +64,19 @@ function crearBuscador(config: Config, logger: Logger): BuscadorCandidatos {
   });
 }
 
+/** Falla rápido: si Redis no responde, el pedido contesta 503 enseguida en vez de quedar colgado. */
+function crearRedis(url: string, logger: Logger): Redis {
+  const redis = new Redis(url, { maxRetriesPerRequest: 1, connectTimeout: 2000, commandTimeout: 1000 });
+  redis.on('error', (err: Error) => logger.warn({ err: err.message }, 'redis: error de conexión'));
+  return redis;
+}
+
 /** Único lugar que conoce los adaptadores concretos. */
 export function componer(config: Config, logger: Logger, reemplazos: Reemplazos = {}): Sistema {
   let repo: RepositorioDespacho;
   let chequeos: ChequeoListo[] = [];
   let cerrar = async () => {};
+  let idempotencia = reemplazos.idempotencia ?? { almacen: new AlmacenIdempotenciaMemoria(), cerrojo: new CerrojoMemoria() };
 
   if (reemplazos.repo) {
     repo = reemplazos.repo;
@@ -66,9 +84,17 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
     repo = new RepositorioDespachoMemoria();
   } else {
     const prisma = crearPrisma(config.DATABASE_URL as string, config.DB_POOL_MAX);
+    const redis = crearRedis(config.REDIS_URL as string, logger);
     repo = new RepositorioDespachoPrisma(prisma);
-    chequeos = chequeosBase(prisma, carpetaMigraciones);
-    cerrar = () => prisma.$disconnect();
+    idempotencia = reemplazos.idempotencia ?? {
+      almacen: new AlmacenIdempotenciaPrisma(prisma),
+      cerrojo: cerrojoRedis(redis, 'dispatch:idempotencia:'),
+    };
+    chequeos = [...chequeosBase(prisma, carpetaMigraciones), chequeoRedis(redis)];
+    cerrar = async () => {
+      redis.disconnect();
+      await prisma.$disconnect();
+    };
   }
 
   const metricas = crearMetricas({ servicio: 'dispatch' });
@@ -90,7 +116,11 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
 
   const app = crearApp({
     logger,
-    rutas: rutasDespacho(casos, verificador),
+    rutas: rutasDespacho(
+      casos,
+      verificador,
+      crearIdempotencia({ ...idempotencia, ttlEnVueloMs: config.IDEMPOTENCIA_EN_VUELO_SEGUNDOS * 1000 }),
+    ),
     chequeos,
     metricas: { metricas, token: config.METRICAS_TOKEN },
   });

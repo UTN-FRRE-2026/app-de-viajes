@@ -8,7 +8,7 @@ import { RepositorioDespachoPrisma } from '../../src/infra/db/repositorio-prisma
 import { BuscadorCandidatosFijo } from '../../src/infra/externos/buscador-fijo.js';
 import { RelojFalso } from '../soporte/memoria.js';
 import { URL_BD_TEST } from '../soporte/preparar-bd.js';
-import { CON_METRICAS, configTest, DESTINO, ORIGEN } from '../soporte/sistema-postgres.js';
+import { clave, CON_METRICAS, configTest, DESTINO, ORIGEN } from '../soporte/sistema-postgres.js';
 import { crearEmisorTokens } from '../soporte/tokens.js';
 
 const prisma = crearPrisma(URL_BD_TEST, 5);
@@ -46,7 +46,7 @@ describe('creadaEn y tiempo hasta la asignación con Postgres', () => {
     const inicio = reloj.ahora();
 
     const creada = await request(sistema.app)
-      .post('/solicitudes')
+      .post('/solicitudes').set(clave())
       .set(await auth(randomUUID(), 'pasajero'))
       .send({ origen: ORIGEN, destino: DESTINO });
     expect(creada.status).toBe(201);
@@ -68,7 +68,7 @@ describe('creadaEn y tiempo hasta la asignación con Postgres', () => {
     buscador.choferes = [chofer];
 
     const creada = await request(sistema.app)
-      .post('/solicitudes')
+      .post('/solicitudes').set(clave())
       .set(await auth(pasajero, 'pasajero'))
       .send({ origen: ORIGEN, destino: DESTINO })
       .expect(201);
@@ -80,7 +80,7 @@ describe('creadaEn y tiempo hasta la asignación con Postgres', () => {
     const suma0 = valor(antes, /^dispatch_tiempo_hasta_asignacion_seconds_sum\{[^}]*\} (\S+)$/m);
 
     reloj.avanzar(2500);
-    const aceptada = await request(sistema.app).post(`/ofertas/${oferta.id}/aceptar`).set(await auth(chofer, 'chofer')).send({});
+    const aceptada = await request(sistema.app).post(`/ofertas/${oferta.id}/aceptar`).set(clave()).set(await auth(chofer, 'chofer')).send({});
     expect(aceptada.status).toBe(200);
     expect(aceptada.body).toMatchObject({ estado: 'ASIGNADO', choferId: chofer });
     expect(aceptada.body).not.toHaveProperty('creadaEn');

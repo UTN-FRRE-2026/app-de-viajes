@@ -1,5 +1,6 @@
 import { readdir } from 'node:fs/promises';
 import type { ChequeoListo } from '@viajes/platform';
+import type { Redis } from 'ioredis';
 import type { PrismaClient } from './generated/client.js';
 
 export function chequeosBase(prisma: PrismaClient, carpetaMigraciones: string): ChequeoListo[] {
@@ -24,4 +25,14 @@ export function chequeosBase(prisma: PrismaClient, carpetaMigraciones: string): 
       },
     },
   ];
+}
+
+/** Sin Redis no se puede verificar la Idempotency-Key: las rutas con efecto responden 503. */
+export function chequeoRedis(redis: Redis): ChequeoListo {
+  return {
+    nombre: 'redis',
+    chequear: async () => {
+      await redis.ping();
+    },
+  };
 }

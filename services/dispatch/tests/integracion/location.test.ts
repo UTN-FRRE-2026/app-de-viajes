@@ -8,7 +8,7 @@ import { componer, type Sistema } from '../../src/composicion.js';
 import { crearPrisma } from '../../src/infra/db/cliente.js';
 import { RepositorioDespachoPrisma } from '../../src/infra/db/repositorio-prisma.js';
 import { URL_BD_TEST } from '../soporte/preparar-bd.js';
-import { DESTINO, ORIGEN, configTest } from '../soporte/sistema-postgres.js';
+import { clave, DESTINO, ORIGEN, configTest } from '../soporte/sistema-postgres.js';
 import { crearEmisorTokens } from '../soporte/tokens.js';
 
 /**
@@ -64,7 +64,7 @@ beforeEach(async () => {
 });
 
 const pedirViaje = async (pasajero = randomUUID()) =>
-  request(sistema.app).post('/solicitudes').set(await auth(pasajero, 'pasajero')).send({ origen: ORIGEN, destino: DESTINO });
+  request(sistema.app).post('/solicitudes').set(clave()).set(await auth(pasajero, 'pasajero')).send({ origen: ORIGEN, destino: DESTINO });
 
 describe('dispatch con location', () => {
   it('ofrece el viaje a los choferes más cercanos que devuelve location', async () => {

@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { CON_METRICAS, levantarDispatch, TOKEN_METRICAS } from '../soporte/sistema-postgres.js';
+import { clave, CON_METRICAS, levantarDispatch, TOKEN_METRICAS } from '../soporte/sistema-postgres.js';
 
 let d: Awaited<ReturnType<typeof levantarDispatch>>;
 
@@ -52,7 +52,7 @@ describe('GET /metrics de dispatch', () => {
   });
 
   it('un 401 del JWT, antes de llegar a una ruta, queda como sin_ruta', async () => {
-    await request(d.url).post('/solicitudes').send({}).expect(401);
+    await request(d.url).post('/solicitudes').set(clave()).send({}).expect(401);
     const res = await metricas();
     expect(
       serie(res.text, 'http_request_duration_seconds_count', { metodo: 'POST', ruta: 'sin_ruta', estado: '401' }),

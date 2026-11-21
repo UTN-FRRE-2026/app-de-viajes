@@ -33,6 +33,7 @@ jobs:
       LOCATION_DATABASE_URL_TEST: postgresql://location_svc:location_dev@localhost:5434/location_test
       LOCATION_REDIS_URL_TEST: redis://localhost:6379/14
       REDIS_URL_TEST: redis://localhost:6379/15
+      DISPATCH_REDIS_URL_TEST: redis://localhost:6379/13
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

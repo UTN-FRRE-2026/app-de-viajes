@@ -53,8 +53,13 @@ async function tokenDe(email: string): Promise<string> {
   return res.body.token as string;
 }
 
+// dispatch exige Idempotency-Key en todo POST con efecto: un cliente real manda una nueva por operación.
 const pedirViaje = (token: string) =>
-  request(urlDispatch).post('/solicitudes').set('Authorization', `Bearer ${token}`).send(cuerpo);
+  request(urlDispatch)
+    .post('/solicitudes')
+    .set('Authorization', `Bearer ${token}`)
+    .set('Idempotency-Key', randomUUID())
+    .send(cuerpo);
 
 beforeAll(async () => {
   d = await levantarIdentity();

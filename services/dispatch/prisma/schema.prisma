@@ -71,3 +71,17 @@ model EventoOutbox {
   @@index([publicadoEn, creadoEn])
   @@map("outbox")
 }
+
+/// Idempotency-Key: se escribe en la misma transacción que el efecto.
+model RegistroIdempotencia {
+  alcance   String   @map("scope")
+  clave     String   @map("key")
+  huella    String   @map("request_hash") @db.Char(64)
+  estado    Int      @map("status_code") @db.SmallInt
+  respuesta Json     @map("response") @db.Json
+  creadoEn  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@id([alcance, clave])
+  @@index([creadoEn])
+  @@map("idempotency_keys")
+}

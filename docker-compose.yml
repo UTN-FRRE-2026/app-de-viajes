@@ -91,6 +91,8 @@ services:
       PUERTO: "3005"
       DISPATCH_PERSISTENCIA: postgres
       DATABASE_URL: postgresql://dispatch_svc:${DB_PASSWORD_DISPATCH:-dispatch_dev}@postgres:5432/dispatch
+      # Cerrojo de la Idempotency-Key (claves con prefijo dispatch:idempotencia:).
+      REDIS_URL: redis://redis:6379
       JWKS_URL: http://identity:3001/.well-known/jwks.json
       JWT_ISSUER: viajes-identity
       JWT_AUDIENCE: viajes
