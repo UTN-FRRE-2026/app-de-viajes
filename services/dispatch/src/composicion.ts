@@ -19,6 +19,7 @@ import { Redis } from 'ioredis';
 import { crearCasosDeUso, type CasosDeUso } from './dominio/casos-uso/index.js';
 import type {
   BuscadorCandidatos,
+  ProcesadorPagos,
   ProveedorTarifas,
   RepositorioDespacho,
   RepositorioTarifas,
@@ -33,6 +34,8 @@ import { BuscadorCandidatosFijo } from './infra/externos/buscador-fijo.js';
 import { BuscadorCandidatosLocation } from './infra/externos/buscador-location.js';
 import { MapasConTimeout } from './infra/externos/mapas-con-timeout.js';
 import { MapasSimulado } from './infra/externos/mapas-simulado.js';
+import { PagosConTimeout } from './infra/externos/pagos-con-timeout.js';
+import { PagosSimulado } from './infra/externos/pagos-simulado.js';
 import { idsAleatorios, relojSistema } from './infra/externos/sistema.js';
 import { rutasDespacho } from './infra/http/rutas.js';
 import { metricasDespachoPrometheus } from './infra/metricas/prometheus.js';
@@ -55,6 +58,8 @@ export interface Reemplazos {
   /** Sin este reemplazo, quien reemplaza el repo recibe la tarifa en memoria y sin caché. */
   repoTarifas?: RepositorioTarifas;
   cacheTarifas?: CacheTarifas | null;
+  /** El proveedor de pagos de adentro: el timeout y la falla cerrado se aplican igual. */
+  pagos?: ProcesadorPagos;
   /** Sin este reemplazo, quien reemplaza el repo recibe la idempotencia en memoria. */
   idempotencia?: { almacen: AlmacenIdempotencia; cerrojo: CerrojoEnVuelo };
 }
@@ -136,6 +141,17 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
     config.MAPAS_TIMEOUT_MS,
     logger,
   );
+  // Pagos, igual que mapas: siempre detrás del timeout, para que la falla cerrado sea el mismo código
+  // con el simulado que con un proveedor real.
+  const pagos = new PagosConTimeout(
+    reemplazos.pagos ??
+      new PagosSimulado({
+        latenciaMs: config.PAGOS_LATENCIA_SIMULADA_MS,
+        rechazarDesdeCentavos: config.PAGOS_RECHAZAR_DESDE_CENTAVOS ?? null,
+      }),
+    config.PAGOS_TIMEOUT_MS,
+    logger,
+  );
   // Los TARIFA_* del entorno solo son la semilla: crean la versión 1 si todavía no existe.
   const semillaTarifa = semillaDesdeConfig({
     bajadaCentavos: config.TARIFA_BAJADA_CENTAVOS,
@@ -167,6 +183,7 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
     metricas: metricasDespachoPrometheus(metricas),
     mapas,
     tarifas,
+    pagos,
     repoTarifas,
     semillaTarifa,
   });

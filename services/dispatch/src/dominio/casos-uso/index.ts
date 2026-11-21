@@ -1,6 +1,7 @@
 import { aceptarOferta } from './aceptar-oferta.js';
 import { finalizarViaje, iniciarViaje, marcarEnCamino } from './avanzar-viaje.js';
 import { cancelarSolicitud } from './cancelar-solicitud.js';
+import { cobrarPendientes, cobrarViaje } from './cobrar.js';
 import { crearSolicitud } from './crear-solicitud.js';
 import type { DependenciasDespacho } from './dependencias.js';
 import { estimarTarifa } from './estimar-tarifa.js';
@@ -19,6 +20,8 @@ export function crearCasosDeUso(deps: DependenciasDespacho) {
     marcarEnCamino: marcarEnCamino(deps),
     iniciarViaje: iniciarViaje(deps),
     finalizarViaje: finalizarViaje(deps),
+    cobrarViaje: cobrarViaje(deps),
+    cobrarPendientes: cobrarPendientes(deps),
     vencerOfertas: vencerOfertas(deps),
     obtenerSolicitud: obtenerSolicitud(deps),
     historial: historial(deps),

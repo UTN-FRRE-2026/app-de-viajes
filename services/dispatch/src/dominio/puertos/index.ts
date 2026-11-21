@@ -1,5 +1,5 @@
 import type { PayloadEventoDispatch, TipoEventoDispatch } from '@viajes/contracts';
-import type { Coordenada, EstadoSolicitud, Oferta, SolicitudViaje } from '../entidades/index.js';
+import type { Cobro, Coordenada, EstadoSolicitud, Oferta, SolicitudViaje } from '../entidades/index.js';
 import type { Recorrido } from '../tarifas/calculo.js';
 import type { ParametrosTarifa, TarifaVigente, ValoresTarifa } from '../tarifas/parametros.js';
 
@@ -28,6 +28,14 @@ export interface TransaccionDespacho {
   liberarChofer(solicitudId: string): Promise<void>;
   /** Outbox: el evento se publica después, solo si la transacción confirmó. */
   registrarEvento(evento: EventoDispatch): Promise<void>;
+  /** Un cobro por viaje: la base lo exige con una restricción única sobre la solicitud. */
+  insertarCobro(cobro: Cobro): Promise<void>;
+  /**
+   * Lee el cobro del viaje y lo BLOQUEA hasta el final de la transacción. Así, si el barrido y un
+   * pedido procesan el mismo cobro a la vez, uno solo registra el resultado.
+   */
+  obtenerCobroParaActualizar(solicitudId: string): Promise<Cobro | null>;
+  guardarCobro(cobro: Cobro): Promise<void>;
 }
 
 export interface RepositorioDespacho {
@@ -43,6 +51,14 @@ export interface RepositorioDespacho {
    * `texto` es literal: `%` y `_` no son comodines.
    */
   listarSolicitudes(filtro: FiltroSolicitudes, pagina: Pagina): Promise<SolicitudViaje[]>;
+  obtenerCobro(solicitudId: string): Promise<Cobro | null>;
+  /** Viajes con el cobro todavía PENDIENTE, los más viejos primero. */
+  cobrosPendientes(limite: number): Promise<string[]>;
+  /**
+   * Suma un intento fallido, fuera de una transacción. No usa `enTransaccion` a propósito: esa
+   * transacción registraría la Idempotency-Key del pedido como si hubiera salido bien.
+   */
+  registrarFalloCobro(cobroId: string, motivo: string): Promise<void>;
 }
 
 export interface FiltroSolicitudes {
@@ -92,6 +108,8 @@ export interface ServicioMapas {
 /** Los parámetros de tarifa vigentes, para estimar. Puede tener caché: tiene que reflejar el último cambio. */
 export interface ProveedorTarifas {
   vigente(): Promise<ParametrosTarifa>;
+  /** Los parámetros de una versión (no cambian nunca), o null si no existe. Lo usa la tarifa final. */
+  porVersion(version: string): Promise<ParametrosTarifa | null>;
   /**
    * Aviso de que cambió la tarifa, después del COMMIT. Es solo higiene del caché: la corrección no
    * puede depender de esto (si falla, la próxima lectura igual ve la versión nueva). No lanza.
@@ -120,4 +138,29 @@ export interface RepositorioTarifas {
    * transacción, bajo el lock. Es la que hay que invalidar en el caché, no una leída antes.
    */
   reemplazar(valores: ValoresTarifa, autor: string): Promise<{ nueva: TarifaVigente; anterior: string | null }>;
+}
+
+export interface PedidoDeCobro {
+  /** Clave de idempotencia del proveedor (el id del cobro): reintentar con la misma nunca cobra dos veces. */
+  clave: string;
+  montoCentavos: number;
+  moneda: 'ARS';
+  pasajeroId: string;
+}
+
+export interface ResultadoCobro {
+  aprobado: boolean;
+  /** El id de la operación en el proveedor. */
+  referencia: string;
+  /** Solo si no aprobó. */
+  motivo: string | null;
+}
+
+/**
+ * Pagos. El adaptador corta por timeout y falla cerrado (503): si el proveedor no contesta, el cobro
+ * sigue PENDIENTE y se reintenta con la misma clave. Con la misma clave, el proveedor devuelve el
+ * resultado de la primera vez, como hacen los proveedores reales con su clave de idempotencia.
+ */
+export interface ProcesadorPagos {
+  cobrar(pedido: PedidoDeCobro): Promise<ResultadoCobro>;
 }

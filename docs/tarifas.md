@@ -2,8 +2,8 @@
 
 Estado:
 - **PR 1** (#18): cálculo y estimación.
-- **PR 2**: configuración por el admin, con la tarifa global versionada en Postgres, auditoría y caché en Redis.
-- **PR 3**, todavía no hecho: la tarifa final, por qué difiere de la estimación y el cobro. Ver [Lo que sigue](#lo-que-sigue).
+- **PR 2** (#19): configuración por el admin, con la tarifa global versionada en Postgres, auditoría y caché en Redis.
+- **PR 3**: la estimación guardada al crear la solicitud, la tarifa final, por qué difiere y el cobro. Ver [Tarifa final y cobro](#tarifa-final-y-cobro).
 
 > **La fórmula, los importes y el máximo los define el equipo.** Lo que está implementado es la propuesta D1 a D9 de abajo. Los importes del `.env.example` son **de ejemplo**.
 
@@ -18,7 +18,7 @@ total     = max(minimo, subtotal)
 - **Todo en centavos enteros.** Los importes son enteros, las distancias en metros enteros y los tiempos en segundos enteros. El cálculo usa `BigInt`: no hay coma flotante en ningún paso.
 - **Un solo redondeo**, a centavo entero y mitad hacia arriba, sobre `recorrido`. Distancia y tiempo se suman sobre el denominador común 6000 antes de dividir. Redondear cada parte por separado podría sumar un centavo de más: con 0,5 de distancia y 0,5 de tiempo da 1 y no 2. Hay un test para esto.
 - **Recorrido cero.** Con 0 m y 0 s el recorrido vale 0 y el total es `max(mínimo, bajada)`: el mínimo si la bajada es menor, la bajada si es mayor o igual.
-- **El máximo no es parte del cálculo.** `exigirDentroDeRango` rechaza un recorrido de más de `maxMetros`. **En este PR se aplica a la estimación** (`422 VIAJE_FUERA_DE_RANGO`). Crear una solicitud todavía no lo exige: si también se aplica ahí, se decide en el PR 3. `calcularTarifa` nunca rechaza: un viaje que ya terminó siempre tiene que poder cobrarse, aunque el recorrido real haya salido más largo.
+- **El máximo no es parte del cálculo.** `exigirDentroDeRango` rechaza un recorrido de más de `maxMetros` (`422 VIAJE_FUERA_DE_RANGO`), en la estimación y también al crear la solicitud (PR 3). `calcularTarifa` nunca rechaza: un viaje que ya terminó siempre tiene que poder cobrarse, aunque el recorrido real haya salido más largo.
 
 Código:
 - `services/dispatch/src/dominio/tarifas/calculo.ts`: `calcularTarifa` y `exigirDentroDeRango`;
@@ -42,7 +42,7 @@ Moneda fija: `ARS`. Los límites están en un solo lugar, `packages/contracts/sr
 
 **En contenedores**, `docker-compose.yml` le pasa a dispatch las variables `TARIFA_*` y `MAPAS_*` del `.env`. Si una no está, llega vacía. Dispatch trata un valor vacío o con solo espacios como ausente: usa su valor por defecto, nunca 0. Un `0` escrito a propósito sigue valiendo 0 en los importes que lo admiten. Los valores por defecto se definen en un solo lugar, `services/dispatch/src/config/index.ts`.
 
-**Versión.** Cada configuración es una versión: `v1` (la semilla), `v2`, `v3`... La estimación la devuelve en `tarifaVersion`, para que el PR 3 pueda explicar una diferencia por un cambio de tarifa.
+**Versión.** Cada configuración es una versión: `v1` (la semilla), `v2`, `v3`... La estimación la devuelve en `tarifaVersion`, y la solicitud la guarda: la tarifa final se calcula con esa misma versión (precio congelado, D10).
 
 ## Estimación: `GET /tarifas/estimacion`
 
@@ -171,20 +171,83 @@ En `/metrics`, `dispatch_tarifas_cache_total{resultado="hit|miss|error"}`.
 | D1 | Fórmula | `max(minimo, bajada + metros × porKm / 1000 + segundos × porMinuto / 60)` |
 | D2 | Redondeo | Uno solo, al final del recorrido, mitad hacia arriba, con enteros |
 | D3 | Parámetros | Bajada, por km, por minuto, mínimo y máximo, todos en enteros. Moneda `ARS` |
-| D4 | Máximo | En la estimación, más de `maxMetros` da 422 y justo en el máximo se acepta. Ejemplo: 100 km. Al crear la solicitud todavía no se aplica (PR 3) |
+| D4 | Máximo | Más de `maxMetros` da 422 y justo en el máximo se acepta, en la estimación y al crear la solicitud. Ejemplo: 100 km |
 | D5 | Distancia cero | Se acepta. Con 0 m y 0 s el total es `max(mínimo, bajada)`; con los valores de ejemplo, el mínimo |
 | D6 | Recorrido simulado | Haversine × 1,3, a 25 km/h |
 | D7 | Alcance de la tarifa | Global, configurada por el admin (PR 2). Por flota o zona (variante G) sigue como decisión del equipo |
 | D8 | Contrato | `GET`, sin Idempotency-Key, para pasajero, operador y admin; desglose y versión |
 | D9 | Mapas caído | Timeout de 1 s y 503: falla cerrado |
+| D10 | Versión de la tarifa final | La de la estimación: el precio que vio el pasajero queda congelado. Un cambio del admin durante el viaje no lo afecta |
+| D11 | Recorrido final | Duración real (de iniciar a finalizar) y la distancia de mapas, que es la de la estimación |
+| D12 | Cobro | Automático: finalizar deja el cobro PENDIENTE y lo procesa el barrido; `POST /solicitudes/:id/cobrar` lo hace al instante |
+
+## Tarifa final y cobro
+
+**Al crear la solicitud** (`POST /solicitudes`) se calcula la estimación, con la misma función que `GET /tarifas/estimacion`, **antes** de buscar choferes:
+- más de `maxMetros`: `422 VIAJE_FUERA_DE_RANGO`, y no se crea nada;
+- mapas caído: `503 MAPAS_NO_DISPONIBLE`, y no se crea nada. No hay viaje sin precio.
+
+La respuesta (y `GET /solicitudes/:id`, el historial y el panel) trae `tarifa`:
+
+```json
+"tarifa": {
+  "version": "v1",
+  "moneda": "ARS",
+  "estimadaCentavos": 754220,
+  "recorridoEstimado": { "metros": 5209, "segundos": 750 },
+  "finalCentavos": null,
+  "recorridoFinal": null,
+  "motivosDiferencia": []
+}
+```
+
+**Al iniciar** se guarda la hora (`started_at`): de ahí se mide la duración real.
+
+**Al finalizar**, en la misma transacción que completa el viaje y libera al chofer:
+- **la tarifa final**, con la misma `calcularTarifa` y **la misma versión que la estimación** (D10). Si el admin cambió la tarifa durante el viaje, no lo afecta;
+- el recorrido final: la **duración real** (de iniciar a finalizar, redondeada al segundo) y la **distancia de mapas**, que es la de la estimación porque el origen y el destino no cambian (D11). Cuando location exponga la distancia recorrida, entra ahí;
+- **por qué difiere** (`motivosDiferencia`): `DURACION` y/o `DISTANCIA`, solo si el importe cambió. Si el recorrido cambió pero el importe no (por ejemplo, los dos en el mínimo), queda vacío. La versión nunca es un motivo, porque es siempre la misma;
+- **el cobro**, `PENDIENTE`, por la tarifa final. Un solo cobro por viaje: la base lo exige con un índice único;
+- el evento `RideCompleted` lleva `tarifaFinalCentavos`.
+
+**El cobro** (D12) no se hace dentro de esa transacción: esperar al proveedor con el viaje bloqueado frenaría todo lo demás. Lo procesa:
+- **el barrido**, cada `BARRIDO_INTERVALO_MS` (2 s), sin que nadie lo pida;
+- o **`POST /solicitudes/:id/cobrar`**, al instante. Pueden llamarlo el pasajero del viaje, el operador y el admin (otro pasajero: 404; el chofer: 403), con `Idempotency-Key` obligatoria. Si ya está aprobado o rechazado, lo devuelve como está.
+
+`GET /solicitudes/:id` muestra el cobro de un viaje completado:
+
+```json
+"cobro": {
+  "id": "…", "solicitudId": "…", "pasajeroId": "…",
+  "montoCentavos": 754220, "moneda": "ARS",
+  "estado": "APROBADO", "intentosFallidos": 0,
+  "referencia": "sim-…", "motivoRechazo": null
+}
+```
+
+**Sin doble cobro.** Dos procesos pueden querer cobrar el mismo viaje a la vez: el barrido y un pedido, o dos reintentos. Dos garantías:
+1. **Al proveedor se le pasa siempre la misma clave**: el id del cobro. Como los proveedores reales con su clave de idempotencia, con la misma clave cobra una vez y les devuelve a todos el mismo resultado.
+2. **El resultado se registra con el cobro bloqueado** (`SELECT … FOR UPDATE`) **y solo si sigue `PENDIENTE`**: el segundo en llegar ve que ya está resuelto y no registra otro evento.
+
+Test: veinte `POST /cobrar` y el barrido a la vez dan un solo cobro en el proveedor y un solo `PaymentCaptured`. Comprobado que falla si se le pasa al proveedor otra clave en cada intento, o si se saca el `FOR UPDATE`.
+
+**Falla cerrado.** El proveedor va detrás de un timeout (`PAGOS_TIMEOUT_MS`, 1 s), como mapas. Si no contesta, falla o responde fuera de contrato:
+- `503 PAGOS_NO_DISPONIBLE`;
+- el cobro **sigue `PENDIENTE`**, nunca se lo da por cobrado, y se anotan el intento (`failed_attempts`) y el error;
+- el barrido lo reintenta con la misma clave: si el proveedor llegó a cobrar, el reintento recibe ese mismo resultado.
+
+**Estados:** `PENDIENTE` → `APROBADO` (evento `PaymentCaptured`) o `RECHAZADO` (evento `PaymentDeclined`, con motivo). Los dos últimos son finales: un rechazo no se reintenta solo.
+
+**Pagos simulado** (`infra/externos/pagos-simulado.ts`): aprueba todo, salvo los importes de más de `PAGOS_RECHAZAR_DESDE_CENTAVOS` (para demostrar un rechazo). `PAGOS_LATENCIA_SIMULADA_MS` agrega una demora, para demostrar el timeout. Recuerda las claves en memoria: un reinicio las olvida, cosa que un proveedor real no haría.
+
+**Persistencia** (migración `20261123000000_tarifa_final_cobro`):
+- en `ride_requests`, la versión, la estimación, la final, los motivos y `started_at`, con `CHECK`s: la estimación va completa o no va, y un viaje con estimación está `COMPLETADA` si y solo si tiene tarifa final;
+- la tabla `payments`, con un cobro por viaje (índice único) y `CHECK`s: aprobado o rechazado, siempre con la referencia del proveedor.
+
+Las solicitudes creadas antes de esta migración no tienen tarifa (`null`): se completan sin tarifa final y sin cobro.
 
 ## Lo que sigue
 
-- **Hecho en el PR 2:** la configuración por el admin, la tarifa versionada, la auditoría, la semilla y el caché. Ver arriba.
 - **Abierto:** el alcance por flota o zona (D7), un endpoint para consultar el historial de cambios (hoy queda en `fare_changes`), y el control optimista con `If-Match`.
-- **PR 3: tarifa final y cobro.**
-  - Al crear la solicitud se guarda la estimación con su versión.
-  - Al finalizar se calcula la tarifa final con la misma función.
-  - Se guarda por qué difieren: otra versión de tarifa, u otro recorrido.
-  - Se cobra con un puerto de pagos, idempotente y con falla cerrado.
-  - Hay que decidir si una solicitud fuera de rango se rechaza al crearla.
+- **Distancia real:** cuando location exponga la distancia recorrida del viaje, reemplaza a la de mapas en la tarifa final (D11).
+- **Reintentos del cobro:** hoy el barrido reintenta un cobro pendiente cada 2 s sin límite. Con un proveedor real, hace falta espaciar los intentos y avisar al operador después de varios fallos.

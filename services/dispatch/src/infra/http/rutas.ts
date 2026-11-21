@@ -130,6 +130,25 @@ export function rutasDespacho(
     );
   }
 
+  // Cobrar ahora, sin esperar al barrido. Si ya está aprobado o rechazado, lo devuelve como está:
+  // nunca cobra dos veces. Proveedor caído: 503 y el cobro sigue PENDIENTE.
+  r.post(
+    '/solicitudes/:id/cobrar',
+    requerirRol('pasajero', 'operador', 'admin'),
+    validar({ params: ParamsId, body: SinBody }),
+    idempotente(),
+    async (req, res) => {
+      const usuario = usuarioDe(req);
+      res.json(
+        await casos.cobrarViaje({
+          solicitudId: req.params['id'] as string,
+          usuarioId: usuario.id,
+          veTodos: usuario.rol === 'operador' || usuario.rol === 'admin',
+        }),
+      );
+    },
+  );
+
   r.post(
     '/ofertas/:id/aceptar',
     requerirRol('chofer'),

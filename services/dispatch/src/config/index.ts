@@ -64,6 +64,12 @@ export const EsquemaConfig = z
     TARIFAS_CACHE_TTL_SEGUNDOS: vacioComoAusente(z.coerce.number().int().min(60).max(86_400).default(3600)),
     // Demora artificial del simulado, solo para demostrar el timeout. 0 en uso normal.
     MAPAS_LATENCIA_SIMULADA_MS: vacioComoAusente(z.coerce.number().int().min(0).max(30_000).default(0)),
+    // Pagos simulado. Si no contesta en PAGOS_TIMEOUT_MS, el cobro queda PENDIENTE (falla cerrado) y
+    // el barrido lo reintenta con la misma clave.
+    PAGOS_TIMEOUT_MS: vacioComoAusente(z.coerce.number().int().min(50).max(10_000).default(1000)),
+    PAGOS_LATENCIA_SIMULADA_MS: vacioComoAusente(z.coerce.number().int().min(0).max(30_000).default(0)),
+    // Para demostrar un rechazo: los cobros de más de este importe se rechazan. Vacío: aprueba todo.
+    PAGOS_RECHAZAR_DESDE_CENTAVOS: vacioComoAusente(z.coerce.number().int().min(0).max(TOPE_IMPORTE_CENTAVOS).optional()),
   })
   .refine((c) => c.DISPATCH_PERSISTENCIA !== 'postgres' || c.DATABASE_URL, {
     path: ['DATABASE_URL'],

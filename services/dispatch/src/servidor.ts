@@ -7,6 +7,9 @@ const config = cargarConfig(EsquemaConfig);
 const logger = crearLogger('dispatch', config.NIVEL_LOG);
 const sistema = componer(config, logger);
 const detenerBarrido = iniciarBarrido(sistema.casos.vencerOfertas, config.BARRIDO_INTERVALO_MS, logger);
+// El cobro de cada viaje completado: se procesa solo, sin que nadie lo pida. Si el proveedor no
+// contesta, el cobro sigue PENDIENTE y el próximo barrido lo reintenta con la misma clave.
+const detenerCobros = iniciarBarrido(() => sistema.casos.cobrarPendientes(), config.BARRIDO_INTERVALO_MS, logger, 'cobros procesados');
 
 const servidor = sistema.app.listen(config.PUERTO, () => {
   logger.info({ puerto: config.PUERTO, persistencia: config.DISPATCH_PERSISTENCIA, buscador: config.DISPATCH_BUSCADOR }, 'dispatch escuchando');
@@ -24,5 +27,5 @@ registrarApagadoOrdenado({
   servidor,
   logger,
   timeoutMs: config.APAGADO_TIMEOUT_MS,
-  alCerrar: [detenerBarrido, sistema.cerrar],
+  alCerrar: [detenerBarrido, detenerCobros, sistema.cerrar],
 });
