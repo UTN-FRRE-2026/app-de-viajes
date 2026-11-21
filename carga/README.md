@@ -53,8 +53,12 @@ Ningún archivo de resultados contiene tokens ni contraseñas.
 
 ## Apagar el entorno de carga
 
+Desde la raíz del repo, en la misma terminal de PowerShell:
+
 ```powershell
+$env:ESTRATEGIA = 'optimizada'
 docker compose -p viajes-carga -f carga/compose.yml --env-file carga/.secretos/carga.env down -v
 ```
 
-Ese `down -v` solo afecta al proyecto `viajes-carga`. Sus datos son descartables.
+- `compose.yml` exige `ESTRATEGIA` incluso para `down`: sin ella, Compose corta con «required variable ESTRATEGIA is missing a value». `medir.ps1` la define solo dentro de su propio proceso, así que en una terminal nueva hay que definirla antes. Para apagar, el valor no importa.
+- Ese `down -v` solo afecta al proyecto `viajes-carga`. Sus datos son descartables.
