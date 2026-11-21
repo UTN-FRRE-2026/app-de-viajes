@@ -21,6 +21,7 @@ import {
 import { Router } from 'express';
 import type { CasosDeUso } from '../../dominio/casos-uso/index.js';
 import type { QuienCancela } from '../../dominio/entidades/index.js';
+import type { StreamsEventos } from '../tiempo-real/sse.js';
 
 /** El admin cancela como operador: queda CANCELADO_OPERADOR y también tiene que dar motivo. */
 const QUIEN_CANCELA: Partial<Record<Rol, QuienCancela>> = {
@@ -38,10 +39,14 @@ const QUIEN_CANCELA: Partial<Record<Rol, QuienCancela>> = {
 export function rutasDespacho(
   casos: CasosDeUso,
   verificar: VerificadorToken,
+  streams: StreamsEventos,
   idempotente: ReturnType<typeof crearIdempotencia>,
 ): Router {
   const r = Router();
   r.use(autenticar(verificar));
+
+  // Tiempo real (SSE): los eventos de los viajes propios. El usuario sale del token.
+  r.get('/eventos', requerirRol('pasajero', 'chofer'), streams.manejador());
 
   r.post('/solicitudes', requerirRol('pasajero'), validar({ body: CrearSolicitudBody }), idempotente(201), async (req, res) => {
     const { origen, destino } = req.body as CrearSolicitudBody;

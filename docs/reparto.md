@@ -23,7 +23,8 @@ Cada integrante es **dueño** de un problema central y de los módulos que lo ro
 - [x] viajes: `EN_CAMINO`, `EN_CURSO`, `CANCELADO_CHOFER`, cancelación del operador con motivo, finalizar liberando al chofer en la misma transacción, y un test por transición.
 - [x] Historial por pasajero y por chofer; panel del operador con búsqueda.
 - [x] Idempotency-Key en `platform` (Redis `SET NX` + registro en la transacción del efecto), aplicada a los seis `POST` de dispatch.
-- [ ] SSE: relay del `outbox` a Redis Pub/Sub, suscripción solo a viajes propios y al canal de posición del chofer asignado, reconexión con `Last-Event-ID`.
+- [x] SSE: relay del `outbox` a Redis Pub/Sub, suscripción solo a viajes propios, reconexión con `Last-Event-ID` ([docs/eventos.md](eventos.md)).
+- [ ] SSE: canal de posición del chofer asignado, cuando location publique las posiciones (con Maxi).
 - [ ] Frontend: pantallas de pasajero y de operador.
 - [ ] Contenedor `web`: nginx que sirve el frontend y hace de reverse proxy a los tres servicios.
 - [ ] Despliegue y tag `congelado`.

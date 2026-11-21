@@ -78,6 +78,9 @@ model EventoOutbox {
   requestId   String?   @map("request_id")
   creadoEn    DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
   publicadoEn DateTime? @map("published_at") @db.Timestamptz(3)
+  // SSE: id del evento en el stream, y a quién se entrega (migración 20261124000000_tiempo_real).
+  seq           BigInt   @unique @default(autoincrement())
+  destinatarios String[] @default([]) @map("recipients") @db.Uuid
 
   @@index([publicadoEn, creadoEn])
   @@map("outbox")

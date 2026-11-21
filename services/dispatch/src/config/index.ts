@@ -36,6 +36,10 @@ export const EsquemaConfig = z
     OFERTAS_SIMULTANEAS: z.coerce.number().int().min(1).max(50).default(3),
     OFERTA_TTL_SEGUNDOS: z.coerce.number().int().min(1).default(15),
     BARRIDO_INTERVALO_MS: z.coerce.number().int().min(100).default(2000),
+    // Tiempo real (SSE): cada cuánto el relay publica lo nuevo del outbox (es la demora máxima de un
+    // evento), y cuántos streams puede tener abiertos cada usuario.
+    RELAY_INTERVALO_MS: z.coerce.number().int().min(20).max(5000).default(100),
+    SSE_MAX_POR_USUARIO: z.coerce.number().int().min(1).max(20).default(3),
     APAGADO_TIMEOUT_MS: z.coerce.number().int().positive().default(10_000),
     // Candidatos: `location` (el servicio real) o `fijo` (lista de DISPATCH_CANDIDATOS_DEMO, para demos sin location).
     DISPATCH_BUSCADOR: z.enum(['location', 'fijo']).default('location'),

@@ -206,7 +206,8 @@ El ADR 0006 registra la decisión con sus alternativas reales: monolito modular 
 - **Tiempo real por SSE**, en dispatch:
   - un relay lee el `outbox` y publica en Redis Pub/Sub; el endpoint SSE se suscribe solo a los viajes del usuario;
   - mientras el viaje está activo, el endpoint se suscribe también al canal de posición del chofer asignado, que publica location;
-  - al reconectar, el cliente pide el estado actual (`GET /viajes/:id`) y se vuelve a suscribir con `Last-Event-ID`.
+  - al reconectar, el cliente pide el estado actual (`GET /solicitudes/:id`) y se vuelve a suscribir con `Last-Event-ID`.
+  - **Hecho** (`GET /eventos`, detalle en `docs/eventos.md`), salvo la posición del chofer, que espera a que location la publique. Relay con `FOR UPDATE SKIP LOCKED`, un canal por usuario, reposición desde el outbox, descarte de repetidos, 3 streams por usuario (429), cierre al vencer el token y al apagar. Comprobado que los tests fallan sin el `SKIP LOCKED`, sin el filtro por destinatario, sin el descarte de repetidos y sin la espera durante la reposición.
 - **Inventario de carreras** (bloque 6, punto 1), en un ADR: aceptar contra aceptar, aceptar contra cancelar, chofer con dos viajes, pasajero con dos solicitudes, vencimiento contra aceptación, activación de choferes, email duplicado en el registro, clave de idempotencia duplicada y doble finalización con doble cobro.
 
 ## 4. Requisitos de ProgIV: estado al 13/11
@@ -237,7 +238,7 @@ El ADR 0006 registra la decisión con sus alternativas reales: monolito modular 
 | **6.4** Búsqueda, retención, privacidad | ⬜ | 3.2 |
 | **6.5** Tarifa | ✅ | Cálculo, estimación, configuración por el admin, tarifa final con por qué difiere, y cobro (3.4) |
 | **6.5** Oferta con vencimiento | ✅ | Barrido cada 2 s, TTL de 15 s |
-| **6.5** Tiempo real | ⬜ | 3.5 |
+| **6.5** Tiempo real | 🟡 | SSE con los eventos del viaje y reconexión con `Last-Event-ID` (3.5). Falta la posición del chofer en vivo, cuando location la publique |
 | **6.6** Simulador de 500 choferes y mediciones | ⬜ | 3.2 y 5.5 |
 | **6.7 G** Flotas y zonas | ⬜ | 3.3 |
 | **7.1** Seis ADR o más | 🟡 | Hay cuatro: 0001, 0004, 0005 y 0006 |
@@ -343,7 +344,7 @@ Al cerrar esta fase el sistema tiene que poder congelarse para el ataque cruzado
 
 - [x] `viajes`: estados completos, historial, panel del operador con búsqueda (Ivan).
 - [x] Idempotency-Key en `platform` y en los `POST` de dispatch (Ivan).
-- [ ] SSE (Ivan).
+- [x] SSE con los eventos del viaje y reconexión (Ivan). Falta sumar la posición del chofer cuando location la publique (Maxi, Ivan).
 - [ ] Zonas, candidatos filtrados por flota y zona, reporte, aislamiento entre flotas (Agos).
 - [ ] Seguridad transversal: CORS, rate limit, encabezados, log por pedido y los tests que faltan del bloque 5 (Agos).
 - [x] `tarifas`, cobro simulado y adaptadores de mapas y pagos con timeout: cálculo, estimación y mapas con timeout (Maxi); configuración por el admin con caché en Redis (Agostina); tarifa final, cobro y pagos (Ivan).

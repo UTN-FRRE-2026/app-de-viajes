@@ -9,19 +9,20 @@ export async function crearEmisorTokens() {
   const jwk = { ...(await exportJWK(publicKey)), kid: 'test', alg: 'RS256', use: 'sig' };
   const verificador: VerificadorToken = verificadorJwksLocal({ keys: [jwk] }, OPCIONES);
 
-  async function firmar(sub: string, rol: Rol): Promise<string> {
+  /** `vence`: cualquier duración de jose (`5m`, `2s`). */
+  async function firmar(sub: string, rol: Rol, vence = '5m'): Promise<string> {
     return new SignJWT({ rol })
       .setProtectedHeader({ alg: 'RS256', kid: 'test' })
       .setSubject(sub)
       .setIssuer(OPCIONES.issuer)
       .setAudience(OPCIONES.audience)
       .setIssuedAt()
-      .setExpirationTime('5m')
+      .setExpirationTime(vence)
       .sign(privateKey);
   }
 
-  async function auth(sub: string, rol: Rol): Promise<{ Authorization: string }> {
-    return { Authorization: `Bearer ${await firmar(sub, rol)}` };
+  async function auth(sub: string, rol: Rol, vence?: string): Promise<{ Authorization: string }> {
+    return { Authorization: `Bearer ${await firmar(sub, rol, vence)}` };
   }
 
   return { verificador, firmar, auth };

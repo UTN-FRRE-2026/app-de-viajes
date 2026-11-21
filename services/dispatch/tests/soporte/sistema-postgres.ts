@@ -11,6 +11,8 @@ import { RepositorioDespachoPrisma } from '../../src/infra/db/repositorio-prisma
 import { RepositorioTarifasPrisma, type OpcionesTarifasPrisma } from '../../src/infra/db/tarifas-prisma.js';
 import { cacheTarifasRedis, type CacheTarifas } from '../../src/infra/tarifas/proveedor-tarifas.js';
 import { BuscadorCandidatosFijo } from '../../src/infra/externos/buscador-fijo.js';
+import { BusEventosRedis } from '../../src/infra/tiempo-real/bus-redis.js';
+import { HistorialEventosPrisma, relayOutboxPrisma } from '../../src/infra/tiempo-real/outbox-prisma.js';
 import { conDemoraTrasLeer } from './demora.js';
 import { PagosFalso } from './pagos-falso.js';
 import { URL_BD_TEST } from './preparar-bd.js';
@@ -77,11 +79,14 @@ export async function levantarDispatch({
   const redis = new Redis(URL_REDIS_TEST, { maxRetriesPerRequest: 1 });
   const buscador = new BuscadorCandidatosFijo([]);
   const pagos = new PagosFalso();
+  const logger = crearLogger('dispatch-test', 'silent');
+  // Un prefijo por dispatch levantado: dos dispatch del mismo test no se mezclan los eventos.
+  const bus = new BusEventosRedis(redis, `dispatch-test:eventos:${randomUUID()}:`, logger);
   const repoTarifas = new RepositorioTarifasPrisma(prisma, tarifas.repo);
   // Un prefijo por dispatch levantado: los tests no ven el caché de otra corrida.
   const prefijoCache = tarifas.prefijoCache ?? `dispatch-test:tarifas:${randomUUID()}:`;
   const cacheReal = cacheTarifasRedis(redis, { prefijo: prefijoCache, ttlSegundos: 60, timeoutMs: 200 });
-  const sistema = componer(configTest({ ...tarifas.config, ...extra }), crearLogger('dispatch-test', 'silent'), {
+  const sistema = componer(configTest({ ...tarifas.config, ...extra }), logger, {
     verificador: tokens.verificador,
     buscador,
     repo: demoraTrasLeerMs
@@ -94,6 +99,7 @@ export async function levantarDispatch({
     repoTarifas,
     cacheTarifas: tarifas.cache ? tarifas.cache(cacheReal) : cacheReal,
     pagos,
+    eventos: { bus, historial: new HistorialEventosPrisma(prisma), relay: relayOutboxPrisma(prisma, bus) },
   });
 
   const servidor: Server = await new Promise((resolver) => {
@@ -107,7 +113,11 @@ export async function levantarDispatch({
     redis,
     buscador,
     pagos,
+    bus,
     casos: sistema.casos,
+    /** Publica lo pendiente del outbox, como hace el servidor cada RELAY_INTERVALO_MS. */
+    relay: sistema.relayEventos,
+    streams: sistema.streams,
     app: sistema.app,
     repoTarifas,
     prefijoCache,
@@ -122,6 +132,8 @@ export async function levantarDispatch({
       if (claves.length > 0) await redis.del(...claves);
     },
     async cerrar() {
+      sistema.streams.cerrarTodos();
+      await bus.cerrar();
       await new Promise<void>((r) => servidor.close(() => r()));
       await prisma.$disconnect();
       redis.disconnect();
