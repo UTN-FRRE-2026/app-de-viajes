@@ -12,6 +12,14 @@ const servidor = sistema.app.listen(config.PUERTO, () => {
   logger.info({ puerto: config.PUERTO, persistencia: config.DISPATCH_PERSISTENCIA, buscador: config.DISPATCH_BUSCADOR }, 'dispatch escuchando');
 });
 
+// Crea la versión 1 de la tarifa con los TARIFA_* del entorno si todavía no hay ninguna. Seguro ante
+// reinicios y arranques simultáneos; si falla (por ejemplo, Postgres todavía no responde), la primera
+// estimación o el GET del admin lo vuelven a intentar.
+sistema.casos
+  .obtenerTarifa()
+  .then((t) => logger.info({ version: t.version, configuradaPor: t.actualizadaPor }, 'tarifa vigente'))
+  .catch((err: unknown) => logger.warn({ err: err instanceof Error ? err.message : String(err) }, 'tarifa: no se pudo leer al arrancar'));
+
 registrarApagadoOrdenado({
   servidor,
   logger,

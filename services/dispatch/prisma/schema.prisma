@@ -85,3 +85,46 @@ model RegistroIdempotencia {
   @@index([creadoEn])
   @@map("idempotency_keys")
 }
+
+// Tarifa global versionada. Los CHECK (límites, una sola fila vigente, cadena del historial) están en
+// la migración 20261122000000_tarifas. Se escribe con SQL en infra/db/tarifas-prisma.ts.
+model TarifaVersion {
+  version         Int      @id
+  moneda          String   @default("ARS") @map("currency") @db.Char(3)
+  bajadaCentavos  Int      @map("base_fare_cents")
+  centavosPorKm   Int      @map("per_km_cents")
+  centavosPorMin  Int      @map("per_minute_cents")
+  minimoCentavos  Int      @map("minimum_cents")
+  maxMetros       Int      @map("max_meters")
+  creadaPor       String   @map("created_by")
+  creadaEn        DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  vigente  TarifaVigenteFila?
+  cambio   CambioTarifa?      @relation("cambio")
+  siguiente CambioTarifa?     @relation("anterior")
+
+  @@map("fare_versions")
+}
+
+model TarifaVigenteFila {
+  id            Boolean       @id @default(true)
+  version       Int           @unique
+  actualizadaEn DateTime      @default(now()) @map("updated_at") @db.Timestamptz(3)
+  tarifa        TarifaVersion @relation(fields: [version], references: [version])
+
+  @@map("fare_current")
+}
+
+model CambioTarifa {
+  version          Int            @id
+  versionAnterior  Int?           @unique @map("previous_version")
+  cambiadaPor      String         @map("changed_by")
+  cambiadaEn       DateTime       @default(now()) @map("changed_at") @db.Timestamptz(3)
+  valoresAnteriores Json?         @map("previous_values")
+  valoresNuevos    Json           @map("new_values")
+  requestId        String?        @map("request_id")
+  tarifa           TarifaVersion  @relation("cambio", fields: [version], references: [version])
+  anterior         TarifaVersion? @relation("anterior", fields: [versionAnterior], references: [version])
+
+  @@map("fare_changes")
+}

@@ -47,6 +47,7 @@ Cada integrante es **dueño** de un problema central y de los módulos que lo ro
 - [ ] Tests del bloque 5 que faltan: `constructor.prototype` y claves anidadas, inyección SQL en la búsqueda, rate limit en solicitud y ubicación, acceso a recursos ajenos en cada módulo.
 - [ ] Frontend: proyecto base (Vite, router, stores, cliente HTTP, componente de errores), login y pantallas de admin de flota.
 - [x] identity: logout y revocación. Lo hizo Maxi (#5).
+- [x] Tarifas, PR 2: configuración por el admin (`GET` y `PUT /admin/tarifas`), tarifa global versionada con auditoría, semilla desde el entorno y caché en Redis. Lo tomó del reparto de Maxi ([docs/tarifas.md](tarifas.md)).
 - [ ] Tabla de roles y permisos en el README.
 
 **Fase C y ataque cruzado**
@@ -68,10 +69,10 @@ Cada integrante es **dueño** de un problema central y de los módulos que lo ro
 **Fase B**
 - [ ] Publicación de cada posición en el canal de Redis del chofer; política de retención.
 - [x] tarifas en dispatch: una función en centavos enteros para estimación y tarifa final, con los tests de borde. Estimación por `GET /tarifas/estimacion` ([docs/tarifas.md](tarifas.md)).
-- [ ] Configuración de tarifas por el admin: versionada en Postgres, con Idempotency-Key y caché en Redis con invalidación.
+- [x] Configuración de tarifas por el admin: versionada en Postgres, con Idempotency-Key y caché en Redis con invalidación. **La tomó Agostina** (PR 2 de tarifas).
 - [ ] Cobro simulado idempotente (usa la Idempotency-Key de Ivan) que falla cerrado.
 - [ ] Puertos de mapas y pagos con timeout. Hecho: mapas (simulado, con timeout y falla cerrado). Falta: pagos.
-- [ ] Caché en Redis de tarifas y zonas, con invalidación.
+- [ ] Caché en Redis de tarifas y zonas, con invalidación. Hecho el de tarifas, por versión (Agostina, PR 2 de tarifas). Falta el de zonas.
 - [ ] Frontend: pantallas del chofer.
 
 **Fase C y ataque cruzado**

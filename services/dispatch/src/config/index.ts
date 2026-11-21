@@ -59,6 +59,9 @@ export const EsquemaConfig = z
     MAPAS_VELOCIDAD_KMH: vacioComoAusente(z.coerce.number().int().min(5).max(120).default(25)),
     // Si mapas no contesta en este tiempo, la estimación responde 503 (falla cerrado).
     MAPAS_TIMEOUT_MS: vacioComoAusente(z.coerce.number().int().min(50).max(10_000).default(1000)),
+    // Caché en Redis de los parámetros de cada versión de tarifa. Las versiones no cambian: el TTL
+    // solo limpia las que dejaron de usarse.
+    TARIFAS_CACHE_TTL_SEGUNDOS: vacioComoAusente(z.coerce.number().int().min(60).max(86_400).default(3600)),
     // Demora artificial del simulado, solo para demostrar el timeout. 0 en uso normal.
     MAPAS_LATENCIA_SIMULADA_MS: vacioComoAusente(z.coerce.number().int().min(0).max(30_000).default(0)),
   })

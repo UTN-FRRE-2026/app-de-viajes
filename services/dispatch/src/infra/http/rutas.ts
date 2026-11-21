@@ -1,5 +1,6 @@
 import {
   CancelarBody,
+  ConfigurarTarifaBody,
   CrearSolicitudBody,
   EstimacionQuery,
   HistorialQuery,
@@ -56,6 +57,18 @@ export function rutasDespacho(
       destino: { lat: destinoLat, lng: destinoLng },
     });
     res.set('Cache-Control', 'no-store').json(estimacion);
+  });
+
+  // Configuración de la tarifa: solo el admin. El GET devuelve la vigente con su versión.
+  r.get('/admin/tarifas', requerirRol('admin'), async (_req, res) => {
+    res.set('Cache-Control', 'no-store').json(await casos.obtenerTarifa());
+  });
+
+  // El PUT reemplaza la tarifa completa y devuelve la versión nueva. Moneda, versión y autor los pone el
+  // servidor (el autor sale del token). La versión, la auditoría y la Idempotency-Key van en una transacción.
+  r.put('/admin/tarifas', requerirRol('admin'), validar({ body: ConfigurarTarifaBody }), idempotente(), async (req, res) => {
+    const tarifa = await casos.configurarTarifa({ valores: req.body as ConfigurarTarifaBody, adminId: usuarioDe(req).id });
+    res.set('Cache-Control', 'no-store').json(tarifa);
   });
 
   // Historial propio: el usuario sale del token, así que nadie puede pedir el de otro.

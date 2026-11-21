@@ -17,7 +17,13 @@ import {
 import type { Express } from 'express';
 import { Redis } from 'ioredis';
 import { crearCasosDeUso, type CasosDeUso } from './dominio/casos-uso/index.js';
-import type { BuscadorCandidatos, ProveedorTarifas, RepositorioDespacho, ServicioMapas } from './dominio/puertos/index.js';
+import type {
+  BuscadorCandidatos,
+  ProveedorTarifas,
+  RepositorioDespacho,
+  RepositorioTarifas,
+  ServicioMapas,
+} from './dominio/puertos/index.js';
 import type { Config } from './config/index.js';
 import { crearPrisma } from './infra/db/cliente.js';
 import { RepositorioDespachoPrisma } from './infra/db/repositorio-prisma.js';
@@ -31,7 +37,11 @@ import { idsAleatorios, relojSistema } from './infra/externos/sistema.js';
 import { rutasDespacho } from './infra/http/rutas.js';
 import { metricasDespachoPrometheus } from './infra/metricas/prometheus.js';
 import { RepositorioDespachoMemoria } from './infra/memoria/repositorio-memoria.js';
-import { tarifasDesdeConfig } from './infra/tarifas/tarifas-config.js';
+import { RepositorioTarifasPrisma } from './infra/db/tarifas-prisma.js';
+import { RepositorioTarifasMemoria } from './infra/memoria/tarifas-memoria.js';
+import { contadorCacheTarifas } from './infra/metricas/prometheus.js';
+import { cacheTarifasRedis, ProveedorTarifasVersionadas, type CacheTarifas } from './infra/tarifas/proveedor-tarifas.js';
+import { semillaDesdeConfig } from './infra/tarifas/tarifas-config.js';
 
 /** Reemplazos para tests: cualquier adaptador se puede inyectar desde afuera. */
 export interface Reemplazos {
@@ -42,6 +52,9 @@ export interface Reemplazos {
   /** El mapas de adentro: el timeout y la falla cerrado se aplican igual (para probar caídas). */
   mapas?: ServicioMapas;
   tarifas?: ProveedorTarifas;
+  /** Sin este reemplazo, quien reemplaza el repo recibe la tarifa en memoria y sin caché. */
+  repoTarifas?: RepositorioTarifas;
+  cacheTarifas?: CacheTarifas | null;
   /** Sin este reemplazo, quien reemplaza el repo recibe la idempotencia en memoria. */
   idempotencia?: { almacen: AlmacenIdempotencia; cerrojo: CerrojoEnVuelo };
 }
@@ -83,6 +96,8 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
   let chequeos: ChequeoListo[] = [];
   let cerrar = async () => {};
   let idempotencia = reemplazos.idempotencia ?? { almacen: new AlmacenIdempotenciaMemoria(), cerrojo: new CerrojoMemoria() };
+  let repoTarifas: RepositorioTarifas = reemplazos.repoTarifas ?? new RepositorioTarifasMemoria();
+  let cacheTarifas: CacheTarifas | null = reemplazos.cacheTarifas ?? null;
 
   if (reemplazos.repo) {
     repo = reemplazos.repo;
@@ -96,6 +111,12 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
       almacen: new AlmacenIdempotenciaPrisma(prisma),
       cerrojo: cerrojoRedis(redis, 'dispatch:idempotencia:'),
     };
+    repoTarifas = reemplazos.repoTarifas ?? new RepositorioTarifasPrisma(prisma);
+    // El mismo Redis que la idempotencia. Tiempo límite corto: si no responde, se lee Postgres.
+    cacheTarifas =
+      reemplazos.cacheTarifas === undefined
+        ? cacheTarifasRedis(redis, { prefijo: 'dispatch:tarifas:', ttlSegundos: config.TARIFAS_CACHE_TTL_SEGUNDOS, timeoutMs: 200 })
+        : reemplazos.cacheTarifas;
     chequeos = [...chequeosBase(prisma, carpetaMigraciones), chequeoRedis(redis)];
     cerrar = async () => {
       redis.disconnect();
@@ -115,17 +136,25 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
     config.MAPAS_TIMEOUT_MS,
     logger,
   );
-  const tarifas =
-    reemplazos.tarifas ??
-    tarifasDesdeConfig({
-      bajadaCentavos: config.TARIFA_BAJADA_CENTAVOS,
-      centavosPorKm: config.TARIFA_CENTAVOS_POR_KM,
-      centavosPorMinuto: config.TARIFA_CENTAVOS_POR_MINUTO,
-      minimoCentavos: config.TARIFA_MINIMO_CENTAVOS,
-      maxMetros: config.TARIFA_MAX_METROS,
-    });
+  // Los TARIFA_* del entorno solo son la semilla: crean la versión 1 si todavía no existe.
+  const semillaTarifa = semillaDesdeConfig({
+    bajadaCentavos: config.TARIFA_BAJADA_CENTAVOS,
+    centavosPorKm: config.TARIFA_CENTAVOS_POR_KM,
+    centavosPorMinuto: config.TARIFA_CENTAVOS_POR_MINUTO,
+    minimoCentavos: config.TARIFA_MINIMO_CENTAVOS,
+    maxMetros: config.TARIFA_MAX_METROS,
+  });
 
   const metricas = crearMetricas({ servicio: 'dispatch' });
+  const tarifas =
+    reemplazos.tarifas ??
+    new ProveedorTarifasVersionadas({
+      repo: repoTarifas,
+      semilla: semillaTarifa,
+      cache: cacheTarifas,
+      logger,
+      alLeerCache: contadorCacheTarifas(metricas),
+    });
   const casos = crearCasosDeUso({
     repo,
     buscador: reemplazos.buscador ?? crearBuscador(config, logger),
@@ -138,6 +167,8 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
     metricas: metricasDespachoPrometheus(metricas),
     mapas,
     tarifas,
+    repoTarifas,
+    semillaTarifa,
   });
 
   const verificador =

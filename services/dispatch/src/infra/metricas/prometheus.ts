@@ -1,5 +1,18 @@
 import { Counter, Histogram, type Metricas } from '@viajes/platform';
 import type { MetricasDespacho } from '../../dominio/puertos/index.js';
+import type { ResultadoCache } from '../tarifas/proveedor-tarifas.js';
+
+/** Caché de tarifas: HIT, MISS y errores (cuando Redis falla y se lee Postgres). */
+export function contadorCacheTarifas({ registro }: Metricas): (resultado: ResultadoCache) => void {
+  const lecturas = new Counter({
+    name: 'dispatch_tarifas_cache_total',
+    help: 'Lecturas del caché de tarifas: hit, miss, o error (se usó Postgres).',
+    labelNames: ['resultado'] as const,
+    registers: [registro],
+  });
+  for (const r of ['hit', 'miss', 'error'] as const) lecturas.inc({ resultado: r }, 0);
+  return (resultado) => lecturas.inc({ resultado });
+}
 
 /** Métricas de negocio de dispatch, en el mismo Registry que las comunes de `platform`. */
 export function metricasDespachoPrometheus({ registro }: Metricas): MetricasDespacho {
