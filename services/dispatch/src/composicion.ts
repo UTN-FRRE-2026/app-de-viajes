@@ -16,22 +16,27 @@ import {
 } from '@viajes/platform';
 import type { Express } from 'express';
 import { Redis } from 'ioredis';
+import { crearCasosDeFlotas, type CasosDeFlotas } from './dominio/casos-uso/flotas.js';
 import { crearCasosDeUso, type CasosDeUso } from './dominio/casos-uso/index.js';
 import type {
   BuscadorCandidatos,
+  DirectorioUsuarios,
   ProcesadorPagos,
   ProveedorTarifas,
   RepositorioDespacho,
+  RepositorioFlotas,
   RepositorioTarifas,
   ServicioMapas,
 } from './dominio/puertos/index.js';
 import type { Config } from './config/index.js';
 import { crearPrisma } from './infra/db/cliente.js';
 import { RepositorioDespachoPrisma } from './infra/db/repositorio-prisma.js';
+import { RepositorioFlotasPrisma } from './infra/db/flotas-prisma.js';
 import { AlmacenIdempotenciaPrisma } from './infra/db/idempotencia-prisma.js';
 import { chequeoRedis, chequeosBase } from './infra/db/salud.js';
 import { BuscadorCandidatosFijo } from './infra/externos/buscador-fijo.js';
 import { BuscadorCandidatosLocation } from './infra/externos/buscador-location.js';
+import { DirectorioIdentity } from './infra/externos/directorio-identity.js';
 import { MapasConTimeout } from './infra/externos/mapas-con-timeout.js';
 import { MapasSimulado } from './infra/externos/mapas-simulado.js';
 import { PagosConTimeout } from './infra/externos/pagos-con-timeout.js';
@@ -40,6 +45,7 @@ import { idsAleatorios, relojSistema } from './infra/externos/sistema.js';
 import { rutasDespacho } from './infra/http/rutas.js';
 import { metricasDespachoPrometheus } from './infra/metricas/prometheus.js';
 import { RepositorioDespachoMemoria } from './infra/memoria/repositorio-memoria.js';
+import { RepositorioFlotasMemoria } from './infra/memoria/flotas-memoria.js';
 import { RepositorioTarifasPrisma } from './infra/db/tarifas-prisma.js';
 import { RepositorioTarifasMemoria } from './infra/memoria/tarifas-memoria.js';
 import { contadorCacheTarifas } from './infra/metricas/prometheus.js';
@@ -70,6 +76,10 @@ export interface Reemplazos {
   idempotencia?: { almacen: AlmacenIdempotencia; cerrojo: CerrojoEnVuelo };
   /** Sin este reemplazo, quien reemplaza el repo recibe un bus en memoria sin historial. */
   eventos?: TiempoReal;
+  /** Sin este reemplazo, quien reemplaza el repo recibe las flotas en memoria. */
+  repoFlotas?: RepositorioFlotas;
+  /** Las cuentas de identity (el alta de choferes): en los tests, uno falso. */
+  directorio?: DirectorioUsuarios;
 }
 
 /** El tiempo real: el bus en vivo, el historial para reponer y el relay del outbox. */
@@ -82,7 +92,9 @@ export interface TiempoReal {
 export interface Sistema {
   app: Express;
   casos: CasosDeUso;
+  casosFlotas: CasosDeFlotas;
   repo: RepositorioDespacho;
+  repoFlotas: RepositorioFlotas;
   /** Lo corre el servidor cada RELAY_INTERVALO_MS; los tests, cuando lo necesitan. */
   relayEventos: RelayEventos;
   streams: StreamsEventos;
@@ -131,6 +143,7 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
   let idempotencia = reemplazos.idempotencia ?? { almacen: new AlmacenIdempotenciaMemoria(), cerrojo: new CerrojoMemoria() };
   let repoTarifas: RepositorioTarifas = reemplazos.repoTarifas ?? new RepositorioTarifasMemoria();
   let cacheTarifas: CacheTarifas | null = reemplazos.cacheTarifas ?? null;
+  let repoFlotas: RepositorioFlotas = reemplazos.repoFlotas ?? new RepositorioFlotasMemoria();
 
   let tiempoReal: TiempoReal | undefined = reemplazos.eventos;
 
@@ -147,6 +160,7 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
       cerrojo: cerrojoRedis(redis, 'dispatch:idempotencia:'),
     };
     repoTarifas = reemplazos.repoTarifas ?? new RepositorioTarifasPrisma(prisma);
+    repoFlotas = reemplazos.repoFlotas ?? new RepositorioFlotasPrisma(prisma);
     // El mismo Redis que la idempotencia. Tiempo límite corto: si no responde, se lee Postgres.
     cacheTarifas =
       reemplazos.cacheTarifas === undefined
@@ -230,6 +244,19 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
     semillaTarifa,
   });
 
+  // Flotas: el alta de un chofer verifica la cuenta en identity (falla cerrado si no responde).
+  const casosFlotas = crearCasosDeFlotas({
+    repoFlotas,
+    directorio:
+      reemplazos.directorio ??
+      new DirectorioIdentity({
+        urlBase: config.IDENTITY_URL,
+        tokenServicio: config.IDENTITY_TOKEN_SERVICIO,
+        timeoutMs: config.IDENTITY_TIMEOUT_MS,
+        logger,
+      }),
+  });
+
   const verificador =
     reemplazos.verificador ??
     verificadorJwks(config.JWKS_URL, { issuer: config.JWT_ISSUER, audience: config.JWT_AUDIENCE });
@@ -241,6 +268,7 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
       verificador,
       streams,
       crearIdempotencia({ ...idempotencia, ttlEnVueloMs: config.IDEMPOTENCIA_EN_VUELO_SEGUNDOS * 1000 }),
+      casosFlotas,
     ),
     chequeos,
     metricas: { metricas, token: config.METRICAS_TOKEN },
@@ -249,7 +277,9 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
   return {
     app,
     casos,
+    casosFlotas,
     repo,
+    repoFlotas,
     relayEventos: eventos.relay,
     streams,
     cerrar: async () => {

@@ -37,13 +37,13 @@ Cada integrante es **dueño** de un problema central y de los módulos que lo ro
 ## Agos
 
 **Fase A**
-- [ ] flotas en dispatch: choferes, vehículos, habilitación por el admin, disponible / no disponible.
-- [ ] Flotas con `admin_flota` y **carrera G**: `UPDATE ... WHERE active_count < max_active` + `CHECK`, con el test de 50 activaciones contra límite 10.
+- [x] flotas en dispatch: choferes, vehículos, habilitación por el admin, disponible / no disponible ([docs/flotas.md](flotas.md)).
+- [x] Flotas con `admin_flota` y **carrera G**: `UPDATE ... WHERE active_count < max_active` + `CHECK`, con el test de 50 activaciones contra límite 10.
 - [ ] ADR 0002 (Postgres + Prisma) y 0003 (JWT y autorización por recurso).
 
 **Fase B**
 - [ ] Zonas (PostGIS), zonas habilitadas por flota y filtro en dispatch de los candidatos que devuelve location, por flota y zona (con Ivan).
-- [ ] Aislamiento por `fleetId` en el caso de uso (404 a otra flota, con test) y reporte por flota.
+- [ ] Aislamiento por `fleetId` en el caso de uso (404 a otra flota, con test) y reporte por flota. Hecho: el aislamiento. Falta: el reporte.
 - [ ] En `platform`, para los tres servicios: helmet, CORS restringido, rate limit genérico con 429 y encabezados, validación de encabezados y log por pedido.
 - [ ] Tests del bloque 5 que faltan: `constructor.prototype` y claves anidadas, inyección SQL en la búsqueda, rate limit en solicitud y ubicación, acceso a recursos ajenos en cada módulo.
 - [ ] Frontend: proyecto base (Vite, router, stores, cliente HTTP, componente de errores), login y pantallas de admin de flota.

@@ -105,7 +105,7 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
   const metricas = crearMetricas({ servicio: 'identity' });
   const app = crearApp({
     logger,
-    rutas: rutasIdentidad(casos, limitador, logger),
+    rutas: rutasIdentidad(casos, limitador, logger, config.IDENTITY_TOKEN_SERVICIO),
     chequeos,
     metricas: { metricas, token: config.METRICAS_TOKEN },
   });

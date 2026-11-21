@@ -25,3 +25,10 @@ export class RefreshInvalido extends ErrorDeDominio {
     super('REFRESH_INVALIDO', 'NO_AUTENTICADO', 'La sesión no es válida. Volvé a iniciar sesión');
   }
 }
+
+/** Consulta interna de otro servicio por un id que no existe. */
+export class UsuarioNoEncontrado extends ErrorDeDominio {
+  constructor() {
+    super('USUARIO_NO_ENCONTRADO', 'NO_ENCONTRADO', 'El usuario no existe');
+  }
+}

@@ -46,6 +46,8 @@ services:
       METRICAS_TOKEN: ${METRICAS_TOKEN:-}
       # Con :- y no :? para que `npm run infra:up` funcione sin la clave. Si falta, identity no arranca y lo dice.
       IDENTITY_JWT_CLAVE_PRIVADA_B64: ${IDENTITY_JWT_CLAVE_PRIVADA_B64:-}
+      # Secreto de /interno/usuarios/:id (lo usa dispatch). Con :-: si falta, identity no arranca y lo dice.
+      IDENTITY_TOKEN_SERVICIO: ${IDENTITY_TOKEN_SERVICIO:-}
     ports:
       - "3001:3001"
     depends_on:
@@ -105,6 +107,10 @@ services:
       LOCATION_TIMEOUT_MS: ${LOCATION_TIMEOUT_MS:-1000}
       DISPATCH_RADIO_BUSQUEDA_METROS: ${DISPATCH_RADIO_BUSQUEDA_METROS:-5000}
       DISPATCH_CANDIDATOS_DEMO: ${DISPATCH_CANDIDATOS_DEMO:-}
+      # Flotas: el alta de un chofer verifica la cuenta en identity (red interna; /interno/* no se publica).
+      IDENTITY_URL: http://identity:3001
+      IDENTITY_TOKEN_SERVICIO: ${IDENTITY_TOKEN_SERVICIO:-}
+      IDENTITY_TIMEOUT_MS: ${IDENTITY_TIMEOUT_MS:-1000}
       # Tarifa y mapas (docs/tarifas.md). Con :- y sin valor: si no están en el .env, llegan vacías y
       # dispatch usa sus valores por defecto, que se definen en un solo lugar (src/config).
       TARIFA_BAJADA_CENTAVOS: ${TARIFA_BAJADA_CENTAVOS:-}

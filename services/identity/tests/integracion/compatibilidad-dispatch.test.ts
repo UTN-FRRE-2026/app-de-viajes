@@ -83,6 +83,9 @@ beforeAll(async () => {
       JWT_ISSUER: ISSUER,
       JWT_AUDIENCE: AUDIENCE,
       METRICAS_TOKEN: randomBytes(32).toString('base64url'),
+      // Flotas: dispatch verifica las cuentas contra este identity, con su token de servicio.
+      IDENTITY_URL: d.url,
+      IDENTITY_TOKEN_SERVICIO: d.config.IDENTITY_TOKEN_SERVICIO,
     },
     stdio: ['ignore', 'ignore', 'pipe'],
   });
@@ -128,6 +131,44 @@ describe('dispatch real acepta los tokens de identity', () => {
     // 404 y no 401: dispatch autenticó el token y buscó la solicitud.
     const lectura = await request(urlDispatch).get(`/solicitudes/${randomUUID()}`).set('Authorization', `Bearer ${res.body.token}`);
     expect(lectura.status).toBe(404);
+  });
+});
+
+// El alta de un chofer en una flota: dispatch le pregunta a identity (GET /interno/usuarios/:id) si la
+// cuenta existe y es de chofer. Acá los dos son reales: el token de servicio, la ruta y el contrato.
+describe('dispatch real verifica en identity la cuenta del chofer que se da de alta', () => {
+  const FLOTA = '00000000-0000-4000-8000-0000000000f1';
+  const alta = async (choferId: string, patente: string) =>
+    request(urlDispatch)
+      .post('/flota/choferes')
+      .set('Authorization', `Bearer ${await tokenDe('admin.flota@viajes.test')}`)
+      .set('Idempotency-Key', randomUUID())
+      .send({ choferId, vehiculo: { patente, marca: 'Fiat', modelo: 'Cronos' } });
+
+  beforeAll(async () => {
+    await sembrarUsuarios(d.prisma, new HasherArgon2(), CONTRASENA);
+    const res = await request(urlDispatch)
+      .put(`/admin/flotas/${FLOTA}`)
+      .set('Authorization', `Bearer ${await tokenDe('admin@viajes.test')}`)
+      .set('Idempotency-Key', randomUUID())
+      .send({ nombre: 'Flota demo', maxActivos: 2 });
+    expect(res.status).toBe(200);
+  });
+
+  it('una cuenta real de chofer → 201', async () => {
+    const { id } = await d.prisma.usuario.findUniqueOrThrow({ where: { email: 'beto@viajes.test' } });
+    const res = await alta(id, 'AC123BD');
+    expect(res.status).toBe(201);
+    expect(res.body).toMatchObject({ id, flotaId: FLOTA, habilitado: false, activo: false });
+  });
+
+  it('un UUID que no existe en identity y la cuenta de un pasajero → 422', async () => {
+    const { id: pasajero } = await d.prisma.usuario.findUniqueOrThrow({ where: { email: 'ana@viajes.test' } });
+    for (const choferId of [randomUUID(), pasajero]) {
+      const res = await alta(choferId, 'AC124BD');
+      expect(res.status).toBe(422);
+      expect(res.body.error.code).toBe('CUENTA_NO_ES_CHOFER');
+    }
   });
 });
 

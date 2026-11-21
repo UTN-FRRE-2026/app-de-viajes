@@ -178,6 +178,7 @@ El ADR 0006 registra la decisión con sus alternativas reales: monolito modular 
 - Zonas operativas: polígonos en PostGIS. Se resuelve la zona del origen una vez por solicitud y se ofrece solo a choferes de flotas con esa zona habilitada.
 - **Carrera G:** `UPDATE fleets SET active_count = active_count + 1 WHERE id = $1 AND active_count < max_active RETURNING ...`, más `CHECK (active_count <= max_active)`. Test: 50 activaciones simultáneas con límite 10 dejan exactamente 10.
 - Reporte por flota: choferes activos, viajes y facturación.
+- **Hecho (PR 1 de flotas, Agostina):** flotas con límite (`PUT /admin/flotas/:id`), alta de choferes con vehículo (la cuenta se verifica en identity con `GET /interno/usuarios/:id`), habilitación por el admin, activación por el admin_flota con la carrera G, disponibilidad del chofer y aislamiento por `fleetId` en el caso de uso. Test de 50 activaciones contra límite 10 contra Postgres, con mutaciones comprobadas. Detalle en `docs/flotas.md`. **Falta:** zonas (PostGIS), filtro de candidatos por flota y zona, y el reporte.
 
 ### 3.4 dispatch · tarifas
 
@@ -221,7 +222,7 @@ El ADR 0006 registra la decisión con sus alternativas reales: monolito modular 
 | **B3** Configuración y ciclo de vida | ✅ | Preparar la demo de SIGTERM con un pedido lento |
 | **B4** Errores y logs | 🟡 | No hay **log por pedido** (método, ruta, estado, duración): hoy solo se loguean los errores, y no se puede relacionar pedido y error por `requestId` |
 | **B5** Autenticación | ✅ | argon2id con costo declarado, RS256 |
-| **B5** Autorización por recurso | 🟡 | Hecha y testeada en viajes e historial. Falta en flotas y location |
+| **B5** Autorización por recurso | 🟡 | Hecha y testeada en viajes, historial y flotas (`fleetId` del token, 404 a otra flota, en el caso de uso). Falta en location |
 | **B5** Tres roles con tabla en el README | 🟡 | Hay cinco roles en código; falta la tabla |
 | **B5** Validación con esquema | ✅ | Cuerpo, parámetros, query y encabezados (`Idempotency-Key`, con test de cada formato inválido) |
 | **B5** Prototype pollution | 🟡 | Solo se prueba `__proto__` en la raíz. Falta `constructor.prototype` y posiciones anidadas |
@@ -233,14 +234,14 @@ El ADR 0006 registra la decisión con sus alternativas reales: monolito modular 
 | **B6** Idempotencia | 🟡 | Hecha en los `POST` de dispatch, el `PUT` de tarifas y el cobro, que además usa el id del cobro como clave con el proveedor (3.5). Falta en el registro de identity y la activación de chofer, y el ADR 0010 |
 | **B7** Tarea pesada, dos versiones, medida | ⬜ | 3.2. Es lo que se muestra en el Control 3 |
 | **B8** Tres niveles de tests, un comando | ✅ | Sostenerlo |
-| **6.2** Alcance funcional | 🟡 | Hecho: registro, login, solicitud, ofertas, ubicación, estados completos del viaje, estimación de tarifa (`GET /tarifas/estimacion`), tarifa final y cobro, historial, panel. Falta: vehículo y habilitación, disponibilidad, seguimiento |
+| **6.2** Alcance funcional | 🟡 | Hecho: registro, login, solicitud, ofertas, ubicación, estados completos del viaje, estimación de tarifa (`GET /tarifas/estimacion`), tarifa final y cobro, historial, panel. flotas con vehículo, habilitación y disponibilidad del chofer. Falta: seguimiento |
 | **6.3** ADR + 3 tests | ✅ | — |
 | **6.4** Búsqueda, retención, privacidad | ⬜ | 3.2 |
 | **6.5** Tarifa | ✅ | Cálculo, estimación, configuración por el admin, tarifa final con por qué difiere, y cobro (3.4) |
 | **6.5** Oferta con vencimiento | ✅ | Barrido cada 2 s, TTL de 15 s |
 | **6.5** Tiempo real | 🟡 | SSE con los eventos del viaje y reconexión con `Last-Event-ID` (3.5). Falta la posición del chofer en vivo: location ya la publica en Redis; falta que dispatch se suscriba |
 | **6.6** Simulador de 500 choferes y mediciones | ⬜ | 3.2 y 5.5 |
-| **6.7 G** Flotas y zonas | ⬜ | 3.3 |
+| **6.7 G** Flotas y zonas | 🟡 | Hecho: flotas, choferes con vehículo, habilitación, disponibilidad, límite de activos con la carrera G (test de 50 contra 10) y aislamiento entre flotas (3.3, `docs/flotas.md`). Falta: zonas en PostGIS, filtro de candidatos por flota y zona, y reporte |
 | **7.1** Seis ADR o más | 🟡 | Hay cuatro: 0001, 0004, 0005 y 0006 |
 | **7.2** `docs/mediciones.md` | ⬜ | Cubre la tarea pesada **y también la carrera principal** |
 | **7.3** Historial de Git | 🟡 | **Maxi todavía no tiene commits.** El PR #1 se mergeó sin revisión |
@@ -335,7 +336,7 @@ Es lo que pide el Control 3: carrera principal con su test (ya está) y tarea pe
 - [x] Contrato de `GET /interno/candidatos` en `contracts` y adaptador HTTP con timeout en dispatch (Ivan, Maxi).
 - [x] location en sus dos versiones, con adaptador en memoria primero (Agos #7, Maxi #8).
 - [ ] `carga/choferes.js`, `carga/solicitudes.js`, `/metrics` con el lag y **primera medición** en `docs/mediciones.md` (Maxi). Hecho: `carga/ubicaciones.js`, la primera medición y `/metrics` en los tres servicios desde `platform`, con el tiempo hasta la asignación en dispatch. Falta: `carga/solicitudes.js`.
-- [ ] flotas en dispatch: choferes, vehículos, flotas y la carrera G con su test (Agos).
+- [x] flotas en dispatch: choferes, vehículos, flotas y la carrera G con su test (Agos, PR 1 de flotas).
 - [ ] ADR 0001, 0002, 0003, 0005 y 0006; 0004 con el formato corregido. Hechos: 0001, 0004, 0005 y 0006. Faltan 0002 y 0003 (Agos).
 
 ### Fase B — sistema completo y publicado
@@ -345,7 +346,7 @@ Al cerrar esta fase el sistema tiene que poder congelarse para el ataque cruzado
 - [x] `viajes`: estados completos, historial, panel del operador con búsqueda (Ivan).
 - [x] Idempotency-Key en `platform` y en los `POST` de dispatch (Ivan).
 - [x] SSE con los eventos del viaje y reconexión (Ivan). Falta sumar la posición del chofer: location ya la publica (Maxi); falta la suscripción en dispatch (Ivan).
-- [ ] Zonas, candidatos filtrados por flota y zona, reporte, aislamiento entre flotas (Agos).
+- [ ] Zonas, candidatos filtrados por flota y zona, reporte, aislamiento entre flotas (Agos). Hecho: el aislamiento entre flotas (PR 1 de flotas). Falta: zonas, filtro y reporte.
 - [ ] Seguridad transversal: CORS, rate limit, encabezados, log por pedido y los tests que faltan del bloque 5 (Agos).
 - [x] `tarifas`, cobro simulado y adaptadores de mapas y pagos con timeout: cálculo, estimación y mapas con timeout (Maxi); configuración por el admin con caché en Redis (Agostina); tarifa final, cobro y pagos (Ivan).
 - [ ] Caché en Redis, retención de ubicaciones y privacidad del seguimiento (Maxi).

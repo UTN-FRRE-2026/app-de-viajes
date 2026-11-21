@@ -121,6 +121,8 @@ export interface OpcionesIdempotencia {
 /**
  * Devuelve un armador de middlewares: `idempotente(201)` para una ruta que crea, `idempotente()` para
  * el resto. Va después de autenticar, del rol y de `validar`: un pedido rechazado no ocupa la clave.
+ * Una ruta puede usar otro `alcance` (por ejemplo, usuario y flota): una clave guardada en un alcance
+ * nunca se repite en otro.
  */
 export function crearIdempotencia({
   almacen,
@@ -128,14 +130,14 @@ export function crearIdempotencia({
   ttlEnVueloMs = 30_000,
   alcance = (req) => usuarioDe(req).id,
 }: OpcionesIdempotencia) {
-  return (estado = 200): RequestHandler =>
+  return (estado = 200, opciones: { alcance?: (req: Request) => string } = {}): RequestHandler =>
     async (req, res, next) => {
       const leida = ClaveIdempotencia.safeParse(req.header(ENCABEZADO_IDEMPOTENCIA));
       if (!leida.success) {
         throw new ErrorHttp(400, 'CLAVE_IDEMPOTENCIA_INVALIDA', `${ENCABEZADO_IDEMPOTENCIA}: ${leida.error.issues[0]?.message}`);
       }
       const pedido: PedidoIdempotente = {
-        alcance: alcance(req),
+        alcance: (opciones.alcance ?? alcance)(req),
         clave: leida.data,
         huella: huellaDe(req),
         estado,

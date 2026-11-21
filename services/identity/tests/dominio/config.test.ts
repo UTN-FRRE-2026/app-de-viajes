@@ -14,6 +14,7 @@ const base = {
   JWT_AUDIENCE: 'viajes',
   IDENTITY_JWT_CLAVE_PRIVADA_B64: CLAVE,
   METRICAS_TOKEN: 'm'.repeat(40),
+  IDENTITY_TOKEN_SERVICIO: 's'.repeat(40),
 };
 
 const variablesConError = (entorno: Record<string, string | undefined>) => {
@@ -30,6 +31,11 @@ describe('configuración', () => {
   it('sin token de métricas, o con uno corto, nombra la variable', () => {
     expect(variablesConError({ ...base, METRICAS_TOKEN: undefined })).toEqual(['METRICAS_TOKEN']);
     expect(variablesConError({ ...base, METRICAS_TOKEN: 'corto' })).toEqual(['METRICAS_TOKEN']);
+  });
+
+  it('sin token de servicio, o con uno corto, nombra la variable', () => {
+    expect(variablesConError({ ...base, IDENTITY_TOKEN_SERVICIO: undefined })).toEqual(['IDENTITY_TOKEN_SERVICIO']);
+    expect(variablesConError({ ...base, IDENTITY_TOKEN_SERVICIO: 'corto' })).toEqual(['IDENTITY_TOKEN_SERVICIO']);
   });
 
   it('sin clave privada nombra la variable', () => {

@@ -2,10 +2,10 @@
 // para que el SQL crudo de los locks no necesite casts de enums de Postgres.
 
 generator client {
-  provider               = "prisma-client"
-  output                 = "../src/infra/db/generated"
-  moduleFormat           = "esm"
-  importFileExtension    = "js"
+  provider            = "prisma-client"
+  output              = "../src/infra/db/generated"
+  moduleFormat        = "esm"
+  importFileExtension = "js"
 }
 
 datasource db {
@@ -13,29 +13,29 @@ datasource db {
 }
 
 model SolicitudViaje {
-  id            String   @id @db.Uuid
-  pasajeroId    String   @map("passenger_id") @db.Uuid
-  estado        String   @map("status")
-  origenLat     Float    @map("origin_lat")
-  origenLng     Float    @map("origin_lng")
-  destinoLat    Float    @map("destination_lat")
-  destinoLng    Float    @map("destination_lng")
-  choferId      String?  @map("driver_id") @db.Uuid
-  motivoCancelacion String? @map("cancel_reason")
+  id                String    @id @db.Uuid
+  pasajeroId        String    @map("passenger_id") @db.Uuid
+  estado            String    @map("status")
+  origenLat         Float     @map("origin_lat")
+  origenLng         Float     @map("origin_lng")
+  destinoLat        Float     @map("destination_lat")
+  destinoLng        Float     @map("destination_lng")
+  choferId          String?   @map("driver_id") @db.Uuid
+  motivoCancelacion String?   @map("cancel_reason")
   // Tarifa: la estimación al crear y la final al completar (CHECKs en la migración 20261123000000).
   // Importes en BigInt: una tarifa alta pasa el máximo de Int (migración 20261125000000).
-  tarifaVersion        String?   @map("fare_version")
-  estimadaCentavos     BigInt?   @map("estimated_fare_cents")
-  estimadaMetros       Int?      @map("estimated_distance_m")
-  estimadaSegundos     Int?      @map("estimated_duration_s")
-  finalCentavos        BigInt?   @map("final_fare_cents")
-  finalMetros          Int?      @map("final_distance_m")
-  finalSegundos        Int?      @map("final_duration_s")
-  motivosDiferencia    String[]  @default([]) @map("fare_difference_reasons")
-  iniciadoEn           DateTime? @map("started_at") @db.Timestamptz(3)
-  version       Int      @default(0)
-  creadaEn      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
-  actualizadaEn DateTime @default(now()) @map("updated_at") @db.Timestamptz(3)
+  tarifaVersion     String?   @map("fare_version")
+  estimadaCentavos  BigInt?   @map("estimated_fare_cents")
+  estimadaMetros    Int?      @map("estimated_distance_m")
+  estimadaSegundos  Int?      @map("estimated_duration_s")
+  finalCentavos     BigInt?   @map("final_fare_cents")
+  finalMetros       Int?      @map("final_distance_m")
+  finalSegundos     Int?      @map("final_duration_s")
+  motivosDiferencia String[]  @default([]) @map("fare_difference_reasons")
+  iniciadoEn        DateTime? @map("started_at") @db.Timestamptz(3)
+  version           Int       @default(0)
+  creadaEn          DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  actualizadaEn     DateTime  @default(now()) @map("updated_at") @db.Timestamptz(3)
 
   ofertas    Oferta[]
   asignacion AsignacionActiva?
@@ -73,15 +73,15 @@ model AsignacionActiva {
 }
 
 model EventoOutbox {
-  id          String    @id @db.Uuid
-  tipo        String    @map("type")
-  payload     Json
-  requestId   String?   @map("request_id")
-  creadoEn    DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
-  publicadoEn DateTime? @map("published_at") @db.Timestamptz(3)
+  id            String    @id @db.Uuid
+  tipo          String    @map("type")
+  payload       Json
+  requestId     String?   @map("request_id")
+  creadoEn      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  publicadoEn   DateTime? @map("published_at") @db.Timestamptz(3)
   // SSE: id del evento en el stream, y a quién se entrega (migración 20261124000000_tiempo_real).
-  seq           BigInt   @unique @default(autoincrement())
-  destinatarios String[] @default([]) @map("recipients") @db.Uuid
+  seq           BigInt    @unique @default(autoincrement())
+  destinatarios String[]  @default([]) @map("recipients") @db.Uuid
 
   @@index([publicadoEn, creadoEn])
   @@map("outbox")
@@ -104,19 +104,19 @@ model RegistroIdempotencia {
 // Tarifa global versionada. Los CHECK (límites, una sola fila vigente, cadena del historial) están en
 // la migración 20261122000000_tarifas. Se escribe con SQL en infra/db/tarifas-prisma.ts.
 model TarifaVersion {
-  version         Int      @id
-  moneda          String   @default("ARS") @map("currency") @db.Char(3)
-  bajadaCentavos  Int      @map("base_fare_cents")
-  centavosPorKm   Int      @map("per_km_cents")
-  centavosPorMin  Int      @map("per_minute_cents")
-  minimoCentavos  Int      @map("minimum_cents")
-  maxMetros       Int      @map("max_meters")
-  creadaPor       String   @map("created_by")
-  creadaEn        DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  version        Int      @id
+  moneda         String   @default("ARS") @map("currency") @db.Char(3)
+  bajadaCentavos Int      @map("base_fare_cents")
+  centavosPorKm  Int      @map("per_km_cents")
+  centavosPorMin Int      @map("per_minute_cents")
+  minimoCentavos Int      @map("minimum_cents")
+  maxMetros      Int      @map("max_meters")
+  creadaPor      String   @map("created_by")
+  creadaEn       DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
-  vigente  TarifaVigenteFila?
-  cambio   CambioTarifa?      @relation("cambio")
-  siguiente CambioTarifa?     @relation("anterior")
+  vigente   TarifaVigenteFila?
+  cambio    CambioTarifa?      @relation("cambio")
+  siguiente CambioTarifa?      @relation("anterior")
 
   @@map("fare_versions")
 }
@@ -131,15 +131,15 @@ model TarifaVigenteFila {
 }
 
 model CambioTarifa {
-  version          Int            @id
-  versionAnterior  Int?           @unique @map("previous_version")
-  cambiadaPor      String         @map("changed_by")
-  cambiadaEn       DateTime       @default(now()) @map("changed_at") @db.Timestamptz(3)
-  valoresAnteriores Json?         @map("previous_values")
-  valoresNuevos    Json           @map("new_values")
-  requestId        String?        @map("request_id")
-  tarifa           TarifaVersion  @relation("cambio", fields: [version], references: [version])
-  anterior         TarifaVersion? @relation("anterior", fields: [versionAnterior], references: [version])
+  version           Int            @id
+  versionAnterior   Int?           @unique @map("previous_version")
+  cambiadaPor       String         @map("changed_by")
+  cambiadaEn        DateTime       @default(now()) @map("changed_at") @db.Timestamptz(3)
+  valoresAnteriores Json?          @map("previous_values")
+  valoresNuevos     Json           @map("new_values")
+  requestId         String?        @map("request_id")
+  tarifa            TarifaVersion  @relation("cambio", fields: [version], references: [version])
+  anterior          TarifaVersion? @relation("anterior", fields: [versionAnterior], references: [version])
 
   @@map("fare_changes")
 }
@@ -163,4 +163,35 @@ model Cobro {
   // El barrido: los pendientes, primero los que hace más que no se intentan (cada fallo toca updated_at).
   @@index([estado, actualizadoEn])
   @@map("payments")
+}
+
+// Flotas (variante G). Los CHECK del cupo y de los estados del chofer están en la migración
+// 20261126000000_flotas.
+model Flota {
+  id            String        @id @db.Uuid
+  nombre        String        @map("name")
+  maxActivos    Int           @map("max_active")
+  activos       Int           @default(0) @map("active_count")
+  creadaEn      DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  actualizadaEn DateTime      @default(now()) @map("updated_at") @db.Timestamptz(3)
+  choferes      ChoferFlota[]
+
+  @@map("fleets")
+}
+
+model ChoferFlota {
+  id            String   @id @db.Uuid
+  flotaId       String   @map("fleet_id") @db.Uuid
+  patente       String   @unique @map("vehicle_plate")
+  marca         String   @map("vehicle_make")
+  modelo        String   @map("vehicle_model")
+  habilitado    Boolean  @default(false) @map("approved")
+  activo        Boolean  @default(false) @map("active")
+  disponible    Boolean  @default(false) @map("available")
+  creadoEn      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  actualizadoEn DateTime @default(now()) @map("updated_at") @db.Timestamptz(3)
+  flota         Flota    @relation(fields: [flotaId], references: [id])
+
+  @@index([flotaId])
+  @@map("drivers")
 }

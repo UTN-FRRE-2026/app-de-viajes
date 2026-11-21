@@ -42,7 +42,7 @@ const entero = (min: number, max: number) =>
 export const LIMITE_LISTADO_MAX = 50;
 
 /** Paginación por desplazamiento: `desde` es cuántos viajes saltear. */
-const Pagina = {
+export const Pagina = {
   limite: entero(1, LIMITE_LISTADO_MAX).default(20),
   desde: entero(0, 10_000).default(0),
 };
