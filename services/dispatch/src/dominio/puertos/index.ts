@@ -52,7 +52,10 @@ export interface RepositorioDespacho {
    */
   listarSolicitudes(filtro: FiltroSolicitudes, pagina: Pagina): Promise<SolicitudViaje[]>;
   obtenerCobro(solicitudId: string): Promise<Cobro | null>;
-  /** Viajes con el cobro todavía PENDIENTE, los más viejos primero. */
+  /**
+   * Viajes con el cobro todavía PENDIENTE, primero los que hace más que no se intentan: un cobro que
+   * falla pasa al final de la cola y no traba a los demás.
+   */
   cobrosPendientes(limite: number): Promise<string[]>;
   /**
    * Suma un intento fallido, fuera de una transacción. No usa `enTransaccion` a propósito: esa

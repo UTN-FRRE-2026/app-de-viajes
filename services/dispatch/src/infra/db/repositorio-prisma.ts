@@ -31,10 +31,10 @@ interface FilaSolicitud {
   driver_id: string | null;
   cancel_reason: string | null;
   fare_version: string | null;
-  estimated_fare_cents: number | null;
+  estimated_fare_cents: Importe | null;
   estimated_distance_m: number | null;
   estimated_duration_s: number | null;
-  final_fare_cents: number | null;
+  final_fare_cents: Importe | null;
   final_distance_m: number | null;
   final_duration_s: number | null;
   fare_difference_reasons: string[];
@@ -54,10 +54,10 @@ type ModeloSolicitud = {
   choferId: string | null;
   motivoCancelacion: string | null;
   tarifaVersion: string | null;
-  estimadaCentavos: number | null;
+  estimadaCentavos: Importe | null;
   estimadaMetros: number | null;
   estimadaSegundos: number | null;
-  finalCentavos: number | null;
+  finalCentavos: Importe | null;
   finalMetros: number | null;
   finalSegundos: number | null;
   motivosDiferencia: string[];
@@ -72,12 +72,25 @@ type ModeloCobro = {
   id: string;
   solicitudId: string;
   pasajeroId: string;
-  montoCentavos: number;
+  montoCentavos: Importe;
   estado: string;
   intentosFallidos: number;
   referencia: string | null;
   motivoRechazo: string | null;
 };
+
+/**
+ * Los importes van en BIGINT: con una tarifa alta que el admin puede configurar, un total pasa el
+ * máximo de INTEGER (unos $21 millones). Prisma los devuelve como `bigint`; el dominio usa `number`,
+ * que alcanza porque `calcularTarifa` nunca devuelve más que `Number.MAX_SAFE_INTEGER`.
+ */
+type Importe = bigint | number;
+
+function aCentavos(v: Importe): number {
+  const n = Number(v);
+  if (!Number.isSafeInteger(n)) throw new RangeError(`importe fuera de rango: ${v}`);
+  return n;
+}
 
 /** Las columnas de la tarifa → el objeto del dominio. Sin versión, es una solicitud de antes de guardarla. */
 function aTarifa(m: ModeloSolicitud): TarifaViaje | null {
@@ -85,9 +98,9 @@ function aTarifa(m: ModeloSolicitud): TarifaViaje | null {
   return {
     version: m.tarifaVersion,
     moneda: 'ARS',
-    estimadaCentavos: m.estimadaCentavos as number,
+    estimadaCentavos: aCentavos(m.estimadaCentavos as Importe),
     recorridoEstimado: { metros: m.estimadaMetros as number, segundos: m.estimadaSegundos as number },
-    finalCentavos: m.finalCentavos,
+    finalCentavos: m.finalCentavos === null ? null : aCentavos(m.finalCentavos),
     recorridoFinal:
       m.finalMetros === null || m.finalSegundos === null ? null : { metros: m.finalMetros, segundos: m.finalSegundos },
     motivosDiferencia: m.motivosDiferencia as MotivoDiferencia[],
@@ -144,7 +157,7 @@ function aCobro(m: ModeloCobro): Cobro {
     id: m.id,
     solicitudId: m.solicitudId,
     pasajeroId: m.pasajeroId,
-    montoCentavos: m.montoCentavos,
+    montoCentavos: aCentavos(m.montoCentavos),
     moneda: 'ARS',
     estado: m.estado as EstadoCobro,
     intentosFallidos: m.intentosFallidos,
@@ -211,7 +224,7 @@ function transaccion(tx: Prisma.TransactionClient): TransaccionDespacho {
                                    version, created_at)
         VALUES (${s.id}::uuid, ${s.pasajeroId}::uuid, ${s.estado},
                 ${s.origen.lat}::float8, ${s.origen.lng}::float8, ${s.destino.lat}::float8, ${s.destino.lng}::float8,
-                ${t?.version ?? null}, ${t?.estimadaCentavos ?? null}::int,
+                ${t?.version ?? null}, ${t?.estimadaCentavos ?? null}::bigint,
                 ${t?.recorridoEstimado.metros ?? null}::int, ${t?.recorridoEstimado.segundos ?? null}::int,
                 ${s.version}, ${s.creadaEn}::timestamptz)
         ON CONFLICT DO NOTHING
@@ -374,9 +387,12 @@ export class RepositorioDespachoPrisma implements RepositorioDespacho {
   }
 
   async cobrosPendientes(limite: number) {
+    // Por el último intento, no por la creación: cada fallo actualiza updated_at y manda el cobro al
+    // final de la cola. Si no, los mismos `limite` cobros que fallan se elegirían en cada barrido y los
+    // más nuevos no se intentarían nunca.
     const filas = await this.prisma.cobro.findMany({
       where: { estado: 'PENDIENTE' },
-      orderBy: { creadoEn: 'asc' },
+      orderBy: [{ actualizadoEn: 'asc' }, { id: 'asc' }],
       select: { solicitudId: true },
       take: limite,
     });

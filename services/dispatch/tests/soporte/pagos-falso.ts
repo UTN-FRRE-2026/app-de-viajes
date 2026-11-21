@@ -14,6 +14,8 @@ export class PagosFalso implements ProcesadorPagos {
   readonly llamadas: PedidoDeCobro[] = [];
   /** clave → resultado del cobro que se hizo de verdad. */
   readonly cobrados = new Map<string, ResultadoCobro>();
+  /** Pasajeros cuyos cobros fallan siempre, sea cual sea el modo (como una tarjeta que el proveedor no procesa). */
+  readonly fallanPasajeros = new Set<string>();
   private readonly enCurso = new Map<string, Promise<ResultadoCobro>>();
 
   async cobrar(pedido: PedidoDeCobro): Promise<ResultadoCobro> {
@@ -24,7 +26,7 @@ export class PagosFalso implements ProcesadorPagos {
     if (previo) return previo;
 
     const modo = this.modo;
-    if (modo === 'falla') throw new Error('pagos caído');
+    if (modo === 'falla' || this.fallanPasajeros.has(pedido.pasajeroId)) throw new Error('pagos caído');
     if (modo === 'colgado') return new Promise<ResultadoCobro>(() => {});
 
     const resultado = (async (): Promise<ResultadoCobro> => {

@@ -50,7 +50,10 @@ export class RepositorioDespachoMemoria implements RepositorioDespacho {
   readonly asignaciones = new Map<string, string>();
   readonly eventos: EventoDispatch[] = [];
   /** solicitudId → cobro */
-  readonly cobros = new Map<string, DatosCobro & { creadoEn: number }>();
+  readonly cobros = new Map<string, DatosCobro>();
+  /** solicitudId → el updated_at de Postgres, como contador para que no haya empates. */
+  private readonly cobrosActualizados = new Map<string, number>();
+  private relojCobros = 0;
 
   private readonly locks = new Map<string, Mutex>();
   private readonly choferesReservados = new Set<string>();
@@ -67,16 +70,20 @@ export class RepositorioDespachoMemoria implements RepositorioDespacho {
   }
 
   async cobrosPendientes(limite: number) {
+    // Como en Postgres: primero los que hace más que no se intentan, así un fallo va al final de la cola.
     return [...this.cobros.values()]
       .filter((c) => c.estado === 'PENDIENTE')
-      .sort((a, b) => a.creadoEn - b.creadoEn)
-      .slice(0, limite)
-      .map((c) => c.solicitudId);
+      .map((c) => c.solicitudId)
+      .sort((a, b) => (this.cobrosActualizados.get(a) ?? 0) - (this.cobrosActualizados.get(b) ?? 0))
+      .slice(0, limite);
   }
 
   async registrarFalloCobro(cobroId: string) {
     for (const c of this.cobros.values()) {
-      if (c.id === cobroId && c.estado === 'PENDIENTE') c.intentosFallidos++;
+      if (c.id === cobroId && c.estado === 'PENDIENTE') {
+        c.intentosFallidos++;
+        this.cobrosActualizados.set(c.solicitudId, ++this.relojCobros);
+      }
     }
   }
 
@@ -200,7 +207,10 @@ export class RepositorioDespachoMemoria implements RepositorioDespacho {
       for (const [id, d] of solicitudes) this.solicitudes.set(id, d);
       for (const [id, d] of ofertas) this.ofertas.set(id, d);
       this.eventos.push(...eventos);
-      for (const [id, d] of cobros) this.cobros.set(id, { ...d, creadoEn: this.cobros.get(id)?.creadoEn ?? Date.now() });
+      for (const [id, d] of cobros) {
+        this.cobros.set(id, d);
+        this.cobrosActualizados.set(id, ++this.relojCobros);
+      }
       return resultado;
     } finally {
       for (const c of reservas.keys()) this.choferesReservados.delete(c);

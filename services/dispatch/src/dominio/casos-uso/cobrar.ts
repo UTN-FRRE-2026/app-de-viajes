@@ -77,8 +77,9 @@ export function cobrarViaje(deps: DependenciasDespacho) {
 }
 
 /**
- * Lo que corre el barrido: procesa los cobros PENDIENTES, los más viejos primero. Un cobro que falla
- * queda para el próximo barrido. Devuelve cuántos quedaron resueltos.
+ * Lo que corre el barrido: procesa los cobros PENDIENTES, primero los que hace más que no se intentan.
+ * Un cobro que falla queda para un próximo barrido, al final de la cola: si unos pocos fallan siempre,
+ * no impiden que se cobren los demás. Devuelve cuántos quedaron resueltos.
  */
 export function cobrarPendientes(deps: DependenciasDespacho) {
   return async (limite = 20): Promise<number> => {

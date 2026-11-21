@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { calcularTarifa } from '../../src/dominio/tarifas/calculo.js';
+import { TOPE_IMPORTE_CENTAVOS } from '../../src/dominio/tarifas/parametros.js';
 import { clave, DESTINO, levantarDispatch, ORIGEN } from '../soporte/sistema-postgres.js';
 
 /** PR 3 de tarifas por HTTP, contra Postgres y Redis reales, con el mapas simulado y pagos falso. */
@@ -20,19 +21,23 @@ beforeEach(async () => {
   d.pagos.modo = 'aprueba';
   d.pagos.llamadas.length = 0;
   d.pagos.cobrados.clear();
+  d.pagos.fallanPasajeros.clear();
 });
 
 const cuerpo = { origen: ORIGEN, destino: DESTINO };
+/** Unos 53 km en línea recta desde ORIGEN (el Obelisco): con el desvío del mapas simulado, unos 70 km. */
+const LA_PLATA = { lat: -34.9214, lng: -57.9545 };
+const MAX_INTEGER = 2_147_483_647;
 const eventos = (tipo: string) => d.prisma.eventoOutbox.count({ where: { tipo } });
 
 /** Pide un viaje, lo acepta el único chofer y lo lleva hasta `hasta`. */
-async function viaje(hasta: 'EN_CURSO' | 'COMPLETADA' = 'COMPLETADA') {
+async function viaje(hasta: 'EN_CURSO' | 'COMPLETADA' = 'COMPLETADA', destino = DESTINO) {
   const pasajero = randomUUID();
   const chofer = randomUUID();
   d.buscador.choferes = [chofer];
   const comoPasajero = await d.auth(pasajero, 'pasajero');
   const comoChofer = await d.auth(chofer, 'chofer');
-  const creada = await request(d.url).post('/solicitudes').set(clave()).set(comoPasajero).send(cuerpo);
+  const creada = await request(d.url).post('/solicitudes').set(clave()).set(comoPasajero).send({ origen: ORIGEN, destino });
   expect(creada.status).toBe(201);
   const oferta = await d.prisma.oferta.findFirstOrThrow({ where: { solicitudId: creada.body.id } });
   await request(d.url).post(`/ofertas/${oferta.id}/aceptar`).set(clave()).set(comoChofer).send({}).expect(200);
@@ -68,7 +73,10 @@ describe('estimación guardada al crear', () => {
       motivosDiferencia: [],
     });
     const fila = await d.prisma.solicitudViaje.findUniqueOrThrow({ where: { id: creada.body.id } });
-    expect(fila).toMatchObject({ tarifaVersion: estimacion.body.tarifaVersion, estimadaCentavos: estimacion.body.tarifaCentavos });
+    expect(fila).toMatchObject({
+      tarifaVersion: estimacion.body.tarifaVersion,
+      estimadaCentavos: BigInt(estimacion.body.tarifaCentavos),
+    });
   });
 
   it('un viaje de más del máximo (Buenos Aires → Córdoba) no se crea: 422 y nada en la base', async () => {
@@ -95,11 +103,11 @@ describe('tarifa final', () => {
     expect(tarifa.motivosDiferencia).toEqual(['DURACION']);
 
     const fila = await d.prisma.solicitudViaje.findUniqueOrThrow({ where: { id } });
-    expect(fila).toMatchObject({ finalCentavos: tarifa.finalCentavos, finalSegundos: 0, motivosDiferencia: ['DURACION'] });
+    expect(fila).toMatchObject({ finalCentavos: BigInt(tarifa.finalCentavos), finalSegundos: 0, motivosDiferencia: ['DURACION'] });
     expect(fila.iniciadoEn).toBeInstanceOf(Date);
 
     const cobro = await d.prisma.cobro.findUniqueOrThrow({ where: { solicitudId: id } });
-    expect(cobro).toMatchObject({ estado: 'PENDIENTE', montoCentavos: tarifa.finalCentavos, intentosFallidos: 0 });
+    expect(cobro).toMatchObject({ estado: 'PENDIENTE', montoCentavos: BigInt(tarifa.finalCentavos), intentosFallidos: 0 });
     expect(await eventos('RideCompleted')).toBe(1);
     expect(d.pagos.llamadas).toHaveLength(0);
   });
@@ -176,6 +184,26 @@ describe('cobro', () => {
     expect(d.pagos.cobrados.size).toBe(1);
   });
 
+  it('un cobro que sigue fallando no traba a los demás: pasa al final de la cola del barrido', async () => {
+    const viajes = [await viaje(), await viaje(), await viaje()];
+    // Los dos cobros más viejos fallan siempre; el barrido toma de a 2.
+    d.pagos.fallanPasajeros.add(viajes[0]!.pasajero).add(viajes[1]!.pasajero);
+    expect(await d.casos.cobrarPendientes(2)).toBe(0);
+    // Ordenando por created_at volvería a tomar los mismos dos y el tercero no se cobraría nunca.
+    expect(await d.casos.cobrarPendientes(2)).toBe(1);
+    expect(await d.prisma.cobro.findUniqueOrThrow({ where: { solicitudId: viajes[2]!.id } })).toMatchObject({
+      estado: 'APROBADO',
+    });
+    expect(await d.prisma.cobro.findUniqueOrThrow({ where: { solicitudId: viajes[0]!.id } })).toMatchObject({
+      estado: 'PENDIENTE',
+      intentosFallidos: 2,
+    });
+
+    d.pagos.fallanPasajeros.clear();
+    expect(await d.casos.cobrarPendientes(2)).toBe(2);
+    expect(await d.prisma.cobro.count({ where: { estado: 'APROBADO' } })).toBe(3);
+  });
+
   it('rechazado: RECHAZADO con motivo y PaymentDeclined', async () => {
     const { id, comoPasajero } = await viaje();
     d.pagos.modo = 'rechaza';
@@ -197,6 +225,35 @@ describe('cobro', () => {
     const res = await cobrar(id, comoPasajero);
     expect(res.status).toBe(404);
     expect(res.body.error.code).toBe('COBRO_NO_ENCONTRADO');
+  });
+});
+
+describe('importes grandes', () => {
+  it('con el tope por km, un viaje de unos 70 km pasa el máximo de INTEGER: se crea, se completa y se cobra', async () => {
+    const admin = await d.auth(randomUUID(), 'admin');
+    await request(d.url)
+      .put('/admin/tarifas')
+      .set(clave())
+      .set(admin)
+      .send({ bajadaCentavos: 0, centavosPorKm: TOPE_IMPORTE_CENTAVOS, centavosPorMinuto: 0, minimoCentavos: 0, maxMetros: 200_000 })
+      .expect(200);
+
+    const { id, comoPasajero, creada, final } = await viaje('COMPLETADA', LA_PLATA);
+    const estimada = creada.body.tarifa.estimadaCentavos as number;
+    const parametros = await d.repoTarifas.porVersion(creada.body.tarifa.version);
+    expect(estimada).toBe(calcularTarifa(parametros!, creada.body.tarifa.recorridoEstimado).totalCentavos);
+    expect(estimada).toBeGreaterThan(MAX_INTEGER);
+    // Sin minutos en la tarifa, la final es igual a la estimada.
+    expect(final!.body.tarifa.finalCentavos).toBe(estimada);
+
+    const cobro = await cobrar(id, comoPasajero);
+    expect(cobro.body).toMatchObject({ estado: 'APROBADO', montoCentavos: estimada });
+    expect(d.pagos.llamadas[0]?.montoCentavos).toBe(estimada);
+
+    const detalle = await request(d.url).get(`/solicitudes/${id}`).set(comoPasajero);
+    expect(detalle.body.tarifa).toMatchObject({ estimadaCentavos: estimada, finalCentavos: estimada });
+    expect(detalle.body.cobro.montoCentavos).toBe(estimada);
+    expect((await d.prisma.cobro.findUniqueOrThrow({ where: { solicitudId: id } })).montoCentavos).toBe(BigInt(estimada));
   });
 });
 

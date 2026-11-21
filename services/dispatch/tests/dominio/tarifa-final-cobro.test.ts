@@ -191,6 +191,31 @@ describe('cobro', () => {
     expect(pagos.cobrados.size).toBe(1);
   });
 
+  it('un cobro que sigue fallando no traba a los demás: pasa al final de la cola del barrido', async () => {
+    const [chofer, ...pasajeros] = uuids(4) as [string, string, string, string];
+    const sis = sistemaEnMemoria([chofer]);
+    const ids: string[] = [];
+    for (const pasajeroId of pasajeros) {
+      const s = await sis.casos.crearSolicitud({ pasajeroId, origen: ORIGEN, destino: DESTINO });
+      await sis.casos.aceptarOferta({ ofertaId: sis.ofertasDe(s.id)[0]!.id, choferId: chofer });
+      const entrada = { solicitudId: s.id, choferId: chofer };
+      await sis.casos.marcarEnCamino(entrada);
+      await sis.casos.iniciarViaje(entrada);
+      await sis.casos.finalizarViaje(entrada);
+      ids.push(s.id);
+    }
+    // Los dos cobros más viejos fallan siempre; el barrido toma de a 2.
+    sis.pagos.fallanPasajeros.add(pasajeros[0]).add(pasajeros[1]);
+    expect(await sis.casos.cobrarPendientes(2)).toBe(0);
+    // Ordenando por creación volvería a tomar los mismos dos y el tercero no se cobraría nunca.
+    expect(await sis.casos.cobrarPendientes(2)).toBe(1);
+    expect((await sis.repo.obtenerCobro(ids[2]!))?.estado).toBe('APROBADO');
+
+    sis.pagos.fallanPasajeros.clear();
+    expect(await sis.casos.cobrarPendientes(2)).toBe(2);
+    expect(sis.pagos.cobrados.size).toBe(3);
+  });
+
   it('rechazado: queda RECHAZADO con el motivo y PaymentDeclined, y no se reintenta', async () => {
     const { casos, s, pasajero, pagos, repo } = await viajeCompletado();
     pagos.modo = 'rechaza';

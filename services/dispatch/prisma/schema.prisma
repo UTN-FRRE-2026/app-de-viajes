@@ -23,11 +23,12 @@ model SolicitudViaje {
   choferId      String?  @map("driver_id") @db.Uuid
   motivoCancelacion String? @map("cancel_reason")
   // Tarifa: la estimación al crear y la final al completar (CHECKs en la migración 20261123000000).
+  // Importes en BigInt: una tarifa alta pasa el máximo de Int (migración 20261125000000).
   tarifaVersion        String?   @map("fare_version")
-  estimadaCentavos     Int?      @map("estimated_fare_cents")
+  estimadaCentavos     BigInt?   @map("estimated_fare_cents")
   estimadaMetros       Int?      @map("estimated_distance_m")
   estimadaSegundos     Int?      @map("estimated_duration_s")
-  finalCentavos        Int?      @map("final_fare_cents")
+  finalCentavos        BigInt?   @map("final_fare_cents")
   finalMetros          Int?      @map("final_distance_m")
   finalSegundos        Int?      @map("final_duration_s")
   motivosDiferencia    String[]  @default([]) @map("fare_difference_reasons")
@@ -148,7 +149,7 @@ model Cobro {
   id               String         @id @db.Uuid
   solicitudId      String         @unique @map("request_id") @db.Uuid
   pasajeroId       String         @map("passenger_id") @db.Uuid
-  montoCentavos    Int            @map("amount_cents")
+  montoCentavos    BigInt         @map("amount_cents")
   moneda           String         @default("ARS") @map("currency") @db.Char(3)
   estado           String         @default("PENDIENTE") @map("status")
   intentosFallidos Int            @default(0) @map("failed_attempts")
@@ -159,6 +160,7 @@ model Cobro {
   actualizadoEn    DateTime       @default(now()) @map("updated_at") @db.Timestamptz(3)
   solicitud        SolicitudViaje @relation(fields: [solicitudId], references: [id])
 
-  @@index([estado, creadoEn])
+  // El barrido: los pendientes, primero los que hace más que no se intentan (cada fallo toca updated_at).
+  @@index([estado, actualizadoEn])
   @@map("payments")
 }

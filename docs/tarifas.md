@@ -236,13 +236,16 @@ Test: veinte `POST /cobrar` y el barrido a la vez dan un solo cobro en el provee
 - el cobro **sigue `PENDIENTE`**, nunca se lo da por cobrado, y se anotan el intento (`failed_attempts`) y el error;
 - el barrido lo reintenta con la misma clave: si el proveedor llegó a cobrar, el reintento recibe ese mismo resultado.
 
+**Un cobro que falla no traba a los demás.** Cada barrido toma hasta 20 pendientes, primero los que hace más que no se intentan (`updated_at`, que cada fallo actualiza). Un cobro que falla pasa al final de la cola. Ordenando por creación, si los 20 más viejos fallaran siempre, se elegirían en cada barrido y los más nuevos no se cobrarían nunca. Test: con el límite en 2 y los dos más viejos fallando, el segundo barrido cobra el tercero. Comprobado que falla ordenando por creación.
+
 **Estados:** `PENDIENTE` → `APROBADO` (evento `PaymentCaptured`) o `RECHAZADO` (evento `PaymentDeclined`, con motivo). Los dos últimos son finales: un rechazo no se reintenta solo.
 
 **Pagos simulado** (`infra/externos/pagos-simulado.ts`): aprueba todo, salvo los importes de más de `PAGOS_RECHAZAR_DESDE_CENTAVOS` (para demostrar un rechazo). `PAGOS_LATENCIA_SIMULADA_MS` agrega una demora, para demostrar el timeout. Recuerda las claves en memoria: un reinicio las olvida, cosa que un proveedor real no haría.
 
-**Persistencia** (migración `20261123000000_tarifa_final_cobro`):
+**Persistencia** (migraciones `20261123000000_tarifa_final_cobro` y `20261125000000_importes_bigint_reintentos`):
 - en `ride_requests`, la versión, la estimación, la final, los motivos y `started_at`, con `CHECK`s: la estimación va completa o no va, y un viaje con estimación está `COMPLETADA` si y solo si tiene tarifa final;
-- la tabla `payments`, con un cobro por viaje (índice único) y `CHECK`s: aprobado o rechazado, siempre con la referencia del proveedor.
+- la tabla `payments`, con un cobro por viaje (índice único) y `CHECK`s: aprobado o rechazado, siempre con la referencia del proveedor;
+- los importes (estimado, final y del cobro) en `BIGINT`. En `INTEGER` el máximo son unos $21 millones, y una tarifa que el admin puede configurar lo pasa: con el tope por km, un viaje de 30 km ya no entraba, la solicitud no se creaba y una tarifa final así deshacía la finalización. `calcularTarifa` nunca devuelve más que `Number.MAX_SAFE_INTEGER`, que entra en `BIGINT`. Test: un viaje de unos 70 km con el tope por km se crea, se completa y se cobra.
 
 Las solicitudes creadas antes de esta migración no tienen tarifa (`null`): se completan sin tarifa final y sin cobro.
 
