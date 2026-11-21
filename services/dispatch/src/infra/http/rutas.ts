@@ -1,7 +1,16 @@
-import { CrearSolicitudBody, ParamsId, SinBody } from '@viajes/contracts';
-import { autenticar, requerirRol, usuarioDe, validar, type VerificadorToken } from '@viajes/platform';
+import { CancelarBody, CrearSolicitudBody, ParamsId, SinBody } from '@viajes/contracts';
+import { autenticar, requerirRol, usuarioDe, validar, type Rol, type VerificadorToken } from '@viajes/platform';
 import { Router } from 'express';
 import type { CasosDeUso } from '../../dominio/casos-uso/index.js';
+import type { QuienCancela } from '../../dominio/entidades/index.js';
+
+/** El admin cancela como operador: queda CANCELADO_OPERADOR y también tiene que dar motivo. */
+const QUIEN_CANCELA: Partial<Record<Rol, QuienCancela>> = {
+  pasajero: 'pasajero',
+  chofer: 'chofer',
+  operador: 'operador',
+  admin: 'operador',
+};
 
 export function rutasDespacho(casos: CasosDeUso, verificar: VerificadorToken): Router {
   const r = Router();
@@ -25,16 +34,36 @@ export function rutasDespacho(casos: CasosDeUso, verificar: VerificadorToken): R
 
   r.post(
     '/solicitudes/:id/cancelar',
-    requerirRol('pasajero'),
-    validar({ params: ParamsId, body: SinBody }),
+    requerirRol('pasajero', 'chofer', 'operador', 'admin'),
+    validar({ params: ParamsId, body: CancelarBody }),
     async (req, res) => {
+      const usuario = usuarioDe(req);
       const solicitud = await casos.cancelarSolicitud({
         solicitudId: req.params['id'] as string,
-        pasajeroId: usuarioDe(req).id,
+        usuarioId: usuario.id,
+        quien: QUIEN_CANCELA[usuario.rol] as QuienCancela,
+        motivo: (req.body as CancelarBody).motivo ?? null,
       });
       res.json(solicitud);
     },
   );
+
+  // Acciones del chofer asignado. El chofer es siempre el del token.
+  const acciones = {
+    'en-camino': casos.marcarEnCamino,
+    iniciar: casos.iniciarViaje,
+    finalizar: casos.finalizarViaje,
+  } as const;
+  for (const [ruta, accion] of Object.entries(acciones)) {
+    r.post(
+      `/solicitudes/:id/${ruta}`,
+      requerirRol('chofer'),
+      validar({ params: ParamsId, body: SinBody }),
+      async (req, res) => {
+        res.json(await accion({ solicitudId: req.params['id'] as string, choferId: usuarioDe(req).id }));
+      },
+    );
+  }
 
   r.post(
     '/ofertas/:id/aceptar',

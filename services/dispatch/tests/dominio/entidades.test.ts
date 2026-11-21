@@ -4,6 +4,19 @@ import { DESTINO, ORIGEN } from '../soporte/memoria.js';
 
 const CHOFER = '00000000-0000-4000-8000-000000000001';
 
+const ESTADOS: EstadoSolicitud[] = [
+  'BUSCANDO',
+  'ASIGNADO',
+  'EN_CAMINO',
+  'EN_CURSO',
+  'COMPLETADA',
+  'CANCELADO_PASAJERO',
+  'CANCELADO_CHOFER',
+  'CANCELADO_OPERADOR',
+  'SIN_CHOFERES',
+];
+const CON_CHOFER = new Set<EstadoSolicitud>(['ASIGNADO', 'EN_CAMINO', 'EN_CURSO', 'COMPLETADA', 'CANCELADO_CHOFER']);
+
 function solicitudEn(estado: EstadoSolicitud) {
   return SolicitudViaje.reconstruir({
     id: 's',
@@ -11,63 +24,110 @@ function solicitudEn(estado: EstadoSolicitud) {
     origen: ORIGEN,
     destino: DESTINO,
     estado,
-    choferId: estado === 'ASIGNADO' || estado === 'COMPLETADA' ? CHOFER : null,
+    choferId: CON_CHOFER.has(estado) ? CHOFER : null,
+    motivoCancelacion: estado === 'CANCELADO_OPERADOR' ? 'motivo previo' : null,
     version: 0,
     creadaEn: new Date('2026-10-28T12:00:00Z'),
   });
 }
 
+/**
+ * Cada acción, desde qué estado es válida, a qué estado lleva y qué error da desde los demás.
+ * La matriz de abajo prueba las 9 × 8 combinaciones: una por transición válida y una por inválida.
+ */
+const ACCIONES: Record<
+  string,
+  { hacer: (s: SolicitudViaje) => unknown; validas: Partial<Record<EstadoSolicitud, EstadoSolicitud>>; error: string }
+> = {
+  asignar: { hacer: (s) => s.asignar(CHOFER), validas: { BUSCANDO: 'ASIGNADO' }, error: 'SOLICITUD_NO_DISPONIBLE' },
+  'marcar sin choferes': {
+    hacer: (s) => s.marcarSinChoferes(),
+    validas: { BUSCANDO: 'SIN_CHOFERES' },
+    error: 'SOLICITUD_NO_DISPONIBLE',
+  },
+  'marcar en camino': { hacer: (s) => s.marcarEnCamino(), validas: { ASIGNADO: 'EN_CAMINO' }, error: 'TRANSICION_INVALIDA' },
+  iniciar: { hacer: (s) => s.iniciar(), validas: { EN_CAMINO: 'EN_CURSO' }, error: 'TRANSICION_INVALIDA' },
+  finalizar: { hacer: (s) => s.finalizar(), validas: { EN_CURSO: 'COMPLETADA' }, error: 'TRANSICION_INVALIDA' },
+  'cancelar (pasajero)': {
+    hacer: (s) => s.cancelar('pasajero'),
+    validas: { BUSCANDO: 'CANCELADO_PASAJERO', ASIGNADO: 'CANCELADO_PASAJERO', EN_CAMINO: 'CANCELADO_PASAJERO' },
+    error: 'SOLICITUD_NO_CANCELABLE',
+  },
+  'cancelar (chofer)': {
+    hacer: (s) => s.cancelar('chofer'),
+    validas: { ASIGNADO: 'CANCELADO_CHOFER', EN_CAMINO: 'CANCELADO_CHOFER' },
+    error: 'SOLICITUD_NO_CANCELABLE',
+  },
+  'cancelar (operador, con motivo)': {
+    hacer: (s) => s.cancelar('operador', 'pasajero agresivo'),
+    validas: {
+      BUSCANDO: 'CANCELADO_OPERADOR',
+      ASIGNADO: 'CANCELADO_OPERADOR',
+      EN_CAMINO: 'CANCELADO_OPERADOR',
+      EN_CURSO: 'CANCELADO_OPERADOR',
+    },
+    error: 'SOLICITUD_NO_CANCELABLE',
+  },
+};
+
+const casos = Object.entries(ACCIONES).flatMap(([nombre, accion]) =>
+  ESTADOS.map((desde) => ({ nombre, desde, hacia: accion.validas[desde], accion })),
+);
+
 describe('SolicitudViaje: transiciones válidas', () => {
-  it('BUSCANDO → ASIGNADO guarda el chofer y sube la versión', () => {
-    const s = solicitudEn('BUSCANDO');
-    s.asignar(CHOFER);
-    expect(s.estado).toBe('ASIGNADO');
-    expect(s.choferId).toBe(CHOFER);
+  it.each(casos.filter((c) => c.hacia))('$nombre: $desde → $hacia (sube la versión)', ({ desde, hacia, accion }) => {
+    const s = solicitudEn(desde);
+    accion.hacer(s);
+    expect(s.estado).toBe(hacia);
     expect(s.version).toBe(1);
-  });
-
-  it('BUSCANDO → CANCELADO_PASAJERO no libera chofer', () => {
-    const s = solicitudEn('BUSCANDO');
-    expect(s.cancelarPorPasajero()).toEqual({ estabaAsignada: false, choferLiberado: null });
-    expect(s.estado).toBe('CANCELADO_PASAJERO');
-  });
-
-  it('ASIGNADO → CANCELADO_PASAJERO devuelve el chofer a liberar', () => {
-    const s = solicitudEn('ASIGNADO');
-    expect(s.cancelarPorPasajero()).toEqual({ estabaAsignada: true, choferLiberado: CHOFER });
-    expect(s.estado).toBe('CANCELADO_PASAJERO');
-  });
-
-  it('BUSCANDO → SIN_CHOFERES', () => {
-    const s = solicitudEn('BUSCANDO');
-    s.marcarSinChoferes();
-    expect(s.estado).toBe('SIN_CHOFERES');
-  });
-
-  it('ASIGNADO → COMPLETADA', () => {
-    const s = solicitudEn('ASIGNADO');
-    s.completar();
-    expect(s.estado).toBe('COMPLETADA');
   });
 });
 
 describe('SolicitudViaje: transiciones inválidas', () => {
-  const noBuscando: EstadoSolicitud[] = ['ASIGNADO', 'CANCELADO_PASAJERO', 'SIN_CHOFERES', 'COMPLETADA'];
+  it.each(casos.filter((c) => !c.hacia))('$nombre desde $desde → error y no cambia nada', ({ desde, accion }) => {
+    const s = solicitudEn(desde);
+    const antes = s.aDatos();
+    expect(() => accion.hacer(s)).toThrow(expect.objectContaining({ codigo: accion.error }));
+    expect(s.aDatos()).toEqual(antes);
+  });
+});
 
-  it.each(noBuscando)('no se puede asignar desde %s', (estado) => {
-    expect(() => solicitudEn(estado).asignar(CHOFER)).toThrow(expect.objectContaining({ codigo: 'SOLICITUD_NO_DISPONIBLE' }));
+describe('SolicitudViaje: detalles de cada transición', () => {
+  it('asignar guarda el chofer', () => {
+    const s = solicitudEn('BUSCANDO');
+    s.asignar(CHOFER);
+    expect(s.choferId).toBe(CHOFER);
   });
 
-  it.each(noBuscando)('no se puede marcar sin choferes desde %s', (estado) => {
-    expect(() => solicitudEn(estado).marcarSinChoferes()).toThrow(expect.objectContaining({ codigo: 'SOLICITUD_NO_DISPONIBLE' }));
+  it('cancelar mientras busca no libera a nadie', () => {
+    expect(solicitudEn('BUSCANDO').cancelar('pasajero')).toEqual({ estabaAsignada: false, choferLiberado: null });
   });
 
-  it.each(['CANCELADO_PASAJERO', 'SIN_CHOFERES', 'COMPLETADA'] as const)('no se puede cancelar desde %s', (estado) => {
-    expect(() => solicitudEn(estado).cancelarPorPasajero()).toThrow(expect.objectContaining({ codigo: 'SOLICITUD_NO_CANCELABLE' }));
+  it.each(['ASIGNADO', 'EN_CAMINO'] as const)('cancelar desde %s devuelve el chofer a liberar', (estado) => {
+    expect(solicitudEn(estado).cancelar('chofer')).toEqual({ estabaAsignada: true, choferLiberado: CHOFER });
   });
 
-  it.each(['BUSCANDO', 'CANCELADO_PASAJERO', 'SIN_CHOFERES', 'COMPLETADA'] as const)('no se puede completar desde %s', (estado) => {
-    expect(() => solicitudEn(estado).completar()).toThrow(expect.objectContaining({ codigo: 'SOLICITUD_NO_DISPONIBLE' }));
+  it('el operador cancela un viaje en curso y libera al chofer', () => {
+    const s = solicitudEn('EN_CURSO');
+    expect(s.cancelar('operador', 'accidente')).toEqual({ estabaAsignada: true, choferLiberado: CHOFER });
+    expect(s.motivoCancelacion).toBe('accidente');
+  });
+
+  it.each([null, '', '   '])('el operador sin motivo (%j) → MOTIVO_REQUERIDO y no cambia nada', (motivo) => {
+    const s = solicitudEn('ASIGNADO');
+    expect(() => s.cancelar('operador', motivo)).toThrow(expect.objectContaining({ codigo: 'MOTIVO_REQUERIDO', tipo: 'INVALIDO' }));
+    expect(s.estado).toBe('ASIGNADO');
+    expect(s.version).toBe(0);
+  });
+
+  it('el motivo se guarda sin espacios de más; el del pasajero es opcional', () => {
+    const conMotivo = solicitudEn('BUSCANDO');
+    conMotivo.cancelar('pasajero', '  me equivoqué de dirección ');
+    expect(conMotivo.motivoCancelacion).toBe('me equivoqué de dirección');
+
+    const sinMotivo = solicitudEn('BUSCANDO');
+    sinMotivo.cancelar('pasajero');
+    expect(sinMotivo.motivoCancelacion).toBeNull();
   });
 });
 

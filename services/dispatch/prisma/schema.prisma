@@ -21,6 +21,7 @@ model SolicitudViaje {
   destinoLat    Float    @map("destination_lat")
   destinoLng    Float    @map("destination_lng")
   choferId      String?  @map("driver_id") @db.Uuid
+  motivoCancelacion String? @map("cancel_reason")
   version       Int      @default(0)
   creadaEn      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   actualizadaEn DateTime @default(now()) @map("updated_at") @db.Timestamptz(3)

@@ -18,6 +18,7 @@ interface FilaSolicitud {
   destination_lat: number;
   destination_lng: number;
   driver_id: string | null;
+  cancel_reason: string | null;
   version: number;
   created_at: Date;
 }
@@ -31,6 +32,7 @@ type ModeloSolicitud = {
   destinoLat: number;
   destinoLng: number;
   choferId: string | null;
+  motivoCancelacion: string | null;
   version: number;
   creadaEn: Date;
 };
@@ -45,6 +47,7 @@ function aSolicitud(m: ModeloSolicitud): SolicitudViaje {
     origen: { lat: m.origenLat, lng: m.origenLng },
     destino: { lat: m.destinoLat, lng: m.destinoLng },
     choferId: m.choferId,
+    motivoCancelacion: m.motivoCancelacion,
     version: m.version,
     creadaEn: m.creadaEn,
   });
@@ -60,6 +63,7 @@ function filaASolicitud(f: FilaSolicitud): SolicitudViaje {
     destinoLat: f.destination_lat,
     destinoLng: f.destination_lng,
     choferId: f.driver_id,
+    motivoCancelacion: f.cancel_reason,
     version: f.version,
     creadaEn: f.created_at,
   });
@@ -79,8 +83,8 @@ function transaccion(tx: Prisma.TransactionClient): TransaccionDespacho {
     async obtenerSolicitudParaActualizar(id) {
       // Bloquea la fila hasta COMMIT/ROLLBACK. Otra transacción que pida el mismo lock espera acá.
       const filas = await tx.$queryRaw<FilaSolicitud[]>`
-        SELECT id, passenger_id, status, origin_lat, origin_lng, destination_lat, destination_lng, driver_id, version,
-               created_at
+        SELECT id, passenger_id, status, origin_lat, origin_lng, destination_lat, destination_lng, driver_id,
+               cancel_reason, version, created_at
         FROM ride_requests
         WHERE id = ${id}::uuid
         FOR UPDATE`;
@@ -109,7 +113,13 @@ function transaccion(tx: Prisma.TransactionClient): TransaccionDespacho {
     async guardarSolicitud(s) {
       await tx.solicitudViaje.update({
         where: { id: s.id },
-        data: { estado: s.estado, choferId: s.choferId, version: s.version, actualizadaEn: new Date() },
+        data: {
+          estado: s.estado,
+          choferId: s.choferId,
+          motivoCancelacion: s.motivoCancelacion,
+          version: s.version,
+          actualizadaEn: new Date(),
+        },
       });
     },
 

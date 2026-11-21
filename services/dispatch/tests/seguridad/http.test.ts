@@ -115,6 +115,68 @@ describe('acceso a recursos ajenos (IDOR)', () => {
   });
 });
 
+describe('ciclo del viaje: roles y viajes ajenos', () => {
+  /** Viaje aceptado por un chofer; devuelve los ids y quién es quién. */
+  async function viajeAsignado() {
+    const pasajero = randomUUID();
+    const chofer = randomUUID();
+    d.buscador.choferes = [chofer];
+    const creada = await request(d.url).post('/solicitudes').set(await d.auth(pasajero, 'pasajero')).send(cuerpo);
+    const oferta = await d.prisma.oferta.findFirstOrThrow({ where: { solicitudId: creada.body.id } });
+    await request(d.url).post(`/ofertas/${oferta.id}/aceptar`).set(await d.auth(chofer, 'chofer')).send({});
+    return { id: creada.body.id as string, pasajero, chofer };
+  }
+
+  it.each(['en-camino', 'iniciar', 'finalizar'])('%s: el pasajero no puede → 403', async (accion) => {
+    const { id, pasajero } = await viajeAsignado();
+    const res = await request(d.url).post(`/solicitudes/${id}/${accion}`).set(await d.auth(pasajero, 'pasajero')).send({});
+    expect(res.status).toBe(403);
+  });
+
+  it.each(['en-camino', 'iniciar', 'finalizar'])('%s: otro chofer → 404 y no cambia nada', async (accion) => {
+    const { id } = await viajeAsignado();
+    const res = await request(d.url).post(`/solicitudes/${id}/${accion}`).set(await d.auth(randomUUID(), 'chofer')).send({});
+    expect(res.status).toBe(404);
+    const s = await d.prisma.solicitudViaje.findUniqueOrThrow({ where: { id } });
+    expect(s.estado).toBe('ASIGNADO');
+  });
+
+  it('otro chofer no puede cancelar el viaje → 404', async () => {
+    const { id } = await viajeAsignado();
+    const res = await request(d.url).post(`/solicitudes/${id}/cancelar`).set(await d.auth(randomUUID(), 'chofer')).send({});
+    expect(res.status).toBe(404);
+    expect(await d.prisma.asignacionActiva.count()).toBe(1);
+  });
+
+  it('el admin de flota no cancela viajes → 403', async () => {
+    const { id } = await viajeAsignado();
+    const res = await request(d.url)
+      .post(`/solicitudes/${id}/cancelar`)
+      .set(await d.auth(randomUUID(), 'admin_flota'))
+      .send({ motivo: 'no corresponde' });
+    expect(res.status).toBe(403);
+  });
+
+  it.each([
+    ['motivo demasiado largo', { motivo: 'x'.repeat(201) }],
+    ['motivo que no es texto', { motivo: 123 }],
+    ['clave extra', { motivo: 'válido', estado: 'COMPLETADA' }],
+  ])('cancelar con %s → 400', async (_nombre, body) => {
+    const { id } = await viajeAsignado();
+    const res = await request(d.url).post(`/solicitudes/${id}/cancelar`).set(await d.auth(randomUUID(), 'operador')).send(body);
+    expect(res.status).toBe(400);
+  });
+
+  it('body en una acción del chofer (estado elegido por el cliente) → 400', async () => {
+    const { id, chofer } = await viajeAsignado();
+    const res = await request(d.url)
+      .post(`/solicitudes/${id}/en-camino`)
+      .set(await d.auth(chofer, 'chofer'))
+      .send({ estado: 'COMPLETADA' });
+    expect(res.status).toBe(400);
+  });
+});
+
 describe('encabezados de seguridad (CSP y helmet)', () => {
   it.each(['/health', '/no-existe'])('%s → CSP que niega todo, nosniff y sin x-powered-by', async (ruta) => {
     const res = await request(d.url).get(ruta);

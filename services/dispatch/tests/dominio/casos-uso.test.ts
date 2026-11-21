@@ -110,7 +110,7 @@ describe('cancelarSolicitud', () => {
   it('cancelar mientras busca cancela las ofertas pendientes', async () => {
     const { casos, ofertasDe } = sistemaEnMemoria(uuids(3));
     const s = await casos.crearSolicitud({ pasajeroId: PASAJERO, origen: ORIGEN, destino: DESTINO });
-    const r = await casos.cancelarSolicitud({ solicitudId: s.id, pasajeroId: PASAJERO });
+    const r = await casos.cancelarSolicitud({ solicitudId: s.id, usuarioId: PASAJERO, quien: 'pasajero' });
     expect(r.estado).toBe('CANCELADO_PASAJERO');
     expect(ofertasDe(s.id).every((o) => o.estado === 'CANCELADA')).toBe(true);
   });
@@ -121,9 +121,12 @@ describe('cancelarSolicitud', () => {
     const s1 = await casos.crearSolicitud({ pasajeroId: PASAJERO, origen: ORIGEN, destino: DESTINO });
     await casos.aceptarOferta({ ofertaId: ofertasDe(s1.id)[0]!.id, choferId: chofer });
 
-    await casos.cancelarSolicitud({ solicitudId: s1.id, pasajeroId: PASAJERO });
+    await casos.cancelarSolicitud({ solicitudId: s1.id, usuarioId: PASAJERO, quien: 'pasajero' });
     expect(repo.asignaciones.size).toBe(0);
-    expect(repo.eventos.at(-1)).toMatchObject({ tipo: 'RideCancelled', payload: { estabaAsignada: true, choferId: chofer } });
+    expect(repo.eventos.at(-1)).toMatchObject({
+      tipo: 'RideCancelled',
+      payload: { estabaAsignada: true, choferId: chofer, canceladoPor: 'pasajero', motivo: null },
+    });
 
     const s2 = await casos.crearSolicitud({ pasajeroId: OTRO_PASAJERO, origen: ORIGEN, destino: DESTINO });
     await expect(casos.aceptarOferta({ ofertaId: ofertasDe(s2.id)[0]!.id, choferId: chofer })).resolves.toMatchObject({
@@ -134,7 +137,7 @@ describe('cancelarSolicitud', () => {
   it('la solicitud de otro pasajero responde como inexistente', async () => {
     const { casos } = sistemaEnMemoria(uuids(1));
     const s = await casos.crearSolicitud({ pasajeroId: PASAJERO, origen: ORIGEN, destino: DESTINO });
-    await expect(casos.cancelarSolicitud({ solicitudId: s.id, pasajeroId: OTRO_PASAJERO })).rejects.toMatchObject({
+    await expect(casos.cancelarSolicitud({ solicitudId: s.id, usuarioId: OTRO_PASAJERO, quien: 'pasajero' })).rejects.toMatchObject({
       codigo: 'SOLICITUD_NO_ENCONTRADA',
     });
   });
@@ -142,8 +145,8 @@ describe('cancelarSolicitud', () => {
   it('no se puede cancelar dos veces', async () => {
     const { casos } = sistemaEnMemoria(uuids(1));
     const s = await casos.crearSolicitud({ pasajeroId: PASAJERO, origen: ORIGEN, destino: DESTINO });
-    await casos.cancelarSolicitud({ solicitudId: s.id, pasajeroId: PASAJERO });
-    await expect(casos.cancelarSolicitud({ solicitudId: s.id, pasajeroId: PASAJERO })).rejects.toMatchObject({
+    await casos.cancelarSolicitud({ solicitudId: s.id, usuarioId: PASAJERO, quien: 'pasajero' });
+    await expect(casos.cancelarSolicitud({ solicitudId: s.id, usuarioId: PASAJERO, quien: 'pasajero' })).rejects.toMatchObject({
       codigo: 'SOLICITUD_NO_CANCELABLE',
     });
   });
@@ -181,18 +184,115 @@ describe('vencerOfertas (barrido)', () => {
   });
 });
 
-describe('liberarChofer', () => {
-  it('completa la solicitud, libera al chofer y es idempotente', async () => {
+describe('ciclo de vida del viaje', () => {
+  /** Solicitud aceptada por el único chofer, y opcionalmente avanzada hasta `hasta`. */
+  async function viajeAsignado(hasta: 'ASIGNADO' | 'EN_CAMINO' | 'EN_CURSO' = 'ASIGNADO') {
     const [chofer] = uuids(1) as [string];
-    const { casos, ofertasDe, repo } = sistemaEnMemoria([chofer]);
-    const s = await casos.crearSolicitud({ pasajeroId: PASAJERO, origen: ORIGEN, destino: DESTINO });
-    await casos.aceptarOferta({ ofertaId: ofertasDe(s.id)[0]!.id, choferId: chofer });
+    const sis = sistemaEnMemoria([chofer]);
+    const s = await sis.casos.crearSolicitud({ pasajeroId: PASAJERO, origen: ORIGEN, destino: DESTINO });
+    await sis.casos.aceptarOferta({ ofertaId: sis.ofertasDe(s.id)[0]!.id, choferId: chofer });
+    const entrada = { solicitudId: s.id, choferId: chofer };
+    if (hasta !== 'ASIGNADO') await sis.casos.marcarEnCamino(entrada);
+    if (hasta === 'EN_CURSO') await sis.casos.iniciarViaje(entrada);
+    return { ...sis, s, chofer, entrada };
+  }
 
-    expect(await casos.liberarChofer({ solicitudId: s.id })).toEqual({ liberado: true });
-    expect(await casos.liberarChofer({ solicitudId: s.id })).toEqual({ liberado: false });
+  it('asignado → en camino → en curso → completada: libera al chofer y el pasajero puede pedir otro', async () => {
+    const { casos, repo, s, entrada } = await viajeAsignado();
+
+    expect(await casos.marcarEnCamino(entrada)).toMatchObject({ estado: 'EN_CAMINO' });
+    expect(repo.asignaciones.size).toBe(1);
+    expect(await casos.iniciarViaje(entrada)).toMatchObject({ estado: 'EN_CURSO' });
+    expect(repo.asignaciones.size).toBe(1);
+    expect(await casos.finalizarViaje(entrada)).toMatchObject({ estado: 'COMPLETADA' });
     expect(repo.asignaciones.size).toBe(0);
-    expect(repo.solicitudes.get(s.id)?.estado).toBe('COMPLETADA');
+
+    expect(repo.eventos.map((e) => e.tipo).slice(-3)).toEqual(['DriverEnRoute', 'TripStarted', 'RideCompleted']);
+    expect(repo.eventos.at(-1)?.payload).toEqual({ solicitudId: s.id, pasajeroId: PASAJERO, choferId: entrada.choferId });
+    await expect(casos.crearSolicitud({ pasajeroId: PASAJERO, origen: ORIGEN, destino: DESTINO })).resolves.toBeTruthy();
+  });
+
+  it('finalizar dos veces: la segunda da 409 y hay un solo RideCompleted', async () => {
+    const { casos, repo, entrada } = await viajeAsignado('EN_CURSO');
+    await casos.finalizarViaje(entrada);
+    await expect(casos.finalizarViaje(entrada)).rejects.toMatchObject({ codigo: 'TRANSICION_INVALIDA', tipo: 'CONFLICTO' });
     expect(repo.eventos.filter((e) => e.tipo === 'RideCompleted')).toHaveLength(1);
+  });
+
+  it('finalizaciones simultáneas: una sola gana', async () => {
+    const { casos, repo, entrada } = await viajeAsignado('EN_CURSO');
+    const resultados = await Promise.allSettled(Array.from({ length: 10 }, () => casos.finalizarViaje(entrada)));
+    expect(resultados.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
+    expect(repo.eventos.filter((e) => e.tipo === 'RideCompleted')).toHaveLength(1);
+  });
+
+  it('saltear un paso (finalizar un viaje que no empezó) → TRANSICION_INVALIDA', async () => {
+    const { casos, repo, s, entrada } = await viajeAsignado();
+    await expect(casos.finalizarViaje(entrada)).rejects.toMatchObject({ codigo: 'TRANSICION_INVALIDA' });
+    expect(repo.solicitudes.get(s.id)?.estado).toBe('ASIGNADO');
+    expect(repo.asignaciones.size).toBe(1);
+  });
+
+  it.each(['marcarEnCamino', 'iniciarViaje', 'finalizarViaje'] as const)(
+    '%s por un chofer que no es el asignado → 404 y no cambia nada',
+    async (accion) => {
+      const { casos, repo, s } = await viajeAsignado();
+      const [otro] = uuids(1) as [string];
+      await expect(casos[accion]({ solicitudId: s.id, choferId: otro })).rejects.toMatchObject({
+        codigo: 'SOLICITUD_NO_ENCONTRADA',
+      });
+      expect(repo.solicitudes.get(s.id)?.version).toBe(1);
+    },
+  );
+
+  it('el chofer cancela en camino: CANCELADO_CHOFER, queda libre y el pasajero puede volver a pedir', async () => {
+    const { casos, repo, s, chofer } = await viajeAsignado('EN_CAMINO');
+    const r = await casos.cancelarSolicitud({ solicitudId: s.id, usuarioId: chofer, quien: 'chofer' });
+    expect(r.estado).toBe('CANCELADO_CHOFER');
+    expect(repo.asignaciones.size).toBe(0);
+    expect(repo.eventos.at(-1)).toMatchObject({ tipo: 'RideCancelled', payload: { canceladoPor: 'chofer', choferId: chofer } });
+    await expect(casos.crearSolicitud({ pasajeroId: PASAJERO, origen: ORIGEN, destino: DESTINO })).resolves.toBeTruthy();
+  });
+
+  it('un chofer no puede cancelar el viaje de otro chofer → 404', async () => {
+    const { casos, s } = await viajeAsignado();
+    const [otro] = uuids(1) as [string];
+    await expect(casos.cancelarSolicitud({ solicitudId: s.id, usuarioId: otro, quien: 'chofer' })).rejects.toMatchObject({
+      codigo: 'SOLICITUD_NO_ENCONTRADA',
+    });
+  });
+
+  it('el pasajero no puede cancelar un viaje en curso', async () => {
+    const { casos, s } = await viajeAsignado('EN_CURSO');
+    await expect(casos.cancelarSolicitud({ solicitudId: s.id, usuarioId: PASAJERO, quien: 'pasajero' })).rejects.toMatchObject({
+      codigo: 'SOLICITUD_NO_CANCELABLE',
+    });
+  });
+
+  it('el operador cancela un viaje en curso con motivo y libera al chofer', async () => {
+    const { casos, repo, s } = await viajeAsignado('EN_CURSO');
+    const [operador] = uuids(1) as [string];
+    const r = await casos.cancelarSolicitud({ solicitudId: s.id, usuarioId: operador, quien: 'operador', motivo: 'accidente' });
+    expect(r).toMatchObject({ estado: 'CANCELADO_OPERADOR', motivoCancelacion: 'accidente' });
+    expect(repo.asignaciones.size).toBe(0);
+    expect(repo.eventos.at(-1)).toMatchObject({ payload: { canceladoPor: 'operador', motivo: 'accidente' } });
+  });
+
+  it('el operador sin motivo → MOTIVO_REQUERIDO y el chofer sigue con el viaje', async () => {
+    const { casos, repo, s } = await viajeAsignado('EN_CAMINO');
+    const [operador] = uuids(1) as [string];
+    await expect(casos.cancelarSolicitud({ solicitudId: s.id, usuarioId: operador, quien: 'operador' })).rejects.toMatchObject({
+      codigo: 'MOTIVO_REQUERIDO',
+    });
+    expect(repo.solicitudes.get(s.id)?.estado).toBe('EN_CAMINO');
+    expect(repo.asignaciones.size).toBe(1);
+  });
+
+  it('con un viaje en curso, el pasajero no puede pedir otro', async () => {
+    const { casos } = await viajeAsignado('EN_CURSO');
+    await expect(casos.crearSolicitud({ pasajeroId: PASAJERO, origen: ORIGEN, destino: DESTINO })).rejects.toMatchObject({
+      codigo: 'SOLICITUD_ACTIVA_EXISTENTE',
+    });
   });
 });
 

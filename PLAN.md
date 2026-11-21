@@ -137,17 +137,19 @@ El ADR 0006 registra la decisión con sus alternativas reales: monolito modular 
   |---|---|---|
   | solicitado | `BUSCANDO` | hecho |
   | asignado | `ASIGNADO` | hecho |
-  | chofer en camino | `EN_CAMINO` | falta |
-  | en curso | `EN_CURSO` | falta |
-  | finalizado | `COMPLETADA` | hecho (hoy por `liberarChofer`) |
+  | chofer en camino | `EN_CAMINO` | hecho: `POST /solicitudes/:id/en-camino` |
+  | en curso | `EN_CURSO` | hecho: `POST /solicitudes/:id/iniciar` |
+  | finalizado | `COMPLETADA` | hecho: `POST /solicitudes/:id/finalizar` |
   | cancelado por pasajero | `CANCELADO_PASAJERO` | hecho |
-  | cancelado por chofer | `CANCELADO_CHOFER` | falta |
+  | cancelado por chofer | `CANCELADO_CHOFER` | hecho |
+  | (extensión) cancelado por operador | `CANCELADO_OPERADOR` | hecho, con motivo obligatorio |
   | sin choferes disponibles | `SIN_CHOFERES` | hecho |
 
-- Finalizar o cancelar libera al chofer **en la misma transacción** (borra su fila de `driver_active_assignment`).
-- La cancelación del operador exige motivo. El enunciado no le da estado propio: se decide en `modelo.md` (propuesta: `CANCELADO_OPERADOR`, como extensión documentada).
-- Mecanismo de asignación, sin cambios: `FOR UPDATE` de la solicitud, después la reserva única del chofer, siempre en ese orden.
-- Un test por cada transición válida y por cada inválida.
+- Las tres acciones del chofer las hace solo el chofer asignado (otro chofer recibe 404). `POST /solicitudes/:id/cancelar` sirve para los tres roles: el pasajero cancela hasta `EN_CAMINO`; el chofer, en `ASIGNADO` o `EN_CAMINO`; el operador (y el admin), en cualquier estado activo, con `motivo` obligatorio (sin motivo, 422). Saltear un paso o repetirlo da 409 `TRANSICION_INVALIDA`.
+- Finalizar o cancelar libera al chofer **en la misma transacción** (borra su fila de `driver_active_assignment`). El chofer queda reservado durante `EN_CAMINO` y `EN_CURSO`, y el pasajero no puede pedir otro viaje mientras el suyo está activo.
+- La cancelación del operador queda como `CANCELADO_OPERADOR`, una extensión documentada del enunciado; falta explicarla en `modelo.md`. La base exige el motivo con un `CHECK`.
+- Mecanismo, sin cambios: `FOR UPDATE` de la solicitud, después la reserva única del chofer, siempre en ese orden. Las acciones del chofer y la cancelación toman el mismo lock.
+- Tests: la matriz de 9 estados × 8 acciones de la entidad (cada transición válida y cada inválida), el ciclo completo por HTTP contra Postgres y dos carreras nuevas: 20 finalizaciones simultáneas (1 gana) y finalizar contra la cancelación del operador. Las dos fallan si se saca el `FOR UPDATE`.
 - Historial por pasajero y por chofer, y panel del operador con viajes en curso. El panel lleva una **búsqueda por texto**, que es donde va el test de inyección SQL.
 - Candidatos: el puerto `BuscadorCandidatos` pasa de la lista fija a un adaptador HTTP contra location, con timeout. El resultado se filtra en dispatch por disponibilidad, zona del origen y flotas habilitadas (sección 2).
 
@@ -200,7 +202,7 @@ El ADR 0006 registra la decisión con sus alternativas reales: monolito modular 
 
 | Requisito | Estado | Qué falta |
 |---|---|---|
-| **B1** Arranque reproducible | ✅ | `npm run setup` (script de Node: `.env`, clave RS256, Postgres y Redis, bases que falten, migraciones y seed), `npm run dev` y `npm start`. Probado en un clon limpio con un volumen vacío, en Linux. Falta repetirlo en Windows |
+| **B1** Arranque reproducible | ✅ | `npm run setup` (script de Node: `.env`, clave RS256, Postgres y Redis, bases que falten, migraciones y seed), `npm run dev` y `npm start`. Probado en un clon limpio con un volumen vacío, en Linux y en Windows |
 | **B2** Hexagonal | ✅ | Mantenerlo en location y en los módulos nuevos de dispatch. Puertos con doble adaptador: mapas, pagos, notificador, publicador de eventos |
 | **B3** Configuración y ciclo de vida | ✅ | Preparar la demo de SIGTERM con un pedido lento |
 | **B4** Errores y logs | 🟡 | No hay **log por pedido** (método, ruta, estado, duración): hoy solo se loguean los errores, y no se puede relacionar pedido y error por `requestId` |
@@ -217,7 +219,7 @@ El ADR 0006 registra la decisión con sus alternativas reales: monolito modular 
 | **B6** Idempotencia | ⬜ | 3.5 |
 | **B7** Tarea pesada, dos versiones, medida | ⬜ | 3.2. Es lo que se muestra en el Control 3 |
 | **B8** Tres niveles de tests, un comando | ✅ | Sostenerlo |
-| **6.2** Alcance funcional | 🟡 | Hecho: registro, login, solicitud, ofertas. Falta: vehículo y habilitación, disponibilidad, ubicación, estimación, estados completos, seguimiento, tarifa y cobro, historial, panel |
+| **6.2** Alcance funcional | 🟡 | Hecho: registro, login, solicitud, ofertas, ubicación, estados completos del viaje. Falta: vehículo y habilitación, disponibilidad, estimación, seguimiento, tarifa y cobro, historial, panel |
 | **6.3** ADR + 3 tests | ✅ | — |
 | **6.4** Búsqueda, retención, privacidad | ⬜ | 3.2 |
 | **6.5** Tarifa | ⬜ | 3.4 |
@@ -315,7 +317,7 @@ Es lo que pide el Control 3: carrera principal con su test (ya está) y tarea pe
 
 - [x] Confirmar con la cátedra si se exigen microservicios: sí, tres como mínimo.
 - [x] Esqueleto de `services/location` (health, config, composición, base, CI) y Compose sin RabbitMQ y con `location`. El esqueleto lo hizo Agos (#7); el Compose sin RabbitMQ, Ivan.
-- [x] `npm run setup`, `dev`, `start` para los tres servicios; secuencia probada en un clon limpio (Ivan). Falta repetirla en Windows.
+- [x] `npm run setup`, `dev`, `start` para los tres servicios; secuencia probada en un clon limpio, en Linux y en Windows (Ivan).
 - [x] Contrato de `GET /interno/candidatos` en `contracts` y adaptador HTTP con timeout en dispatch (Ivan, Maxi).
 - [x] location en sus dos versiones, con adaptador en memoria primero (Agos #7, Maxi #8).
 - [ ] `carga/choferes.js`, `carga/solicitudes.js`, `/metrics` con el lag y **primera medición** en `docs/mediciones.md` (Maxi). Hecho: `carga/ubicaciones.js`, la primera medición y `/metrics` en los tres servicios desde `platform`, con el tiempo hasta la asignación en dispatch. Falta: `carga/solicitudes.js`.
@@ -326,7 +328,7 @@ Es lo que pide el Control 3: carrera principal con su test (ya está) y tarea pe
 
 Al cerrar esta fase el sistema tiene que poder congelarse para el ataque cruzado, cuando la cátedra lo fije.
 
-- [ ] `viajes`: estados completos, historial, panel del operador con búsqueda (Ivan).
+- [ ] `viajes`: estados completos, historial, panel del operador con búsqueda (Ivan). Hecho: estados completos (3.1). Falta: historial y panel.
 - [ ] Idempotency-Key y SSE (Ivan).
 - [ ] Zonas, candidatos filtrados por flota y zona, reporte, aislamiento entre flotas (Agos).
 - [ ] Seguridad transversal: CORS, rate limit, encabezados, log por pedido y los tests que faltan del bloque 5 (Agos).

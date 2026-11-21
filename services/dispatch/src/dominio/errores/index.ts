@@ -42,3 +42,16 @@ export class SolicitudNoCancelable extends ErrorDeDominio {
     super('SOLICITUD_NO_CANCELABLE', 'CONFLICTO', `No se puede cancelar una solicitud en estado ${estado}`);
   }
 }
+
+/** El viaje no está en el estado que la acción necesita (por ejemplo, finalizar uno que no empezó). */
+export class TransicionInvalida extends ErrorDeDominio {
+  constructor(estado: string, hacia: string) {
+    super('TRANSICION_INVALIDA', 'CONFLICTO', `No se puede pasar de ${estado} a ${hacia}`);
+  }
+}
+
+export class MotivoRequerido extends ErrorDeDominio {
+  constructor() {
+    super('MOTIVO_REQUERIDO', 'INVALIDO', 'El operador tiene que indicar el motivo de la cancelación');
+  }
+}
