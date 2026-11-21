@@ -1,7 +1,7 @@
 import type { PayloadEventoDispatch, TipoEventoDispatch } from '@viajes/contracts';
 import type { Coordenada, EstadoSolicitud, Oferta, SolicitudViaje } from '../entidades/index.js';
 import type { Recorrido } from '../tarifas/calculo.js';
-import type { ParametrosTarifa } from '../tarifas/parametros.js';
+import type { ParametrosTarifa, TarifaVigente, ValoresTarifa } from '../tarifas/parametros.js';
 
 export type EventoDispatch = {
   [T in TipoEventoDispatch]: { tipo: T; payload: PayloadEventoDispatch<T> };
@@ -89,7 +89,33 @@ export interface ServicioMapas {
   recorrido(origen: Coordenada, destino: Coordenada): Promise<Recorrido>;
 }
 
-/** Los parámetros de tarifa vigentes. Hoy los lee del `.env`; en el PR 2, de la configuración del admin. */
+/** Los parámetros de tarifa vigentes, para estimar. Puede tener caché: tiene que reflejar el último cambio. */
 export interface ProveedorTarifas {
   vigente(): Promise<ParametrosTarifa>;
+  /**
+   * Aviso de que cambió la tarifa, después del COMMIT. Es solo higiene del caché: la corrección no
+   * puede depender de esto (si falla, la próxima lectura igual ve la versión nueva). No lanza.
+   */
+  tarifaCambiada?(anterior: string | null, nueva: ParametrosTarifa): Promise<void>;
+}
+
+/**
+ * Tarifa global versionada. Las versiones no se modifican nunca: un cambio crea una versión nueva,
+ * la marca vigente y deja auditoría con los valores anteriores y los nuevos.
+ */
+export interface RepositorioTarifas {
+  /** Solo la versión vigente (`v3`), o null si todavía no hay tarifa. Es la lectura barata de cada estimación. */
+  versionVigente(): Promise<string | null>;
+  porVersion(version: string): Promise<TarifaVigente | null>;
+  vigente(): Promise<TarifaVigente | null>;
+  /**
+   * Crea la versión 1 con estos valores **solo si todavía no hay ninguna**. Seguro ante reinicios y
+   * arranques simultáneos: una vez creada, otros valores (por ejemplo, un `.env` distinto) no la pisan.
+   */
+  sembrar(valores: ValoresTarifa): Promise<void>;
+  /**
+   * Nueva versión vigente con su auditoría, en una transacción. Dos ediciones simultáneas se
+   * serializan: cada una parte de la vigente de verdad y el historial queda encadenado.
+   */
+  reemplazar(valores: ValoresTarifa, autor: string): Promise<TarifaVigente>;
 }

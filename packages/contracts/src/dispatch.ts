@@ -92,6 +92,39 @@ export const EstimacionRespuesta = z.strictObject({
 });
 export type EstimacionRespuesta = z.infer<typeof EstimacionRespuesta>;
 
+/**
+ * Límites de la tarifa: dejan todos los cálculos holgadamente dentro de los enteros seguros de
+ * JavaScript. Los usan el contrato del admin, el dominio de dispatch y su configuración.
+ */
+export const TOPE_IMPORTE_CENTAVOS = 100_000_000; // $1.000.000
+export const TOPE_MAX_METROS = 1_000_000; // 1000 km
+
+const importe = z.number().int().min(0).max(TOPE_IMPORTE_CENTAVOS);
+
+/**
+ * PUT /admin/tarifas: reemplaza la tarifa completa. Los cinco campos son obligatorios, enteros y
+ * dentro de los límites; cualquier otro campo (moneda, versión, autor) se rechaza: los pone el servidor.
+ */
+export const ConfigurarTarifaBody = z.strictObject({
+  bajadaCentavos: importe,
+  centavosPorKm: importe,
+  centavosPorMinuto: importe,
+  minimoCentavos: importe,
+  maxMetros: z.number().int().min(1).max(TOPE_MAX_METROS),
+});
+export type ConfigurarTarifaBody = z.infer<typeof ConfigurarTarifaBody>;
+
+/** GET y PUT /admin/tarifas: la tarifa vigente con su versión y quién la dejó así. */
+export const TarifaAdminRespuesta = z.strictObject({
+  version: z.string().regex(/^v[1-9][0-9]*$/),
+  moneda: z.literal('ARS'),
+  ...ConfigurarTarifaBody.shape,
+  /** El `sub` del admin que la configuró, o `semilla` para la versión inicial tomada del entorno. */
+  actualizadaPor: z.string().min(1),
+  actualizadaEn: z.iso.datetime(),
+});
+export type TarifaAdminRespuesta = z.infer<typeof TarifaAdminRespuesta>;
+
 const PartesDelViaje =z.strictObject({ solicitudId: z.uuid(), pasajeroId: z.uuid(), choferId: z.uuid() });
 
 // Payloads de los eventos que dispatch escribe en su outbox.

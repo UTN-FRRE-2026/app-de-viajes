@@ -4,7 +4,8 @@ import { crearCasosDeUso } from '../../src/dominio/casos-uso/index.js';
 import type { MetricasDespacho } from '../../src/dominio/puertos/index.js';
 import { BuscadorCandidatosFijo } from '../../src/infra/externos/buscador-fijo.js';
 import { RepositorioDespachoMemoria } from '../../src/infra/memoria/repositorio-memoria.js';
-import { MapasFalso, tarifasFijas } from './mapas-falso.js';
+import { RepositorioTarifasMemoria } from '../../src/infra/memoria/tarifas-memoria.js';
+import { MapasFalso, PARAMETROS_PRUEBA, tarifasFijas } from './mapas-falso.js';
 
 export class RelojFalso implements Reloj {
   constructor(private t = new Date('2026-10-28T12:00:00Z')) {}
@@ -17,6 +18,15 @@ export class RelojFalso implements Reloj {
 }
 
 export const TTL_MS = 15_000;
+
+/** Los cinco valores de PARAMETROS_PRUEBA, como semilla. */
+export const VALORES_PRUEBA = {
+  bajadaCentavos: PARAMETROS_PRUEBA.bajadaCentavos,
+  centavosPorKm: PARAMETROS_PRUEBA.centavosPorKm,
+  centavosPorMinuto: PARAMETROS_PRUEBA.centavosPorMinuto,
+  minimoCentavos: PARAMETROS_PRUEBA.minimoCentavos,
+  maxMetros: PARAMETROS_PRUEBA.maxMetros,
+};
 
 /** Anota lo que registran los casos de uso, para comprobar qué se cuenta y cuándo. */
 export class MetricasEnMemoria implements MetricasDespacho {
@@ -49,6 +59,8 @@ export function sistemaEnMemoria(choferes: string[] = [], ofertasSimultaneas = 3
     metricas,
     mapas,
     tarifas: tarifasFijas(),
+    repoTarifas: new RepositorioTarifasMemoria(),
+    semillaTarifa: VALORES_PRUEBA,
   });
   const ofertasDe = (solicitudId: string) =>
     [...repo.ofertas.values()].filter((o) => o.solicitudId === solicitudId);

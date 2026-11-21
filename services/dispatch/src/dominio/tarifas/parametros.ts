@@ -1,7 +1,11 @@
+import { TOPE_IMPORTE_CENTAVOS, TOPE_MAX_METROS } from '@viajes/contracts';
+
+export { TOPE_IMPORTE_CENTAVOS, TOPE_MAX_METROS };
+
 /**
  * Parámetros de una tarifa. Todos los importes van en **centavos enteros** (nunca coma flotante) y
- * las distancias en metros enteros. Los valores los define el equipo; hoy salen del `.env` y, más
- * adelante, de la configuración del admin (PR 2), por eso llevan `version`.
+ * las distancias en metros enteros. Los configura el admin (versionados en Postgres); la primera
+ * versión sale de los `TARIFA_*` del entorno. `version` identifica cada configuración (`v1`, `v2`...).
  */
 export interface ParametrosTarifa {
   /** Identifica estos valores: la estimación la devuelve y la tarifa final la va a comparar. */
@@ -16,9 +20,17 @@ export interface ParametrosTarifa {
   maxMetros: number;
 }
 
-/** Topes que dejan todos los cálculos holgadamente dentro de los enteros seguros de JavaScript. */
-export const TOPE_IMPORTE_CENTAVOS = 100_000_000; // $1.000.000
-export const TOPE_MAX_METROS = 1_000_000; // 1000 km
+/** Lo que configura el admin: los cinco valores. Moneda y versión las pone el servidor. */
+export type ValoresTarifa = Omit<ParametrosTarifa, 'version' | 'moneda'>;
+
+/** Una versión guardada, con quién la configuró y cuándo. */
+export interface TarifaVigente extends ParametrosTarifa {
+  /** El id del admin (`sub` del token), o `semilla` para la versión inicial tomada del entorno. */
+  actualizadaPor: string;
+  actualizadaEn: Date;
+}
+
+export const AUTOR_SEMILLA = 'semilla';
 
 const IMPORTES = ['bajadaCentavos', 'centavosPorKm', 'centavosPorMinuto', 'minimoCentavos'] as const;
 

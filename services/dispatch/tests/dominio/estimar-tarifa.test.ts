@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { EsquemaConfig } from '../../src/config/index.js';
-import { tarifasDesdeConfig } from '../../src/infra/tarifas/tarifas-config.js';
+import { semillaDesdeConfig } from '../../src/infra/tarifas/tarifas-config.js';
 import { PARAMETROS_PRUEBA } from '../soporte/mapas-falso.js';
 import { DESTINO, ORIGEN, sistemaEnMemoria } from '../soporte/memoria.js';
 
@@ -142,19 +142,14 @@ describe('tarifa desde la configuración', () => {
     expect(variablesConError({ [variable]: valor })).toEqual([variable]);
   });
 
-  it('la versión depende de los valores: los mismos dan la misma, otros dan otra', async () => {
+  it('la semilla son los cinco valores del entorno, sin versión: la versión la pone la base', () => {
     const valores = { bajadaCentavos: 1, centavosPorKm: 2, centavosPorMinuto: 3, minimoCentavos: 4, maxMetros: 5 };
-    const a = await tarifasDesdeConfig(valores).vigente();
-    const b = await tarifasDesdeConfig({ ...valores }).vigente();
-    const c = await tarifasDesdeConfig({ ...valores, centavosPorKm: 3 }).vigente();
-    expect(a.version).toMatch(/^env-[0-9a-f]{12}$/);
-    expect(b.version).toBe(a.version);
-    expect(c.version).not.toBe(a.version);
+    expect(semillaDesdeConfig(valores)).toEqual(valores);
   });
 
-  it('valores que no cumplen los invariantes no dejan componer', () => {
+  it('una semilla que no cumple los invariantes no deja componer', () => {
     expect(() =>
-      tarifasDesdeConfig({ bajadaCentavos: -1, centavosPorKm: 0, centavosPorMinuto: 0, minimoCentavos: 0, maxMetros: 1 }),
+      semillaDesdeConfig({ bajadaCentavos: -1, centavosPorKm: 0, centavosPorMinuto: 0, minimoCentavos: 0, maxMetros: 1 }),
     ).toThrow(/bajadaCentavos/);
   });
 });

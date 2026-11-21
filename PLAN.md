@@ -186,7 +186,8 @@ El ADR 0006 registra la decisión con sus alternativas reales: monolito modular 
 - Cobro simulado detrás de un puerto de pagos, idempotente, que **falla cerrado**.
 - Puerto de mapas (distancia y tiempo) con adaptador simulado y adaptador falso.
 - **Hecho (PR 1 de tarifas):** la función de cálculo, el puerto de mapas con timeout y falla cerrado, y `GET /tarifas/estimacion`. Fórmula, redondeo, contrato y decisiones en [docs/tarifas.md](docs/tarifas.md).
-- **Sigue:** PR 2, la configuración por el admin (tarifa versionada en Postgres, `PUT /admin/tarifas` con Idempotency-Key, caché en Redis con invalidación). PR 3, la estimación guardada en la solicitud, la tarifa final al finalizar, por qué difieren y el cobro.
+- **Hecho (PR 2 de tarifas, Agostina):** la configuración por el admin. Tarifa global versionada en Postgres con auditoría, `GET` y `PUT /admin/tarifas` (el `PUT` con Idempotency-Key), los `TARIFA_*` como semilla, y caché en Redis por versión. El alcance por flota o zona sigue como decisión del equipo.
+- **Sigue:** PR 3, la estimación guardada en la solicitud, la tarifa final al finalizar, por qué difieren y el cobro.
 
 ### 3.5 Transversales
 
@@ -234,7 +235,7 @@ El ADR 0006 registra la decisión con sus alternativas reales: monolito modular 
 | **6.2** Alcance funcional | 🟡 | Hecho: registro, login, solicitud, ofertas, ubicación, estados completos del viaje, estimación de tarifa (`GET /tarifas/estimacion`). Falta: vehículo y habilitación, disponibilidad, seguimiento, tarifa final y cobro, historial, panel |
 | **6.3** ADR + 3 tests | ✅ | — |
 | **6.4** Búsqueda, retención, privacidad | ⬜ | 3.2 |
-| **6.5** Tarifa | 🟡 | Cálculo y estimación hechos (3.4). Faltan la configuración por el admin, la tarifa final y el cobro |
+| **6.5** Tarifa | 🟡 | Cálculo, estimación y configuración por el admin hechos (3.4). Faltan la tarifa final y el cobro |
 | **6.5** Oferta con vencimiento | ✅ | Barrido cada 2 s, TTL de 15 s |
 | **6.5** Tiempo real | ⬜ | 3.5 |
 | **6.6** Simulador de 500 choferes y mediciones | ⬜ | 3.2 y 5.5 |
@@ -345,7 +346,7 @@ Al cerrar esta fase el sistema tiene que poder congelarse para el ataque cruzado
 - [ ] SSE (Ivan).
 - [ ] Zonas, candidatos filtrados por flota y zona, reporte, aislamiento entre flotas (Agos).
 - [ ] Seguridad transversal: CORS, rate limit, encabezados, log por pedido y los tests que faltan del bloque 5 (Agos).
-- [ ] `tarifas`, cobro simulado y adaptadores de mapas y pagos con timeout (Maxi). Hecho: cálculo, estimación y mapas con timeout. Falta: configuración por el admin, tarifa final, cobro y pagos.
+- [ ] `tarifas`, cobro simulado y adaptadores de mapas y pagos con timeout (Maxi). Hecho: cálculo, estimación y mapas con timeout (Maxi); configuración por el admin con caché en Redis (Agostina). Falta: tarifa final, cobro y pagos.
 - [ ] Caché en Redis, retención de ubicaciones y privacidad del seguimiento (Maxi).
 - [ ] Frontend mínimo: base y login (Agos), pasajero y operador (Ivan), chofer (Maxi).
 - [ ] Contenedor `web` con nginx como punto de entrada único (Ivan). Lleva la **CSP de la página** (punto extra que ofreció la cátedra): `default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'`. El build de Vite no necesita scripts en línea; si se usa un mapa, se suma su servidor de teselas a `img-src`. Test en Playwright: la página carga sin violaciones de CSP en la consola.

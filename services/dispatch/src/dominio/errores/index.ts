@@ -57,6 +57,13 @@ export class ViajeFueraDeRango extends ErrorDeDominio {
   }
 }
 
+/** Los valores de la tarifa no cumplen los invariantes del dominio. */
+export class TarifaInvalida extends ErrorDeDominio {
+  constructor(problemas: string[]) {
+    super('TARIFA_INVALIDA', 'INVALIDO', `La tarifa no es válida: ${problemas.join('; ')}`);
+  }
+}
+
 export class MotivoRequerido extends ErrorDeDominio {
   constructor() {
     super('MOTIVO_REQUERIDO', 'INVALIDO', 'El operador tiene que indicar el motivo de la cancelación');

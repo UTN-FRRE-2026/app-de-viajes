@@ -112,8 +112,8 @@ describe('GET /tarifas/estimacion', () => {
   );
 });
 
-describe('GET /tarifas/estimacion con los adaptadores reales (mapas simulado y tarifa del .env)', () => {
-  it('estima con la tarifa de ejemplo y una versión derivada de sus valores', async () => {
+describe('GET /tarifas/estimacion con los adaptadores reales (mapas simulado y tarifa sembrada desde el .env)', () => {
+  it('estima con la tarifa de ejemplo, que queda como versión 1', async () => {
     const tokens = await crearEmisorTokens();
     const conTokens = componer(configTest({ DISPATCH_PERSISTENCIA: 'memoria' }), crearLogger('dispatch-test', 'silent'), {
       verificador: tokens.verificador,
@@ -125,7 +125,7 @@ describe('GET /tarifas/estimacion con los adaptadores reales (mapas simulado y t
         .set(await tokens.auth(randomUUID(), 'pasajero'));
       expect(res.status).toBe(200);
       const e = EstimacionRespuesta.parse(res.body);
-      expect(e.tarifaVersion).toMatch(/^env-[0-9a-f]{12}$/);
+      expect(e.tarifaVersion).toBe('v1');
       expect(e.distanciaMetros).toBeGreaterThan(4000);
       expect(e.tarifaCentavos).toBe(e.desglose.minimoAplicado ? e.desglose.minimoCentavos : e.desglose.subtotalCentavos);
 

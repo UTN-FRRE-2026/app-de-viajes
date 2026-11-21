@@ -1,6 +1,9 @@
 # Tarifas (dispatch)
 
-Estado: **cálculo y estimación** (PR 1). La configuración por el admin (PR 2), la tarifa final, por qué difiere de la estimación y el cobro (PR 3) vienen después. Ver [Lo que sigue](#lo-que-sigue).
+Estado:
+- **PR 1** (#18): cálculo y estimación.
+- **PR 2**: configuración por el admin, con la tarifa global versionada en Postgres, auditoría y caché en Redis.
+- **PR 3**, todavía no hecho: la tarifa final, por qué difiere de la estimación y el cobro. Ver [Lo que sigue](#lo-que-sigue).
 
 > **La fórmula, los importes y el máximo los define el equipo.** Lo que está implementado es la propuesta D1 a D9 de abajo. Los importes del `.env.example` son **de ejemplo**.
 
@@ -25,19 +28,21 @@ La tarifa final del PR 3 tiene que usar **la misma** `calcularTarifa`.
 
 ## Parámetros
 
-| Parámetro | Variable | Ejemplo | Regla |
-|---|---|---|---|
-| Bajada de bandera | `TARIFA_BAJADA_CENTAVOS` | 150000 ($1500) | entero, 0 a 100 000 000 |
-| Por km | `TARIFA_CENTAVOS_POR_KM` | 80000 ($800) | entero, 0 a 100 000 000 |
-| Por minuto | `TARIFA_CENTAVOS_POR_MINUTO` | 15000 ($150) | entero, 0 a 100 000 000 |
-| Mínimo | `TARIFA_MINIMO_CENTAVOS` | 250000 ($2500) | entero, 0 a 100 000 000 |
-| Recorrido máximo | `TARIFA_MAX_METROS` | 100000 (100 km) | entero, 1 a 1 000 000 |
+La tarifa la configura el admin con `PUT /admin/tarifas` (ver [Configuración por el admin](#configuración-por-el-admin)). Los `TARIFA_*` del entorno son **solo la semilla**: crean la versión 1 si la base todavía no tiene tarifa.
 
-Moneda fija: `ARS`. Si un valor no cumple, dispatch no arranca y nombra la variable.
+| Parámetro | Campo | Variable (semilla) | Ejemplo | Regla |
+|---|---|---|---|---|
+| Bajada de bandera | `bajadaCentavos` | `TARIFA_BAJADA_CENTAVOS` | 150000 ($1500) | entero, 0 a 100 000 000 |
+| Por km | `centavosPorKm` | `TARIFA_CENTAVOS_POR_KM` | 80000 ($800) | entero, 0 a 100 000 000 |
+| Por minuto | `centavosPorMinuto` | `TARIFA_CENTAVOS_POR_MINUTO` | 15000 ($150) | entero, 0 a 100 000 000 |
+| Mínimo | `minimoCentavos` | `TARIFA_MINIMO_CENTAVOS` | 250000 ($2500) | entero, 0 a 100 000 000 |
+| Recorrido máximo | `maxMetros` | `TARIFA_MAX_METROS` | 100000 (100 km) | entero, 1 a 1 000 000 |
+
+Moneda fija: `ARS`. Los límites están en un solo lugar, `packages/contracts/src/dispatch.ts` (`TOPE_IMPORTE_CENTAVOS` y `TOPE_MAX_METROS`), y los usan el contrato del `PUT`, el dominio y la configuración. La base los repite en `CHECK`s. Si un valor de la semilla no cumple, dispatch no arranca y nombra la variable.
 
 **En contenedores**, `docker-compose.yml` le pasa a dispatch las variables `TARIFA_*` y `MAPAS_*` del `.env`. Si una no está, llega vacía. Dispatch trata un valor vacío o con solo espacios como ausente: usa su valor por defecto, nunca 0. Un `0` escrito a propósito sigue valiendo 0 en los importes que lo admiten. Los valores por defecto se definen en un solo lugar, `services/dispatch/src/config/index.ts`.
 
-**Versión.** Hoy la tarifa sale del `.env` y su versión es una huella de los valores: `env-` seguido de 12 caracteres hexadecimales. Si cambian los valores, cambia la versión. La estimación la devuelve, para que el PR 3 pueda explicar una diferencia por un cambio de tarifa.
+**Versión.** Cada configuración es una versión: `v1` (la semilla), `v2`, `v3`... La estimación la devuelve en `tarifaVersion`, para que el PR 3 pueda explicar una diferencia por un cambio de tarifa.
 
 ## Estimación: `GET /tarifas/estimacion`
 
@@ -64,7 +69,7 @@ GET /tarifas/estimacion?origenLat=-34.6037&origenLng=-58.3816&destinoLat=-34.587
     "minimoCentavos": 250000,
     "minimoAplicado": false
   },
-  "tarifaVersion": "env-3e0fb9a6f2d0"
+  "tarifaVersion": "v1"
 }
 ```
 
@@ -82,6 +87,74 @@ El desglose separa la bajada del recorrido, pero no la distancia del tiempo. Sep
 | `401 NO_AUTENTICADO` / `403 ROL_NO_PERMITIDO` | Sin token, o el rol es `chofer` |
 | `422 VIAJE_FUERA_DE_RANGO` | El recorrido supera `TARIFA_MAX_METROS` |
 | `503 MAPAS_NO_DISPONIBLE` | Mapas no contestó a tiempo, falló o devolvió algo fuera de contrato. **Falla cerrado**: no se estima con un recorrido inventado |
+
+## Configuración por el admin
+
+**`GET /admin/tarifas`**, solo para el rol `admin`, devuelve la tarifa vigente. Si la base todavía no tiene ninguna, primero la crea con la semilla:
+
+```json
+{
+  "version": "v2",
+  "moneda": "ARS",
+  "bajadaCentavos": 200000,
+  "centavosPorKm": 90000,
+  "centavosPorMinuto": 10000,
+  "minimoCentavos": 300000,
+  "maxMetros": 120000,
+  "actualizadaPor": "00000000-0000-4000-8000-000000000004",
+  "actualizadaEn": "2026-11-22T13:05:41.120Z"
+}
+```
+
+`actualizadaPor` es el `sub` del admin que la configuró, o `semilla` para la versión 1. Contrato: `TarifaAdminRespuesta`.
+
+**`PUT /admin/tarifas`**, solo para `admin` y con **`Idempotency-Key` obligatoria**:
+- **Reemplaza la tarifa completa** con los cinco campos de la tabla de arriba, todos obligatorios. Contrato: `ConfigurarTarifaBody`.
+- Responde `200` con la versión nueva, en la misma forma que el `GET`.
+- Se rechaza con `400` un campo desconocido, un número fraccionario, un valor fuera de rango, un número enviado como texto o un campo que falta.
+- **Moneda, versión y autor los pone el servidor.** Si vienen en el cuerpo, son campos desconocidos y dan 400. El autor sale del token.
+
+**Idempotency-Key** (el middleware del #17):
+- **Reintento** con la misma clave y el mismo cuerpo: la respuesta original, byte a byte, con `Idempotent-Replayed: true`, sin otra versión ni otra auditoría.
+- **La misma clave con otro cuerpo:** `422 CLAVE_IDEMPOTENCIA_REUTILIZADA`.
+- **Un duplicado mientras el primero sigue en curso:** `409 CLAVE_IDEMPOTENCIA_EN_CURSO`.
+- **Redis de idempotencia caído:** `503 IDEMPOTENCIA_NO_DISPONIBLE`. Falla cerrado.
+- **La versión nueva, su auditoría y el registro de la clave se escriben en una sola transacción.** Si algo falla antes del COMMIT, no queda nada, y la misma clave se puede volver a usar.
+
+**Persistencia** (migración `20261122000000_tarifas`):
+
+| Tabla | Qué guarda |
+|---|---|
+| `fare_versions` | Una fila por versión, con sus valores, quién la creó y cuándo. **No se modifica nunca** |
+| `fare_current` | Una sola fila: la versión vigente |
+| `fare_changes` | La auditoría: versión, versión anterior, quién, cuándo, valores anteriores y nuevos, y el `requestId` del pedido |
+
+**Dos admins a la vez.** El `PUT` bloquea la única fila de `fare_current` (`SELECT … FOR UPDATE`), así que las ediciones se serializan:
+- el segundo admin espera, relee la vigente que dejó el primero y crea la versión siguiente;
+- las dos ediciones se guardan, en versiones seguidas, y queda vigente la última que confirmó;
+- el historial queda encadenado: cada cambio registra como valores anteriores los de la versión de verdad anterior. Un `CHECK` de la base exige `previous_version = version - 1`.
+
+No hay control optimista, del tipo «solo si sigue vigente la versión X». Si el equipo lo quiere, se agrega con un `If-Match`.
+
+**La semilla.** Al arrancar, y también en la primera estimación o el primer `GET` si al arrancar no se pudo, dispatch crea la versión 1 con los `TARIFA_*` del entorno:
+- solo si la base no tiene ninguna, con `INSERT … ON CONFLICT DO NOTHING`;
+- con dos arranques simultáneos, queda una sola versión 1;
+- una vez creada, **cambiar el `.env` o reiniciar no pisa** lo que configuró el admin.
+
+**Caché en Redis**, por versión (`dispatch:tarifas:v3`, con TTL `TARIFAS_CACHE_TTL_SEGUNDOS`, 1 h por defecto). En cada estimación:
+1. Se pregunta a **Postgres** qué versión está vigente: una fila, por clave primaria. **Este dato nunca sale del caché.**
+2. Los parámetros de esa versión se buscan en Redis (HIT) o en Postgres (MISS), y se dejan en Redis.
+3. Si Redis falla o tarda más de 200 ms, se usa Postgres. El caché nunca es un punto de falla.
+
+Como las versiones no cambian nunca, una entrada del caché nunca queda vieja. Después de un `PUT`, la próxima estimación ya usa la versión nueva, **aunque falle la invalidación** o una lectura concurrente haya vuelto a dejar la versión anterior en el caché.
+
+La invalidación corre después del COMMIT: deja la nueva versión en Redis y borra la anterior. Es higiene, no corrección.
+
+En `/metrics`, `dispatch_tarifas_cache_total{resultado="hit|miss|error"}`.
+
+**Modo memoria** (`DISPATCH_PERSISTENCIA=memoria`): las mismas rutas con una tarifa versionada en memoria, sin Redis.
+
+**Alcance.** La tarifa es **global**. Por flota o por zona (variante G) **sigue como decisión del equipo** (D7).
 
 ## Puerto de mapas
 
@@ -101,19 +174,14 @@ El desglose separa la bajada del recorrido, pero no la distancia del tiempo. Sep
 | D4 | Máximo | En la estimación, más de `maxMetros` da 422 y justo en el máximo se acepta. Ejemplo: 100 km. Al crear la solicitud todavía no se aplica (PR 3) |
 | D5 | Distancia cero | Se acepta. Con 0 m y 0 s el total es `max(mínimo, bajada)`; con los valores de ejemplo, el mínimo |
 | D6 | Recorrido simulado | Haversine × 1,3, a 25 km/h |
-| D7 | Alcance de la tarifa | Global. Por flota o zona (variante G) queda abierto para el PR 2 |
+| D7 | Alcance de la tarifa | Global, configurada por el admin (PR 2). Por flota o zona (variante G) sigue como decisión del equipo |
 | D8 | Contrato | `GET`, sin Idempotency-Key, para pasajero, operador y admin; desglose y versión |
 | D9 | Mapas caído | Timeout de 1 s y 503: falla cerrado |
 
 ## Lo que sigue
 
-- **PR 2: configuración por el admin.**
-  - Tarifa versionada en Postgres, con `GET` y `PUT /admin/tarifas` solo para `admin`.
-  - El `PUT` lleva `Idempotency-Key`.
-  - Auditoría de quién cambió qué.
-  - Caché en Redis con invalidación al editar.
-  - Alcance por flota o zona, si el equipo lo decide (D7).
-  - El `ProveedorTarifas` pasa a leer la tabla, y los valores del `.env` quedan como semilla.
+- **Hecho en el PR 2:** la configuración por el admin, la tarifa versionada, la auditoría, la semilla y el caché. Ver arriba.
+- **Abierto:** el alcance por flota o zona (D7), un endpoint para consultar el historial de cambios (hoy queda en `fare_changes`), y el control optimista con `If-Match`.
 - **PR 3: tarifa final y cobro.**
   - Al crear la solicitud se guarda la estimación con su versión.
   - Al finalizar se calcula la tarifa final con la misma función.
