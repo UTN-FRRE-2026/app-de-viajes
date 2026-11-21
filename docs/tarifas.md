@@ -121,7 +121,7 @@ El desglose separa la bajada del recorrido, pero no la distancia del tiempo. Sep
 - **Redis de idempotencia caído:** `503 IDEMPOTENCIA_NO_DISPONIBLE`. Falla cerrado.
 - **La versión nueva, su auditoría y el registro de la clave se escriben en una sola transacción.** Si algo falla antes del COMMIT, no queda nada, y la misma clave se puede volver a usar.
 
-**Persistencia** (migración `20261122000000_tarifas`):
+**Persistencia** (migraciones `20261122000000_tarifas` y `20261122120000_tarifas_auditoria_check`):
 
 | Tabla | Qué guarda |
 |---|---|
@@ -132,7 +132,7 @@ El desglose separa la bajada del recorrido, pero no la distancia del tiempo. Sep
 **Dos admins a la vez.** El `PUT` bloquea la única fila de `fare_current` (`SELECT … FOR UPDATE`), así que las ediciones se serializan:
 - el segundo admin espera, relee la vigente que dejó el primero y crea la versión siguiente;
 - las dos ediciones se guardan, en versiones seguidas, y queda vigente la última que confirmó;
-- el historial queda encadenado: cada cambio registra como valores anteriores los de la versión de verdad anterior. Un `CHECK` de la base exige `previous_version = version - 1`.
+- el historial queda encadenado: cada cambio registra como valores anteriores los de la versión de verdad anterior. El `CHECK` `fare_changes_cadena_check` lo exige en la base: la versión 1 no tiene anterior ni valores anteriores; desde la 2, `previous_version = version - 1` y los valores anteriores no son nulos. La primera versión del `CHECK` dejaba pasar una versión mayor que 1 sin anterior, porque `NULL = n` da `NULL` y un `CHECK` en `NULL` se cumple. Se corrigió en una migración incremental, porque la original ya estaba aplicada.
 
 No hay control optimista, del tipo «solo si sigue vigente la versión X». Si el equipo lo quiere, se agrega con un `If-Match`.
 
@@ -148,7 +148,7 @@ No hay control optimista, del tipo «solo si sigue vigente la versión X». Si e
 
 Como las versiones no cambian nunca, una entrada del caché nunca queda vieja. Después de un `PUT`, la próxima estimación ya usa la versión nueva, **aunque falle la invalidación** o una lectura concurrente haya vuelto a dejar la versión anterior en el caché.
 
-La invalidación corre después del COMMIT: deja la nueva versión en Redis y borra la anterior. Es higiene, no corrección.
+La invalidación corre después del COMMIT: deja la nueva versión en Redis y borra **la anterior que leyó la transacción bajo el `FOR UPDATE`**. Con dos admins a la vez, la vigente leída antes de entrar puede no ser la que se reemplazó; por eso `reemplazar` devuelve también `anterior`. Es higiene, no corrección.
 
 En `/metrics`, `dispatch_tarifas_cache_total{resultado="hit|miss|error"}`.
 

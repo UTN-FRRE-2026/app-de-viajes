@@ -116,6 +116,8 @@ export interface RepositorioTarifas {
   /**
    * Nueva versión vigente con su auditoría, en una transacción. Dos ediciones simultáneas se
    * serializan: cada una parte de la vigente de verdad y el historial queda encadenado.
+   * Devuelve también `anterior`: la versión que estaba vigente según la lectura hecha **dentro** de la
+   * transacción, bajo el lock. Es la que hay que invalidar en el caché, no una leída antes.
    */
-  reemplazar(valores: ValoresTarifa, autor: string): Promise<TarifaVigente>;
+  reemplazar(valores: ValoresTarifa, autor: string): Promise<{ nueva: TarifaVigente; anterior: string | null }>;
 }

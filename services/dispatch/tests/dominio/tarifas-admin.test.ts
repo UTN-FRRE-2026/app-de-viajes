@@ -114,6 +114,22 @@ describe('configurarTarifa', () => {
     expect(cache.operaciones).toEqual(['guardar v2', 'borrar v1']);
   });
 
+  it('invalida la anterior que leyó la transacción, no la que se leyó antes de entrar', async () => {
+    const { casos, cache, repoTarifas } = sistema();
+    await casos.obtenerTarifa();
+    // Otro admin guarda la v2 justo después de que este leyó la v1 y antes de su transacción.
+    const reemplazarOriginal = repoTarifas.reemplazar.bind(repoTarifas);
+    repoTarifas.reemplazar = async (valores, autor) => {
+      await reemplazarOriginal(VALORES_PRUEBA, randomUUID());
+      return reemplazarOriginal(valores, autor);
+    };
+
+    const nueva = await casos.configurarTarifa({ valores: OTROS, adminId: ADMIN });
+    expect(nueva.version).toBe('v3');
+    // Borra la v2 (la que reemplazó de verdad), no la v1 que había leído antes.
+    expect(cache.operaciones).toEqual(['guardar v3', 'borrar v2']);
+  });
+
   it('si el aviso al caché falla, el PUT igual responde la versión nueva', async () => {
     const { casos, cache } = sistema();
     cache.falla = { guardar: true, borrar: true };

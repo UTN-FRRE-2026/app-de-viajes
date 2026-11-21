@@ -158,6 +158,54 @@ describe('estimación con el caché en Redis', () => {
   });
 });
 
+describe('la base exige una auditoría encadenada (CHECK fare_changes_cadena_check)', () => {
+  /** Inserta una versión y su fila de auditoría a mano, en una transacción que siempre se deshace. */
+  async function insertarCambio(version: number, anterior: number | null, valoresAnteriores: object | null) {
+    try {
+      await d.prisma.$transaction(async (tx) => {
+        await tx.$executeRaw`
+          INSERT INTO fare_versions (version, base_fare_cents, per_km_cents, per_minute_cents, minimum_cents, max_meters, created_by)
+          VALUES (${version}, 1, 1, 1, 1, 1, 'prueba')
+          ON CONFLICT (version) DO NOTHING`;
+        await tx.$executeRaw`
+          INSERT INTO fare_changes (version, previous_version, changed_by, previous_values, new_values)
+          VALUES (${version}, ${anterior}, 'prueba', ${valoresAnteriores ? JSON.stringify(valoresAnteriores) : null}::jsonb, '{}'::jsonb)`;
+        throw new Error('aceptada');
+      });
+    } catch (err) {
+      return err instanceof Error && err.message === 'aceptada' ? 'aceptada' : String(err);
+    }
+    return 'aceptada';
+  }
+
+  beforeEach(async () => {
+    // v1 y v2 reales: la fila de prueba es la v3 (o la v1 en la base vacía).
+    await verTarifa(d);
+    await configurar(d);
+  });
+
+  it('rechaza una versión mayor que 1 sin versión anterior (antes pasaba: NULL = n daba NULL)', async () => {
+    expect(await insertarCambio(3, null, null)).toMatch(/fare_changes_cadena_check/);
+  });
+
+  it('rechaza una versión mayor que 1 sin los valores anteriores', async () => {
+    expect(await insertarCambio(3, 2, null)).toMatch(/fare_changes_cadena_check/);
+  });
+
+  it('rechaza una versión que no sigue a la anterior', async () => {
+    expect(await insertarCambio(3, 1, { bajadaCentavos: 1 })).toMatch(/fare_changes_cadena_check/);
+  });
+
+  it('acepta la versión siguiente con su anterior y sus valores anteriores', async () => {
+    expect(await insertarCambio(3, 2, { bajadaCentavos: 1 })).toBe('aceptada');
+  });
+
+  it('rechaza una versión 1 con valores anteriores', async () => {
+    await d.limpiarTarifas();
+    expect(await insertarCambio(1, null, { bajadaCentavos: 1 })).toMatch(/fare_changes_cadena_check/);
+  });
+});
+
 describe('modo memoria', () => {
   it('GET, PUT con Idempotency-Key, reintento y estimación funcionan sin Postgres ni Redis', async () => {
     const tokens = await crearEmisorTokens();

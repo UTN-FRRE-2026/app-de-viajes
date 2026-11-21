@@ -47,7 +47,8 @@ export class RepositorioTarifasMemoria implements RepositorioTarifas {
   }
 
   async reemplazar(valores: ValoresTarifa, autor: string) {
-    return { ...this.agregar(valores, autor) };
+    const anterior = this.actual?.version ?? null;
+    return { nueva: { ...this.agregar(valores, autor) }, anterior };
   }
 
   private agregar(valores: ValoresTarifa, autor: string): TarifaVigente {

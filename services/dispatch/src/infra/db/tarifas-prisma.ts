@@ -116,7 +116,7 @@ export class RepositorioTarifasPrisma implements RepositorioTarifas {
     const v = valoresDe(valores);
     // Si el pedido HTTP trae Idempotency-Key, el registro va en esta misma transacción.
     const idempotencia = idempotenciaPendiente();
-    const tarifa = await this.prisma.$transaction(async (tx) => {
+    const resultado = await this.prisma.$transaction(async (tx) => {
       // Primero el lock, solo sobre `fare_current`. Con un JOIN en la misma consulta, en READ COMMITTED
       // el segundo admin, al despertar, reevalúa el JOIN contra la versión vieja y no recibe ninguna fila.
       const [vigente] = await tx.$queryRaw<{ version: number }[]>`SELECT version FROM fare_current WHERE id FOR UPDATE`;
@@ -139,11 +139,12 @@ export class RepositorioTarifasPrisma implements RepositorioTarifas {
         ON CONFLICT (id) DO UPDATE SET version = EXCLUDED.version, updated_at = EXCLUDED.updated_at`;
 
       await this.opciones.dentroDelCambio?.();
-      const resultado = aTarifa(fila as FilaTarifa);
-      if (idempotencia) await registrarEnTransaccion(tx, idempotencia, resultado);
-      return resultado;
+      const nuevaTarifa = aTarifa(fila as FilaTarifa);
+      // Lo que se guarda para la Idempotency-Key es la respuesta de la ruta: solo la tarifa nueva.
+      if (idempotencia) await registrarEnTransaccion(tx, idempotencia, nuevaTarifa);
+      return { nueva: nuevaTarifa, anterior: vigente ? etiqueta(vigente.version) : null };
     }, OPCIONES_TX);
     if (idempotencia) idempotenciaRegistrada();
-    return tarifa;
+    return resultado;
   }
 }

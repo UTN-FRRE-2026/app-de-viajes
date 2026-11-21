@@ -97,6 +97,45 @@ describe('ediciones simultáneas', () => {
   });
 });
 
+describe('invalidación del caché con ediciones simultáneas', () => {
+  it('cada edición borra del caché la versión que reemplazó bajo el lock: no quedan v1 ni v2', async () => {
+    const borradas: string[] = [];
+    const s = await levantarDispatch({
+      tarifas: {
+        repo: { dentroDelCambio: () => new Promise((r) => setTimeout(r, 150)) },
+        cache: (real) => ({
+          ...real,
+          borrar: (version) => {
+            borradas.push(version);
+            return real.borrar(version);
+          },
+        }),
+      },
+    });
+    try {
+      await s.limpiarTarifas();
+      // Caché cargado con la v1.
+      const pasajero = await s.auth(randomUUID(), 'pasajero');
+      const q = { origenLat: -34.6037, origenLng: -58.3816, destinoLat: -34.5875, destinoLng: -58.4207 };
+      await request(s.url).get('/tarifas/estimacion').query(q).set(pasajero).expect(200);
+      expect(await s.redis.get(`${s.prefijoCache}v1`)).not.toBeNull();
+
+      // Los dos leen la v1 antes de entrar; el segundo, al tomar el lock, ve la v2 que dejó el primero.
+      const editar = async (i: number) =>
+        request(s.url).put('/admin/tarifas').set(clave()).set(await s.auth(randomUUID(), 'admin')).send(valores(i));
+      const [a, b] = await Promise.all([editar(1), editar(2)]);
+      expect([a.status, b.status]).toEqual([200, 200]);
+
+      expect(borradas.sort()).toEqual(['v1', 'v2']);
+      expect(await s.redis.get(`${s.prefijoCache}v1`)).toBeNull();
+      expect(await s.redis.get(`${s.prefijoCache}v2`)).toBeNull();
+      expect(JSON.parse((await s.redis.get(`${s.prefijoCache}v3`))!)).toMatchObject({ version: 'v3' });
+    } finally {
+      await s.cerrar();
+    }
+  });
+});
+
 describe('semilla con arranques simultáneos', () => {
   it('diez dispatch que siembran a la vez con valores distintos dejan una sola versión 1', async () => {
     const repos = Array.from({ length: 10 }, () => new RepositorioTarifasPrisma(d.prisma));

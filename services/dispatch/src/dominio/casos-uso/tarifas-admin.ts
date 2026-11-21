@@ -43,9 +43,11 @@ export function configurarTarifa(deps: DependenciasTarifasAdmin) {
 
     // Si es la primera vez, la versión 1 queda como semilla y esta edición es la 2: el historial
     // empieza en lo que había antes del primer cambio.
-    const anterior = await vigenteOSembrar(deps);
-    const nueva = await deps.repoTarifas.reemplazar(valores, adminId);
-    await deps.tarifas.tarifaCambiada?.(anterior.version, nueva).catch(() => {});
+    await vigenteOSembrar(deps);
+    // `anterior` sale de la transacción, bajo el lock: con dos admins a la vez, la vigente leída antes
+    // de entrar puede no ser la que reemplazó esta edición.
+    const { nueva, anterior } = await deps.repoTarifas.reemplazar(valores, adminId);
+    await deps.tarifas.tarifaCambiada?.(anterior, nueva).catch(() => {});
     return nueva;
   };
 }
