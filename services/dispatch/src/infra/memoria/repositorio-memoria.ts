@@ -5,7 +5,13 @@ import {
   type DatosOferta,
   type RegistroSolicitud,
 } from '../../dominio/entidades/index.js';
-import type { EventoDispatch, RepositorioDespacho, TransaccionDespacho } from '../../dominio/puertos/index.js';
+import type {
+  EventoDispatch,
+  FiltroSolicitudes,
+  Pagina,
+  RepositorioDespacho,
+  TransaccionDespacho,
+} from '../../dominio/puertos/index.js';
 
 /** Cola de espera simple: quien llega segundo espera a que el primero suelte. */
 class Mutex {
@@ -65,6 +71,23 @@ export class RepositorioDespachoMemoria implements RepositorioDespacho {
 
   async choferesOfrecidos(solicitudId: string) {
     return [...this.ofertas.values()].filter((o) => o.solicitudId === solicitudId).map((o) => o.choferId);
+  }
+
+  async listarSolicitudes({ pasajeroId, choferId, estados, texto }: FiltroSolicitudes, { limite, desde }: Pagina) {
+    const buscado = texto?.toLowerCase();
+    const contiene = (valor: string | null) => valor !== null && valor.toLowerCase().includes(buscado as string);
+    return [...this.solicitudes.values()]
+      .filter(
+        (s) =>
+          (!pasajeroId || s.pasajeroId === pasajeroId) &&
+          (!choferId || s.choferId === choferId) &&
+          (!estados || estados.includes(s.estado)) &&
+          (!buscado || [s.id, s.pasajeroId, s.choferId, s.motivoCancelacion].some(contiene)),
+      )
+      // Igual que en Postgres: la más nueva primero y, a igual fecha, por id descendente.
+      .sort((a, b) => b.creadaEn.getTime() - a.creadaEn.getTime() || (a.id < b.id ? 1 : a.id > b.id ? -1 : 0))
+      .slice(desde, desde + limite)
+      .map((d) => SolicitudViaje.reconstruir(d));
   }
 
   async enTransaccion<T>(trabajo: (tx: TransaccionDespacho) => Promise<T>): Promise<T> {

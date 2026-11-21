@@ -35,7 +35,33 @@ export const EstadoSolicitud = z.enum([
   'SIN_CHOFERES',
 ]);
 
-const PartesDelViaje = z.strictObject({ solicitudId: z.uuid(), pasajeroId: z.uuid(), choferId: z.uuid() });
+// En la query todo llega como texto (y un parámetro repetido llega como lista: se rechaza).
+const entero = (min: number, max: number) =>
+  z.string().trim().min(1).pipe(z.coerce.number()).pipe(z.number().int().min(min).max(max));
+
+export const LIMITE_LISTADO_MAX = 50;
+
+/** Paginación por desplazamiento: `desde` es cuántos viajes saltear. */
+const Pagina = {
+  limite: entero(1, LIMITE_LISTADO_MAX).default(20),
+  desde: entero(0, 10_000).default(0),
+};
+
+export const HistorialQuery = z.strictObject(Pagina);
+export type HistorialQuery = z.infer<typeof HistorialQuery>;
+
+/**
+ * Panel del operador. Sin `estado`, muestra los viajes activos. `q` busca, sin distinguir
+ * mayúsculas, en el id del viaje, del pasajero y del chofer, y en el motivo de cancelación.
+ */
+export const PanelQuery = z.strictObject({
+  ...Pagina,
+  estado: EstadoSolicitud.optional(),
+  q: z.string().trim().min(1).max(100).optional(),
+});
+export type PanelQuery = z.infer<typeof PanelQuery>;
+
+const PartesDelViaje =z.strictObject({ solicitudId: z.uuid(), pasajeroId: z.uuid(), choferId: z.uuid() });
 
 // Payloads de los eventos que dispatch escribe en su outbox.
 export const EventosDispatch = {

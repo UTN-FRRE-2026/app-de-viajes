@@ -296,6 +296,77 @@ describe('ciclo de vida del viaje', () => {
   });
 });
 
+describe('historial y panel del operador', () => {
+  /** Un pasajero pide y cancela `n` viajes, uno por segundo (solo puede tener uno activo a la vez). */
+  async function viajesCancelados(sis: ReturnType<typeof sistemaEnMemoria>, pasajeroId: string, n: number, motivo?: string) {
+    const ids: string[] = [];
+    for (let i = 0; i < n; i++) {
+      sis.reloj.avanzar(1000);
+      const s = await sis.casos.crearSolicitud({ pasajeroId, origen: ORIGEN, destino: DESTINO });
+      await sis.casos.cancelarSolicitud({ solicitudId: s.id, usuarioId: pasajeroId, quien: 'pasajero', motivo: motivo ?? null });
+      ids.push(s.id);
+    }
+    return ids;
+  }
+
+  it('el pasajero ve solo sus viajes, del más nuevo al más viejo, con la fecha', async () => {
+    const sis = sistemaEnMemoria(uuids(1));
+    const mios = await viajesCancelados(sis, PASAJERO, 3);
+    await viajesCancelados(sis, OTRO_PASAJERO, 2);
+
+    const r = await sis.casos.historial({ usuarioId: PASAJERO, como: 'pasajero', limite: 20, desde: 0 });
+    expect(r.viajes.map((v) => v.id)).toEqual([...mios].reverse());
+    expect(r.viajes[0]?.creadaEn).toBe('2026-10-28T12:00:03.000Z');
+    expect(r.siguiente).toBeNull();
+  });
+
+  it('pagina: limite 2 sobre 5 viajes da 2, 2 y 1, y `siguiente` indica dónde seguir', async () => {
+    const sis = sistemaEnMemoria(uuids(1));
+    const ids = (await viajesCancelados(sis, PASAJERO, 5)).reverse();
+    const pagina = (desde: number) => sis.casos.historial({ usuarioId: PASAJERO, como: 'pasajero', limite: 2, desde });
+
+    const [p1, p2, p3] = [await pagina(0), await pagina(2), await pagina(4)];
+    expect([p1, p2, p3].map((p) => p.viajes.map((v) => v.id))).toEqual([ids.slice(0, 2), ids.slice(2, 4), ids.slice(4)]);
+    expect([p1.siguiente, p2.siguiente, p3.siguiente]).toEqual([2, 4, null]);
+  });
+
+  it('el chofer ve los viajes que tuvo asignados, no las ofertas que recibió', async () => {
+    const [chofer, otroChofer] = uuids(2) as [string, string];
+    const { casos, ofertasDe } = sistemaEnMemoria([chofer, otroChofer], 2);
+    const tomada = await casos.crearSolicitud({ pasajeroId: PASAJERO, origen: ORIGEN, destino: DESTINO });
+    await casos.crearSolicitud({ pasajeroId: OTRO_PASAJERO, origen: ORIGEN, destino: DESTINO });
+    await casos.aceptarOferta({ ofertaId: ofertasDe(tomada.id).find((o) => o.choferId === chofer)!.id, choferId: chofer });
+
+    const r = await casos.historial({ usuarioId: chofer, como: 'chofer', limite: 20, desde: 0 });
+    expect(r.viajes.map((v) => v.id)).toEqual([tomada.id]);
+    expect((await casos.historial({ usuarioId: otroChofer, como: 'chofer', limite: 20, desde: 0 })).viajes).toEqual([]);
+  });
+
+  it('el panel muestra por defecto solo los viajes activos; con `estado`, los de ese estado', async () => {
+    const sis = sistemaEnMemoria(uuids(1));
+    const [cancelado] = await viajesCancelados(sis, PASAJERO, 1);
+    const activo = await sis.casos.crearSolicitud({ pasajeroId: OTRO_PASAJERO, origen: ORIGEN, destino: DESTINO });
+
+    const activos = await sis.casos.panelOperador({ limite: 20, desde: 0 });
+    expect(activos.viajes.map((v) => v.id)).toEqual([activo.id]);
+    const cancelados = await sis.casos.panelOperador({ estado: 'CANCELADO_PASAJERO', limite: 20, desde: 0 });
+    expect(cancelados.viajes.map((v) => v.id)).toEqual([cancelado]);
+  });
+
+  it('la búsqueda encuentra por motivo (sin distinguir mayúsculas) y por parte del id', async () => {
+    const sis = sistemaEnMemoria(uuids(1));
+    const [conMotivo] = await viajesCancelados(sis, PASAJERO, 1, 'Dirección equivocada');
+    await viajesCancelados(sis, OTRO_PASAJERO, 1, 'otro motivo');
+    const buscar = (texto: string) =>
+      sis.casos.panelOperador({ estado: 'CANCELADO_PASAJERO', texto, limite: 20, desde: 0 }).then((r) => r.viajes.map((v) => v.id));
+
+    expect(await buscar('DIRECCIÓN')).toEqual([conMotivo]);
+    expect(await buscar(conMotivo!.slice(0, 8))).toEqual([conMotivo]);
+    expect(await buscar(PASAJERO.slice(-12))).toEqual([conMotivo]);
+    expect(await buscar('no existe')).toEqual([]);
+  });
+});
+
 describe('obtenerSolicitud', () => {
   it('la ven el pasajero dueño y el chofer asignado; nadie más', async () => {
     const [chofer, extranio] = uuids(2) as [string, string];

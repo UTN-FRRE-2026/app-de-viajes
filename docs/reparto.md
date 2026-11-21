@@ -21,7 +21,7 @@ Cada integrante es **dueño** de un problema central y de los módulos que lo ro
 
 **Fase B**
 - [x] viajes: `EN_CAMINO`, `EN_CURSO`, `CANCELADO_CHOFER`, cancelación del operador con motivo, finalizar liberando al chofer en la misma transacción, y un test por transición.
-- [ ] Historial por pasajero y por chofer; panel del operador con búsqueda.
+- [x] Historial por pasajero y por chofer; panel del operador con búsqueda.
 - [ ] Idempotency-Key en `platform` (Redis `SET NX` + registro en la transacción del efecto).
 - [ ] SSE: relay del `outbox` a Redis Pub/Sub, suscripción solo a viajes propios y al canal de posición del chofer asignado, reconexión con `Last-Event-ID`.
 - [ ] Frontend: pantallas de pasajero y de operador.

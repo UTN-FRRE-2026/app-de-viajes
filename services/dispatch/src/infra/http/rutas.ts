@@ -1,4 +1,4 @@
-import { CancelarBody, CrearSolicitudBody, ParamsId, SinBody } from '@viajes/contracts';
+import { CancelarBody, CrearSolicitudBody, HistorialQuery, PanelQuery, ParamsId, SinBody } from '@viajes/contracts';
 import { autenticar, requerirRol, usuarioDe, validar, type Rol, type VerificadorToken } from '@viajes/platform';
 import { Router } from 'express';
 import type { CasosDeUso } from '../../dominio/casos-uso/index.js';
@@ -20,6 +20,20 @@ export function rutasDespacho(casos: CasosDeUso, verificar: VerificadorToken): R
     const { origen, destino } = req.body as CrearSolicitudBody;
     const solicitud = await casos.crearSolicitud({ pasajeroId: usuarioDe(req).id, origen, destino });
     res.status(201).json(solicitud);
+  });
+
+  // Historial propio: el usuario sale del token, así que nadie puede pedir el de otro.
+  r.get('/historial', requerirRol('pasajero', 'chofer'), validar({ query: HistorialQuery }), async (req, res) => {
+    const usuario = usuarioDe(req);
+    const { limite, desde } = req.query as unknown as HistorialQuery;
+    res.json(
+      await casos.historial({ usuarioId: usuario.id, como: usuario.rol === 'chofer' ? 'chofer' : 'pasajero', limite, desde }),
+    );
+  });
+
+  r.get('/panel/viajes', requerirRol('operador', 'admin'), validar({ query: PanelQuery }), async (req, res) => {
+    const { estado, q, limite, desde } = req.query as unknown as PanelQuery;
+    res.json(await casos.panelOperador({ limite, desde, ...(estado ? { estado } : {}), ...(q ? { texto: q } : {}) }));
   });
 
   r.get('/solicitudes/:id', validar({ params: ParamsId }), async (req, res) => {

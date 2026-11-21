@@ -177,6 +177,113 @@ describe('ciclo del viaje: roles y viajes ajenos', () => {
   });
 });
 
+describe('historial y panel del operador', () => {
+  /** Pide un viaje y lo cancela con un motivo, para que quede en el historial. */
+  async function viajeCancelado(pasajero: string, motivo: string) {
+    d.buscador.choferes = [randomUUID()];
+    const auth = await d.auth(pasajero, 'pasajero');
+    const creada = await request(d.url).post('/solicitudes').set(auth).send(cuerpo);
+    await request(d.url).post(`/solicitudes/${creada.body.id}/cancelar`).set(auth).send({ motivo });
+    return creada.body.id as string;
+  }
+
+  const panel = async (query: Record<string, string>) =>
+    request(d.url).get('/panel/viajes').query(query).set(await d.auth(randomUUID(), 'operador'));
+
+  it('el historial de un pasajero no incluye viajes de otro (el usuario sale del token)', async () => {
+    const [ana, beto] = [randomUUID(), randomUUID()];
+    const deAna = [await viajeCancelado(ana, 'uno'), await viajeCancelado(ana, 'dos')];
+    await viajeCancelado(beto, 'tres');
+
+    const res = await request(d.url).get('/historial').set(await d.auth(ana, 'pasajero'));
+    expect(res.status).toBe(200);
+    expect(res.body.viajes.map((v: { id: string }) => v.id)).toEqual([...deAna].reverse());
+    expect(res.body.siguiente).toBeNull();
+  });
+
+  it('pasar el id de otro usuario por la query no sirve: clave no permitida → 400', async () => {
+    const res = await request(d.url)
+      .get('/historial')
+      .query({ pasajeroId: randomUUID() })
+      .set(await d.auth(randomUUID(), 'pasajero'));
+    expect(res.status).toBe(400);
+  });
+
+  it('paginación contra Postgres', async () => {
+    const pasajero = randomUUID();
+    for (const m of ['a1', 'a2', 'a3']) await viajeCancelado(pasajero, `motivo ${m}`);
+    const auth = await d.auth(pasajero, 'pasajero');
+    const p1 = await request(d.url).get('/historial').query({ limite: '2' }).set(auth);
+    const p2 = await request(d.url).get('/historial').query({ limite: '2', desde: String(p1.body.siguiente) }).set(auth);
+    expect(p1.body.viajes).toHaveLength(2);
+    expect(p1.body.siguiente).toBe(2);
+    expect(p2.body.viajes).toHaveLength(1);
+    expect(p2.body.siguiente).toBeNull();
+  });
+
+  it.each([
+    ['pasajero', 403],
+    ['chofer', 403],
+    ['admin_flota', 403],
+    ['operador', 200],
+    ['admin', 200],
+  ] as const)('panel con rol %s → %i', async (rol, estado) => {
+    const res = await request(d.url).get('/panel/viajes').set(await d.auth(randomUUID(), rol));
+    expect(res.status).toBe(estado);
+  });
+
+  it.each(['operador', 'admin', 'admin_flota'] as const)('historial con rol %s → 403 (no tiene viajes propios)', async (rol) => {
+    expect((await request(d.url).get('/historial').set(await d.auth(randomUUID(), rol))).status).toBe(403);
+  });
+
+  it.each([
+    ['limite 0', { limite: '0' }],
+    ['limite mayor al máximo', { limite: '51' }],
+    ['limite no numérico', { limite: 'diez' }],
+    ['limite vacío', { limite: '' }],
+    ['desde negativo', { desde: '-1' }],
+    ['estado inventado', { estado: 'BORRADO' }],
+    ['búsqueda demasiado larga', { q: 'x'.repeat(101) }],
+    ['clave extra', { orden: 'created_at; DROP TABLE ride_requests' }],
+  ])('panel con %s → 400', async (_nombre, query) => {
+    const res = await panel(query);
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDACION');
+  });
+
+  it('parámetro repetido (?limite=1&limite=50) → 400', async () => {
+    const res = await request(d.url).get('/panel/viajes?limite=1&limite=50').set(await d.auth(randomUUID(), 'operador'));
+    expect(res.status).toBe(400);
+  });
+
+  it('la búsqueda encuentra por motivo y por parte del id', async () => {
+    const id = await viajeCancelado(randomUUID(), 'Dirección equivocada');
+    await viajeCancelado(randomUUID(), 'otro motivo');
+    const ids = (r: request.Response) => r.body.viajes.map((v: { id: string }) => v.id);
+    expect(ids(await panel({ estado: 'CANCELADO_PASAJERO', q: 'dirección' }))).toEqual([id]);
+    expect(ids(await panel({ estado: 'CANCELADO_PASAJERO', q: id.slice(0, 8).toUpperCase() }))).toEqual([id]);
+  });
+
+  it.each([
+    `' OR '1'='1`,
+    `'; DROP TABLE ride_requests; --`,
+    `motivo' UNION SELECT * FROM outbox --`,
+    '%',
+    '_',
+    '\\',
+    `%' OR 1=1 --`,
+  ])('inyección en la búsqueda (%j): es solo texto, no encuentra nada y la tabla sigue intacta', async (q) => {
+    await viajeCancelado(randomUUID(), 'motivo uno');
+    await viajeCancelado(randomUUID(), 'motivo dos');
+    const antes = await d.prisma.solicitudViaje.count();
+
+    const res = await panel({ estado: 'CANCELADO_PASAJERO', q });
+    expect(res.status).toBe(200);
+    expect(res.body.viajes).toEqual([]);
+    expect(await d.prisma.solicitudViaje.count()).toBe(antes);
+  });
+});
+
 describe('encabezados de seguridad (CSP y helmet)', () => {
   it.each(['/health', '/no-existe'])('%s → CSP que niega todo, nosniff y sin x-powered-by', async (ruta) => {
     const res = await request(d.url).get(ruta);
