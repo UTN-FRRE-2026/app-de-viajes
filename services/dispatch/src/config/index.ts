@@ -36,6 +36,10 @@ export const EsquemaConfig = z
     OFERTAS_SIMULTANEAS: z.coerce.number().int().min(1).max(50).default(3),
     OFERTA_TTL_SEGUNDOS: z.coerce.number().int().min(1).default(15),
     BARRIDO_INTERVALO_MS: z.coerce.number().int().min(100).default(2000),
+    // Tiempo real (SSE): cada cuánto el relay publica lo nuevo del outbox (es la demora máxima de un
+    // evento), y cuántos streams puede tener abiertos cada usuario.
+    RELAY_INTERVALO_MS: z.coerce.number().int().min(20).max(5000).default(100),
+    SSE_MAX_POR_USUARIO: z.coerce.number().int().min(1).max(20).default(3),
     APAGADO_TIMEOUT_MS: z.coerce.number().int().positive().default(10_000),
     // Candidatos: `location` (el servicio real) o `fijo` (lista de DISPATCH_CANDIDATOS_DEMO, para demos sin location).
     DISPATCH_BUSCADOR: z.enum(['location', 'fijo']).default('location'),
@@ -64,6 +68,12 @@ export const EsquemaConfig = z
     TARIFAS_CACHE_TTL_SEGUNDOS: vacioComoAusente(z.coerce.number().int().min(60).max(86_400).default(3600)),
     // Demora artificial del simulado, solo para demostrar el timeout. 0 en uso normal.
     MAPAS_LATENCIA_SIMULADA_MS: vacioComoAusente(z.coerce.number().int().min(0).max(30_000).default(0)),
+    // Pagos simulado. Si no contesta en PAGOS_TIMEOUT_MS, el cobro queda PENDIENTE (falla cerrado) y
+    // el barrido lo reintenta con la misma clave.
+    PAGOS_TIMEOUT_MS: vacioComoAusente(z.coerce.number().int().min(50).max(10_000).default(1000)),
+    PAGOS_LATENCIA_SIMULADA_MS: vacioComoAusente(z.coerce.number().int().min(0).max(30_000).default(0)),
+    // Para demostrar un rechazo: los cobros de más de este importe se rechazan. Vacío: aprueba todo.
+    PAGOS_RECHAZAR_DESDE_CENTAVOS: vacioComoAusente(z.coerce.number().int().min(0).max(TOPE_IMPORTE_CENTAVOS).optional()),
   })
   .refine((c) => c.DISPATCH_PERSISTENCIA !== 'postgres' || c.DATABASE_URL, {
     path: ['DATABASE_URL'],

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Oferta, SolicitudViaje, type EstadoSolicitud } from '../../src/dominio/entidades/index.js';
+import { PARAMETROS_PRUEBA } from '../soporte/mapas-falso.js';
 import { DESTINO, ORIGEN } from '../soporte/memoria.js';
 
 const CHOFER = '00000000-0000-4000-8000-000000000001';
@@ -16,6 +17,7 @@ const ESTADOS: EstadoSolicitud[] = [
   'SIN_CHOFERES',
 ];
 const CON_CHOFER = new Set<EstadoSolicitud>(['ASIGNADO', 'EN_CAMINO', 'EN_CURSO', 'COMPLETADA', 'CANCELADO_CHOFER']);
+const AHORA = new Date('2026-10-28T12:30:00Z');
 
 function solicitudEn(estado: EstadoSolicitud) {
   return SolicitudViaje.reconstruir({
@@ -26,8 +28,18 @@ function solicitudEn(estado: EstadoSolicitud) {
     estado,
     choferId: CON_CHOFER.has(estado) ? CHOFER : null,
     motivoCancelacion: estado === 'CANCELADO_OPERADOR' ? 'motivo previo' : null,
+    tarifa: {
+      version: PARAMETROS_PRUEBA.version,
+      moneda: 'ARS',
+      estimadaCentavos: 400_000,
+      recorridoEstimado: { metros: 5000, segundos: 600 },
+      finalCentavos: null,
+      recorridoFinal: null,
+      motivosDiferencia: [],
+    },
     version: 0,
     creadaEn: new Date('2026-10-28T12:00:00Z'),
+    iniciadoEn: estado === 'EN_CURSO' ? new Date('2026-10-28T12:20:00Z') : null,
   });
 }
 
@@ -46,8 +58,8 @@ const ACCIONES: Record<
     error: 'SOLICITUD_NO_DISPONIBLE',
   },
   'marcar en camino': { hacer: (s) => s.marcarEnCamino(), validas: { ASIGNADO: 'EN_CAMINO' }, error: 'TRANSICION_INVALIDA' },
-  iniciar: { hacer: (s) => s.iniciar(), validas: { EN_CAMINO: 'EN_CURSO' }, error: 'TRANSICION_INVALIDA' },
-  finalizar: { hacer: (s) => s.finalizar(), validas: { EN_CURSO: 'COMPLETADA' }, error: 'TRANSICION_INVALIDA' },
+  iniciar: { hacer: (s) => s.iniciar(AHORA), validas: { EN_CAMINO: 'EN_CURSO' }, error: 'TRANSICION_INVALIDA' },
+  finalizar: { hacer: (s) => s.finalizar(AHORA, PARAMETROS_PRUEBA), validas: { EN_CURSO: 'COMPLETADA' }, error: 'TRANSICION_INVALIDA' },
   'cancelar (pasajero)': {
     hacer: (s) => s.cancelar('pasajero'),
     validas: { BUSCANDO: 'CANCELADO_PASAJERO', ASIGNADO: 'CANCELADO_PASAJERO', EN_CAMINO: 'CANCELADO_PASAJERO' },

@@ -187,7 +187,7 @@ El ADR 0006 registra la decisión con sus alternativas reales: monolito modular 
 - Puerto de mapas (distancia y tiempo) con adaptador simulado y adaptador falso.
 - **Hecho (PR 1 de tarifas):** la función de cálculo, el puerto de mapas con timeout y falla cerrado, y `GET /tarifas/estimacion`. Fórmula, redondeo, contrato y decisiones en [docs/tarifas.md](docs/tarifas.md).
 - **Hecho (PR 2 de tarifas, Agostina):** la configuración por el admin. Tarifa global versionada en Postgres con auditoría, `GET` y `PUT /admin/tarifas` (el `PUT` con Idempotency-Key), los `TARIFA_*` como semilla, y caché en Redis por versión. El alcance por flota o zona sigue como decisión del equipo.
-- **Sigue:** PR 3, la estimación guardada en la solicitud, la tarifa final al finalizar, por qué difieren y el cobro.
+- **Hecho en el PR 3:** la estimación guardada al crear la solicitud (y fuera de rango, 422), la tarifa final con la versión de la estimación y la duración real, por qué difieren, y el cobro: automático por el barrido o con `POST /solicitudes/:id/cobrar`, sin doble cobro y con falla cerrado. Detalle en `docs/tarifas.md`.
 
 ### 3.5 Transversales
 
@@ -196,7 +196,7 @@ El ADR 0006 registra la decisión con sus alternativas reales: monolito modular 
   - registro en Postgres **en la misma transacción que el efecto**, con hash del cuerpo y la respuesta;
   - el reintento recibe la respuesta guardada; la misma clave con otro cuerpo, 422.
   - El middleware va en `platform`; cada servicio guarda los registros en su propia base.
-  - **Hecho en dispatch:** los seis `POST` con efecto (crear, aceptar, en camino, iniciar, finalizar y cancelar) exigen el encabezado; sin él, 400. Falta en identity (registro) y en lo que todavía no existe: cobro (Maxi) y activación de chofer (Agos). Cada uno aplica `idempotente()` en su ruta.
+  - **Hecho en dispatch:** los seis `POST` con efecto (crear, aceptar, en camino, iniciar, finalizar y cancelar) exigen el encabezado; sin él, 400. También `POST /solicitudes/:id/cobrar`. Falta en identity (registro) y en la activación de chofer (Agos), que todavía no existe. Cada uno aplica `idempotente()` en su ruta.
     - El middleware (`packages/platform/src/idempotencia.ts`) valida la clave con un esquema (16 a 128 letras, números, `-` o `_`), la asocia al usuario del token y calcula la huella: método, ruta y cuerpo ya validado, con las claves ordenadas.
     - El registro (`idempotency_keys`) lo escribe el adaptador de Postgres de dispatch al final de la transacción del caso de uso, con el resultado como respuesta. Se guarda como `json`, no `jsonb`, para devolver el reintento byte a byte. Los errores no se guardan: no tuvieron efecto, así que el reintento se vuelve a procesar.
     - El reintento sale con `Idempotent-Replayed: true`. Si Redis no responde: 503, falla cerrado.
@@ -206,7 +206,8 @@ El ADR 0006 registra la decisión con sus alternativas reales: monolito modular 
 - **Tiempo real por SSE**, en dispatch:
   - un relay lee el `outbox` y publica en Redis Pub/Sub; el endpoint SSE se suscribe solo a los viajes del usuario;
   - mientras el viaje está activo, el endpoint se suscribe también al canal de posición del chofer asignado, que publica location;
-  - al reconectar, el cliente pide el estado actual (`GET /viajes/:id`) y se vuelve a suscribir con `Last-Event-ID`.
+  - al reconectar, el cliente pide el estado actual (`GET /solicitudes/:id`) y se vuelve a suscribir con `Last-Event-ID`.
+  - **Hecho** (`GET /eventos`, detalle en `docs/eventos.md`), salvo la posición del chofer, que espera a que location la publique. Relay con `FOR UPDATE SKIP LOCKED`, un canal por usuario, reposición desde el outbox, descarte de repetidos, 3 streams por usuario (429), cierre al vencer el token y al apagar. Comprobado que los tests fallan sin el `SKIP LOCKED`, sin el filtro por destinatario, sin el descarte de repetidos y sin la espera durante la reposición.
 - **Inventario de carreras** (bloque 6, punto 1), en un ADR: aceptar contra aceptar, aceptar contra cancelar, chofer con dos viajes, pasajero con dos solicitudes, vencimiento contra aceptación, activación de choferes, email duplicado en el registro, clave de idempotencia duplicada y doble finalización con doble cobro.
 
 ## 4. Requisitos de ProgIV: estado al 13/11
@@ -229,15 +230,15 @@ El ADR 0006 registra la decisión con sus alternativas reales: monolito modular 
 | **B5** Helmet, CSP y CORS | 🟡 | Hecho: helmet en `crearApp` de `platform`, con una CSP que lo niega todo (`default-src 'none'`), así la heredan los tres servicios; con test en cada uno. Falta: CORS y la CSP de la página en nginx (Fase B). Detrás de nginx el frontend queda en el mismo origen |
 | **B5** `npm audit` | ✅ | En el CI |
 | **B6** ADR de carreras + test de 50 | ✅ | Falta el inventario completo (3.5) |
-| **B6** Idempotencia | 🟡 | Hecha en los seis `POST` de dispatch (3.5). Falta en el registro de identity, el cobro y la activación de chofer, y el ADR 0010 |
+| **B6** Idempotencia | 🟡 | Hecha en los `POST` de dispatch, el `PUT` de tarifas y el cobro, que además usa el id del cobro como clave con el proveedor (3.5). Falta en el registro de identity y la activación de chofer, y el ADR 0010 |
 | **B7** Tarea pesada, dos versiones, medida | ⬜ | 3.2. Es lo que se muestra en el Control 3 |
 | **B8** Tres niveles de tests, un comando | ✅ | Sostenerlo |
-| **6.2** Alcance funcional | 🟡 | Hecho: registro, login, solicitud, ofertas, ubicación, estados completos del viaje, estimación de tarifa (`GET /tarifas/estimacion`). Falta: vehículo y habilitación, disponibilidad, seguimiento, tarifa final y cobro, historial, panel |
+| **6.2** Alcance funcional | 🟡 | Hecho: registro, login, solicitud, ofertas, ubicación, estados completos del viaje, estimación de tarifa (`GET /tarifas/estimacion`), tarifa final y cobro, historial, panel. Falta: vehículo y habilitación, disponibilidad, seguimiento |
 | **6.3** ADR + 3 tests | ✅ | — |
 | **6.4** Búsqueda, retención, privacidad | ⬜ | 3.2 |
-| **6.5** Tarifa | 🟡 | Cálculo, estimación y configuración por el admin hechos (3.4). Faltan la tarifa final y el cobro |
+| **6.5** Tarifa | ✅ | Cálculo, estimación, configuración por el admin, tarifa final con por qué difiere, y cobro (3.4) |
 | **6.5** Oferta con vencimiento | ✅ | Barrido cada 2 s, TTL de 15 s |
-| **6.5** Tiempo real | ⬜ | 3.5 |
+| **6.5** Tiempo real | 🟡 | SSE con los eventos del viaje y reconexión con `Last-Event-ID` (3.5). Falta la posición del chofer en vivo, cuando location la publique |
 | **6.6** Simulador de 500 choferes y mediciones | ⬜ | 3.2 y 5.5 |
 | **6.7 G** Flotas y zonas | ⬜ | 3.3 |
 | **7.1** Seis ADR o más | 🟡 | Hay cuatro: 0001, 0004, 0005 y 0006 |
@@ -343,10 +344,10 @@ Al cerrar esta fase el sistema tiene que poder congelarse para el ataque cruzado
 
 - [x] `viajes`: estados completos, historial, panel del operador con búsqueda (Ivan).
 - [x] Idempotency-Key en `platform` y en los `POST` de dispatch (Ivan).
-- [ ] SSE (Ivan).
+- [x] SSE con los eventos del viaje y reconexión (Ivan). Falta sumar la posición del chofer cuando location la publique (Maxi, Ivan).
 - [ ] Zonas, candidatos filtrados por flota y zona, reporte, aislamiento entre flotas (Agos).
 - [ ] Seguridad transversal: CORS, rate limit, encabezados, log por pedido y los tests que faltan del bloque 5 (Agos).
-- [ ] `tarifas`, cobro simulado y adaptadores de mapas y pagos con timeout (Maxi). Hecho: cálculo, estimación y mapas con timeout (Maxi); configuración por el admin con caché en Redis (Agostina). Falta: tarifa final, cobro y pagos.
+- [x] `tarifas`, cobro simulado y adaptadores de mapas y pagos con timeout: cálculo, estimación y mapas con timeout (Maxi); configuración por el admin con caché en Redis (Agostina); tarifa final, cobro y pagos (Ivan).
 - [ ] Caché en Redis, retención de ubicaciones y privacidad del seguimiento (Maxi).
 - [ ] Frontend mínimo: base y login (Agos), pasajero y operador (Ivan), chofer (Maxi).
 - [ ] Contenedor `web` con nginx como punto de entrada único (Ivan). Lleva la **CSP de la página** (punto extra que ofreció la cátedra): `default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'`. El build de Vite no necesita scripts en línea; si se usa un mapa, se suma su servidor de teselas a `img-src`. Test en Playwright: la página carga sin violaciones de CSP en la consola.

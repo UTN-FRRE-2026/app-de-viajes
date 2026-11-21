@@ -208,7 +208,13 @@ describe('ciclo de vida del viaje', () => {
     expect(repo.asignaciones.size).toBe(0);
 
     expect(repo.eventos.map((e) => e.tipo).slice(-3)).toEqual(['DriverEnRoute', 'TripStarted', 'RideCompleted']);
-    expect(repo.eventos.at(-1)?.payload).toEqual({ solicitudId: s.id, pasajeroId: PASAJERO, choferId: entrada.choferId });
+    // Tarifa final: 100 000 de bajada + 5 km × 50 000; el reloj falso no avanzó, así que 0 s de viaje.
+    expect(repo.eventos.at(-1)?.payload).toEqual({
+      solicitudId: s.id,
+      pasajeroId: PASAJERO,
+      choferId: entrada.choferId,
+      tarifaFinalCentavos: 350_000,
+    });
     await expect(casos.crearSolicitud({ pasajeroId: PASAJERO, origen: ORIGEN, destino: DESTINO })).resolves.toBeTruthy();
   });
 

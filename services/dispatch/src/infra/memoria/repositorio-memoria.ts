@@ -1,7 +1,9 @@
 import {
+  Cobro,
   ESTADOS_ACTIVOS,
   Oferta,
   SolicitudViaje,
+  type DatosCobro,
   type DatosOferta,
   type RegistroSolicitud,
 } from '../../dominio/entidades/index.js';
@@ -34,7 +36,8 @@ const ACTIVAS = new Set(ESTADOS_ACTIVOS);
  * Adaptador en memoria para los tests de dominio y para correr sin Postgres.
  * Emula lo que la base garantiza en el adaptador real:
  * - FOR UPDATE → un mutex por solicitud, retenido hasta el final de la transacción;
- * - restricciones únicas (chofer activo, solicitud activa por pasajero) → reservas pendientes
+ * - FOR UPDATE del cobro → otro mutex, por cobro;
+ * - restricciones únicas (chofer activo, solicitud activa por pasajero, un cobro por viaje) → reservas pendientes
  *   visibles para todas las transacciones, que se liberan si la transacción falla;
  * - atomicidad → las escrituras quedan en un borrador y se aplican solo al confirmar.
  * Diferencia con Postgres: acá el segundo que choca con una reserva pendiente falla enseguida,
@@ -46,6 +49,11 @@ export class RepositorioDespachoMemoria implements RepositorioDespacho {
   /** choferId → solicitudId */
   readonly asignaciones = new Map<string, string>();
   readonly eventos: EventoDispatch[] = [];
+  /** solicitudId → cobro */
+  readonly cobros = new Map<string, DatosCobro>();
+  /** solicitudId → el updated_at de Postgres, como contador para que no haya empates. */
+  private readonly cobrosActualizados = new Map<string, number>();
+  private relojCobros = 0;
 
   private readonly locks = new Map<string, Mutex>();
   private readonly choferesReservados = new Set<string>();
@@ -54,6 +62,29 @@ export class RepositorioDespachoMemoria implements RepositorioDespacho {
   async obtenerSolicitud(id: string) {
     const d = this.solicitudes.get(id);
     return d ? SolicitudViaje.reconstruir(d) : null;
+  }
+
+  async obtenerCobro(solicitudId: string) {
+    const d = this.cobros.get(solicitudId);
+    return d ? Cobro.reconstruir(d) : null;
+  }
+
+  async cobrosPendientes(limite: number) {
+    // Como en Postgres: primero los que hace más que no se intentan, así un fallo va al final de la cola.
+    return [...this.cobros.values()]
+      .filter((c) => c.estado === 'PENDIENTE')
+      .map((c) => c.solicitudId)
+      .sort((a, b) => (this.cobrosActualizados.get(a) ?? 0) - (this.cobrosActualizados.get(b) ?? 0))
+      .slice(0, limite);
+  }
+
+  async registrarFalloCobro(cobroId: string) {
+    for (const c of this.cobros.values()) {
+      if (c.id === cobroId && c.estado === 'PENDIENTE') {
+        c.intentosFallidos++;
+        this.cobrosActualizados.set(c.solicitudId, ++this.relojCobros);
+      }
+    }
   }
 
   async obtenerOferta(id: string) {
@@ -99,17 +130,21 @@ export class RepositorioDespachoMemoria implements RepositorioDespacho {
     const reservas = new Map<string, string>();
     const liberadas = new Set<string>();
     const pasajeros = new Set<string>();
+    const cobros = new Map<string, DatosCobro>();
+
+    const tomar = async (clave: string) => {
+      if (tomados.has(clave)) return;
+      let mutex = this.locks.get(clave);
+      if (!mutex) this.locks.set(clave, (mutex = new Mutex()));
+      soltar.push(await mutex.tomar());
+      tomados.add(clave);
+    };
 
     const leerSolicitud = (id: string) => solicitudes.get(id) ?? this.solicitudes.get(id);
 
     const tx: TransaccionDespacho = {
       obtenerSolicitudParaActualizar: async (id) => {
-        if (!tomados.has(id)) {
-          let mutex = this.locks.get(id);
-          if (!mutex) this.locks.set(id, (mutex = new Mutex()));
-          soltar.push(await mutex.tomar());
-          tomados.add(id);
-        }
+        await tomar(id);
         const d = leerSolicitud(id);
         return d ? SolicitudViaje.reconstruir(d) : null;
       },
@@ -146,6 +181,20 @@ export class RepositorioDespachoMemoria implements RepositorioDespacho {
       registrarEvento: async (e) => {
         eventos.push(e);
       },
+      insertarCobro: async (c) => {
+        if (this.cobros.has(c.solicitudId) || cobros.has(c.solicitudId)) {
+          throw new Error('payments_request_id_key: el viaje ya tiene un cobro');
+        }
+        cobros.set(c.solicitudId, c.aDatos());
+      },
+      obtenerCobroParaActualizar: async (solicitudId) => {
+        await tomar(`cobro:${solicitudId}`);
+        const d = cobros.get(solicitudId) ?? this.cobros.get(solicitudId);
+        return d ? Cobro.reconstruir(d) : null;
+      },
+      guardarCobro: async (c) => {
+        cobros.set(c.solicitudId, c.aDatos());
+      },
     };
 
     try {
@@ -158,6 +207,10 @@ export class RepositorioDespachoMemoria implements RepositorioDespacho {
       for (const [id, d] of solicitudes) this.solicitudes.set(id, d);
       for (const [id, d] of ofertas) this.ofertas.set(id, d);
       this.eventos.push(...eventos);
+      for (const [id, d] of cobros) {
+        this.cobros.set(id, d);
+        this.cobrosActualizados.set(id, ++this.relojCobros);
+      }
       return resultado;
     } finally {
       for (const c of reservas.keys()) this.choferesReservados.delete(c);

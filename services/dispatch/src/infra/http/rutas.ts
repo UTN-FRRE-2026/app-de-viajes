@@ -21,6 +21,7 @@ import {
 import { Router } from 'express';
 import type { CasosDeUso } from '../../dominio/casos-uso/index.js';
 import type { QuienCancela } from '../../dominio/entidades/index.js';
+import type { StreamsEventos } from '../tiempo-real/sse.js';
 
 /** El admin cancela como operador: queda CANCELADO_OPERADOR y también tiene que dar motivo. */
 const QUIEN_CANCELA: Partial<Record<Rol, QuienCancela>> = {
@@ -38,10 +39,14 @@ const QUIEN_CANCELA: Partial<Record<Rol, QuienCancela>> = {
 export function rutasDespacho(
   casos: CasosDeUso,
   verificar: VerificadorToken,
+  streams: StreamsEventos,
   idempotente: ReturnType<typeof crearIdempotencia>,
 ): Router {
   const r = Router();
   r.use(autenticar(verificar));
+
+  // Tiempo real (SSE): los eventos de los viajes propios. El usuario sale del token.
+  r.get('/eventos', requerirRol('pasajero', 'chofer'), streams.manejador());
 
   r.post('/solicitudes', requerirRol('pasajero'), validar({ body: CrearSolicitudBody }), idempotente(201), async (req, res) => {
     const { origen, destino } = req.body as CrearSolicitudBody;
@@ -129,6 +134,25 @@ export function rutasDespacho(
       },
     );
   }
+
+  // Cobrar ahora, sin esperar al barrido. Si ya está aprobado o rechazado, lo devuelve como está:
+  // nunca cobra dos veces. Proveedor caído: 503 y el cobro sigue PENDIENTE.
+  r.post(
+    '/solicitudes/:id/cobrar',
+    requerirRol('pasajero', 'operador', 'admin'),
+    validar({ params: ParamsId, body: SinBody }),
+    idempotente(),
+    async (req, res) => {
+      const usuario = usuarioDe(req);
+      res.json(
+        await casos.cobrarViaje({
+          solicitudId: req.params['id'] as string,
+          usuarioId: usuario.id,
+          veTodos: usuario.rol === 'operador' || usuario.rol === 'admin',
+        }),
+      );
+    },
+  );
 
   r.post(
     '/ofertas/:id/aceptar',

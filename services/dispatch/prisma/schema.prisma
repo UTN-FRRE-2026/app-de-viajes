@@ -22,12 +22,24 @@ model SolicitudViaje {
   destinoLng    Float    @map("destination_lng")
   choferId      String?  @map("driver_id") @db.Uuid
   motivoCancelacion String? @map("cancel_reason")
+  // Tarifa: la estimación al crear y la final al completar (CHECKs en la migración 20261123000000).
+  // Importes en BigInt: una tarifa alta pasa el máximo de Int (migración 20261125000000).
+  tarifaVersion        String?   @map("fare_version")
+  estimadaCentavos     BigInt?   @map("estimated_fare_cents")
+  estimadaMetros       Int?      @map("estimated_distance_m")
+  estimadaSegundos     Int?      @map("estimated_duration_s")
+  finalCentavos        BigInt?   @map("final_fare_cents")
+  finalMetros          Int?      @map("final_distance_m")
+  finalSegundos        Int?      @map("final_duration_s")
+  motivosDiferencia    String[]  @default([]) @map("fare_difference_reasons")
+  iniciadoEn           DateTime? @map("started_at") @db.Timestamptz(3)
   version       Int      @default(0)
   creadaEn      DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   actualizadaEn DateTime @default(now()) @map("updated_at") @db.Timestamptz(3)
 
   ofertas    Oferta[]
   asignacion AsignacionActiva?
+  cobro      Cobro?
 
   @@index([pasajeroId])
   // Historial del chofer y panel del operador (más nuevos primero).
@@ -67,6 +79,9 @@ model EventoOutbox {
   requestId   String?   @map("request_id")
   creadoEn    DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
   publicadoEn DateTime? @map("published_at") @db.Timestamptz(3)
+  // SSE: id del evento en el stream, y a quién se entrega (migración 20261124000000_tiempo_real).
+  seq           BigInt   @unique @default(autoincrement())
+  destinatarios String[] @default([]) @map("recipients") @db.Uuid
 
   @@index([publicadoEn, creadoEn])
   @@map("outbox")
@@ -127,4 +142,25 @@ model CambioTarifa {
   anterior         TarifaVersion? @relation("anterior", fields: [versionAnterior], references: [version])
 
   @@map("fare_changes")
+}
+
+/// Un cobro por viaje completado. El id es la clave de idempotencia con el proveedor de pagos.
+model Cobro {
+  id               String         @id @db.Uuid
+  solicitudId      String         @unique @map("request_id") @db.Uuid
+  pasajeroId       String         @map("passenger_id") @db.Uuid
+  montoCentavos    BigInt         @map("amount_cents")
+  moneda           String         @default("ARS") @map("currency") @db.Char(3)
+  estado           String         @default("PENDIENTE") @map("status")
+  intentosFallidos Int            @default(0) @map("failed_attempts")
+  ultimoError      String?        @map("last_error")
+  referencia       String?        @map("provider_ref")
+  motivoRechazo    String?        @map("decline_reason")
+  creadoEn         DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  actualizadoEn    DateTime       @default(now()) @map("updated_at") @db.Timestamptz(3)
+  solicitud        SolicitudViaje @relation(fields: [solicitudId], references: [id])
+
+  // El barrido: los pendientes, primero los que hace más que no se intentan (cada fallo toca updated_at).
+  @@index([estado, actualizadoEn])
+  @@map("payments")
 }

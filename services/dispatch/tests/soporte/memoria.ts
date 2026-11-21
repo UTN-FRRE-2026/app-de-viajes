@@ -6,6 +6,7 @@ import { BuscadorCandidatosFijo } from '../../src/infra/externos/buscador-fijo.j
 import { RepositorioDespachoMemoria } from '../../src/infra/memoria/repositorio-memoria.js';
 import { RepositorioTarifasMemoria } from '../../src/infra/memoria/tarifas-memoria.js';
 import { MapasFalso, PARAMETROS_PRUEBA, tarifasFijas } from './mapas-falso.js';
+import { PagosFalso } from './pagos-falso.js';
 
 export class RelojFalso implements Reloj {
   constructor(private t = new Date('2026-10-28T12:00:00Z')) {}
@@ -50,6 +51,8 @@ export function sistemaEnMemoria(choferes: string[] = [], ofertasSimultaneas = 3
   const reloj = new RelojFalso();
   const metricas = new MetricasEnMemoria();
   const mapas = new MapasFalso();
+  const pagos = new PagosFalso();
+  const tarifas = tarifasFijas();
   const casos = crearCasosDeUso({
     repo,
     buscador,
@@ -58,13 +61,14 @@ export function sistemaEnMemoria(choferes: string[] = [], ofertasSimultaneas = 3
     parametros: { ofertasSimultaneas, ttlOfertaMs: TTL_MS },
     metricas,
     mapas,
-    tarifas: tarifasFijas(),
+    tarifas,
+    pagos,
     repoTarifas: new RepositorioTarifasMemoria(),
     semillaTarifa: VALORES_PRUEBA,
   });
   const ofertasDe = (solicitudId: string) =>
     [...repo.ofertas.values()].filter((o) => o.solicitudId === solicitudId);
-  return { repo, buscador, reloj, casos, ofertasDe, metricas, mapas };
+  return { repo, buscador, reloj, casos, ofertasDe, metricas, mapas, pagos, tarifas };
 }
 
 export const ORIGEN = { lat: -34.6037, lng: -58.3816 };

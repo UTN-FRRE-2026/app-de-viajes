@@ -43,7 +43,8 @@ describe('emisor JWT', () => {
     const verificar = verificadorJwksLocal({ keys: emisor.clavesPublicas() }, OPCIONES);
     const sub = randomUUID();
     const { token } = await emisor.emitir({ sub, rol: 'admin_flota', fleetId: 'flota-1' });
-    await expect(verificar(token)).resolves.toEqual({ id: sub, rol: 'admin_flota', fleetId: 'flota-1' });
+    // venceEn: el vencimiento del token, para cortar las conexiones largas (SSE) cuando vence.
+    await expect(verificar(token)).resolves.toEqual({ id: sub, rol: 'admin_flota', fleetId: 'flota-1', venceEn: expect.any(Date) });
   });
 
   it('el verificador compartido rechaza un token vencido', async () => {

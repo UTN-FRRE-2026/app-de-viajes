@@ -60,7 +60,7 @@ afterAll(async () => {
 });
 beforeEach(async () => {
   modo = { choferes: [] };
-  await prisma.$executeRawUnsafe('TRUNCATE outbox, driver_active_assignment, offers, ride_requests');
+  await prisma.$executeRawUnsafe('TRUNCATE outbox, driver_active_assignment, offers, payments, ride_requests');
 });
 
 const pedirViaje = async (pasajero = randomUUID()) =>
