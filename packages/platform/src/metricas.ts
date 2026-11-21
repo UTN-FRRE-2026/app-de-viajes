@@ -5,8 +5,16 @@ import { Gauge, Histogram, Registry } from '@prometheus-io/client';
 import { z } from 'zod';
 import { ErrorHttp } from './errores.js';
 
-/** `METRICAS_TOKEN` en la configuración de cada servicio: obligatorio y largo. */
-export const tokenMetricas = z.string().min(32, 'tiene que tener al menos 32 caracteres').max(256);
+/**
+ * `METRICAS_TOKEN` en la configuración de cada servicio: obligatorio, largo y sin espacios. El
+ * encabezado `Bearer` no admite espacios en el token (ver rutaMetricas): un token con espacios
+ * dejaría /metrics cerrado para siempre, así que el servicio se niega a arrancar.
+ */
+export const tokenMetricas = z
+  .string()
+  .min(32, 'tiene que tener al menos 32 caracteres')
+  .max(256)
+  .regex(/^\S+$/, 'no puede tener espacios ni otros caracteres en blanco');
 
 // Los servicios arman sus métricas propias con estas clases, sobre el mismo Registry.
 export { Counter, Gauge, Histogram, type Registry } from '@prometheus-io/client';

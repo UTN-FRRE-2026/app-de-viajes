@@ -34,6 +34,16 @@ describe('configuración', () => {
     expect(variablesConError({ ...base, METRICAS_TOKEN: 'corto' })).toEqual(['METRICAS_TOKEN']);
   });
 
+  it('un token de métricas con espacios se rechaza al arrancar, como en el Bearer, y el mensaje no repite el valor', () => {
+    const largo = 'm'.repeat(40);
+    for (const token of [`${largo} ${largo}`, ` ${largo}`, `${largo} `, `${largo}\t${largo}`]) {
+      const r = EsquemaConfig.safeParse({ ...base, METRICAS_TOKEN: token });
+      expect(r.success).toBe(false);
+      expect(r.error?.issues.map((i) => i.path.join('.'))).toEqual(['METRICAS_TOKEN']);
+      expect(JSON.stringify(r.error?.issues)).not.toContain(largo);
+    }
+  });
+
   it('un token de servicio corto se rechaza, y el mensaje no repite el valor', () => {
     const r = EsquemaConfig.safeParse({ ...base, LOCATION_TOKEN_SERVICIO: 'secreto-corto' });
     expect(r.success).toBe(false);
