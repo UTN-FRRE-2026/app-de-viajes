@@ -34,6 +34,8 @@ La tarifa final del PR 3 tiene que usar **la misma** `calcularTarifa`.
 
 Moneda fija: `ARS`. Si un valor no cumple, dispatch no arranca y nombra la variable.
 
+**En contenedores**, `docker-compose.yml` le pasa a dispatch las variables `TARIFA_*` y `MAPAS_*` del `.env`. Si una no está, llega vacía, y dispatch la trata como ausente: usa su valor por defecto, nunca 0. Los valores por defecto se definen en un solo lugar, `services/dispatch/src/config/index.ts`.
+
 **Versión.** Hoy la tarifa sale del `.env` y su versión es una huella de los valores: `env-` seguido de 12 caracteres hexadecimales. Si cambian los valores, cambia la versión. La estimación la devuelve, para que el PR 3 pueda explicar una diferencia por un cambio de tarifa.
 
 ## Estimación: `GET /tarifas/estimacion`

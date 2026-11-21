@@ -75,6 +75,37 @@ describe('tarifa desde la configuración', () => {
     });
   });
 
+  it('una variable vacía (Compose la pasa así si no está en el .env) usa el valor por defecto, nunca 0', () => {
+    const vacias = Object.fromEntries(
+      [
+        'TARIFA_BAJADA_CENTAVOS',
+        'TARIFA_CENTAVOS_POR_KM',
+        'TARIFA_CENTAVOS_POR_MINUTO',
+        'TARIFA_MINIMO_CENTAVOS',
+        'TARIFA_MAX_METROS',
+        'MAPAS_FACTOR_DESVIO',
+        'MAPAS_VELOCIDAD_KMH',
+        'MAPAS_TIMEOUT_MS',
+        'MAPAS_LATENCIA_SIMULADA_MS',
+      ].map((v) => [v, '']),
+    );
+    expect(EsquemaConfig.parse({ ...base, ...vacias })).toMatchObject({
+      TARIFA_BAJADA_CENTAVOS: 150_000,
+      TARIFA_CENTAVOS_POR_KM: 80_000,
+      TARIFA_CENTAVOS_POR_MINUTO: 15_000,
+      TARIFA_MINIMO_CENTAVOS: 250_000,
+      TARIFA_MAX_METROS: 100_000,
+      MAPAS_FACTOR_DESVIO: 1.3,
+      MAPAS_VELOCIDAD_KMH: 25,
+      MAPAS_TIMEOUT_MS: 1000,
+      MAPAS_LATENCIA_SIMULADA_MS: 0,
+    });
+  });
+
+  it('un valor explícito pisa el de por defecto', () => {
+    expect(EsquemaConfig.parse({ ...base, TARIFA_BAJADA_CENTAVOS: '123400' }).TARIFA_BAJADA_CENTAVOS).toBe(123_400);
+  });
+
   it.each([
     ['TARIFA_BAJADA_CENTAVOS', '1500.50'],
     ['TARIFA_CENTAVOS_POR_KM', '-1'],

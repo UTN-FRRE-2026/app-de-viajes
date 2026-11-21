@@ -2,7 +2,14 @@ import { tokenMetricas } from '@viajes/platform';
 import { z } from 'zod';
 import { TOPE_IMPORTE_CENTAVOS, TOPE_MAX_METROS } from '../dominio/tarifas/parametros.js';
 
-const centavos = z.coerce.number().int().min(0).max(TOPE_IMPORTE_CENTAVOS);
+/**
+ * Compose pasa una variable que no está en el .env como texto vacío, y `z.coerce.number()` convertiría
+ * "" en 0: una tarifa en cero sin ningún aviso. Vacío cuenta como ausente: se usa el valor por defecto.
+ */
+const vacioComoAusente = <T extends z.ZodType>(esquema: T) => z.preprocess((v) => (v === '' ? undefined : v), esquema);
+
+const centavos = (porDefecto: number) =>
+  vacioComoAusente(z.coerce.number().int().min(0).max(TOPE_IMPORTE_CENTAVOS).default(porDefecto));
 
 const listaUuids = z
   .string()
@@ -40,18 +47,18 @@ export const EsquemaConfig = z
     METRICAS_TOKEN: tokenMetricas,
     // Tarifa (docs/tarifas.md). Centavos enteros. Los importes los define el equipo: estos valores
     // por defecto son DE EJEMPLO. En el PR 2 los configura el admin y estos quedan como semilla.
-    TARIFA_BAJADA_CENTAVOS: centavos.default(150_000),
-    TARIFA_CENTAVOS_POR_KM: centavos.default(80_000),
-    TARIFA_CENTAVOS_POR_MINUTO: centavos.default(15_000),
-    TARIFA_MINIMO_CENTAVOS: centavos.default(250_000),
-    TARIFA_MAX_METROS: z.coerce.number().int().min(1).max(TOPE_MAX_METROS).default(100_000),
+    TARIFA_BAJADA_CENTAVOS: centavos(150_000),
+    TARIFA_CENTAVOS_POR_KM: centavos(80_000),
+    TARIFA_CENTAVOS_POR_MINUTO: centavos(15_000),
+    TARIFA_MINIMO_CENTAVOS: centavos(250_000),
+    TARIFA_MAX_METROS: vacioComoAusente(z.coerce.number().int().min(1).max(TOPE_MAX_METROS).default(100_000)),
     // Mapas simulado: línea recta × desvío, a velocidad media constante. Una aproximación, no un ruteo.
-    MAPAS_FACTOR_DESVIO: z.coerce.number().min(1).max(3).default(1.3),
-    MAPAS_VELOCIDAD_KMH: z.coerce.number().int().min(5).max(120).default(25),
+    MAPAS_FACTOR_DESVIO: vacioComoAusente(z.coerce.number().min(1).max(3).default(1.3)),
+    MAPAS_VELOCIDAD_KMH: vacioComoAusente(z.coerce.number().int().min(5).max(120).default(25)),
     // Si mapas no contesta en este tiempo, la estimación responde 503 (falla cerrado).
-    MAPAS_TIMEOUT_MS: z.coerce.number().int().min(50).max(10_000).default(1000),
+    MAPAS_TIMEOUT_MS: vacioComoAusente(z.coerce.number().int().min(50).max(10_000).default(1000)),
     // Demora artificial del simulado, solo para demostrar el timeout. 0 en uso normal.
-    MAPAS_LATENCIA_SIMULADA_MS: z.coerce.number().int().min(0).max(30_000).default(0),
+    MAPAS_LATENCIA_SIMULADA_MS: vacioComoAusente(z.coerce.number().int().min(0).max(30_000).default(0)),
   })
   .refine((c) => c.DISPATCH_PERSISTENCIA !== 'postgres' || c.DATABASE_URL, {
     path: ['DATABASE_URL'],
