@@ -1,5 +1,8 @@
-import { Gauge, type Metricas } from '@viajes/platform';
+import { Counter, Gauge, type Metricas } from '@viajes/platform';
+import type { ResultadoPublicacion } from '../../dominio/puertos/index.js';
 import type { EstadoHistorial } from '../redis/historial.js';
+
+const RESULTADOS_PUBLICACION: readonly ResultadoPublicacion[] = ['publicada', 'atrasada', 'vencida', 'error'];
 
 /**
  * Métricas propias de location, en el mismo Registry que las comunes de `platform` (lag, memoria,
@@ -47,4 +50,20 @@ export function registrarMetricasLocation(
       },
     });
   }
+}
+
+/**
+ * `location_posiciones_publicadas_total{resultado}`: qué pasó con la publicación en vivo de cada ping
+ * (`publicada`, `atrasada`, `vencida` o `error`). Las cuatro series arrancan en 0 para que se vean en el
+ * primer scrape. Devuelve la función que cuenta.
+ */
+export function registrarMetricaPublicacion({ registro }: Metricas): (resultado: ResultadoPublicacion) => void {
+  const contador = new Counter({
+    name: 'location_posiciones_publicadas_total',
+    help: 'Publicaciones de la posición en vivo, por resultado.',
+    labelNames: ['resultado'] as const,
+    registers: [registro],
+  });
+  for (const resultado of RESULTADOS_PUBLICACION) contador.inc({ resultado }, 0);
+  return (resultado) => contador.inc({ resultado });
 }

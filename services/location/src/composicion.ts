@@ -12,12 +12,12 @@ import type { Express } from 'express';
 import type { Redis } from 'ioredis';
 import type { Config } from './config/index.js';
 import { crearCasosDeUso, type CasosDeUso } from './dominio/casos-uso/index.js';
-import type { RepositorioUbicaciones } from './dominio/puertos/index.js';
+import type { PublicadorPosiciones, RepositorioUbicaciones } from './dominio/puertos/index.js';
 import { crearPrisma } from './infra/db/cliente.js';
 import { RepositorioUbicacionesIngenuo } from './infra/db/repositorio-ingenuo.js';
 import { chequeosBase, conTiempoLimite } from './infra/db/salud.js';
 import { relojSistema } from './infra/externos/sistema.js';
-import { registrarMetricasLocation } from './infra/http/metricas.js';
+import { registrarMetricaPublicacion, registrarMetricasLocation } from './infra/http/metricas.js';
 import { rutasUbicacion } from './infra/http/rutas.js';
 import { RepositorioUbicacionesMemoria } from './infra/memoria/repositorio-memoria.js';
 import { clavesUbicacion } from './infra/redis/claves.js';
@@ -27,6 +27,11 @@ import {
   EscritorHistorialPrisma,
   type EscritorHistorial,
 } from './infra/redis/historial.js';
+import {
+  crearRedisPublicador,
+  PublicadorPosicionesRedis,
+  registroPublicacion,
+} from './infra/redis/publicador-posiciones.js';
 import { RepositorioUbicacionesGeo } from './infra/redis/repositorio-geo.js';
 
 /** Reemplazos para tests: cualquier adaptador se puede inyectar desde afuera. */
@@ -36,6 +41,8 @@ export interface Reemplazos {
   reloj?: Reloj;
   /** Solo optimizada: para simular caídas de Postgres en el historial. */
   escritorHistorial?: EscritorHistorial;
+  /** Posición en vivo: un publicador propio, o `null` para desactivarla. */
+  publicador?: PublicadorPosiciones | null;
 }
 
 export interface Sistema {
@@ -44,6 +51,8 @@ export interface Sistema {
   repo: RepositorioUbicaciones;
   /** Solo optimizada. */
   historial?: ConsumidorHistorial;
+  /** El publicador de posiciones en vivo, si se armó con Redis (los tests esperan a que esté listo). */
+  publicador?: PublicadorPosicionesRedis;
   /** Arranca lo que corre en segundo plano (consumidor del historial y purga). */
   iniciar: () => void;
   /** Detiene lo de segundo plano (vaciando el historial pendiente) y cierra las conexiones. */
@@ -121,14 +130,36 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
   }
 
   chequeos = chequeos.map((c) => conTiempoLimite(c));
-  const casos = crearCasosDeUso({ repo, reloj, vigenciaMs });
+
+  // Posición en vivo, con cualquier estrategia (Compose corre la ingenua): una conexión propia a Redis,
+  // que falla rápido y no reenvía. No entra en /ready: sin Redis, los pings se siguen registrando y lo
+  // único que se cae es el seguimiento (se ve en location_posiciones_publicadas_total y en el log).
+  let publicador: PublicadorPosiciones | undefined;
+  let publicadorRedis: PublicadorPosicionesRedis | undefined;
+  let cerrarPublicador = () => {};
+  if (reemplazos.publicador !== undefined) {
+    publicador = reemplazos.publicador ?? undefined;
+  } else if (config.REDIS_URL) {
+    const conexion = crearRedisPublicador(config.REDIS_URL, logger);
+    publicadorRedis = new PublicadorPosicionesRedis(conexion, {
+      prefijo: config.LOCATION_REDIS_PREFIJO,
+      marcaMs: 2 * vigenciaMs,
+    });
+    publicador = publicadorRedis;
+    cerrarPublicador = () => conexion.disconnect();
+  } else {
+    logger.info('location: sin REDIS_URL, la posición en vivo no se publica');
+  }
+
+  const metricas = crearMetricas({ servicio: 'location' });
+  const alPublicar = registroPublicacion(logger, registrarMetricaPublicacion(metricas));
+  const casos = crearCasosDeUso({ repo, reloj, vigenciaMs, publicador, alPublicar });
 
   const verificador =
     reemplazos.verificador ??
     verificadorJwks(config.JWKS_URL, { issuer: config.JWT_ISSUER, audience: config.JWT_AUDIENCE });
 
   const consumidor = historial;
-  const metricas = crearMetricas({ servicio: 'location' });
   registrarMetricasLocation(metricas, config.UBICACION_ESTRATEGIA, consumidor ? () => consumidor.estado() : undefined);
   const app = crearApp({
     logger,
@@ -142,9 +173,11 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
     casos,
     repo,
     historial,
+    publicador: publicadorRedis,
     iniciar,
     cerrar: async () => {
       metricas.detener();
+      cerrarPublicador();
       await cerrarConexiones();
     },
   };

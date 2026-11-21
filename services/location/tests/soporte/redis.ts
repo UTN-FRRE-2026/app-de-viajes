@@ -30,3 +30,34 @@ export async function borrarPrefijo(redis: Redis, prefijo: string) {
     cursor = siguiente;
   } while (cursor !== '0');
 }
+
+/**
+ * Escucha un canal de posición con una conexión de suscripción propia. Para afirmar que NO llegó
+ * nada, `hasta()` publica un centinela en el mismo canal y espera a recibirlo: Redis entrega en orden,
+ * así que lo que se hubiera publicado antes ya habría llegado.
+ */
+export async function escucharCanal(redis: Redis, canal: string) {
+  const suscriptor = redis.duplicate();
+  const mensajes: unknown[] = [];
+  const centinelas = new Map<string, () => void>();
+  suscriptor.on('message', (c: string, texto: string) => {
+    if (c !== canal) return;
+    const centinela = centinelas.get(texto);
+    if (centinela) return centinela();
+    mensajes.push(JSON.parse(texto));
+  });
+  await suscriptor.subscribe(canal);
+  return {
+    mensajes,
+    /** Devuelve lo recibido hasta este momento (incluido todo lo publicado antes de llamarla). */
+    async hasta(): Promise<unknown[]> {
+      const marca = `centinela:${randomUUID()}`;
+      const llegó = new Promise<void>((r) => centinelas.set(marca, r));
+      await redis.publish(canal, marca);
+      await llegó;
+      centinelas.delete(marca);
+      return [...mensajes];
+    },
+    cerrar: () => suscriptor.disconnect(),
+  };
+}

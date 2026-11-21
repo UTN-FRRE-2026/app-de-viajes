@@ -36,3 +36,31 @@ export const Candidato = z.strictObject({
  */
 export const CandidatosRespuesta = z.strictObject({ candidatos: z.array(Candidato) });
 export type CandidatosRespuesta = z.infer<typeof CandidatosRespuesta>;
+
+/**
+ * Posición en vivo de un chofer. location la publica por Redis Pub/Sub en el canal de ese chofer
+ * cada vez que registra un ping, y dispatch la reenvía por SSE al pasajero del viaje activo.
+ *
+ * - Es efímera: no tiene `seq`, no se guarda y no se repone. Quien se suscribe recibe la próxima.
+ * - Orden: en cada canal, `actualizadaEn` no retrocede respecto de la última publicación mientras
+ *   exista su marca en Redis (ver docs/location.md, «Posición en vivo»).
+ * - `actualizadaEn` es la hora del servidor de location al recibir el ping, como en `Candidato`.
+ */
+export const TIPO_POSICION_CHOFER = 'DriverLocationUpdated';
+
+export const PosicionChoferPublicada = z.strictObject({
+  tipo: z.literal(TIPO_POSICION_CHOFER),
+  choferId: z.uuid(),
+  lat: z.number().min(-90).max(90),
+  lng: z.number().min(-180).max(180),
+  actualizadaEn: z.iso.datetime(),
+});
+export type PosicionChoferPublicada = z.infer<typeof PosicionChoferPublicada>;
+
+/**
+ * Canal de Redis de un chofer: `<prefijo>posicion:<choferId>`. El prefijo es el `LOCATION_REDIS_PREFIJO`
+ * de location (`location:` en desarrollo, `carga:location:` en el entorno de k6): Pub/Sub no separa por
+ * número de base, así que sin prefijo los tests y el desarrollo compartirían canales.
+ * Hay que suscribirse con SUBSCRIBE al canal de cada chofer, no con PSUBSCRIBE a todos.
+ */
+export const canalPosicionChofer = (prefijo: string, choferId: string) => `${prefijo}posicion:${choferId}`;
