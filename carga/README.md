@@ -4,11 +4,11 @@ Mide las dos estrategias de location (6.6) con 500 choferes que mandan su ubicac
 
 | | Entorno de desarrollo (`app-viajes`) | Entorno de carga (`viajes-carga`) |
 |---|---|---|
-| Postgres | volumen `pg_datos`, puerto 5434, base `location` | sin volumen con nombre, `127.0.0.1:55434`, base `location_carga`, usuario `carga` |
+| Postgres | volumen `pg_datos`, puerto 5434, base `location` | sin volumen con nombre, `127.0.0.1:45434`, base `location_carga`, usuario `carga` |
 | Redis | puerto 6379, claves `location:*` | sin puerto publicado, claves `carga:location:*` |
 | Tokens | firmados por identity (clave del `.env`) | firmados con una clave **solo de carga**; el JWKS lo sirve el contenedor `jwks` |
 | Token de servicio | `LOCATION_TOKEN_SERVICIO` del `.env` | uno aleatorio en `carga/.secretos/carga.env` |
-| location | puerto 3004 | `127.0.0.1:53004`, con **1 CPU y 512 MB** |
+| location | puerto 3004 | `127.0.0.1:43004`, con **1 CPU y 512 MB** |
 
 ## Archivos
 
@@ -23,7 +23,10 @@ Mide las dos estrategias de location (6.6) con 500 choferes que mandan su ubicac
 
 ## Cómo medir (PowerShell, desde la raíz del repo)
 
-Requisitos: Docker Desktop en marcha y `npm ci` hecho. Los puertos 55434 y 53004 tienen que estar libres.
+Requisitos: Docker Desktop en marcha y `npm ci` hecho. Los puertos 45434 y 43004 tienen que estar libres.
+
+- **Puertos.** Por defecto quedan fuera del rango dinámico de Windows (49152-65535). Hyper-V y WSL reservan bloques de ese rango al arrancar, y Docker no puede publicar un puerto reservado («bind: An attempt was made to access a socket in a way forbidden by its access permissions»). Los reservados se ven con `netsh interface ipv4 show excludedportrange protocol=tcp`. Si 45434 o 43004 están ocupados, se cambian con `$env:CARGA_PG_PUERTO` y `$env:CARGA_LOCATION_PUERTO` antes de correr `medir.ps1`; `compose.yml` lee las mismas variables.
+- **Migración.** Justo después de levantar Postgres, en Windows el puerto publicado puede tardar unos segundos en responder. `medir.ps1` reintenta la migración solo cuando Prisma da P1001 (hasta 10 veces, cada 2 s); cualquier otro error corta la corrida enseguida y muestra la salida sin la contraseña.
 
 ```powershell
 node carga/preparar.mjs

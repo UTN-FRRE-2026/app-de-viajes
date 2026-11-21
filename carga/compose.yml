@@ -19,8 +19,10 @@ services:
       POSTGRES_PASSWORD: "${CARGA_PG_PASSWORD:?falta CARGA_PG_PASSWORD, correr node carga/preparar.mjs}"
       POSTGRES_DB: location_carga
     # Sin volumen con nombre: los datos de carga son descartables.
+    # Puerto fuera del rango dinámico de Windows (49152-65535), donde Hyper-V y WSL reservan bloques
+    # al arrancar. Se cambia con CARGA_PG_PUERTO (medir.ps1 lee la misma variable).
     ports:
-      - "127.0.0.1:55434:5432"
+      - "127.0.0.1:${CARGA_PG_PUERTO:-45434}:5432"
     cpus: 2
     mem_limit: 1g
     healthcheck:
@@ -77,8 +79,9 @@ services:
       # Bearer de /metrics. En este entorno descartable se reusa el token de servicio de carga: medir.ps1
       # es el único que lo usa y no hace falta otro secreto.
       METRICAS_TOKEN: "${CARGA_TOKEN_SERVICIO:?falta CARGA_TOKEN_SERVICIO}"
+    # Igual que el de Postgres: fuera del rango dinámico de Windows. Se cambia con CARGA_LOCATION_PUERTO.
     ports:
-      - "127.0.0.1:53004:3004"
+      - "127.0.0.1:${CARGA_LOCATION_PUERTO:-43004}:3004"
     cpus: 1
     mem_limit: 512m
     depends_on:
