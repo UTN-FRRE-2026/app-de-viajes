@@ -102,6 +102,32 @@ describe('tarifa desde la configuración', () => {
     });
   });
 
+  it.each([' ', '   ', '\t', ' \n '])('solo espacios (%j) también usa el valor por defecto, nunca 0', (blanco) => {
+    expect(
+      EsquemaConfig.parse({ ...base, TARIFA_BAJADA_CENTAVOS: blanco, TARIFA_MAX_METROS: blanco, MAPAS_TIMEOUT_MS: blanco }),
+    ).toMatchObject({ TARIFA_BAJADA_CENTAVOS: 150_000, TARIFA_MAX_METROS: 100_000, MAPAS_TIMEOUT_MS: 1000 });
+  });
+
+  it('un "0" escrito a propósito sigue valiendo 0 en los importes que lo admiten', () => {
+    const c = EsquemaConfig.parse({
+      ...base,
+      TARIFA_BAJADA_CENTAVOS: '0',
+      TARIFA_CENTAVOS_POR_KM: '0',
+      TARIFA_CENTAVOS_POR_MINUTO: '0',
+      TARIFA_MINIMO_CENTAVOS: '0',
+      MAPAS_LATENCIA_SIMULADA_MS: '0',
+    });
+    expect(c).toMatchObject({
+      TARIFA_BAJADA_CENTAVOS: 0,
+      TARIFA_CENTAVOS_POR_KM: 0,
+      TARIFA_CENTAVOS_POR_MINUTO: 0,
+      TARIFA_MINIMO_CENTAVOS: 0,
+      MAPAS_LATENCIA_SIMULADA_MS: 0,
+    });
+    // El máximo no admite 0: un "0" explícito se rechaza, no se reemplaza por el valor por defecto.
+    expect(variablesConError({ TARIFA_MAX_METROS: '0' })).toEqual(['TARIFA_MAX_METROS']);
+  });
+
   it('un valor explícito pisa el de por defecto', () => {
     expect(EsquemaConfig.parse({ ...base, TARIFA_BAJADA_CENTAVOS: '123400' }).TARIFA_BAJADA_CENTAVOS).toBe(123_400);
   });

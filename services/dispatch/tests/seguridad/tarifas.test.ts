@@ -129,7 +129,7 @@ describe('GET /tarifas/estimacion con los adaptadores reales (mapas simulado y t
       expect(e.distanciaMetros).toBeGreaterThan(4000);
       expect(e.tarifaCentavos).toBe(e.desglose.minimoAplicado ? e.desglose.minimoCentavos : e.desglose.subtotalCentavos);
 
-      // Origen igual a destino: 0 m, y se cobra el mínimo.
+      // Origen igual a destino: 0 m y 0 s, total = max(mínimo, bajada). Con los valores de ejemplo, el mínimo.
       const mismo = await request(conTokens.app)
         .get('/tarifas/estimacion')
         .query({ ...QUERY, destinoLat: QUERY.origenLat, destinoLng: QUERY.origenLng })

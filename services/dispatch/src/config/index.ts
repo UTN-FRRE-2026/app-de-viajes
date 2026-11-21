@@ -4,9 +4,11 @@ import { TOPE_IMPORTE_CENTAVOS, TOPE_MAX_METROS } from '../dominio/tarifas/param
 
 /**
  * Compose pasa una variable que no está en el .env como texto vacío, y `z.coerce.number()` convertiría
- * "" en 0: una tarifa en cero sin ningún aviso. Vacío cuenta como ausente: se usa el valor por defecto.
+ * "" (y también "  ", porque Number(" ") es 0) en 0: una tarifa en cero sin ningún aviso. Vacío o solo
+ * espacios cuenta como ausente: se usa el valor por defecto. Un "0" escrito a propósito sigue valiendo 0.
  */
-const vacioComoAusente = <T extends z.ZodType>(esquema: T) => z.preprocess((v) => (v === '' ? undefined : v), esquema);
+const vacioComoAusente = <T extends z.ZodType>(esquema: T) =>
+  z.preprocess((v) => (typeof v === 'string' && v.trim() === '' ? undefined : v), esquema);
 
 const centavos = (porDefecto: number) =>
   vacioComoAusente(z.coerce.number().int().min(0).max(TOPE_IMPORTE_CENTAVOS).default(porDefecto));

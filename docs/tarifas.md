@@ -14,7 +14,8 @@ total     = max(minimo, subtotal)
 
 - **Todo en centavos enteros.** Los importes son enteros, las distancias en metros enteros y los tiempos en segundos enteros. El cálculo usa `BigInt`: no hay coma flotante en ningún paso.
 - **Un solo redondeo**, a centavo entero y mitad hacia arriba, sobre `recorrido`. Distancia y tiempo se suman sobre el denominador común 6000 antes de dividir. Redondear cada parte por separado podría sumar un centavo de más: con 0,5 de distancia y 0,5 de tiempo da 1 y no 2. Hay un test para esto.
-- **El máximo no es parte del cálculo.** `exigirDentroDeRango` rechaza un recorrido de más de `maxMetros` **antes** de aceptar un viaje. `calcularTarifa` nunca rechaza: un viaje que ya terminó siempre tiene que poder cobrarse, aunque el recorrido real haya salido más largo.
+- **Recorrido cero.** Con 0 m y 0 s el recorrido vale 0 y el total es `max(mínimo, bajada)`: el mínimo si la bajada es menor, la bajada si es mayor o igual.
+- **El máximo no es parte del cálculo.** `exigirDentroDeRango` rechaza un recorrido de más de `maxMetros`. **En este PR se aplica a la estimación** (`422 VIAJE_FUERA_DE_RANGO`). Crear una solicitud todavía no lo exige: si también se aplica ahí, se decide en el PR 3. `calcularTarifa` nunca rechaza: un viaje que ya terminó siempre tiene que poder cobrarse, aunque el recorrido real haya salido más largo.
 
 Código:
 - `services/dispatch/src/dominio/tarifas/calculo.ts`: `calcularTarifa` y `exigirDentroDeRango`;
@@ -34,7 +35,7 @@ La tarifa final del PR 3 tiene que usar **la misma** `calcularTarifa`.
 
 Moneda fija: `ARS`. Si un valor no cumple, dispatch no arranca y nombra la variable.
 
-**En contenedores**, `docker-compose.yml` le pasa a dispatch las variables `TARIFA_*` y `MAPAS_*` del `.env`. Si una no está, llega vacía, y dispatch la trata como ausente: usa su valor por defecto, nunca 0. Los valores por defecto se definen en un solo lugar, `services/dispatch/src/config/index.ts`.
+**En contenedores**, `docker-compose.yml` le pasa a dispatch las variables `TARIFA_*` y `MAPAS_*` del `.env`. Si una no está, llega vacía. Dispatch trata un valor vacío o con solo espacios como ausente: usa su valor por defecto, nunca 0. Un `0` escrito a propósito sigue valiendo 0 en los importes que lo admiten. Los valores por defecto se definen en un solo lugar, `services/dispatch/src/config/index.ts`.
 
 **Versión.** Hoy la tarifa sale del `.env` y su versión es una huella de los valores: `env-` seguido de 12 caracteres hexadecimales. Si cambian los valores, cambia la versión. La estimación la devuelve, para que el PR 3 pueda explicar una diferencia por un cambio de tarifa.
 
@@ -97,8 +98,8 @@ El desglose separa la bajada del recorrido, pero no la distancia del tiempo. Sep
 | D1 | Fórmula | `max(minimo, bajada + metros × porKm / 1000 + segundos × porMinuto / 60)` |
 | D2 | Redondeo | Uno solo, al final del recorrido, mitad hacia arriba, con enteros |
 | D3 | Parámetros | Bajada, por km, por minuto, mínimo y máximo, todos en enteros. Moneda `ARS` |
-| D4 | Máximo | Más de `maxMetros`: 422. Justo en el máximo, se acepta. Ejemplo: 100 km |
-| D5 | Distancia cero | Se acepta y cobra el mínimo |
+| D4 | Máximo | En la estimación, más de `maxMetros` da 422 y justo en el máximo se acepta. Ejemplo: 100 km. Al crear la solicitud todavía no se aplica (PR 3) |
+| D5 | Distancia cero | Se acepta. Con 0 m y 0 s el total es `max(mínimo, bajada)`; con los valores de ejemplo, el mínimo |
 | D6 | Recorrido simulado | Haversine × 1,3, a 25 km/h |
 | D7 | Alcance de la tarifa | Global. Por flota o zona (variante G) queda abierto para el PR 2 |
 | D8 | Contrato | `GET`, sin Idempotency-Key, para pasajero, operador y admin; desglose y versión |

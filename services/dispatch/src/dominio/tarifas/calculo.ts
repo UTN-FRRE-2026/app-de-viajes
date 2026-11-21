@@ -41,8 +41,10 @@ function exigirEnteroNoNegativo(valor: number, campo: string): bigint {
  * vez**, a centavo entero y mitad hacia arriba: distancia y tiempo se suman sobre el denominador
  * común 6000 antes de dividir. Redondear cada parte por separado podría sumar un centavo de más.
  *
- * No rechaza recorridos largos: eso es `exigirDentroDeRango`, que se aplica antes de aceptar un
- * viaje. Un viaje que ya terminó siempre tiene que poder cobrarse.
+ * Con 0 m y 0 s el resultado es max(mínimo, bajada).
+ *
+ * No rechaza recorridos largos: eso es `exigirDentroDeRango`, que en este PR se aplica a la estimación.
+ * Un viaje que ya terminó siempre tiene que poder cobrarse.
  */
 export function calcularTarifa(p: ParametrosTarifa, recorrido: Recorrido): Tarifa {
   const metros = exigirEnteroNoNegativo(recorrido.metros, 'metros');
@@ -69,7 +71,7 @@ export function calcularTarifa(p: ParametrosTarifa, recorrido: Recorrido): Tarif
   };
 }
 
-/** Un recorrido de más de `maxMetros` no se acepta (422). Justo en el máximo, sí. */
+/** Un recorrido de más de `maxMetros` no se estima (422). Justo en el máximo, sí. Hoy lo usa la estimación. */
 export function exigirDentroDeRango(p: ParametrosTarifa, recorrido: Recorrido): void {
   if (recorrido.metros > p.maxMetros) throw new ViajeFueraDeRango(p.maxMetros);
 }

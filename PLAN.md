@@ -231,7 +231,7 @@ El ADR 0006 registra la decisión con sus alternativas reales: monolito modular 
 | **B6** Idempotencia | 🟡 | Hecha en los seis `POST` de dispatch (3.5). Falta en el registro de identity, el cobro y la activación de chofer, y el ADR 0010 |
 | **B7** Tarea pesada, dos versiones, medida | ⬜ | 3.2. Es lo que se muestra en el Control 3 |
 | **B8** Tres niveles de tests, un comando | ✅ | Sostenerlo |
-| **6.2** Alcance funcional | 🟡 | Hecho: registro, login, solicitud, ofertas, ubicación, estados completos del viaje. Falta: vehículo y habilitación, disponibilidad, estimación, seguimiento, tarifa y cobro, historial, panel |
+| **6.2** Alcance funcional | 🟡 | Hecho: registro, login, solicitud, ofertas, ubicación, estados completos del viaje, estimación de tarifa (`GET /tarifas/estimacion`). Falta: vehículo y habilitación, disponibilidad, seguimiento, tarifa final y cobro, historial, panel |
 | **6.3** ADR + 3 tests | ✅ | — |
 | **6.4** Búsqueda, retención, privacidad | ⬜ | 3.2 |
 | **6.5** Tarifa | 🟡 | Cálculo y estimación hechos (3.4). Faltan la configuración por el admin, la tarifa final y el cobro |

@@ -27,7 +27,7 @@ describe('calcularTarifa: resultado exacto en centavos', () => {
     expect(total(metros, segundos)).toBe(esperado);
   });
 
-  it('distancia cero (origen igual a destino) cobra el mínimo', () => {
+  it('distancia cero (origen igual a destino) con la bajada por debajo del mínimo cobra el mínimo', () => {
     const t = calcularTarifa(P, { metros: 0, segundos: 0 });
     expect(t.totalCentavos).toBe(P.minimoCentavos);
     expect(t.desglose).toEqual({
@@ -37,6 +37,12 @@ describe('calcularTarifa: resultado exacto en centavos', () => {
       minimoCentavos: 200_000,
       minimoAplicado: true,
     });
+  });
+
+  it('0 m y 0 s dan max(mínimo, bajada): si la bajada supera al mínimo, se cobra la bajada', () => {
+    const t = calcularTarifa({ ...P, bajadaCentavos: 300_000 }, { metros: 0, segundos: 0 });
+    expect(t.totalCentavos).toBe(300_000);
+    expect(t.desglose.minimoAplicado).toBe(false);
   });
 
   it('el desglose cierra: el total es el subtotal o el mínimo, y el subtotal es bajada más recorrido', () => {
