@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { DESTINO, levantarDispatch, ORIGEN } from '../soporte/sistema-postgres.js';
+import { clave, DESTINO, levantarDispatch, ORIGEN } from '../soporte/sistema-postgres.js';
 
 /**
  * Problema 6.3 contra Postgres real. En memoria esto no prueba nada: lo que garantiza
@@ -23,7 +23,7 @@ beforeEach(async () => {
 async function crearSolicitud(pasajeroId: string, choferes: string[]) {
   d.buscador.choferes = choferes;
   const res = await request(d.url)
-    .post('/solicitudes')
+    .post('/solicitudes').set(clave())
     .set(await d.auth(pasajeroId, 'pasajero'))
     .send({ origen: ORIGEN, destino: DESTINO });
   expect(res.status).toBe(201);
@@ -32,11 +32,11 @@ async function crearSolicitud(pasajeroId: string, choferes: string[]) {
 }
 
 async function aceptar(ofertaId: string, choferId: string) {
-  return request(d.url).post(`/ofertas/${ofertaId}/aceptar`).set(await d.auth(choferId, 'chofer')).send({});
+  return request(d.url).post(`/ofertas/${ofertaId}/aceptar`).set(clave()).set(await d.auth(choferId, 'chofer')).send({});
 }
 
 async function cancelar(solicitudId: string, pasajeroId: string) {
-  return request(d.url).post(`/solicitudes/${solicitudId}/cancelar`).set(await d.auth(pasajeroId, 'pasajero')).send({});
+  return request(d.url).post(`/solicitudes/${solicitudId}/cancelar`).set(clave()).set(await d.auth(pasajeroId, 'pasajero')).send({});
 }
 
 describe('asignación única (6.3)', () => {
@@ -48,7 +48,7 @@ describe('asignación única (6.3)', () => {
     // Los tokens se firman antes, para que los 50 pedidos salgan juntos.
     const encabezados = await Promise.all(ofertas.map((o) => d.auth(o.choferId, 'chofer')));
     const respuestas = await Promise.all(
-      ofertas.map((o, i) => request(d.url).post(`/ofertas/${o.id}/aceptar`).set(encabezados[i]!).send({})),
+      ofertas.map((o, i) => request(d.url).post(`/ofertas/${o.id}/aceptar`).set(clave()).set(encabezados[i]!).send({})),
     );
 
     const ok = respuestas.filter((r) => r.status === 200);
@@ -134,7 +134,7 @@ describe('asignación única (6.3)', () => {
     const encabezado = await d.auth(pasajero, 'pasajero');
     const respuestas = await Promise.all(
       Array.from({ length: 10 }, () =>
-        request(d.url).post('/solicitudes').set(encabezado).send({ origen: ORIGEN, destino: DESTINO }),
+        request(d.url).post('/solicitudes').set(clave()).set(encabezado).send({ origen: ORIGEN, destino: DESTINO }),
       ),
     );
     expect(respuestas.filter((r) => r.status === 201)).toHaveLength(1);
@@ -154,7 +154,7 @@ describe('ciclo del viaje bajo concurrencia', () => {
     expect((await aceptar(ofertas[0]!.id, chofer)).status).toBe(200);
     const comoChofer = await d.auth(chofer, 'chofer');
     for (const accion of ['en-camino', 'iniciar']) {
-      expect((await request(d.url).post(`/solicitudes/${solicitudId}/${accion}`).set(comoChofer).send({})).status).toBe(200);
+      expect((await request(d.url).post(`/solicitudes/${solicitudId}/${accion}`).set(clave()).set(comoChofer).send({})).status).toBe(200);
     }
     return { solicitudId, chofer, comoChofer };
   }
@@ -176,7 +176,7 @@ describe('ciclo del viaje bajo concurrencia', () => {
     const { solicitudId, comoChofer } = await viajeEnCurso();
     await abrirConexiones(20);
     const respuestas = await Promise.all(
-      Array.from({ length: 20 }, () => request(d.url).post(`/solicitudes/${solicitudId}/finalizar`).set(comoChofer).send({})),
+      Array.from({ length: 20 }, () => request(d.url).post(`/solicitudes/${solicitudId}/finalizar`).set(clave()).set(comoChofer).send({})),
     );
     expect(respuestas.filter((r) => r.status === 200)).toHaveLength(1);
     const conflictos = respuestas.filter((r) => r.status === 409);
@@ -195,8 +195,8 @@ describe('ciclo del viaje bajo concurrencia', () => {
       const { solicitudId, comoChofer } = await viajeEnCurso();
       await abrirConexiones(2);
       const [rFin, rCancel] = await Promise.all([
-        request(d.url).post(`/solicitudes/${solicitudId}/finalizar`).set(comoChofer).send({}),
-        request(d.url).post(`/solicitudes/${solicitudId}/cancelar`).set(operador).send({ motivo: 'reclamo del pasajero' }),
+        request(d.url).post(`/solicitudes/${solicitudId}/finalizar`).set(clave()).set(comoChofer).send({}),
+        request(d.url).post(`/solicitudes/${solicitudId}/cancelar`).set(clave()).set(operador).send({ motivo: 'reclamo del pasajero' }),
       ]);
       expect([rFin.status, rCancel.status].sort()).toEqual([200, 409]);
 

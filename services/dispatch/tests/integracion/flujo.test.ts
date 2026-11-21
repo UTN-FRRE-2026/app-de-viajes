@@ -3,7 +3,7 @@ import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { crearLogger } from '@viajes/platform';
 import { componer } from '../../src/composicion.js';
-import { DESTINO, configTest, levantarDispatch, ORIGEN } from '../soporte/sistema-postgres.js';
+import { clave, DESTINO, configTest, levantarDispatch, ORIGEN } from '../soporte/sistema-postgres.js';
 import { crearEmisorTokens } from '../soporte/tokens.js';
 
 let d: Awaited<ReturnType<typeof levantarDispatch>>;
@@ -25,14 +25,14 @@ describe('flujo con Postgres', () => {
     d.buscador.choferes = [chofer];
 
     const creada = await request(d.url)
-      .post('/solicitudes')
+      .post('/solicitudes').set(clave())
       .set(await d.auth(pasajero, 'pasajero'))
       .send({ origen: ORIGEN, destino: DESTINO });
     expect(creada.status).toBe(201);
     expect(creada.headers['x-request-id']).toBeTruthy();
 
     const oferta = await d.prisma.oferta.findFirstOrThrow({ where: { solicitudId: creada.body.id } });
-    const aceptada = await request(d.url).post(`/ofertas/${oferta.id}/aceptar`).set(await d.auth(chofer, 'chofer')).send({});
+    const aceptada = await request(d.url).post(`/ofertas/${oferta.id}/aceptar`).set(clave()).set(await d.auth(chofer, 'chofer')).send({});
     expect(aceptada.status).toBe(200);
     expect(aceptada.body).toMatchObject({ estado: 'ASIGNADO', choferId: chofer });
 
@@ -46,14 +46,14 @@ describe('flujo con Postgres', () => {
       ['iniciar', 'EN_CURSO'],
       ['finalizar', 'COMPLETADA'],
     ] as const) {
-      const res = await request(d.url).post(`/solicitudes/${creada.body.id}/${accion}`).set(comoChofer).send({});
+      const res = await request(d.url).post(`/solicitudes/${creada.body.id}/${accion}`).set(clave()).set(comoChofer).send({});
       expect(res.status).toBe(200);
       expect(res.body).toMatchObject({ estado, choferId: chofer });
       // El chofer queda reservado hasta finalizar, y se libera en la misma transacción.
       expect(await d.prisma.asignacionActiva.count()).toBe(estado === 'COMPLETADA' ? 0 : 1);
     }
 
-    const otraVez = await request(d.url).post(`/solicitudes/${creada.body.id}/finalizar`).set(comoChofer).send({});
+    const otraVez = await request(d.url).post(`/solicitudes/${creada.body.id}/finalizar`).set(clave()).set(comoChofer).send({});
     expect(otraVez.status).toBe(409);
     expect(otraVez.body.error.code).toBe('TRANSICION_INVALIDA');
 
@@ -75,22 +75,22 @@ describe('flujo con Postgres', () => {
     const chofer = randomUUID();
     d.buscador.choferes = [chofer];
     const creada = await request(d.url)
-      .post('/solicitudes')
+      .post('/solicitudes').set(clave())
       .set(await d.auth(pasajero, 'pasajero'))
       .send({ origen: ORIGEN, destino: DESTINO });
     const oferta = await d.prisma.oferta.findFirstOrThrow({ where: { solicitudId: creada.body.id } });
     const comoChofer = await d.auth(chofer, 'chofer');
-    await request(d.url).post(`/ofertas/${oferta.id}/aceptar`).set(comoChofer).send({});
-    await request(d.url).post(`/solicitudes/${creada.body.id}/en-camino`).set(comoChofer).send({});
-    await request(d.url).post(`/solicitudes/${creada.body.id}/iniciar`).set(comoChofer).send({});
+    await request(d.url).post(`/ofertas/${oferta.id}/aceptar`).set(clave()).set(comoChofer).send({});
+    await request(d.url).post(`/solicitudes/${creada.body.id}/en-camino`).set(clave()).set(comoChofer).send({});
+    await request(d.url).post(`/solicitudes/${creada.body.id}/iniciar`).set(clave()).set(comoChofer).send({});
 
     const operador = await d.auth(randomUUID(), 'operador');
-    const sinMotivo = await request(d.url).post(`/solicitudes/${creada.body.id}/cancelar`).set(operador).send({});
+    const sinMotivo = await request(d.url).post(`/solicitudes/${creada.body.id}/cancelar`).set(clave()).set(operador).send({});
     expect(sinMotivo.status).toBe(422);
     expect(sinMotivo.body.error.code).toBe('MOTIVO_REQUERIDO');
 
     const res = await request(d.url)
-      .post(`/solicitudes/${creada.body.id}/cancelar`)
+      .post(`/solicitudes/${creada.body.id}/cancelar`).set(clave())
       .set(operador)
       .send({ motivo: 'Choque leve, el pasajero sigue en otro auto' });
     expect(res.status).toBe(200);
@@ -105,7 +105,7 @@ describe('flujo con Postgres', () => {
     const pasajero = randomUUID();
     d.buscador.choferes = [randomUUID()];
     const creada = await request(d.url)
-      .post('/solicitudes')
+      .post('/solicitudes').set(clave())
       .set(await d.auth(pasajero, 'pasajero'))
       .send({ origen: ORIGEN, destino: DESTINO });
     await expect(
@@ -121,7 +121,7 @@ describe('flujo con Postgres', () => {
     d.buscador.choferes = [c1, c2];
     const pasajero = randomUUID();
     const creada = await request(d.url)
-      .post('/solicitudes')
+      .post('/solicitudes').set(clave())
       .set(await d.auth(pasajero, 'pasajero'))
       .send({ origen: ORIGEN, destino: DESTINO });
 
@@ -135,12 +135,12 @@ describe('flujo con Postgres', () => {
     expect(ofertas.filter((o) => o.estado === 'PENDIENTE')).toHaveLength(1);
   });
 
-  it('/ready responde 200 con la base accesible y las migraciones aplicadas', async () => {
+  it('/ready responde 200 con la base accesible, las migraciones aplicadas y Redis', async () => {
     const { verificador } = await crearEmisorTokens();
     const sistema = componer(configTest(), crearLogger('t', 'silent'), { verificador });
     const res = await request(sistema.app).get('/ready');
     expect(res.status).toBe(200);
-    expect(res.body.chequeos).toEqual({ postgres: 'ok', migraciones: 'ok' });
+    expect(res.body.chequeos).toEqual({ postgres: 'ok', migraciones: 'ok', redis: 'ok' });
     expect((await request(sistema.app).get('/health')).status).toBe(200);
     await sistema.cerrar();
   });

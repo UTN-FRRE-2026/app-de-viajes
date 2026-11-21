@@ -22,7 +22,7 @@ Cada integrante es **dueño** de un problema central y de los módulos que lo ro
 **Fase B**
 - [x] viajes: `EN_CAMINO`, `EN_CURSO`, `CANCELADO_CHOFER`, cancelación del operador con motivo, finalizar liberando al chofer en la misma transacción, y un test por transición.
 - [x] Historial por pasajero y por chofer; panel del operador con búsqueda.
-- [ ] Idempotency-Key en `platform` (Redis `SET NX` + registro en la transacción del efecto).
+- [x] Idempotency-Key en `platform` (Redis `SET NX` + registro en la transacción del efecto), aplicada a los seis `POST` de dispatch.
 - [ ] SSE: relay del `outbox` a Redis Pub/Sub, suscripción solo a viajes propios y al canal de posición del chofer asignado, reconexión con `Last-Event-ID`.
 - [ ] Frontend: pantallas de pasajero y de operador.
 - [ ] Contenedor `web`: nginx que sirve el frontend y hace de reverse proxy a los tres servicios.
@@ -87,7 +87,7 @@ Cada integrante es **dueño** de un problema central y de los módulos que lo ro
 | Ivan (viajes) | `GET /interno/candidatos` | Maxi | ✅ Integrado (adaptador `buscador-location`) |
 | Ivan (viajes) | Chofer → flota → zonas habilitadas, para filtrar candidatos en dispatch | Agos | Inicio de la Fase B |
 | Ivan (SSE) | Posiciones publicadas en Redis | Maxi | Fase B |
-| Maxi (cobro) | Idempotency-Key en `platform` | Ivan | Antes de arrancar el cobro |
+| Maxi (cobro) | Idempotency-Key en `platform` | Ivan | ✅ Lista: `idempotente()` en la ruta; el registro va en la transacción del cobro (ver PLAN 3.5) |
 | Agos (Playwright) | Pantallas de pasajero, chofer y operador | Ivan, Maxi | Fin de la Fase B |
 | Maxi (Grafana) | Log por pedido en JSON | Agos | Fase B |
 

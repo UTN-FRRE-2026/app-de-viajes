@@ -14,6 +14,10 @@ export const EsquemaConfig = z
     DISPATCH_PERSISTENCIA: z.enum(['postgres', 'memoria']).default('postgres'),
     DATABASE_URL: z.string().url().optional(),
     DB_POOL_MAX: z.coerce.number().int().positive().default(10),
+    // Cerrojo de la Idempotency-Key. El mismo Redis que identity y location; las claves llevan prefijo.
+    REDIS_URL: z.string().url().optional(),
+    // Lo que puede quedar tomado el cerrojo si el proceso se cae a mitad de un pedido.
+    IDEMPOTENCIA_EN_VUELO_SEGUNDOS: z.coerce.number().int().min(5).max(300).default(30),
     JWKS_URL: z.string().url(),
     JWT_ISSUER: z.string().min(1),
     JWT_AUDIENCE: z.string().min(1),
@@ -34,6 +38,10 @@ export const EsquemaConfig = z
   })
   .refine((c) => c.DISPATCH_PERSISTENCIA !== 'postgres' || c.DATABASE_URL, {
     path: ['DATABASE_URL'],
+    message: 'es obligatoria cuando DISPATCH_PERSISTENCIA=postgres',
+  })
+  .refine((c) => c.DISPATCH_PERSISTENCIA !== 'postgres' || c.REDIS_URL, {
+    path: ['REDIS_URL'],
     message: 'es obligatoria cuando DISPATCH_PERSISTENCIA=postgres',
   })
   .refine((c) => c.DISPATCH_BUSCADOR !== 'location' || c.LOCATION_URL, {

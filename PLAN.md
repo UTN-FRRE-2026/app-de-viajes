@@ -193,7 +193,13 @@ El ADR 0006 registra la decisión con sus alternativas reales: monolito modular 
   - registro en Postgres **en la misma transacción que el efecto**, con hash del cuerpo y la respuesta;
   - el reintento recibe la respuesta guardada; la misma clave con otro cuerpo, 422.
   - El middleware va en `platform`; cada servicio guarda los registros en su propia base.
-  - Hoy no existe en ningún endpoint.
+  - **Hecho en dispatch:** los seis `POST` con efecto (crear, aceptar, en camino, iniciar, finalizar y cancelar) exigen el encabezado; sin él, 400. Falta en identity (registro) y en lo que todavía no existe: cobro (Maxi) y activación de chofer (Agos). Cada uno aplica `idempotente()` en su ruta.
+    - El middleware (`packages/platform/src/idempotencia.ts`) valida la clave con un esquema (16 a 128 letras, números, `-` o `_`), la asocia al usuario del token y calcula la huella: método, ruta y cuerpo ya validado, con las claves ordenadas.
+    - El registro (`idempotency_keys`) lo escribe el adaptador de Postgres de dispatch al final de la transacción del caso de uso, con el resultado como respuesta. Se guarda como `json`, no `jsonb`, para devolver el reintento byte a byte. Los errores no se guardan: no tuvieron efecto, así que el reintento se vuelve a procesar.
+    - El reintento sale con `Idempotent-Replayed: true`. Si Redis no responde: 503, falla cerrado.
+    - Si el cerrojo vence con el pedido en curso (30 s, `IDEMPOTENCIA_EN_VUELO_SEGUNDOS`), la clave primaria del registro impide el segundo efecto. Lo que agrega el cerrojo es que los duplicados no lleguen al caso de uso: sin él, igual repetirían lo que pasa fuera de la base (la búsqueda en location, o el cobro al proveedor).
+    - Tests contra Postgres y Redis (`tests/seguridad/idempotencia.test.ts` y `tests/concurrencia/idempotencia.test.ts`). Comprobado que fallan si se saca el cerrojo, el registro en la transacción o la comparación de la huella.
+    - Falta: borrar los registros viejos (el índice por `created_at` ya está) y el ADR 0010.
 - **Tiempo real por SSE**, en dispatch:
   - un relay lee el `outbox` y publica en Redis Pub/Sub; el endpoint SSE se suscribe solo a los viajes del usuario;
   - mientras el viaje está activo, el endpoint se suscribe también al canal de posición del chofer asignado, que publica location;
@@ -213,14 +219,14 @@ El ADR 0006 registra la decisión con sus alternativas reales: monolito modular 
 | **B5** Autenticación | ✅ | argon2id con costo declarado, RS256 |
 | **B5** Autorización por recurso | 🟡 | Hecha y testeada en viajes e historial. Falta en flotas y location |
 | **B5** Tres roles con tabla en el README | 🟡 | Hay cinco roles en código; falta la tabla |
-| **B5** Validación con esquema | 🟡 | Cuerpo, parámetros y query sí. Falta validar **encabezados** (`Idempotency-Key`) |
+| **B5** Validación con esquema | ✅ | Cuerpo, parámetros, query y encabezados (`Idempotency-Key`, con test de cada formato inválido) |
 | **B5** Prototype pollution | 🟡 | Solo se prueba `__proto__` en la raíz. Falta `constructor.prototype` y posiciones anidadas |
 | **B5** Inyección SQL | ✅ | Consultas parametrizadas y tests con cargas típicas en la búsqueda del panel (`GET /panel/viajes?q=`) |
 | **B5** Límite de tasa | 🟡 | Solo en login. Falta en solicitud de viaje y ubicación, con 429 y encabezados |
 | **B5** Helmet, CSP y CORS | 🟡 | Hecho: helmet en `crearApp` de `platform`, con una CSP que lo niega todo (`default-src 'none'`), así la heredan los tres servicios; con test en cada uno. Falta: CORS y la CSP de la página en nginx (Fase B). Detrás de nginx el frontend queda en el mismo origen |
 | **B5** `npm audit` | ✅ | En el CI |
 | **B6** ADR de carreras + test de 50 | ✅ | Falta el inventario completo (3.5) |
-| **B6** Idempotencia | ⬜ | 3.5 |
+| **B6** Idempotencia | 🟡 | Hecha en los seis `POST` de dispatch (3.5). Falta en el registro de identity, el cobro y la activación de chofer, y el ADR 0010 |
 | **B7** Tarea pesada, dos versiones, medida | ⬜ | 3.2. Es lo que se muestra en el Control 3 |
 | **B8** Tres niveles de tests, un comando | ✅ | Sostenerlo |
 | **6.2** Alcance funcional | 🟡 | Hecho: registro, login, solicitud, ofertas, ubicación, estados completos del viaje. Falta: vehículo y habilitación, disponibilidad, estimación, seguimiento, tarifa y cobro, historial, panel |
@@ -333,7 +339,8 @@ Es lo que pide el Control 3: carrera principal con su test (ya está) y tarea pe
 Al cerrar esta fase el sistema tiene que poder congelarse para el ataque cruzado, cuando la cátedra lo fije.
 
 - [x] `viajes`: estados completos, historial, panel del operador con búsqueda (Ivan).
-- [ ] Idempotency-Key y SSE (Ivan).
+- [x] Idempotency-Key en `platform` y en los `POST` de dispatch (Ivan).
+- [ ] SSE (Ivan).
 - [ ] Zonas, candidatos filtrados por flota y zona, reporte, aislamiento entre flotas (Agos).
 - [ ] Seguridad transversal: CORS, rate limit, encabezados, log por pedido y los tests que faltan del bloque 5 (Agos).
 - [ ] `tarifas`, cobro simulado y adaptadores de mapas y pagos con timeout (Maxi).

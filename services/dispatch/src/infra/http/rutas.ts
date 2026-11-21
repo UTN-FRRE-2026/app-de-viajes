@@ -1,5 +1,13 @@
 import { CancelarBody, CrearSolicitudBody, HistorialQuery, PanelQuery, ParamsId, SinBody } from '@viajes/contracts';
-import { autenticar, requerirRol, usuarioDe, validar, type Rol, type VerificadorToken } from '@viajes/platform';
+import {
+  autenticar,
+  requerirRol,
+  usuarioDe,
+  validar,
+  type crearIdempotencia,
+  type Rol,
+  type VerificadorToken,
+} from '@viajes/platform';
 import { Router } from 'express';
 import type { CasosDeUso } from '../../dominio/casos-uso/index.js';
 import type { QuienCancela } from '../../dominio/entidades/index.js';
@@ -12,11 +20,20 @@ const QUIEN_CANCELA: Partial<Record<Rol, QuienCancela>> = {
   admin: 'operador',
 };
 
-export function rutasDespacho(casos: CasosDeUso, verificar: VerificadorToken): Router {
+/**
+ * Todo POST con efecto exige Idempotency-Key (PLAN 3.5). `idempotente` va al final de la cadena:
+ * un pedido sin permiso o mal formado no ocupa la clave. El código que recibe (201 o 200) es el que
+ * responde la ruta: se guarda para repetirlo en los reintentos.
+ */
+export function rutasDespacho(
+  casos: CasosDeUso,
+  verificar: VerificadorToken,
+  idempotente: ReturnType<typeof crearIdempotencia>,
+): Router {
   const r = Router();
   r.use(autenticar(verificar));
 
-  r.post('/solicitudes', requerirRol('pasajero'), validar({ body: CrearSolicitudBody }), async (req, res) => {
+  r.post('/solicitudes', requerirRol('pasajero'), validar({ body: CrearSolicitudBody }), idempotente(201), async (req, res) => {
     const { origen, destino } = req.body as CrearSolicitudBody;
     const solicitud = await casos.crearSolicitud({ pasajeroId: usuarioDe(req).id, origen, destino });
     res.status(201).json(solicitud);
@@ -50,6 +67,7 @@ export function rutasDespacho(casos: CasosDeUso, verificar: VerificadorToken): R
     '/solicitudes/:id/cancelar',
     requerirRol('pasajero', 'chofer', 'operador', 'admin'),
     validar({ params: ParamsId, body: CancelarBody }),
+    idempotente(),
     async (req, res) => {
       const usuario = usuarioDe(req);
       const solicitud = await casos.cancelarSolicitud({
@@ -73,6 +91,7 @@ export function rutasDespacho(casos: CasosDeUso, verificar: VerificadorToken): R
       `/solicitudes/:id/${ruta}`,
       requerirRol('chofer'),
       validar({ params: ParamsId, body: SinBody }),
+      idempotente(),
       async (req, res) => {
         res.json(await accion({ solicitudId: req.params['id'] as string, choferId: usuarioDe(req).id }));
       },
@@ -83,6 +102,7 @@ export function rutasDespacho(casos: CasosDeUso, verificar: VerificadorToken): R
     '/ofertas/:id/aceptar',
     requerirRol('chofer'),
     validar({ params: ParamsId, body: SinBody }),
+    idempotente(),
     async (req, res) => {
       // El chofer es siempre el del token: nadie puede aceptar en nombre de otro.
       const solicitud = await casos.aceptarOferta({ ofertaId: req.params['id'] as string, choferId: usuarioDe(req).id });

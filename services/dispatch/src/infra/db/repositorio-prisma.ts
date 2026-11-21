@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { requestIdActual } from '@viajes/platform';
+import { idempotenciaPendiente, idempotenciaRegistrada, requestIdActual } from '@viajes/platform';
 import {
   Oferta,
   SolicitudViaje,
@@ -13,6 +13,7 @@ import type {
   TransaccionDespacho,
 } from '../../dominio/puertos/index.js';
 import { Prisma, type PrismaClient } from './generated/client.js';
+import { registrarEnTransaccion } from './idempotencia-prisma.js';
 
 interface FilaSolicitud {
   id: string;
@@ -195,13 +196,24 @@ function transaccion(tx: Prisma.TransactionClient): TransaccionDespacho {
 export class RepositorioDespachoPrisma implements RepositorioDespacho {
   constructor(private readonly prisma: PrismaClient) {}
 
-  enTransaccion<T>(trabajo: (tx: TransaccionDespacho) => Promise<T>): Promise<T> {
-    return this.prisma.$transaction((tx) => trabajo(transaccion(tx)), {
-      isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted,
-      // Con muchas aceptaciones simultáneas, varias esperan el lock y una conexión libre del pool.
-      maxWait: 10_000,
-      timeout: 10_000,
-    });
+  async enTransaccion<T>(trabajo: (tx: TransaccionDespacho) => Promise<T>): Promise<T> {
+    // Si el pedido HTTP trae Idempotency-Key, el registro va en esta misma transacción.
+    const idempotencia = idempotenciaPendiente();
+    const resultado = await this.prisma.$transaction(
+      async (tx) => {
+        const r = await trabajo(transaccion(tx));
+        if (idempotencia) await registrarEnTransaccion(tx, idempotencia, r);
+        return r;
+      },
+      {
+        isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted,
+        // Con muchas aceptaciones simultáneas, varias esperan el lock y una conexión libre del pool.
+        maxWait: 10_000,
+        timeout: 10_000,
+      },
+    );
+    if (idempotencia) idempotenciaRegistrada();
+    return resultado;
   }
 
   async obtenerSolicitud(id: string) {

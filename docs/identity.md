@@ -207,7 +207,9 @@ Invoke-RestMethod "$identity/.well-known/jwks.json" | Select-Object -ExpandPrope
 $pasajero = Entrar 'pasajero@viajes.test'
 $conPasajero = @{ Authorization = "Bearer $($pasajero.token)" }
 $viaje = @{ origen = @{ lat = -34.6037; lng = -58.3816 }; destino = @{ lat = -34.5875; lng = -58.4207 } } | ConvertTo-Json
-$solicitud = Invoke-RestMethod -Method Post "$dispatch/solicitudes" -ContentType 'application/json' -Headers $conPasajero -Body $viaje
+# Todo POST con efecto en dispatch lleva una Idempotency-Key nueva por operación (sin ella, 400).
+function ConClave($encabezados) { $encabezados + @{ 'Idempotency-Key' = [guid]::NewGuid().ToString() } }
+$solicitud = Invoke-RestMethod -Method Post "$dispatch/solicitudes" -ContentType 'application/json' -Headers (ConClave $conPasajero) -Body $viaje
 $solicitud | Select-Object id, estado, pasajeroId
 ```
 
@@ -221,7 +223,7 @@ Todavía no hay un endpoint para listar ofertas, así que el id se lee de la bas
 $oferta = docker compose exec -T postgres psql -U postgres -d dispatch -Atc "SELECT id FROM offers WHERE request_id = '$($solicitud.id)'"
 $chofer = Entrar 'chofer@viajes.test'
 $conChofer = @{ Authorization = "Bearer $($chofer.token)" }
-Invoke-RestMethod -Method Post "$dispatch/ofertas/$oferta/aceptar" -ContentType 'application/json' -Headers $conChofer -Body '{}' | Select-Object estado, choferId
+Invoke-RestMethod -Method Post "$dispatch/ofertas/$oferta/aceptar" -ContentType 'application/json' -Headers (ConClave $conChofer) -Body '{}' | Select-Object estado, choferId
 ```
 
 Esperado: `estado` en `ASIGNADO`.
@@ -270,7 +272,7 @@ docker compose exec -T redis redis-cli --scan --pattern 'identity:login:*' | For
 Cada pasajero admite una sola solicitud activa, y el chofer queda ocupado hasta que se libera.
 
 ```powershell
-Invoke-RestMethod -Method Post "$dispatch/solicitudes/$($solicitud.id)/cancelar" -ContentType 'application/json' -Headers $conPasajero -Body '{}' | Select-Object estado
+Invoke-RestMethod -Method Post "$dispatch/solicitudes/$($solicitud.id)/cancelar" -ContentType 'application/json' -Headers (ConClave $conPasajero) -Body '{}' | Select-Object estado
 ```
 
 **9. Renovar la sesión y probar el reuso**
@@ -282,7 +284,7 @@ function Renovar($refresh) {
 }
 $renovada = Renovar $pasajero.refreshToken
 # El access token nuevo sirve en dispatch: 2xx
-Estado { Invoke-RestMethod -Method Post "$dispatch/solicitudes" -ContentType 'application/json' -Headers @{ Authorization = "Bearer $($renovada.token)" } -Body $viaje }
+Estado { Invoke-RestMethod -Method Post "$dispatch/solicitudes" -ContentType 'application/json' -Headers (ConClave @{ Authorization = "Bearer $($renovada.token)" }) -Body $viaje }
 # El refresh viejo ya se usó: 401, y revoca la sesión
 Estado { Renovar $pasajero.refreshToken }
 # Por eso el nuevo tampoco sirve: 401
