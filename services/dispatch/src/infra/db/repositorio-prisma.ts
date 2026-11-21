@@ -6,7 +6,12 @@ import {
   type EstadoOferta,
   type EstadoSolicitud,
 } from '../../dominio/entidades/index.js';
-import type { RepositorioDespacho, TransaccionDespacho } from '../../dominio/puertos/index.js';
+import type {
+  FiltroSolicitudes,
+  Pagina,
+  RepositorioDespacho,
+  TransaccionDespacho,
+} from '../../dominio/puertos/index.js';
 import { Prisma, type PrismaClient } from './generated/client.js';
 
 interface FilaSolicitud {
@@ -73,6 +78,30 @@ function aOferta(m: ModeloOferta): Oferta {
   return Oferta.reconstruir({ ...m, estado: m.estado as EstadoOferta });
 }
 
+const COLUMNAS_SOLICITUD = Prisma.sql`id, passenger_id, status, origin_lat, origin_lng, destination_lat, destination_lng,
+  driver_id, cancel_reason, version, created_at`;
+
+/** Para LIKE: el texto del usuario se busca tal cual, sin que `%` o `_` funcionen como comodines. */
+const escaparLike = (texto: string) => texto.replace(/[\\%_]/g, (c) => `\\${c}`);
+
+/**
+ * Arma el WHERE con fragmentos de Prisma.sql: cada valor viaja como parámetro ($1, $2...),
+ * nunca concatenado al SQL. Por eso una búsqueda como `' OR '1'='1` es solo texto.
+ */
+function condicionesListado({ pasajeroId, choferId, estados, texto }: FiltroSolicitudes): Prisma.Sql {
+  const condiciones: Prisma.Sql[] = [];
+  if (pasajeroId) condiciones.push(Prisma.sql`passenger_id = ${pasajeroId}::uuid`);
+  if (choferId) condiciones.push(Prisma.sql`driver_id = ${choferId}::uuid`);
+  if (estados) condiciones.push(estados.length ? Prisma.sql`status IN (${Prisma.join(estados)})` : Prisma.sql`FALSE`);
+  if (texto) {
+    // La barra invertida es el escape por defecto de LIKE/ILIKE en Postgres.
+    const patron = `%${escaparLike(texto)}%`;
+    condiciones.push(Prisma.sql`(id::text ILIKE ${patron} OR passenger_id::text ILIKE ${patron}
+      OR driver_id::text ILIKE ${patron} OR cancel_reason ILIKE ${patron})`);
+  }
+  return condiciones.length ? Prisma.sql`WHERE ${Prisma.join(condiciones, ' AND ')}` : Prisma.empty;
+}
+
 /**
  * Las garantías de concurrencia del problema 6.3 viven en este archivo, en SQL:
  * el FOR UPDATE de la solicitud, la restricción única del chofer y el índice parcial del pasajero.
@@ -83,8 +112,7 @@ function transaccion(tx: Prisma.TransactionClient): TransaccionDespacho {
     async obtenerSolicitudParaActualizar(id) {
       // Bloquea la fila hasta COMMIT/ROLLBACK. Otra transacción que pida el mismo lock espera acá.
       const filas = await tx.$queryRaw<FilaSolicitud[]>`
-        SELECT id, passenger_id, status, origin_lat, origin_lng, destination_lat, destination_lng, driver_id,
-               cancel_reason, version, created_at
+        SELECT ${COLUMNAS_SOLICITUD}
         FROM ride_requests
         WHERE id = ${id}::uuid
         FOR UPDATE`;
@@ -199,5 +227,15 @@ export class RepositorioDespachoPrisma implements RepositorioDespacho {
   async choferesOfrecidos(solicitudId: string) {
     const filas = await this.prisma.oferta.findMany({ where: { solicitudId }, select: { choferId: true } });
     return filas.map((f) => f.choferId);
+  }
+
+  async listarSolicitudes(filtro: FiltroSolicitudes, { limite, desde }: Pagina) {
+    const filas = await this.prisma.$queryRaw<FilaSolicitud[]>`
+      SELECT ${COLUMNAS_SOLICITUD}
+      FROM ride_requests
+      ${condicionesListado(filtro)}
+      ORDER BY created_at DESC, id DESC
+      LIMIT ${limite}::int OFFSET ${desde}::int`;
+    return filas.map(filaASolicitud);
   }
 }

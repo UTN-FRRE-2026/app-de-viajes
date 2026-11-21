@@ -150,7 +150,11 @@ El ADR 0006 registra la decisión con sus alternativas reales: monolito modular 
 - La cancelación del operador queda como `CANCELADO_OPERADOR`, una extensión documentada del enunciado; falta explicarla en `modelo.md`. La base exige el motivo con un `CHECK`.
 - Mecanismo, sin cambios: `FOR UPDATE` de la solicitud, después la reserva única del chofer, siempre en ese orden. Las acciones del chofer y la cancelación toman el mismo lock.
 - Tests: la matriz de 9 estados × 8 acciones de la entidad (cada transición válida y cada inválida), el ciclo completo por HTTP contra Postgres y dos carreras nuevas: 20 finalizaciones simultáneas (1 gana) y finalizar contra la cancelación del operador. Las dos fallan si se saca el `FOR UPDATE`.
-- Historial por pasajero y por chofer, y panel del operador con viajes en curso. El panel lleva una **búsqueda por texto**, que es donde va el test de inyección SQL.
+- Historial por pasajero y por chofer, y panel del operador con viajes en curso. El panel lleva una **búsqueda por texto**, que es donde va el test de inyección SQL. Hecho:
+  - `GET /historial` (pasajero o chofer): sus viajes, del más nuevo al más viejo, con fecha. El usuario sale del token; la query solo acepta `limite` (1 a 50) y `desde`.
+  - `GET /panel/viajes` (operador o admin): por defecto los viajes activos; filtra por `estado` y busca con `q` en el id del viaje, del pasajero y del chofer, y en el motivo de cancelación, sin distinguir mayúsculas.
+  - La búsqueda va como parámetro de la consulta y `%` y `_` se buscan como texto. Tests con siete cargas de inyección; fallan si el texto se concatena al SQL o si no se escapan los comodines (comprobado).
+  - Paginación por desplazamiento: la respuesta trae `siguiente`. Índices nuevos por chofer y por estado y fecha.
 - Candidatos: el puerto `BuscadorCandidatos` pasa de la lista fija a un adaptador HTTP contra location, con timeout. El resultado se filtra en dispatch por disponibilidad, zona del origen y flotas habilitadas (sección 2).
 
 ### 3.2 location — tarea pesada (6.6) y búsqueda geográfica (6.4)
@@ -207,11 +211,11 @@ El ADR 0006 registra la decisión con sus alternativas reales: monolito modular 
 | **B3** Configuración y ciclo de vida | ✅ | Preparar la demo de SIGTERM con un pedido lento |
 | **B4** Errores y logs | 🟡 | No hay **log por pedido** (método, ruta, estado, duración): hoy solo se loguean los errores, y no se puede relacionar pedido y error por `requestId` |
 | **B5** Autenticación | ✅ | argon2id con costo declarado, RS256 |
-| **B5** Autorización por recurso | 🟡 | Hecha y testeada en viajes. Falta en flotas, location e historial |
+| **B5** Autorización por recurso | 🟡 | Hecha y testeada en viajes e historial. Falta en flotas y location |
 | **B5** Tres roles con tabla en el README | 🟡 | Hay cinco roles en código; falta la tabla |
 | **B5** Validación con esquema | 🟡 | Cuerpo, parámetros y query sí. Falta validar **encabezados** (`Idempotency-Key`) |
 | **B5** Prototype pollution | 🟡 | Solo se prueba `__proto__` en la raíz. Falta `constructor.prototype` y posiciones anidadas |
-| **B5** Inyección SQL | 🟡 | Consultas parametrizadas sí. Falta el test con una carga típica en un campo de búsqueda |
+| **B5** Inyección SQL | ✅ | Consultas parametrizadas y tests con cargas típicas en la búsqueda del panel (`GET /panel/viajes?q=`) |
 | **B5** Límite de tasa | 🟡 | Solo en login. Falta en solicitud de viaje y ubicación, con 429 y encabezados |
 | **B5** Helmet, CSP y CORS | 🟡 | Hecho: helmet en `crearApp` de `platform`, con una CSP que lo niega todo (`default-src 'none'`), así la heredan los tres servicios; con test en cada uno. Falta: CORS y la CSP de la página en nginx (Fase B). Detrás de nginx el frontend queda en el mismo origen |
 | **B5** `npm audit` | ✅ | En el CI |
@@ -328,7 +332,7 @@ Es lo que pide el Control 3: carrera principal con su test (ya está) y tarea pe
 
 Al cerrar esta fase el sistema tiene que poder congelarse para el ataque cruzado, cuando la cátedra lo fije.
 
-- [ ] `viajes`: estados completos, historial, panel del operador con búsqueda (Ivan). Hecho: estados completos (3.1). Falta: historial y panel.
+- [x] `viajes`: estados completos, historial, panel del operador con búsqueda (Ivan).
 - [ ] Idempotency-Key y SSE (Ivan).
 - [ ] Zonas, candidatos filtrados por flota y zona, reporte, aislamiento entre flotas (Agos).
 - [ ] Seguridad transversal: CORS, rate limit, encabezados, log por pedido y los tests que faltan del bloque 5 (Agos).

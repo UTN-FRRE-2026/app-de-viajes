@@ -1,5 +1,5 @@
 import type { PayloadEventoDispatch, TipoEventoDispatch } from '@viajes/contracts';
-import type { Coordenada, Oferta, SolicitudViaje } from '../entidades/index.js';
+import type { Coordenada, EstadoSolicitud, Oferta, SolicitudViaje } from '../entidades/index.js';
 
 export type EventoDispatch = {
   [T in TipoEventoDispatch]: { tipo: T; payload: PayloadEventoDispatch<T> };
@@ -36,6 +36,24 @@ export interface RepositorioDespacho {
   solicitudesConOfertasVencidas(ahora: Date, limite: number): Promise<string[]>;
   /** Choferes que ya recibieron una oferta para esta solicitud (para no volver a ofrecerles). */
   choferesOfrecidos(solicitudId: string): Promise<string[]>;
+  /**
+   * Solicitudes que cumplen TODOS los filtros dados, de la más nueva a la más vieja.
+   * `texto` es literal: `%` y `_` no son comodines.
+   */
+  listarSolicitudes(filtro: FiltroSolicitudes, pagina: Pagina): Promise<SolicitudViaje[]>;
+}
+
+export interface FiltroSolicitudes {
+  pasajeroId?: string;
+  choferId?: string;
+  estados?: readonly EstadoSolicitud[];
+  /** Busca en el id del viaje, del pasajero y del chofer, y en el motivo de cancelación. */
+  texto?: string;
+}
+
+export interface Pagina {
+  limite: number;
+  desde: number;
 }
 
 export interface BuscadorCandidatos {
