@@ -4,7 +4,8 @@
 #
 #   docker compose -p viajes-carga -f carga/compose.yml --env-file carga/.secretos/carga.env up -d --wait
 #
-# Lo maneja carga/medir.ps1: no hace falta levantarlo a mano.
+# Lo maneja carga/medir.ps1: no hace falta levantarlo a mano. dispatch solo se levanta con
+# `medir.ps1 -Solicitudes` (la solicitud real de carga/solicitudes.js).
 name: viajes-carga
 
 x-etiquetas: &etiquetas
@@ -82,6 +83,47 @@ services:
     # Igual que el de Postgres: fuera del rango dinámico de Windows. Se cambia con CARGA_LOCATION_PUERTO.
     ports:
       - "127.0.0.1:${CARGA_LOCATION_PUERTO:-43004}:3004"
+    cpus: 1
+    mem_limit: 512m
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      jwks:
+        condition: service_started
+
+  # dispatch de carga, para medir una solicitud real mientras k6 carga a location. Mismo Postgres (su
+  # propia base, dispatch_carga), mismo Redis (prefijos dispatch:) y mismo JWKS. Busca candidatos en el
+  # location de carga por la red interna. medir.ps1 crea y migra la base antes de levantarlo.
+  dispatch:
+    build:
+      context: ..
+      args:
+        SERVICE: dispatch
+    image: viajes-dispatch:carga
+    labels: *etiquetas
+    environment:
+      PUERTO: "3005"
+      NIVEL_LOG: info
+      DISPATCH_PERSISTENCIA: postgres
+      DATABASE_URL: postgresql://carga:${CARGA_PG_PASSWORD}@postgres:5432/dispatch_carga
+      DB_POOL_MAX: "10"
+      REDIS_URL: redis://redis:6379
+      JWKS_URL: http://jwks:8080/jwks.json
+      JWT_ISSUER: viajes-carga
+      JWT_AUDIENCE: viajes-carga
+      DISPATCH_BUSCADOR: location
+      LOCATION_URL: http://location:3004
+      LOCATION_TOKEN_SERVICIO: "${CARGA_TOKEN_SERVICIO:?falta CARGA_TOKEN_SERVICIO}"
+      METRICAS_TOKEN: "${CARGA_TOKEN_SERVICIO:?falta CARGA_TOKEN_SERVICIO}"
+      # De relleno: dispatch lo exige por las flotas (verificar cuentas en identity), y la solicitud de
+      # carga no da de alta choferes. No hay identity en este entorno.
+      IDENTITY_URL: http://jwks:8080
+      IDENTITY_TOKEN_SERVICIO: "${CARGA_TOKEN_SERVICIO:?falta CARGA_TOKEN_SERVICIO}"
+    # Igual que los otros: fuera del rango dinámico de Windows. Se cambia con CARGA_DISPATCH_PUERTO.
+    ports:
+      - "127.0.0.1:${CARGA_DISPATCH_PUERTO:-43005}:3005"
     cpus: 1
     mem_limit: 512m
     depends_on:

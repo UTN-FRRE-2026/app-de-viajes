@@ -14,9 +14,10 @@ Mide las dos estrategias de location (6.6) con 500 choferes que mandan su ubicac
 
 | Archivo | Para qué |
 |---|---|
-| `compose.yml` | El entorno de carga: Postgres, Redis, JWKS y location, con límites de CPU y memoria |
+| `compose.yml` | El entorno de carga: Postgres, Redis, JWKS y location (y dispatch con `-Solicitudes`), con límites de CPU y memoria |
 | `preparar.mjs` | Genera en `carga/.secretos/` (ignorado por git) la contraseña de Postgres, el token de servicio, la clave de carga y 500 tokens de chofer. Nunca imprime secretos |
 | `ubicaciones.js` | Escenario de k6: 250 pings/s, 20 búsquedas/s y `/health` 2/s, en modelo abierto y deterministas |
+| `solicitudes.js` | Solicitud real de punta a punta (Node, por el SSE) durante la medición: ver [Solicitud real](#solicitud-real-prueba-piloto) |
 | `limpiar.ps1` | Vacía `pings` y las claves `carga:location:*`. **Se niega a correr** si algo no es del entorno de carga |
 | `medir.ps1` | Una corrida completa: deja todo en `docs/mediciones/<fecha>/<estrategia>-<corrida>/` |
 | `resumir.mjs` | Arma las tablas del informe con las corridas de una fecha |
@@ -37,6 +38,36 @@ node carga/resumir.mjs docs/mediciones/2026-11-19
 
 - **Prueba corta, para ver que todo funciona:** agregar `-Medicion 30 -Calentamiento 5`.
 - **Duración:** cada corrida completa tarda unos 7 minutos (30 s de calentamiento, 5 min de medición, espera del historial y apagado). Las tres corridas por estrategia van alternadas: ingenua 1, optimizada 1, ingenua 2…
+
+## Solicitud real (prueba piloto)
+
+Con `-Solicitudes`, `medir.ps1` también levanta **dispatch de carga** y corre `carga/solicitudes.js` en paralelo con k6. Es una solicitud de viaje real, de punta a punta, **durante la fase de medición** de las ubicaciones:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File carga/medir.ps1 -Estrategia optimizada -Corrida 1 -Medicion 60 -Calentamiento 10 -Solicitudes
+```
+
+- **dispatch de carga:** el mismo Postgres, con su base `dispatch_carga` (`medir.ps1` la crea y la migra), el mismo Redis y el mismo JWKS. Busca candidatos en el location de carga y publica en `127.0.0.1:43005` (`$env:CARGA_DISPATCH_PUERTO` para cambiarlo). `limpiar.ps1` también vacía sus tablas y sus claves `dispatch:*`.
+- **Por qué Node y no k6:** el chofer se entera de su oferta por SSE (`GET /eventos`, `OfferCreated`), y k6 no lee streams. El script corre en un contenedor `node:22-alpine` dentro de la red de carga, sin dependencias.
+- **Aislado de la nube de k6:** un pasajero y un chofer dedicados (`tokens-solicitudes.json`, de `preparar.mjs`) en Córdoba, a más de 600 km de los 500 choferes simulados en Buenos Aires. Ninguno de esos es candidato, así la oferta le llega siempre al chofer del flujo. El chofer informa su posición cada 2 s para seguir vigente.
+- **En la fase de medición:** el script espera a ver subir los pings de k6 en `/metrics` de location, después el calentamiento más 2 s, y deja de empezar iteraciones 5 s antes del final.
+- **Una iteración:**
+  1. el pasajero crea el viaje;
+  2. el chofer recibe `OfferCreated` por su stream y acepta. Las ofertas que llegan **antes del 201** se guardan y se cruzan después por `solicitudId`;
+  3. un `GET` confirma `ASIGNADO` con ese chofer;
+  4. el pasajero cancela, lo que libera a los dos en la misma transacción, y un `GET` confirma `CANCELADO_PASAJERO` **antes de empezar la siguiente**.
+- **Idempotency-Key:** una nueva por operación. Ante un error de red, un 5xx o un 409 «clave en curso», se reintenta **con la misma clave**, hasta 3 veces.
+- **Qué deja** en la carpeta de la corrida:
+  - `solicitudes.json`: una fila por iteración y el resumen, sin tokens;
+  - `metrics-dispatch-antes.txt` y `metrics-dispatch.txt`: fotos de `/metrics` de dispatch al empezar y al terminar la ventana;
+  - `solicitudes-log.txt` y `dispatch-log.txt`;
+  - el resumen también dentro de `conteos.json`.
+- **El resumen** incluye:
+  - las iteraciones, las asignadas confirmadas por `GET` y las que no se asignaron, con su motivo;
+  - el tiempo hasta la asignación **en el cliente** (del `POST /solicitudes` al 200 de la aceptación: p50, p95 y máximo);
+  - en el **servidor**, el incremento del histograma `dispatch_tiempo_hasta_asignacion_seconds` entre las dos fotos, contrastado con las asignaciones confirmadas por `GET` (`coincide_con_get`), y su p50 y p95 por cubeta;
+  - `SIN_CHOFERES`, las ofertas vencidas y el lag del event loop de dispatch.
+- **Qué no mide:** ver las limitaciones en [docs/mediciones.md](../docs/mediciones.md#prueba-piloto-una-solicitud-real-bajo-la-carga-de-ubicaciones).
 
 ## Qué deja cada corrida
 

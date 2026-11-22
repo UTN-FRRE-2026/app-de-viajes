@@ -336,7 +336,7 @@ Es lo que pide el Control 3: carrera principal con su test (ya está) y tarea pe
 - [x] `npm run setup`, `dev`, `start` para los tres servicios; secuencia probada en un clon limpio, en Linux y en Windows (Ivan).
 - [x] Contrato de `GET /interno/candidatos` en `contracts` y adaptador HTTP con timeout en dispatch (Ivan, Maxi).
 - [x] location en sus dos versiones, con adaptador en memoria primero (Agos #7, Maxi #8).
-- [ ] `carga/choferes.js`, `carga/solicitudes.js`, `/metrics` con el lag y **primera medición** en `docs/mediciones.md` (Maxi). Hecho: `carga/ubicaciones.js`, la primera medición y `/metrics` en los tres servicios desde `platform`, con el tiempo hasta la asignación en dispatch. Falta: `carga/solicitudes.js`.
+- [ ] `carga/choferes.js`, `carga/solicitudes.js`, `/metrics` con el lag y **primera medición** en `docs/mediciones.md` (Maxi). Hecho: `carga/ubicaciones.js`, la primera medición y `/metrics` en los tres servicios desde `platform`, con el tiempo hasta la asignación en dispatch. Hecho como **prueba piloto** (22/11): `carga/solicitudes.js`, una solicitud real de punta a punta bajo la carga de ubicaciones (`docs/mediciones.md`). Falta la medición completa para el informe, con solicitudes en paralelo y el filtro de candidatos por disponibilidad, flota y zona.
 - [x] flotas en dispatch: choferes, vehículos, flotas y la carrera G con su test (Agos, PR 1 de flotas).
 - [ ] ADR 0001, 0002, 0003, 0005 y 0006; 0004 con el formato corregido. Hechos: 0001, 0004, 0005 y 0006. Faltan 0002 y 0003 (Agos).
 
