@@ -64,3 +64,32 @@ export type PosicionChoferPublicada = z.infer<typeof PosicionChoferPublicada>;
  * Hay que suscribirse con SUBSCRIBE al canal de cada chofer, no con PSUBSCRIBE a todos.
  */
 export const canalPosicionChofer = (prefijo: string, choferId: string) => `${prefijo}posicion:${choferId}`;
+
+/**
+ * Posición en vivo de un pasajero, el sentido inverso: location la publica por Redis Pub/Sub en el
+ * canal de ese pasajero cuando la informa (`POST /ubicaciones/pasajero`), y dispatch se la entrega
+ * solo al chofer asignado a su viaje activo. Location no sabe de viajes: la regla de privacidad es de
+ * dispatch.
+ *
+ * - Efímera: no se guarda, no entra en la búsqueda de candidatos, no tiene `seq` ni se repone.
+ * - Mismo orden que la del chofer: en cada canal, `actualizadaEn` no retrocede respecto de la última
+ *   publicación mientras exista su marca.
+ * - El `tipo` distinto hace que el payload de uno no pase la validación del otro.
+ */
+export const TIPO_POSICION_PASAJERO = 'PassengerLocationUpdated';
+
+export const PosicionPasajeroPublicada = z.strictObject({
+  tipo: z.literal(TIPO_POSICION_PASAJERO),
+  pasajeroId: z.uuid(),
+  lat: z.number().min(-90).max(90),
+  lng: z.number().min(-180).max(180),
+  actualizadaEn: z.iso.datetime(),
+});
+export type PosicionPasajeroPublicada = z.infer<typeof PosicionPasajeroPublicada>;
+
+/**
+ * Canal de Redis de un pasajero: `<prefijo>posicion-pasajero:<pasajeroId>`. Un espacio de nombres
+ * distinto del de los choferes (`<prefijo>posicion:`): ni un SUBSCRIBE ni un patrón de uno toca al
+ * otro. Igual que con el chofer, SUBSCRIBE al canal de cada pasajero, no PSUBSCRIBE.
+ */
+export const canalPosicionPasajero = (prefijo: string, pasajeroId: string) => `${prefijo}posicion-pasajero:${pasajeroId}`;

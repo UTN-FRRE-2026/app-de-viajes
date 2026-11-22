@@ -1,6 +1,6 @@
 import type { Reloj } from '@viajes/kernel';
 import { exigirCoordenadaValida, type Coordenada, type Ping } from '../entidades/index.js';
-import type { PublicadorPosiciones, RepositorioUbicaciones, ResultadoPublicacion } from '../puertos/index.js';
+import type { PublicadorPosiciones, QuienPublica, RepositorioUbicaciones, ResultadoPublicacion } from '../puertos/index.js';
 
 export interface DependenciasUbicacion {
   repo: RepositorioUbicaciones;
@@ -10,7 +10,7 @@ export interface DependenciasUbicacion {
   /** Posición en vivo. Sin publicador (sin Redis), el seguimiento queda desactivado. */
   publicador?: PublicadorPosiciones;
   /** Para métricas y log: qué pasó con cada publicación. `err` solo con `error`. */
-  alPublicar?: (resultado: ResultadoPublicacion, err?: unknown) => void;
+  alPublicar?: (resultado: ResultadoPublicacion, err: unknown, de: QuienPublica) => void;
 }
 
 export interface CandidatoCercano {
@@ -19,7 +19,13 @@ export interface CandidatoCercano {
   actualizadaEn: Date;
 }
 
+/** La posición del pasajero no se pudo publicar: no hay publicador (sin Redis) o falló. */
+export type ResultadoPasajero = ResultadoPublicacion | 'sin_publicador';
+
 export function crearCasosDeUso(deps: DependenciasUbicacion) {
+  /** Misma regla que la búsqueda: vigente si registradoEn >= ahora − vigencia. */
+  const vencida = (registradoEn: Date) => registradoEn.getTime() < deps.reloj.ahora().getTime() - deps.vigenciaMs;
+
   /**
    * Publica la posición recién guardada. Nunca lanza: una falla de publicación no compromete el
    * registro del ping, que ya está guardado. El canal puede quedar atrasado respecto del
@@ -29,14 +35,14 @@ export function crearCasosDeUso(deps: DependenciasUbicacion) {
     if (!deps.publicador) return;
     // Misma regla que la búsqueda: vigente si registradoEn >= ahora − vigencia. Una más vieja ya es un
     // fantasma (por ejemplo, un guardado que tardó): no se anuncia como la posición actual.
-    if (ping.registradoEn.getTime() < deps.reloj.ahora().getTime() - deps.vigenciaMs) {
-      deps.alPublicar?.('vencida');
+    if (vencida(ping.registradoEn)) {
+      deps.alPublicar?.('vencida', undefined, 'chofer');
       return;
     }
     try {
-      deps.alPublicar?.(await deps.publicador.publicar(ping));
+      deps.alPublicar?.(await deps.publicador.publicar(ping), undefined, 'chofer');
     } catch (err) {
-      deps.alPublicar?.('error', err);
+      deps.alPublicar?.('error', err, 'chofer');
     }
   }
 
@@ -49,6 +55,28 @@ export function crearCasosDeUso(deps: DependenciasUbicacion) {
       await deps.repo.guardar(ping);
       // Después de guardar: si el guardado falla, no se anuncia nada.
       await publicar(ping);
+    },
+
+    /**
+     * La posición del pasajero, para el seguimiento del chofer asignado (lo decide dispatch). El
+     * pasajero viene del token. Es efímera: **no pasa por el repositorio**, así que no se guarda ni
+     * aparece en la búsqueda de candidatos. Publicar es su único efecto: si falla, quien llama responde
+     * 503 (no hay nada guardado que proteger).
+     */
+    async informarPosicionPasajero({ pasajeroId, lat, lng }: { pasajeroId: string } & Coordenada): Promise<ResultadoPasajero> {
+      const posicion = { lat, lng };
+      exigirCoordenadaValida(posicion);
+      if (!deps.publicador) return 'sin_publicador';
+      const ping = { pasajeroId, posicion, registradoEn: deps.reloj.ahora() };
+      let resultado: ResultadoPublicacion;
+      try {
+        resultado = vencida(ping.registradoEn) ? 'vencida' : await deps.publicador.publicarPasajero(ping);
+        deps.alPublicar?.(resultado, undefined, 'pasajero');
+      } catch (err) {
+        resultado = 'error';
+        deps.alPublicar?.(resultado, err, 'pasajero');
+      }
+      return resultado;
     },
 
     async buscarCandidatos({

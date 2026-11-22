@@ -1,6 +1,6 @@
 # location
 
-> **Estado:** el servicio corre en su contenedor (puerto 3004). Recibe la ubicación de los choferes y responde a dispatch qué choferes están cerca de un origen. Tiene las dos versiones de 6.6: la **ingenua** sobre PostgreSQL, que queda como referencia, y la **optimizada** con Redis GEO e historial en lotes. Se elige con `UBICACION_ESTRATEGIA`. La comparación con k6 está en [docs/mediciones.md](mediciones.md). dispatch lo llama para buscar candidatos (ver [Contrato con dispatch](#contrato-con-dispatch)). Cada posición que recibe la publica en vivo por Redis Pub/Sub, en el canal de su chofer (ver [Posición en vivo](#posición-en-vivo)).
+> **Estado:** el servicio corre en su contenedor (puerto 3004). Recibe la ubicación de los choferes y responde a dispatch qué choferes están cerca de un origen. Tiene las dos versiones de 6.6: la **ingenua** sobre PostgreSQL, que queda como referencia, y la **optimizada** con Redis GEO e historial en lotes. Se elige con `UBICACION_ESTRATEGIA`. La comparación con k6 está en [docs/mediciones.md](mediciones.md). dispatch lo llama para buscar candidatos (ver [Contrato con dispatch](#contrato-con-dispatch)). Cada posición que recibe la publica en vivo por Redis Pub/Sub, en el canal de su chofer; y la del pasajero, que no se guarda, en el canal del pasajero (ver [Posición en vivo](#posición-en-vivo)).
 
 ## Quién es dueño de cada dato
 
@@ -81,7 +81,7 @@ Lo monta `platform`, igual en los tres servicios: `Authorization: Bearer <METRIC
 | `location_estrategia{estrategia}` | Estrategia con la que corre (siempre 1) |
 | `location_historial_en_cola`, `location_historial_pendientes` | Optimizada: entradas en el stream y entradas leídas sin confirmar. `carga/medir.ps1` las usa para esperar el drenaje y **falla si no las encuentra** |
 | `location_historial_descartados_total`, `location_historial_ocupacion`, `location_historial_max_cola` | Optimizada: entradas que no entraron por cola llena, uso de la cola (de 0 a 1) y su tope |
-| `location_posiciones_publicadas_total{resultado}` | Publicaciones de la posición en vivo: `publicada`, `atrasada` (más vieja que la última publicada), `vencida` (superaba la vigencia) o `error` (falló o no se confirmó en 200 ms) |
+| `location_posiciones_publicadas_total{de, resultado}` | Publicaciones de la posición en vivo, del chofer o del pasajero (`de`): `publicada`, `atrasada` (más vieja que la última publicada), `vencida` (superaba la vigencia) o `error` (falló o no se confirmó en 200 ms) |
 
 ## Versión optimizada (`UBICACION_ESTRATEGIA=optimizada`)
 
@@ -185,9 +185,37 @@ Cada ping que se guarda se publica por **Redis Pub/Sub** en el canal de su chofe
   - `commandTimeout` de **200 ms**: es lo máximo que el `204` espera a la publicación. **Un timeout significa que faltó la confirmación dentro del plazo, no que no se publicó**: el comando pudo ejecutarse igual (hay un test que lo muestra);
   - `enableOfflineQueue: false`: sin conexión lista (caída o reconectando), falla en el momento, sin acumular comandos para mandarlos al reconectar ni esperar hasta el timeout en cada ping. (En ioredis 6, lo que vence en la cola tampoco se manda después; lo que cambia es la espera, y no depende de ese detalle);
   - `maxRetriesPerRequest: 0` y `autoResendUnfulfilledCommands: false`: lo que se mandó y quedó sin respuesta antes de un corte falla en el corte y no se reenvía al reconectar. Una posición mandada tarde sería ruido. Con `maxRetriesPerRequest: 0`, ioredis ya rechaza todo lo pendiente en el corte, así que la segunda opción es redundante hoy: deja explícita la intención si alguien sube los reintentos. El test falla si se quitan las dos.
-- Se cuenta en `location_posiciones_publicadas_total{resultado="error"}` y se avisa en el log como mucho una vez por minuto, con cuántas fallaron.
+- Se cuenta en `location_posiciones_publicadas_total{de="chofer",resultado="error"}` y se avisa en el log como mucho una vez por minuto, con cuántas fallaron.
 - `/ready` no cambia: sin Redis, la ingenua sigue registrando pings; lo único que se cae es el seguimiento. En la optimizada, sin Redis ya fallan los pings (`503`), como antes.
 - Sin `REDIS_URL` (estrategia `memoria`), no hay publicador y el log lo avisa al arrancar.
+
+### La posición del pasajero (para el chofer asignado)
+
+El sentido inverso: el pasajero informa su posición y el chofer asignado a su viaje la ve. location publica; **dispatch decide la entrega**: solo el chofer asignado al viaje activo de ese pasajero (`ASIGNADO`, `EN_CAMINO` o `EN_CURSO`) la recibe. location no sabe de viajes.
+
+**`POST /ubicaciones/pasajero`**, solo el rol `pasajero`, con el mismo cuerpo que el chofer (`{lat, lng}`, `strictObject`):
+
+| Respuesta | Cuándo |
+|---|---|
+| `204` | Publicada, o descartada por atrasada o vencida |
+| `400 VALIDACION` | Coordenadas inválidas o una clave extra (`pasajeroId`, `choferId`…): el pasajero sale del token |
+| `401` / `403 ROL_NO_PERMITIDO` | Sin token, o el token no es de un pasajero |
+| `503 POSICION_NO_PUBLICADA` | Sin Redis, Redis caído o sin confirmación en 200 ms. Publicar es el único efecto: no hay nada guardado que proteger, y el cliente manda la siguiente en unos segundos |
+
+- **Efímera:** es una ruta aparte que **no pasa por el repositorio**. No toca `pings`, ni `pos`, `geo` o `visto`, ni el stream del historial, y nunca aparece en `/interno/candidatos`. Lo único que queda en Redis es la marca de orden, que vence sola.
+- **Canal:** `<LOCATION_REDIS_PREFIJO>posicion-pasajero:<pasajeroId>` (`canalPosicionPasajero` en `contracts`). Es un espacio de nombres distinto del de los choferes: ni un `SUBSCRIBE` ni un patrón de uno toca al otro.
+- **Payload** (`PosicionPasajeroPublicada`):
+  ```json
+  { "tipo": "PassengerLocationUpdated", "pasajeroId": "uuid", "lat": -34.6001, "lng": -58.3816, "actualizadaEn": "2026-11-22T12:00:00.000Z" }
+  ```
+  Con el `tipo` distinto, el payload del pasajero no pasa `PosicionChoferPublicada`, y al revés.
+- **Lo que se reutiliza del chofer:** la misma conexión (200 ms, sin cola offline, sin reenvío), el mismo script Lua de orden con su propia marca (`<prefijo>publicada-pasajero:<id>`, 2 × la vigencia), el descarte por vigencia y la métrica `location_posiciones_publicadas_total{de="pasajero"}`.
+- **Tests** (`tests/integracion/publicacion-pasajero.test.ts`, con Redis real y en las dos estrategias):
+  - permisos y el id del token;
+  - que se publique en el canal correcto, sin guardarse ni entrar en candidatos;
+  - 503 con el Redis del publicador caído, sin confirmación o sin publicador.
+
+  El orden lo cubren las pruebas del Lua del chofer, porque el script es el mismo.
 
 **Costo medido** (21/11, corrida corta con k6: optimizada, 250 pings/s, 10 s de calentamiento y 60 s de medición, dos corridas alternadas contra `main` sin publicación, en la misma máquina):
 

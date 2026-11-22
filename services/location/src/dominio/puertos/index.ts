@@ -1,4 +1,4 @@
-import type { Cercano, Coordenada, Ping } from '../entidades/index.js';
+import type { Cercano, Coordenada, Ping, PingPasajero } from '../entidades/index.js';
 
 export interface BusquedaCercanos {
   origen: Coordenada;
@@ -26,7 +26,12 @@ export interface RepositorioUbicaciones {
  */
 export interface PublicadorPosiciones {
   publicar(ping: Ping): Promise<'publicada' | 'atrasada'>;
+  /** Lo mismo en el canal del pasajero (`posicion-pasajero:`), con su propia marca de orden. */
+  publicarPasajero(ping: PingPasajero): Promise<'publicada' | 'atrasada'>;
 }
+
+/** De quién es la posición publicada: etiqueta `de` de la métrica. */
+export type QuienPublica = 'chofer' | 'pasajero';
 
 /**
  * Qué pasó con la publicación de un ping. `vencida`: cuando se iba a publicar, ya superaba la vigencia

@@ -62,9 +62,11 @@ const mensajeDe = (choferId: string, posicion: { lat: number; lng: number }, en:
   actualizadaEn: en.toISOString(),
 });
 
-const metricaPublicacion = async (d: Location, resultado: ResultadoPublicacion) => {
+const metricaPublicacion = async (d: Location, resultado: ResultadoPublicacion, de: 'chofer' | 'pasajero' = 'chofer') => {
   const res = await request(d.url).get('/metrics').set(d.conMetricas);
-  const m = res.text.match(new RegExp(`location_posiciones_publicadas_total\\{resultado="${resultado}",servicio="location"\\} (\\d+)`));
+  const m = res.text.match(
+    new RegExp(`location_posiciones_publicadas_total\\{de="${de}",resultado="${resultado}",servicio="location"\\} (\\d+)`),
+  );
   return Number(m?.[1]);
 };
 
