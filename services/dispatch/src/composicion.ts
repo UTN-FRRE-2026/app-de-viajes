@@ -55,8 +55,10 @@ import { BusEventosMemoria } from './infra/tiempo-real/bus-memoria.js';
 import { BusEventosRedis } from './infra/tiempo-real/bus-redis.js';
 import { EventosMemoria } from './infra/tiempo-real/eventos-memoria.js';
 import { HistorialEventosPrisma, relayOutboxPrisma } from './infra/tiempo-real/outbox-prisma.js';
+import { PosicionesMemoria } from './infra/tiempo-real/posiciones-memoria.js';
+import { PosicionesRedis } from './infra/tiempo-real/posiciones-redis.js';
 import { StreamsEventos } from './infra/tiempo-real/sse.js';
-import type { BusEventos, HistorialEventos, RelayEventos } from './infra/tiempo-real/tipos.js';
+import type { BusEventos, FuentePosiciones, HistorialEventos, RelayEventos } from './infra/tiempo-real/tipos.js';
 
 /** Reemplazos para tests: cualquier adaptador se puede inyectar desde afuera. */
 export interface Reemplazos {
@@ -82,11 +84,12 @@ export interface Reemplazos {
   directorio?: DirectorioUsuarios;
 }
 
-/** El tiempo real: el bus en vivo, el historial para reponer y el relay del outbox. */
+/** El tiempo real: el bus en vivo, el historial para reponer, el relay del outbox y las posiciones de location. */
 export interface TiempoReal {
   bus: BusEventos;
   historial: HistorialEventos;
   relay: RelayEventos;
+  posiciones: FuentePosiciones;
 }
 
 export interface Sistema {
@@ -104,11 +107,12 @@ export interface Sistema {
 /** En memoria: sobre los eventos del repositorio en memoria, o vacío si el repo es otro. */
 function tiempoRealEnMemoria(repo: RepositorioDespacho): TiempoReal {
   const bus = new BusEventosMemoria();
+  const posiciones = new PosicionesMemoria();
   if (repo instanceof RepositorioDespachoMemoria) {
     const eventos = new EventosMemoria(repo, bus);
-    return { bus, historial: eventos, relay: eventos.relay };
+    return { bus, historial: eventos, relay: eventos.relay, posiciones };
   }
-  return { bus, historial: { desde: async () => [] }, relay: async () => 0 };
+  return { bus, historial: { desde: async () => [] }, relay: async () => 0, posiciones };
 }
 
 const carpetaMigraciones = fileURLToPath(new URL('../prisma/migrations', import.meta.url));
@@ -168,7 +172,13 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
         : reemplazos.cacheTarifas;
     if (!tiempoReal) {
       const bus = new BusEventosRedis(redis, 'dispatch:eventos:', logger);
-      tiempoReal = { bus, historial: new HistorialEventosPrisma(prisma), relay: relayOutboxPrisma(prisma, bus) };
+      tiempoReal = {
+        bus,
+        historial: new HistorialEventosPrisma(prisma),
+        relay: relayOutboxPrisma(prisma, bus),
+        // Los canales que publica location: mismo Redis y mismo LOCATION_REDIS_PREFIJO.
+        posiciones: new PosicionesRedis(redis, config.LOCATION_REDIS_PREFIJO, logger),
+      };
     }
     chequeos = [...chequeosBase(prisma, carpetaMigraciones), chequeoRedis(redis)];
     cerrar = async () => {
@@ -183,6 +193,7 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
     historial: eventos.historial,
     logger,
     maxPorUsuario: config.SSE_MAX_POR_USUARIO,
+    posiciones: { fuente: eventos.posiciones, viajeConChofer: (pasajeroId) => repo.viajeConChoferDelPasajero(pasajeroId) },
   });
 
   // Mapas siempre detrás del timeout: el simulado no lo necesita, pero un proveedor real sí, y así
@@ -286,6 +297,7 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
       metricas.detener();
       streams.cerrarTodos();
       await eventos.bus.cerrar();
+      await eventos.posiciones.cerrar();
       await cerrarConexiones();
     },
   };

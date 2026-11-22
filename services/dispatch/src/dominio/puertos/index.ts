@@ -63,6 +63,16 @@ export interface RepositorioDespacho {
    * transacción registraría la Idempotency-Key del pedido como si hubiera salido bien.
    */
   registrarFalloCobro(cobroId: string, motivo: string): Promise<void>;
+  /**
+   * El viaje activo del pasajero que ya tiene chofer (ASIGNADO, EN_CAMINO o EN_CURSO), o null. Hay
+   * como mucho uno: el índice único parcial no deja que un pasajero tenga dos activos.
+   */
+  viajeConChoferDelPasajero(pasajeroId: string): Promise<ViajeConChofer | null>;
+}
+
+export interface ViajeConChofer {
+  solicitudId: string;
+  choferId: string;
 }
 
 export interface FiltroSolicitudes {

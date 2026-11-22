@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { idempotenciaPendiente, idempotenciaRegistrada, requestIdActual } from '@viajes/platform';
 import {
   Cobro,
+  ESTADOS_CON_CHOFER,
   Oferta,
   SolicitudViaje,
   type EstadoCobro,
@@ -397,6 +398,19 @@ export class RepositorioDespachoPrisma implements RepositorioDespacho {
       take: limite,
     });
     return filas.map((f) => f.solicitudId);
+  }
+
+  async viajeConChoferDelPasajero(pasajeroId: string) {
+    // Usa el índice único parcial de solicitudes activas por pasajero: hay como mucho una.
+    const filas = await this.prisma.$queryRaw<{ id: string; driver_id: string }[]>`
+      SELECT id, driver_id
+      FROM ride_requests
+      WHERE passenger_id = ${pasajeroId}::uuid
+        AND status IN (${Prisma.join(ESTADOS_CON_CHOFER)})
+        AND driver_id IS NOT NULL
+      LIMIT 1`;
+    const f = filas[0];
+    return f ? { solicitudId: f.id, choferId: f.driver_id } : null;
   }
 
   async registrarFalloCobro(cobroId: string, motivo: string) {

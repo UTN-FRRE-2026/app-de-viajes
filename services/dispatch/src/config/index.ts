@@ -40,6 +40,12 @@ export const EsquemaConfig = z
     // evento), y cuántos streams puede tener abiertos cada usuario.
     RELAY_INTERVALO_MS: z.coerce.number().int().min(20).max(5000).default(100),
     SSE_MAX_POR_USUARIO: z.coerce.number().int().min(1).max(20).default(3),
+    // La posición del chofer en vivo: los canales `<prefijo>posicion:<choferId>` que publica location.
+    // Mismo nombre, misma regla y mismo valor que en location: el .env es compartido.
+    LOCATION_REDIS_PREFIJO: z
+      .string()
+      .regex(/^[a-z0-9:_-]+:$/, 'solo minúsculas, números, ":", "_" o "-", y termina en ":"')
+      .default('location:'),
     APAGADO_TIMEOUT_MS: z.coerce.number().int().positive().default(10_000),
     // Candidatos: `location` (el servicio real) o `fijo` (lista de DISPATCH_CANDIDATOS_DEMO, para demos sin location).
     DISPATCH_BUSCADOR: z.enum(['location', 'fijo']).default('location'),

@@ -1,3 +1,5 @@
+import type { PosicionChoferPublicada } from '@viajes/contracts';
+
 /** Un evento del outbox, listo para entregar por SSE. */
 export interface EventoEntregable {
   /** El `id:` del stream SSE: crece con cada evento, y el cliente lo devuelve en `Last-Event-ID`. */
@@ -20,6 +22,16 @@ export interface BusEventos {
 export interface HistorialEventos {
   /** Los eventos de un usuario con `seq` mayor que `desde`, en orden. */
   desde(usuarioId: string, desde: number, limite: number): Promise<EventoEntregable[]>;
+}
+
+/**
+ * Las posiciones en vivo que publica location, un canal por chofer (`PosicionChoferPublicada`). Solo
+ * entrega mensajes válidos y del chofer de su canal. Lo que no se escucha, se pierde: no hay historial.
+ */
+export interface FuentePosiciones {
+  /** Devuelve la función para dejar de escuchar. */
+  suscribir(choferId: string, alRecibir: (posicion: PosicionChoferPublicada) => void): Promise<() => Promise<void>>;
+  cerrar(): Promise<void>;
 }
 
 /** El relay: publica en el bus lo que el outbox tiene sin publicar. Devuelve cuántos publicó. */

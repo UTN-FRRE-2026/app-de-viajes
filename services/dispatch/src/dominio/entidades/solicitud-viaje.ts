@@ -21,6 +21,9 @@ export type EstadoSolicitud =
 /** Estados en los que el viaje sigue vivo: el pasajero no puede pedir otro. */
 export const ESTADOS_ACTIVOS: readonly EstadoSolicitud[] = ['BUSCANDO', 'ASIGNADO', 'EN_CAMINO', 'EN_CURSO'];
 
+/** Activos y con chofer: mientras tanto, el pasajero ve la posición de su chofer en vivo. */
+export const ESTADOS_CON_CHOFER: readonly EstadoSolicitud[] = ['ASIGNADO', 'EN_CAMINO', 'EN_CURSO'];
+
 /** Quién cancela. El admin cancela como operador. */
 export type QuienCancela = 'pasajero' | 'chofer' | 'operador';
 
