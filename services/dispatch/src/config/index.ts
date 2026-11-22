@@ -32,6 +32,9 @@ export const EsquemaConfig = z
     REDIS_URL: z.string().url().optional(),
     // Lo que puede quedar tomado el cerrojo si el proceso se cae a mitad de un pedido.
     IDEMPOTENCIA_EN_VUELO_SEGUNDOS: z.coerce.number().int().min(5).max(300).default(30),
+    // Cuánto se guarda cada respuesta para los reintentos (como mínimo), y cada cuánto se borra lo vencido.
+    IDEMPOTENCIA_RETENCION_HORAS: z.coerce.number().int().min(1).max(720).default(24),
+    IDEMPOTENCIA_PURGA_INTERVALO_MS: z.coerce.number().int().min(1000).max(3_600_000).default(60_000),
     JWKS_URL: z.string().url(),
     JWT_ISSUER: z.string().min(1),
     JWT_AUDIENCE: z.string().min(1),
