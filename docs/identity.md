@@ -1,6 +1,6 @@
 # identity
 
-> **Estado:** funcionan registro, login, JWT RS256, JWKS, seed, límite de intentos de login, refresh con rotación y logout. La revocación inmediata del access token quedó fuera por decisión del plan v2 (ver [`POST /logout`](#post-logout)). Las mejoras que faltan están en [Pendiente](#pendiente).
+> **Estado:** funcionan registro (con Idempotency-Key), login, JWT RS256, JWKS, seed, límite de intentos de login, refresh con rotación y logout. La revocación inmediata del access token quedó fuera por decisión del plan v2 (ver [`POST /logout`](#post-logout)). Las mejoras que faltan están en [Pendiente](#pendiente).
 
 ## Endpoints
 
@@ -10,6 +10,8 @@ Base local: `http://localhost:3001`. Los errores usan el formato único `{error:
 
 Registro público. Solo crea `pasajero` y `chofer`.
 
+Con el encabezado `Idempotency-Key: <uuid>`, **obligatorio**: uno nuevo por cada registro, y el mismo en cada reintento de ese registro ([ADR 0010](adr/0010-idempotencia.md)).
+
 ```json
 { "email": "ana@ejemplo.com", "contrasena": "12 a 128 caracteres", "nombre": "Ana", "rol": "pasajero" }
 ```
@@ -17,12 +19,19 @@ Registro público. Solo crea `pasajero` y `chofer`.
 | Respuesta | Cuándo |
 |---|---|
 | `201 {id, email, nombre, rol, creadoEn}` | Registrado. No devuelve el hash ni un token |
+| `201` con `Idempotent-Replayed: true` | Reintento con la misma clave, el mismo email, nombre y rol: la respuesta guardada, sin registrar de nuevo ni correr argon2 |
 | `400 VALIDACION` | Falta un campo, hay una clave no declarada (`fleetId`, `__proto__`…) o el rol es `admin`, `operador` o `admin_flota` |
-| `409 IDENTIFICADOR_EN_USO` | El email ya existe, sin distinguir mayúsculas |
+| `400 CLAVE_IDEMPOTENCIA_INVALIDA` | Falta la `Idempotency-Key` o no tiene entre 16 y 128 letras, números, `-` o `_` |
+| `409 IDENTIFICADOR_EN_USO` | El email ya existe, sin distinguir mayúsculas (con otra clave, la clave no saltea la unicidad) |
+| `409 CLAVE_IDEMPOTENCIA_EN_CURSO` | Otro pedido con la misma clave está en curso. Con `Retry-After: 1` |
+| `422 CLAVE_IDEMPOTENCIA_REUTILIZADA` | La misma clave con otro nombre o rol |
+| `503 IDEMPOTENCIA_NO_DISPONIBLE` | Redis no responde: **falla cerrado**, no se registra |
 
 - El **identificador de acceso es el email**, en minúsculas y sin espacios alrededor.
 - El registro público no admite roles privilegiados en dos capas: el esquema `strictObject` y la entidad `Usuario` (`ROL_NO_REGISTRABLE`, por si otro adaptador llamara al caso de uso).
 - La unicidad la decide el índice único de Postgres, también con pedidos simultáneos.
+- **Idempotency-Key:** como no hay token, la clave es de un email (de su SHA-256): con otro email, la misma clave es otro registro. El registro de la clave confirma en la misma transacción que el usuario, así el reintento recibe el 201 aunque el proceso se haya caído al responder. Las respuestas se guardan 24 h y una purga borra las vencidas (`IDEMPOTENCIA_*`, las mismas variables que dispatch).
+- **La contraseña no entra en la huella de la clave**, que se guarda en la base: un SHA-256 sin sal del cuerpo con la contraseña permitiría probarlas con una copia de la base sin pasar por argon2. Por eso un reintento con la misma clave y otra contraseña recibe el 201 guardado, y la cuenta queda con la primera.
 
 ### `POST /login`
 
@@ -257,7 +266,7 @@ Estado { Invoke-RestMethod -Method Post "$dispatch/solicitudes" -ContentType 'ap
 Estado { Invoke-RestMethod -Method Post "$dispatch/solicitudes" -ContentType 'application/json' -Body $viaje }
 # Registrar un admin: 400
 $admin = @{ email = 'colado@viajes.test'; contrasena = 'una-contrasena-larga'; nombre = 'X'; rol = 'admin' } | ConvertTo-Json
-Estado { Invoke-RestMethod -Method Post "$identity/registro" -ContentType 'application/json' -Body $admin }
+Estado { Invoke-RestMethod -Method Post "$identity/registro" -ContentType 'application/json' -Headers @{ 'Idempotency-Key' = [guid]::NewGuid() } -Body $admin }
 ```
 
 **7. Probar el límite de intentos**

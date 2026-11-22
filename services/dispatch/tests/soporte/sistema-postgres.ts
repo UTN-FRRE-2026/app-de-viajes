@@ -1,12 +1,18 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 import type { AddressInfo } from 'node:net';
 import type { Server } from 'node:http';
-import { cerrojoRedis, crearLogger, type AlmacenIdempotencia, type CerrojoEnVuelo } from '@viajes/platform';
+import {
+  almacenIdempotenciaSql,
+  cerrojoRedis,
+  crearLogger,
+  purgarIdempotenciaSql,
+  type AlmacenIdempotencia,
+  type CerrojoEnVuelo,
+} from '@viajes/platform';
 import { Redis } from 'ioredis';
 import { componer } from '../../src/composicion.js';
 import { EsquemaConfig } from '../../src/config/index.js';
 import { crearPrisma } from '../../src/infra/db/cliente.js';
-import { AlmacenIdempotenciaPrisma, purgarIdempotenciaPrisma } from '../../src/infra/db/idempotencia-prisma.js';
 import { RepositorioDespachoPrisma } from '../../src/infra/db/repositorio-prisma.js';
 import { RepositorioFlotasPrisma, type OpcionesFlotasPrisma } from '../../src/infra/db/flotas-prisma.js';
 import { RepositorioTarifasPrisma, type OpcionesTarifasPrisma } from '../../src/infra/db/tarifas-prisma.js';
@@ -108,7 +114,7 @@ export async function levantarDispatch({
       ? conDemoraTrasLeer(new RepositorioDespachoPrisma(prisma), demoraTrasLeerMs)
       : new RepositorioDespachoPrisma(prisma),
     idempotencia: idempotencia({
-      almacen: new AlmacenIdempotenciaPrisma(prisma),
+      almacen: almacenIdempotenciaSql(prisma),
       cerrojo: cerrojoRedis(redis, 'dispatch:idempotencia:'),
     }),
     repoTarifas,
@@ -138,7 +144,7 @@ export async function levantarDispatch({
     /** Publica lo pendiente del outbox, como hace el servidor cada RELAY_INTERVALO_MS. */
     relay: sistema.relayEventos,
     /** La purga de claves de idempotencia, con la retención de la config (24 h por defecto). */
-    purgarIdempotencia: purgarIdempotenciaPrisma(prisma, { retencionMs: config.IDEMPOTENCIA_RETENCION_HORAS * 3_600_000 }),
+    purgarIdempotencia: purgarIdempotenciaSql(prisma, { retencionMs: config.IDEMPOTENCIA_RETENCION_HORAS * 3_600_000 }),
     streams: sistema.streams,
     app: sistema.app,
     repoTarifas,

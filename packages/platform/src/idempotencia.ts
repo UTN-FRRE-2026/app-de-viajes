@@ -104,9 +104,20 @@ function jsonCanonico(valor: unknown): string {
 }
 
 /** Mismo método, misma ruta (con sus ids) y mismo cuerpo ya validado. La query no cuenta: estas rutas no la usan. */
-function huellaDe(req: Request): string {
+function huellaDe(req: Request, cuerpo: unknown): string {
   const ruta = req.originalUrl.split('?')[0];
-  return createHash('sha256').update(`${req.method} ${ruta}\n${jsonCanonico(req.body ?? {})}`).digest('hex');
+  return createHash('sha256').update(`${req.method} ${ruta}\n${jsonCanonico(cuerpo ?? {})}`).digest('hex');
+}
+
+export interface OpcionesRuta {
+  /** De quién es la clave en esta ruta. Por defecto, el de `crearIdempotencia`. */
+  alcance?: (req: Request) => string;
+  /**
+   * Qué parte del cuerpo entra en la huella. Por defecto, todo. Lo que tenga un secreto (una
+   * contraseña) se deja afuera: la huella se guarda en la base, y un SHA-256 sin sal de un cuerpo
+   * con la contraseña permitiría probar contraseñas a quien tenga una copia de la base.
+   */
+  huella?: (cuerpo: unknown) => unknown;
 }
 
 export interface OpcionesIdempotencia {
@@ -130,7 +141,7 @@ export function crearIdempotencia({
   ttlEnVueloMs = 30_000,
   alcance = (req) => usuarioDe(req).id,
 }: OpcionesIdempotencia) {
-  return (estado = 200, opciones: { alcance?: (req: Request) => string } = {}): RequestHandler =>
+  return (estado = 200, opciones: OpcionesRuta = {}): RequestHandler =>
     async (req, res, next) => {
       const leida = ClaveIdempotencia.safeParse(req.header(ENCABEZADO_IDEMPOTENCIA));
       if (!leida.success) {
@@ -139,7 +150,7 @@ export function crearIdempotencia({
       const pedido: PedidoIdempotente = {
         alcance: (opciones.alcance ?? alcance)(req),
         clave: leida.data,
-        huella: huellaDe(req),
+        huella: huellaDe(req, opciones.huella ? opciones.huella(req.body ?? {}) : req.body),
         estado,
         registrado: false,
       };

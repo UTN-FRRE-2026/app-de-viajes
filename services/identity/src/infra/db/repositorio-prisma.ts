@@ -1,3 +1,4 @@
+import { idempotenciaPendiente, idempotenciaRegistrada, registrarIdempotenciaEnTransaccion } from '@viajes/platform';
 import { Usuario, type Rol } from '../../dominio/entidades/index.js';
 import type {
   RefreshGuardado,
@@ -17,8 +18,21 @@ export class RepositorioUsuariosPrisma implements RepositorioUsuarios {
   async insertar(usuario: Usuario): Promise<boolean> {
     // ON CONFLICT DO NOTHING: si dos pedidos llegan juntos con el mismo email, el índice único
     // decide. Un "buscar y después insertar" dejaría pasar a los dos.
-    const { count } = await this.prisma.usuario.createMany({ data: [usuario.aDatos()], skipDuplicates: true });
-    return count === 1;
+    const idempotencia = idempotenciaPendiente();
+    if (!idempotencia) {
+      const { count } = await this.prisma.usuario.createMany({ data: [usuario.aDatos()], skipDuplicates: true });
+      return count === 1;
+    }
+    // Con Idempotency-Key, el registro de la clave confirma junto con el usuario: nunca hay un
+    // usuario sin su registro, así el reintento recibe el 201 aunque el proceso se caiga al responder.
+    // Lo guardado es lo que responde la ruta: el usuario público.
+    const creado = await this.prisma.$transaction(async (tx) => {
+      const { count } = await tx.usuario.createMany({ data: [usuario.aDatos()], skipDuplicates: true });
+      if (count === 1) await registrarIdempotenciaEnTransaccion(tx, idempotencia, usuario.aPublico());
+      return count === 1;
+    });
+    if (creado) idempotenciaRegistrada();
+    return creado;
   }
 
   async buscarPorEmail(email: string): Promise<Usuario | null> {

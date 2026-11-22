@@ -1,6 +1,19 @@
 import { fileURLToPath } from 'node:url';
 import type { Reloj } from '@viajes/kernel';
-import { crearApp, crearMetricas, type ChequeoListo, type Logger } from '@viajes/platform';
+import {
+  AlmacenIdempotenciaMemoria,
+  almacenIdempotenciaSql,
+  CerrojoMemoria,
+  cerrojoRedis,
+  crearApp,
+  crearIdempotencia,
+  crearMetricas,
+  purgarIdempotenciaSql,
+  type AlmacenIdempotencia,
+  type CerrojoEnVuelo,
+  type ChequeoListo,
+  type Logger,
+} from '@viajes/platform';
 import type { Express } from 'express';
 import { Redis } from 'ioredis';
 import type { Config } from './config/index.js';
@@ -30,12 +43,15 @@ export interface Reemplazos {
   hasher?: HasherContrasenas;
   limitador?: LimitadorLogin;
   reloj?: Reloj;
+  idempotencia?: { almacen: AlmacenIdempotencia; cerrojo: CerrojoEnVuelo };
 }
 
 export interface Sistema {
   app: Express;
   casos: CasosDeUso;
   repo: RepositorioUsuarios;
+  /** Borra las claves de idempotencia vencidas; lo corre el servidor cada IDEMPOTENCIA_PURGA_INTERVALO_MS. */
+  purgarIdempotencia: () => Promise<number>;
   cerrar: () => Promise<void>;
 }
 
@@ -62,6 +78,9 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
   let limitador: LimitadorLogin;
   let chequeos: ChequeoListo[] = [];
   let cerrar = async () => {};
+  let idempotencia = reemplazos.idempotencia ?? { almacen: new AlmacenIdempotenciaMemoria(), cerrojo: new CerrojoMemoria() };
+  // En memoria no hace falta: el almacén vive lo que vive el proceso.
+  let purgarIdempotencia = async () => 0;
 
   if (config.IDENTITY_PERSISTENCIA === 'memoria') {
     repo = reemplazos.repo ?? new RepositorioUsuariosMemoria();
@@ -73,6 +92,11 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
     repo = reemplazos.repo ?? new RepositorioUsuariosPrisma(prisma);
     sesiones = reemplazos.sesiones ?? new RepositorioSesionesPrisma(prisma);
     limitador = reemplazos.limitador ?? new LimitadorLoginRedis(redis, parametrosLimite);
+    idempotencia = reemplazos.idempotencia ?? {
+      almacen: almacenIdempotenciaSql(prisma),
+      cerrojo: cerrojoRedis(redis, 'identity:idempotencia:'),
+    };
+    purgarIdempotencia = purgarIdempotenciaSql(prisma, { retencionMs: config.IDEMPOTENCIA_RETENCION_HORAS * 3_600_000 });
     chequeos = [...chequeosBase(prisma, carpetaMigraciones), chequeoRedis(redis)];
     cerrar = async () => {
       redis.disconnect();
@@ -105,7 +129,13 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
   const metricas = crearMetricas({ servicio: 'identity' });
   const app = crearApp({
     logger,
-    rutas: rutasIdentidad(casos, limitador, logger, config.IDENTITY_TOKEN_SERVICIO),
+    rutas: rutasIdentidad(
+      casos,
+      limitador,
+      logger,
+      config.IDENTITY_TOKEN_SERVICIO,
+      crearIdempotencia({ ...idempotencia, ttlEnVueloMs: config.IDEMPOTENCIA_EN_VUELO_SEGUNDOS * 1000 }),
+    ),
     chequeos,
     metricas: { metricas, token: config.METRICAS_TOKEN },
     confiarEnProxy: config.CONFIAR_EN_PROXY,
@@ -115,6 +145,7 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
     app,
     casos,
     repo,
+    purgarIdempotencia,
     cerrar: async () => {
       metricas.detener();
       await cerrarConexiones();

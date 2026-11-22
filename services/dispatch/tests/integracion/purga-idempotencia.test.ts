@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { purgarIdempotenciaPrisma } from '../../src/infra/db/idempotencia-prisma.js';
+import { purgarIdempotenciaSql } from '@viajes/platform';
 import { clave, DESTINO, levantarDispatch, ORIGEN } from '../soporte/sistema-postgres.js';
 
 /** La purga de `idempotency_keys`, contra Postgres. Retención por defecto: 24 h. */
@@ -42,17 +42,17 @@ describe('purga de las claves de idempotencia', () => {
 
   it('por lotes: sigue hasta que no queda nada, con un tope de lotes por pasada', async () => {
     await registros(7, 30);
-    expect(await purgarIdempotenciaPrisma(d.prisma, { retencionMs: 24 * HORA, lote: 3 })()).toBe(7);
+    expect(await purgarIdempotenciaSql(d.prisma, { retencionMs: 24 * HORA, lote: 3 })()).toBe(7);
 
     await registros(7, 30);
-    const corta = purgarIdempotenciaPrisma(d.prisma, { retencionMs: 24 * HORA, lote: 3, maxLotes: 2 });
+    const corta = purgarIdempotenciaSql(d.prisma, { retencionMs: 24 * HORA, lote: 3, maxLotes: 2 });
     expect(await corta()).toBe(6);
     expect(await corta()).toBe(1);
   });
 
   it('varias instancias a la vez borran cada registro una vez, sin errores', async () => {
     await registros(60, 30);
-    const purga = purgarIdempotenciaPrisma(d.prisma, { retencionMs: 24 * HORA, lote: 5 });
+    const purga = purgarIdempotenciaSql(d.prisma, { retencionMs: 24 * HORA, lote: 5 });
     const borrados = await Promise.all(Array.from({ length: 4 }, () => purga()));
     expect(borrados.reduce((a, b) => a + b, 0)).toBe(60);
     expect(await quedan()).toBe(0);

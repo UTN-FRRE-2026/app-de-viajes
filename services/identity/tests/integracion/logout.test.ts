@@ -5,7 +5,7 @@ import { crearPrisma } from '../../src/infra/db/cliente.js';
 import { RepositorioSesionesPrisma } from '../../src/infra/db/repositorio-prisma.js';
 import { generadorRefresh } from '../../src/infra/externos/generador-refresh.js';
 import { URL_BD_TEST } from '../soporte/preparar-bd.js';
-import { AUDIENCE, CONTRASENA, datosRegistro, ISSUER, levantarIdentity, type Identity } from '../soporte/sistema.js';
+import { AUDIENCE, clave, CONTRASENA, datosRegistro, ISSUER, levantarIdentity, type Identity } from '../soporte/sistema.js';
 
 let d: Identity;
 
@@ -25,7 +25,7 @@ const refrescar = (refreshToken: unknown, url = d.url) => request(url).post('/re
 const cerrar = (refreshToken: unknown, url = d.url) => request(url).post('/logout').send({ refreshToken });
 
 async function dosSesiones() {
-  const { body: usuario } = await request(d.url).post('/registro').send(datosRegistro()).expect(201);
+  const { body: usuario } = await request(d.url).post('/registro').set(clave()).send(datosRegistro()).expect(201);
   return { usuario, a: await entrar(), b: await entrar() };
 }
 
@@ -118,7 +118,7 @@ describe('si Postgres falla, el logout no responde 204', () => {
     const conFalla = await levantarIdentity({ reemplazos: { sesiones } });
     try {
       await d.limpiar();
-      await request(conFalla.url).post('/registro').send(datosRegistro()).expect(201);
+      await request(conFalla.url).post('/registro').set(clave()).send(datosRegistro()).expect(201);
       const sesion = await entrar(conFalla.url);
 
       expect((await cerrar(sesion.refreshToken, conFalla.url)).status).toBe(500);

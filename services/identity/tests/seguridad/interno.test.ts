@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { CON_SERVICIO, CONTRASENA, datosRegistro, levantarIdentity, TOKEN_SERVICIO, type Identity } from '../soporte/sistema.js';
+import { clave, CON_SERVICIO, CONTRASENA, datosRegistro, levantarIdentity, TOKEN_SERVICIO, type Identity } from '../soporte/sistema.js';
 
 /**
  * `GET /interno/usuarios/:id`: solo para otros servicios (dispatch verifica que un chofer exista).
@@ -23,7 +23,7 @@ const consultar = (id: string) => request(d.url).get(`/interno/usuarios/${id}`);
 
 describe('GET /interno/usuarios/:id', () => {
   it('con el token de servicio devuelve solo el id y el rol', async () => {
-    const chofer = await request(d.url).post('/registro').send(datosRegistro({ email: 'beto@viajes.test', rol: 'chofer' })).expect(201);
+    const chofer = await request(d.url).post('/registro').set(clave()).send(datosRegistro({ email: 'beto@viajes.test', rol: 'chofer' })).expect(201);
     const res = await consultar(chofer.body.id).set(CON_SERVICIO);
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ id: chofer.body.id, rol: 'chofer' });
@@ -31,7 +31,7 @@ describe('GET /interno/usuarios/:id', () => {
   });
 
   it('una cuenta de pasajero devuelve su rol (quien pregunta decide)', async () => {
-    const pasajero = await request(d.url).post('/registro').send(datosRegistro()).expect(201);
+    const pasajero = await request(d.url).post('/registro').set(clave()).send(datosRegistro()).expect(201);
     expect((await consultar(pasajero.body.id).set(CON_SERVICIO)).body).toEqual({ id: pasajero.body.id, rol: 'pasajero' });
   });
 
@@ -42,7 +42,7 @@ describe('GET /interno/usuarios/:id', () => {
   });
 
   it('sin token, con otro token o con el access token de un usuario → 401, el mismo mensaje', async () => {
-    const pasajero = await request(d.url).post('/registro').send(datosRegistro()).expect(201);
+    const pasajero = await request(d.url).post('/registro').set(clave()).send(datosRegistro()).expect(201);
     const login = await request(d.url).post('/login').send({ email: 'ana@viajes.test', contrasena: CONTRASENA }).expect(200);
     const intentos = [
       consultar(pasajero.body.id),

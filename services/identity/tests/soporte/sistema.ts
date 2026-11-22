@@ -1,4 +1,4 @@
-import { generateKeyPairSync, randomBytes } from 'node:crypto';
+import { generateKeyPairSync, randomBytes, randomUUID } from 'node:crypto';
 import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { crearLogger } from '@viajes/platform';
@@ -64,8 +64,9 @@ export async function levantarIdentity({
     prisma,
     redis,
     casos: sistema.casos,
+    purgarIdempotencia: sistema.purgarIdempotencia,
     async limpiar() {
-      await prisma.$executeRawUnsafe('TRUNCATE users, refresh_tokens');
+      await prisma.$executeRawUnsafe('TRUNCATE users, refresh_tokens, idempotency_keys');
       await redis.flushdb();
     },
     async cerrar() {
@@ -78,6 +79,9 @@ export async function levantarIdentity({
 }
 
 export type Identity = Awaited<ReturnType<typeof levantarIdentity>>;
+
+/** `POST /registro` exige Idempotency-Key: una nueva en cada llamada, como un cliente que no reintenta. */
+export const clave = () => ({ 'Idempotency-Key': randomUUID() });
 
 export const datosRegistro = (extra: Record<string, unknown> = {}) => ({
   email: 'ana@viajes.test',
