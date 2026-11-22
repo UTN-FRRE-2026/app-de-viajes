@@ -119,4 +119,4 @@ Los esquemas están en [`packages/contracts/src/dispatch.ts`](../packages/contra
 
 ## Pendiente
 
-- **Posición del pasajero para su chofer** (PLAN 3.5): location no la publica todavía.
+- **Posición del pasajero para su chofer** (PLAN 3.5). **location ya la publica** (`POST /ubicaciones/pasajero`). Canal: `<LOCATION_REDIS_PREFIJO>posicion-pasajero:<pasajeroId>` (`canalPosicionPasajero`). Payload: `PosicionPasajeroPublicada` (`tipo: "PassengerLocationUpdated"`, `pasajeroId`, `lat`, `lng`, `actualizadaEn`), en `packages/contracts/src/location.ts`; detalle en [docs/location.md](location.md#la-posición-del-pasajero-para-el-chofer-asignado). Falta el lado de dispatch (Ivan), simétrico a `SeguimientoChofer`: el stream del **chofer** se suscribe con `SUBSCRIBE` al canal del pasajero de su viaje activo (`ASIGNADO`, `EN_CAMINO`, `EN_CURSO`), valida que el `pasajeroId` del mensaje sea el del canal y la envía como `event: PassengerLocationUpdated`, sin `id`.

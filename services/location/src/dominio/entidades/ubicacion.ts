@@ -12,6 +12,16 @@ export interface Ping {
   registradoEn: Date;
 }
 
+/**
+ * Una posición informada por un pasajero, con la hora del servidor. Efímera: solo se publica, nunca
+ * se guarda ni entra en la búsqueda de candidatos.
+ */
+export interface PingPasajero {
+  pasajeroId: string;
+  posicion: Coordenada;
+  registradoEn: Date;
+}
+
 export interface Cercano {
   choferId: string;
   distanciaMetros: number;

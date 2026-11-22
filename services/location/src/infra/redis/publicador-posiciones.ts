@@ -1,8 +1,15 @@
-import { canalPosicionChofer, TIPO_POSICION_CHOFER, type PosicionChoferPublicada } from '@viajes/contracts';
+import {
+  canalPosicionChofer,
+  canalPosicionPasajero,
+  TIPO_POSICION_CHOFER,
+  TIPO_POSICION_PASAJERO,
+  type PosicionChoferPublicada,
+  type PosicionPasajeroPublicada,
+} from '@viajes/contracts';
 import type { Logger } from '@viajes/platform';
 import { Redis } from 'ioredis';
-import type { Ping } from '../../dominio/entidades/index.js';
-import type { PublicadorPosiciones, ResultadoPublicacion } from '../../dominio/puertos/index.js';
+import type { Ping, PingPasajero } from '../../dominio/entidades/index.js';
+import type { PublicadorPosiciones, QuienPublica, ResultadoPublicacion } from '../../dominio/puertos/index.js';
 
 /** Espera máxima de la confirmación de una publicación. El 204 del ping espera, como mucho, esto. */
 export const TIMEOUT_PUBLICACION_MS = 200;
@@ -29,7 +36,8 @@ export function crearRedisPublicador(url: string, logger: Logger): Redis {
 }
 
 /**
- * Publica solo si el ping no es más viejo que la última posición publicada del chofer, de forma
+ * Publica solo si el ping no es más viejo que la última posición publicada en ese canal (del chofer o
+ * del pasajero: el mismo script para los dos), de forma
  * atómica: dos pedidos del mismo chofer que se cruzan (o dos instancias de location) no pueden
  * anunciar una posición vieja después de una nueva. A igual milisegundo publica, como el guardado.
  * KEYS: marca de la última publicada. ARGV: canal, tsMs, payload, ttlMs. Devuelve 1 si publicó.
@@ -44,6 +52,8 @@ redis.call('PUBLISH', ARGV[1], ARGV[3])
 return 1`;
 
 export const marcaPublicada = (prefijo: string, choferId: string) => `${prefijo}publicada:${choferId}`;
+/** La marca del pasajero, en su propio espacio de nombres: nunca se mezcla con la de un chofer. */
+export const marcaPublicadaPasajero = (prefijo: string, pasajeroId: string) => `${prefijo}publicada-pasajero:${pasajeroId}`;
 
 export class PublicadorPosicionesRedis implements PublicadorPosiciones {
   constructor(
@@ -67,11 +77,34 @@ export class PublicadorPosicionesRedis implements PublicadorPosiciones {
       lng: posicion.lng,
       actualizadaEn: registradoEn.toISOString(),
     };
+    const { prefijo } = this.opciones;
+    return this.publicarEnOrden(marcaPublicada(prefijo, choferId), canalPosicionChofer(prefijo, choferId), registradoEn, mensaje);
+  }
+
+  async publicarPasajero({ pasajeroId, posicion, registradoEn }: PingPasajero): Promise<'publicada' | 'atrasada'> {
+    const mensaje: PosicionPasajeroPublicada = {
+      tipo: TIPO_POSICION_PASAJERO,
+      pasajeroId,
+      lat: posicion.lat,
+      lng: posicion.lng,
+      actualizadaEn: registradoEn.toISOString(),
+    };
+    const { prefijo } = this.opciones;
+    return this.publicarEnOrden(
+      marcaPublicadaPasajero(prefijo, pasajeroId),
+      canalPosicionPasajero(prefijo, pasajeroId),
+      registradoEn,
+      mensaje,
+    );
+  }
+
+  /** El script de orden, igual para el chofer y el pasajero: cambian la marca, el canal y el mensaje. */
+  private async publicarEnOrden(marca: string, canal: string, registradoEn: Date, mensaje: object) {
     const publicada = await this.redis.eval(
       PUBLICAR,
       1,
-      marcaPublicada(this.opciones.prefijo, choferId),
-      canalPosicionChofer(this.opciones.prefijo, choferId),
+      marca,
+      canal,
       String(registradoEn.getTime()),
       JSON.stringify(mensaje),
       String(this.opciones.marcaMs),
@@ -105,19 +138,19 @@ export class PublicadorPosicionesRedis implements PublicadorPosiciones {
  */
 export function registroPublicacion(
   logger: Logger,
-  contar: (resultado: ResultadoPublicacion) => void,
+  contar: (resultado: ResultadoPublicacion, de: QuienPublica) => void,
   ahoraMs: () => number = Date.now,
 ) {
   let ultimoAviso = Number.NEGATIVE_INFINITY;
   let sinAvisar = 0;
-  return (resultado: ResultadoPublicacion, err?: unknown) => {
-    contar(resultado);
+  return (resultado: ResultadoPublicacion, err?: unknown, de: QuienPublica = 'chofer') => {
+    contar(resultado, de);
     if (resultado !== 'error') return;
     sinAvisar += 1;
     if (ahoraMs() - ultimoAviso < 60_000) return;
     logger.warn(
       { err: err instanceof Error ? err.message : String(err), fallidas: sinAvisar },
-      'location: no se pudo publicar la posición en vivo (el ping quedó guardado)',
+      'location: no se pudo publicar una posición en vivo',
     );
     ultimoAviso = ahoraMs();
     sinAvisar = 0;

@@ -1,5 +1,5 @@
 import { Counter, Gauge, type Metricas } from '@viajes/platform';
-import type { ResultadoPublicacion } from '../../dominio/puertos/index.js';
+import type { QuienPublica, ResultadoPublicacion } from '../../dominio/puertos/index.js';
 import type { EstadoHistorial } from '../redis/historial.js';
 
 const RESULTADOS_PUBLICACION: readonly ResultadoPublicacion[] = ['publicada', 'atrasada', 'vencida', 'error'];
@@ -53,17 +53,19 @@ export function registrarMetricasLocation(
 }
 
 /**
- * `location_posiciones_publicadas_total{resultado}`: qué pasó con la publicación en vivo de cada ping
- * (`publicada`, `atrasada`, `vencida` o `error`). Las cuatro series arrancan en 0 para que se vean en el
- * primer scrape. Devuelve la función que cuenta.
+ * `location_posiciones_publicadas_total{de, resultado}`: qué pasó con la publicación en vivo de cada
+ * posición, del chofer o del pasajero (`de`), por resultado (`publicada`, `atrasada`, `vencida` o
+ * `error`). Todas las series arrancan en 0 para que se vean en el primer scrape. Devuelve la función que cuenta.
  */
-export function registrarMetricaPublicacion({ registro }: Metricas): (resultado: ResultadoPublicacion) => void {
+export function registrarMetricaPublicacion({ registro }: Metricas): (resultado: ResultadoPublicacion, de: QuienPublica) => void {
   const contador = new Counter({
     name: 'location_posiciones_publicadas_total',
-    help: 'Publicaciones de la posición en vivo, por resultado.',
-    labelNames: ['resultado'] as const,
+    help: 'Publicaciones de la posición en vivo, por quién la informa y por resultado.',
+    labelNames: ['de', 'resultado'] as const,
     registers: [registro],
   });
-  for (const resultado of RESULTADOS_PUBLICACION) contador.inc({ resultado }, 0);
-  return (resultado) => contador.inc({ resultado });
+  for (const de of ['chofer', 'pasajero'] as const) {
+    for (const resultado of RESULTADOS_PUBLICACION) contador.inc({ de, resultado }, 0);
+  }
+  return (resultado, de) => contador.inc({ de, resultado });
 }

@@ -19,6 +19,10 @@ class PublicadorFalso implements PublicadorPosiciones {
     this.publicadas.push(ping);
     return 'publicada' as const;
   }
+  /** Este archivo prueba la del chofer; la del pasajero, tests/integracion/publicacion-pasajero.test.ts. */
+  async publicarPasajero() {
+    return 'publicada' as const;
+  }
 }
 
 function sistema() {
