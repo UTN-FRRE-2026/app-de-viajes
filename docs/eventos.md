@@ -36,7 +36,7 @@ Cada `RELAY_INTERVALO_MS` (100 ms; es la demora máxima de un evento), en una tr
 
 **El cliente:** `EventSource` no permite mandar encabezados, y el token no va en la URL porque quedaría en los logs de nginx. El frontend usa `fetch` con el `Authorization` y lee el cuerpo como stream (por ejemplo, con `@microsoft/fetch-event-source`). Al reconectar, manda el `Last-Event-ID` y, además, pide el estado actual con `GET /solicitudes/:id`: el stream avisa de los cambios, pero la fuente de verdad sigue siendo la base.
 
-**Respuesta:** `200`, `Content-Type: text/event-stream`, `Cache-Control: no-cache, no-transform` y `X-Accel-Buffering: no` (para que nginx no junte los eventos en su buffer).
+**Respuesta:** `200`, `Content-Type: text/event-stream`, `Cache-Control: no-cache, no-transform` y `X-Accel-Buffering: no` (para que nginx no junte los eventos en su buffer). Detrás del contenedor `web`, la ruta es `/api/viajes/eventos`, sin buffer y con un `proxy_read_timeout` de 60 s, mayor que el latido ([docs/web.md](web.md#sse)).
 
 ```
 retry: 3000
@@ -120,5 +120,4 @@ Los esquemas están en [`packages/contracts/src/dispatch.ts`](../packages/contra
 ## Pendiente
 
 - **Posición del pasajero para su chofer** (PLAN 3.5): location no la publica todavía.
-- **nginx:** `proxy_buffering off` y un `proxy_read_timeout` mayor que el latido, en el contenedor `web`.
 - **ADR 0007** (SSE frente a WebSocket, con Agos).

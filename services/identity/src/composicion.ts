@@ -108,6 +108,7 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
     rutas: rutasIdentidad(casos, limitador, logger, config.IDENTITY_TOKEN_SERVICIO),
     chequeos,
     metricas: { metricas, token: config.METRICAS_TOKEN },
+    confiarEnProxy: config.CONFIAR_EN_PROXY,
   });
   const cerrarConexiones = cerrar;
   return {

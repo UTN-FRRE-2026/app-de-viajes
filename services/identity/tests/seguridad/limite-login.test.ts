@@ -1,7 +1,7 @@
 import request from 'supertest';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { Reemplazos } from '../../src/composicion.js';
-import { CONTRASENA, datosRegistro, levantarIdentity, type Identity } from '../soporte/sistema.js';
+import { configTest, CONTRASENA, datosRegistro, levantarIdentity, type Identity } from '../soporte/sistema.js';
 
 const MAX_EMAIL = 5;
 
@@ -100,6 +100,49 @@ describe('límite por IP', () => {
     const estados = [];
     for (let i = 0; i < 4; i++) estados.push((await intentar(i)).status);
     expect(estados).toEqual([401, 401, 401, 429]);
+  });
+});
+
+describe('detrás de nginx (CONFIAR_EN_PROXY)', () => {
+  // El test se conecta desde 127.0.0.1: hace de nginx, que reemplaza X-Forwarded-For por la IP del cliente.
+  let trasProxy: Identity;
+
+  beforeAll(async () => {
+    trasProxy = await levantarIdentity({ config: { IDENTITY_LOGIN_MAX_POR_IP: '3', CONFIAR_EN_PROXY: '127.0.0.1' } });
+  });
+  afterAll(async () => {
+    await trasProxy.cerrar();
+  });
+
+  const intentar = (n: number, ip: string) =>
+    request(trasProxy.url)
+      .post('/login')
+      .set('X-Forwarded-For', ip)
+      .send({ email: `u${n}@viajes.test`, contrasena: 'incorrecta-123' });
+
+  it('cuenta por la IP de cada cliente, no por la de nginx', async () => {
+    await d.redis.flushdb();
+    const estados = [];
+    for (let i = 0; i < 4; i++) estados.push((await intentar(i, '203.0.113.1')).status);
+    expect(estados).toEqual([401, 401, 401, 429]);
+    // Otro cliente detrás del mismo nginx no queda bloqueado por el primero.
+    expect((await intentar(10, '203.0.113.2')).status).toBe(401);
+    expect(await d.redis.keys('identity:login:ip:*')).toHaveLength(2);
+  });
+
+  it('sin la variable, X-Forwarded-For se ignora (ver «X-Forwarded-For falso…» arriba)', () => {
+    expect(configTest().CONFIAR_EN_PROXY).toBeUndefined();
+  });
+
+  it('no acepta confiar en cualquiera: ni true, ni rangos con nombre, ni basura', () => {
+    for (const valor of ['true', '*', 'uniquelocal', 'loopback', '10.0.0.1, nginx']) {
+      expect(() => configTest({ CONFIAR_EN_PROXY: valor }), valor).toThrow();
+    }
+    expect(configTest({ CONFIAR_EN_PROXY: '172.31.250.10, 10.0.0.0/8, ::1' }).CONFIAR_EN_PROXY).toEqual([
+      '172.31.250.10',
+      '10.0.0.0/8',
+      '::1',
+    ]);
   });
 });
 

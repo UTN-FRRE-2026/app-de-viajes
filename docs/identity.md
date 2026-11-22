@@ -132,7 +132,7 @@ Vive en identity porque todavía no hay gateway. Corre después de validar el bo
 - Un login correcto borra el contador del email. El de la IP sigue corriendo, así que también cuenta los logins correctos.
 - Mientras un email está bloqueado, ni la contraseña correcta entra.
 - **Riesgo aceptado:** un tercero puede bloquear una cuenta ajena durante 15 minutos. Es el costo de frenar ataques que cambian de IP.
-- `req.ip` no lee `X-Forwarded-For`, así que ese header no permite evadir el límite. Cuando exista el gateway habrá que configurar `trust proxy` (ver [Pendiente](#pendiente)).
+- `req.ip` lee `X-Forwarded-For` solo si viene del nginx del Compose (`CONFIAR_EN_PROXY`, ver [docs/web.md](web.md#la-ip-del-cliente)): detrás de nginx cuenta por cliente, y quien llegue directo al servicio no puede evadir el límite inventando ese encabezado.
 
 ## Usuarios de prueba
 
@@ -369,7 +369,7 @@ Queda fuera:
 - Cerrar todas las sesiones de un usuario a la vez («salir de todos los dispositivos»). Ninguna consigna lo pide.
 - Limpieza de `refresh_tokens`: las filas vencidas y usadas no se borran nunca. Hace falta un job que borre las vencidas hace más de un tiempo, y que conserve las usadas mientras sigan vigentes sus familias, porque de ellas depende la detección de reuso.
 - Límite absoluto de la sesión: como el plazo se renueva en cada rotación, una sesión que se usa seguido no vence nunca.
-- `trust proxy` cuando exista el gateway. Sin eso, todos los pedidos que pasen por el gateway compartirían el contador de IP.
+- ~~`trust proxy` cuando exista el gateway~~ (hecho: `CONFIAR_EN_PROXY`, ver [docs/web.md](web.md#la-ip-del-cliente)).
 - Límite de pedidos en `/registro`: hoy cada registro cuesta un argon2 y no tiene freno.
 - Rotación de claves: el JWKS publica una sola clave.
 - Rehash de contraseñas si se suben los parámetros de argon2.

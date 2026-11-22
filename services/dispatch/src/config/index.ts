@@ -1,4 +1,4 @@
-import { tokenMetricas } from '@viajes/platform';
+import { proxyConfiable, tokenMetricas } from '@viajes/platform';
 import { z } from 'zod';
 import { TOPE_IMPORTE_CENTAVOS, TOPE_MAX_METROS } from '../dominio/tarifas/parametros.js';
 
@@ -22,6 +22,8 @@ const listaUuids = z
 export const EsquemaConfig = z
   .object({
     PUERTO: z.coerce.number().int().positive().default(3005),
+    // Detrás del nginx del Compose: su IP, para tomar la del cliente de X-Forwarded-For. Vacío: no se confía en nadie.
+    CONFIAR_EN_PROXY: proxyConfiable,
     NIVEL_LOG: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
     DISPATCH_PERSISTENCIA: z.enum(['postgres', 'memoria']).default('postgres'),
     DATABASE_URL: z.string().url().optional(),

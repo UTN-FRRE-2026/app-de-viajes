@@ -1,9 +1,11 @@
-import { tokenMetricas } from '@viajes/platform';
+import { proxyConfiable, tokenMetricas } from '@viajes/platform';
 import { z } from 'zod';
 
 export const EsquemaConfig = z
   .object({
     PUERTO: z.coerce.number().int().positive().default(3004),
+    // Detrás del nginx del Compose: su IP, para tomar la del cliente de X-Forwarded-For. Vacío: no se confía en nadie.
+    CONFIAR_EN_PROXY: proxyConfiable,
     NIVEL_LOG: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
     // 6.6: `ingenua` (Postgres, referencia) y `optimizada` (Redis GEO + historial en lotes).
     UBICACION_ESTRATEGIA: z.enum(['ingenua', 'optimizada', 'memoria']).default('ingenua'),

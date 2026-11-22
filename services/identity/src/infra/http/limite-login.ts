@@ -6,7 +6,8 @@ import type { EstadoLimite, LimitadorLogin } from '../../dominio/puertos/index.j
 /**
  * Corre después de validar el body y antes de argon2: frena el pedido antes de gastar CPU.
  * Falla cerrado: sin contador no hay protección contra fuerza bruta, así que no se verifica nada.
- * `req.ip` no mira X-Forwarded-For porque Express no tiene `trust proxy` configurado.
+ * `req.ip` mira X-Forwarded-For solo si viene del nginx (`CONFIAR_EN_PROXY`); si no, es la dirección de
+ * la conexión, y un X-Forwarded-For inventado no cambia nada.
  */
 export function limitarLogin(limitador: LimitadorLogin, logger: Logger): RequestHandler {
   return async (req, res, next) => {
