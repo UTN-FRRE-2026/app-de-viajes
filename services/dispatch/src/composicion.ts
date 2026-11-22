@@ -283,6 +283,7 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
     ),
     chequeos,
     metricas: { metricas, token: config.METRICAS_TOKEN },
+    confiarEnProxy: config.CONFIAR_EN_PROXY,
   });
   const cerrarConexiones = cerrar;
   return {

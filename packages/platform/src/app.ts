@@ -13,12 +13,20 @@ interface OpcionesApp {
   limiteBody?: string;
   /** Con métricas: mide cada pedido y publica `GET /metrics`, protegido con el token. */
   metricas?: { metricas: Metricas; token: string };
+  /**
+   * Los proxies cuyo `X-Forwarded-For` se cree (`CONFIAR_EN_PROXY`, ver `proxyConfiable`). Sin esto,
+   * `req.ip` es la dirección de la conexión y el encabezado se ignora.
+   */
+  confiarEnProxy?: string[];
 }
 
 /** Arma la app con el mismo orden de middlewares en todos los servicios. */
-export function crearApp({ logger, rutas, chequeos, limiteBody = '16kb', metricas }: OpcionesApp): Express {
+export function crearApp({ logger, rutas, chequeos, limiteBody = '16kb', metricas, confiarEnProxy }: OpcionesApp): Express {
   const app = express();
   app.disable('x-powered-by');
+  // Solo las direcciones dadas: Express toma la IP del cliente de la última entrada de X-Forwarded-For
+  // que no sea un proxy de confianza.
+  app.set('trust proxy', confiarEnProxy && confiarEnProxy.length > 0 ? confiarEnProxy : false);
   app.use(middlewareRequestId());
   if (metricas) app.use(middlewareDuracion(metricas.metricas));
   app.use(middlewareSeguridad());

@@ -37,6 +37,8 @@ services:
     image: ghcr.io/grupo7/viajes-identity:${VERSION:-0.1.0}
     environment:
       PUERTO: "3001"
+      # Detrás de nginx: cree en el X-Forwarded-For solo si viene del contenedor web (su IP fija).
+      CONFIAR_EN_PROXY: ${WEB_IP:-10.250.77.10}
       IDENTITY_PERSISTENCIA: postgres
       IDENTITY_DATABASE_URL: postgresql://identity_svc:${DB_PASSWORD_IDENTITY:-identity_dev}@postgres:5432/identity
       REDIS_URL: redis://redis:6379
@@ -50,6 +52,9 @@ services:
       IDENTITY_TOKEN_SERVICIO: ${IDENTITY_TOKEN_SERVICIO:-}
     ports:
       - "3001:3001"
+    networks:
+      - default
+      - proxy
     depends_on:
       postgres:
         condition: service_healthy
@@ -64,6 +69,8 @@ services:
     image: ghcr.io/grupo7/viajes-location:${VERSION:-0.1.0}
     environment:
       PUERTO: "3004"
+      # Detrás de nginx: cree en el X-Forwarded-For solo si viene del contenedor web (su IP fija).
+      CONFIAR_EN_PROXY: ${WEB_IP:-10.250.77.10}
       UBICACION_ESTRATEGIA: ingenua
       LOCATION_DATABASE_URL: postgresql://location_svc:${DB_PASSWORD_LOCATION:-location_dev}@postgres:5432/location
       # Posiciones e historial en la optimizada; en las dos, la publicación de la posición en vivo.
@@ -77,6 +84,9 @@ services:
       LOCATION_TOKEN_SERVICIO: ${LOCATION_TOKEN_SERVICIO:-}
     ports:
       - "3004:3004"
+    networks:
+      - default
+      - proxy
     depends_on:
       postgres:
         condition: service_healthy
@@ -91,6 +101,8 @@ services:
     image: ghcr.io/grupo7/viajes-dispatch:${VERSION:-0.1.0}
     environment:
       PUERTO: "3005"
+      # Detrás de nginx: cree en el X-Forwarded-For solo si viene del contenedor web (su IP fija).
+      CONFIAR_EN_PROXY: ${WEB_IP:-10.250.77.10}
       DISPATCH_PERSISTENCIA: postgres
       DATABASE_URL: postgresql://dispatch_svc:${DB_PASSWORD_DISPATCH:-dispatch_dev}@postgres:5432/dispatch
       # Cerrojo de la Idempotency-Key (claves con prefijo dispatch:idempotencia:).
@@ -128,11 +140,40 @@ services:
       PAGOS_RECHAZAR_DESDE_CENTAVOS: ${PAGOS_RECHAZAR_DESDE_CENTAVOS:-}
     ports:
       - "3005:3005"
+    networks:
+      - default
+      - proxy
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
 
+  # Punto de entrada único (infra/web): sirve el frontend y hace de reverse proxy a los tres servicios.
+  # Los puertos de los servicios se publican solo para desarrollo; en el entorno publicado, solo este.
+  web:
+    build:
+      context: .
+      dockerfile: infra/web/Dockerfile
+    image: ghcr.io/grupo7/viajes-web:${VERSION:-0.1.0}
+    ports:
+      - "${WEB_PUERTO:-8080}:8080"
+    networks:
+      proxy:
+        # Fija: es la única IP en la que los servicios confían para X-Forwarded-For (CONFIAR_EN_PROXY).
+        ipv4_address: ${WEB_IP:-10.250.77.10}
+    depends_on:
+      - identity
+      - location
+      - dispatch
+
 volumes:
   pg_datos:
+
+networks:
+  # nginx y los tres servicios. Subred propia para que la IP de web sea fija; fuera de los 172.x que
+  # Docker reparte por defecto. Si choca con otra red de la máquina, se cambian WEB_RED y WEB_IP en el .env.
+  proxy:
+    ipam:
+      config:
+        - subnet: ${WEB_RED:-10.250.77.0/28}

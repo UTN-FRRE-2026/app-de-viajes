@@ -16,6 +16,7 @@
     "dev": "node scripts/servicios.mjs dev",
     "start": "npm run build && node scripts/servicios.mjs start",
     "infra:up": "docker compose up -d postgres redis",
+    "web:probar": "node scripts/probar-web.mjs",
     "lint": "eslint .",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm test --workspaces --if-present",

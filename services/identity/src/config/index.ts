@@ -1,5 +1,5 @@
 import { createPrivateKey, type KeyObject } from 'node:crypto';
-import { tokenMetricas } from '@viajes/platform';
+import { proxyConfiable, tokenMetricas } from '@viajes/platform';
 import { z } from 'zod';
 
 const BITS_MINIMOS_RSA = 2048;
@@ -23,6 +23,8 @@ const clavePrivadaRsa = z.string().transform((valor, ctx): KeyObject => {
 export const EsquemaConfig = z
   .object({
     PUERTO: z.coerce.number().int().positive().default(3001),
+    // Detrás del nginx del Compose: su IP, para tomar la del cliente de X-Forwarded-For. Vacío: no se confía en nadie.
+    CONFIAR_EN_PROXY: proxyConfiable,
     NIVEL_LOG: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
     IDENTITY_PERSISTENCIA: z.enum(['postgres', 'memoria']).default('postgres'),
     // No se usa DATABASE_URL: en el .env compartido apunta a la base de dispatch.

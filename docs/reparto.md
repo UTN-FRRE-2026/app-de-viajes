@@ -26,7 +26,7 @@ Cada integrante es **dueño** de un problema central y de los módulos que lo ro
 - [x] SSE: relay del `outbox` a Redis Pub/Sub, suscripción solo a viajes propios, reconexión con `Last-Event-ID` ([docs/eventos.md](eventos.md)).
 - [x] SSE: posición del chofer asignado, solo para su pasajero ([docs/eventos.md](eventos.md#posición-del-chofer-en-vivo)). location publica las posiciones (Maxi).
 - [ ] Frontend: pantallas de pasajero y de operador.
-- [ ] Contenedor `web`: nginx que sirve el frontend y hace de reverse proxy a los tres servicios.
+- [x] Contenedor `web`: nginx como punto de entrada único, reverse proxy a los tres servicios, CSP de la página, SSE sin buffer y la IP del cliente para los servicios ([docs/web.md](web.md)). Falta servir el frontend cuando esté.
 - [ ] Despliegue y tag `congelado`.
 
 **Fase C y ataque cruzado**
