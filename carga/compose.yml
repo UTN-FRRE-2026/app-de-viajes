@@ -121,6 +121,10 @@ services:
       # carga no da de alta choferes. No hay identity en este entorno.
       IDENTITY_URL: http://jwks:8080
       IDENTITY_TOKEN_SERVICIO: "${CARGA_TOKEN_SERVICIO:?falta CARGA_TOKEN_SERVICIO}"
+      # Ofertas por solicitud y su vigencia. Sin variables, los valores de siempre (3 y 15 s).
+      # carrera.ps1 pone 50 (el máximo de dispatch) y 120 s, para la carrera de 50 aceptaciones.
+      OFERTAS_SIMULTANEAS: "${CARGA_OFERTAS_SIMULTANEAS:-3}"
+      OFERTA_TTL_SEGUNDOS: "${CARGA_OFERTA_TTL_SEGUNDOS:-15}"
     # Igual que los otros: fuera del rango dinámico de Windows. Se cambia con CARGA_DISPATCH_PUERTO.
     ports:
       - "127.0.0.1:${CARGA_DISPATCH_PUERTO:-43005}:3005"
