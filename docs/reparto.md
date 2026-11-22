@@ -46,7 +46,7 @@ Cada integrante es **dueño** de un problema central y de los módulos que lo ro
 - [ ] Aislamiento por `fleetId` en el caso de uso (404 a otra flota, con test) y reporte por flota. Hecho: el aislamiento. Falta: el reporte.
 - [ ] En `platform`, para los tres servicios: helmet, CORS restringido, rate limit genérico con 429 y encabezados, validación de encabezados y log por pedido.
 - [ ] Tests del bloque 5 que faltan: `constructor.prototype` y claves anidadas, inyección SQL en la búsqueda, rate limit en solicitud y ubicación, acceso a recursos ajenos en cada módulo.
-- [ ] Frontend: proyecto base (Vite, router, stores, cliente HTTP, componente de errores), login y pantallas de admin de flota.
+- [ ] Frontend: proyecto base (Vite, router, stores, cliente HTTP, componente de errores), login y pantallas de admin de flota. Hecho: la base y el login ([docs/web.md](web.md#el-frontend-appsweb)). Falta: las pantallas de admin de flota.
 - [x] identity: logout y revocación. Lo hizo Maxi (#5).
 - [x] Tarifas, PR 2: configuración por el admin (`GET` y `PUT /admin/tarifas`), tarifa global versionada con auditoría, semilla desde el entorno y caché en Redis. Lo tomó del reparto de Maxi ([docs/tarifas.md](tarifas.md)).
 - [ ] Tabla de roles y permisos en el README.

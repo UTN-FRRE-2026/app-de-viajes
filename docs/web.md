@@ -1,6 +1,6 @@
 # Contenedor web (nginx)
 
-El único punto de entrada (PLAN 2): sirve el frontend y hace de reverse proxy a los tres servicios. Archivos en `infra/web/`: la configuración (`default.conf`), el `Dockerfile` y, mientras no esté el frontend, una página provisoria (`sitio/`).
+El único punto de entrada (PLAN 2): sirve el frontend y hace de reverse proxy a los tres servicios. Archivos en `infra/web/`: la configuración (`default.conf`) y el `Dockerfile`, que también compila el frontend (`apps/web`, ver [El frontend](#el-frontend-appsweb)).
 
 ```
 navegador ──▶ web :8080 ─┬─ /                → el frontend (index.html para cualquier ruta del frontend)
@@ -10,6 +10,45 @@ navegador ──▶ web :8080 ─┬─ /                → el frontend (index.
 ```
 
 Se levanta con el resto: `docker compose up -d --build` y después http://localhost:8080 (`WEB_PUERTO` en el `.env`).
+
+## El frontend (`apps/web`)
+
+React + Vite + Zustand (PLAN 5.2), mínimo y sin PWA. Es un workspace más: `npm run dev:web` lo levanta en http://localhost:5173 con el mismo enrutamiento que nginx (el proxy de Vite manda `/api/identity`, `/api/viajes` y `/api/ubicacion` a 3001, 3005 y 3004), y `npm run build -w @viajes/web` lo compila. El `Dockerfile` de `web` lo compila en una etapa propia y nginx sirve `dist/`. Los archivos de `/assets/` llevan hash y se cachean para siempre; la página sigue con `no-cache` y la CSP.
+
+**CSP.** El build no tiene scripts ni estilos en línea: un `index.html` mínimo, los estilos en archivos `.css` (nunca `style=`) y `assetsInlineLimit: 0`, para que nada quede embebido como `data:`. `npm run build` lo comprueba (`apps/web/scripts/revisar-csp.mjs`) y falla si encuentra código en línea.
+
+**Sesión** (`src/sesion/store.ts`, Zustand):
+- el access token vive **solo en memoria**; el `refreshToken` y el usuario se guardan en **`sessionStorage`**, que se pierde al cerrar la pestaña;
+- al abrir la página, si quedó un refresh, se recupera la sesión **antes de redirigir**: mientras tanto el estado es `cargando` y ninguna ruta manda al login;
+- **una sola renovación a la vez:** si varios pedidos reciben 401 juntos, comparten el mismo `POST /refresh`. Identity rota el refresh en cada uso y, si ve uno ya usado, revoca la sesión entera;
+- el refresh **no se reintenta:** si no es válido, la sesión termina;
+- al **cerrar sesión**, primero se limpia el estado (eso cambia la «época» de la sesión) y después se avisa a identity. Una renovación que vuelva después se descarta.
+
+**Cliente HTTP** (`src/api/cliente.ts`):
+- `pedir(metodo, '/viajes/solicitudes', { cuerpo, clave })` usa rutas relativas (`/api` + la ruta), agrega el `Authorization` y normaliza los errores en `ErrorApi`, con el formato `{error:{code,message,requestId}}` de los servicios. Si no hubo respuesta, el código es `RED`;
+- con un **401**, una sola vez más: con el token vigente, si otro pedido ya lo renovó mientras este viajaba (un 401 que llegó tarde), o renovando. **El reintento conserva la misma `Idempotency-Key`.** Si igual da 401, la sesión termina;
+- **`clave`:** las rutas que exigen `Idempotency-Key` son los POST y PUT con efecto de dispatch y `POST /identity/registro`. Se genera una por operación (`nuevaClave()`) y se reutiliza en cualquier reintento de esa misma operación. Los reintentos automáticos con espera y un `useOperacion()` para formularios se suman con el primer formulario que los necesite;
+- **el login** va por su cuenta (`src/sesion/login.ts`): un 401 ahí es «email o contraseña incorrectos», no una sesión vencida. El 429 del límite de intentos muestra cuándo volver a probar.
+
+**Errores.** `MensajeError` muestra el mensaje y el `requestId` (para buscarlo en el log), y ofrece «Reintentar» con red caída o 5xx. Un `ErrorBoundary` en el layout y el `errorElement` del router contienen las fallas al dibujar.
+
+**Pantallas por rol.**
+
+| Rol | Sección |
+|---|---|
+| `pasajero` | `/pasajero` |
+| `chofer` | `/chofer` |
+| `operador` y `admin` | `/operador` |
+| `admin_flota` | `/flota` |
+
+Cada rol tiene su archivo en `src/roles/` (`pasajero.tsx`, `chofer.tsx`, `operador.tsx`, `flota.tsx`), con `{ roles, base, titulo, menu, rutas }`. El router monta cada sección bajo su `base`, protegida por sus roles. Otro rol que entre por la URL ve «Esta pantalla no es para tu rol»; la autorización de verdad la hace la API. Después del login, cada uno va al inicio de su rol, o a la ruta de la que venía (`?volver=`, solo rutas internas).
+
+Para sumar una pantalla:
+1. el componente, en `src/roles/<rol>/`;
+2. una entrada en `rutas` (relativa a `base`) y, si va en el menú, otra en `menu`, en el archivo del rol;
+3. las llamadas con `pedir()`, pasando `clave` si la ruta exige Idempotency-Key.
+
+Hoy cada rol tiene solo un inicio provisorio: las pantallas reales las suma su dueño (pasajero y operador, Iván; chofer, Maxi; admin de flota, Agos).
 
 ## Qué no se publica
 
@@ -68,7 +107,6 @@ El test automático de la IP está en identity (`tests/seguridad/limite-login.te
 
 ## Pendiente
 
-- **El frontend:** una etapa en el `Dockerfile` que lo compile con Vite y copie su `dist/` en lugar de `sitio/`, y caché larga para los archivos con hash.
 - **Playwright:** la página carga sin violaciones de CSP en la consola (PLAN, Fase B).
 - **TLS y HSTS** en el entorno publicado.
 - **Límite de tasa** en solicitudes y ubicaciones (PLAN, B5): en los servicios, que ya ven la IP del cliente.

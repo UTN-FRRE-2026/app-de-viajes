@@ -9,7 +9,8 @@
     "packages/kernel",
     "packages/contracts",
     "packages/platform",
-    "services/*"
+    "services/*",
+    "apps/*"
   ],
   "scripts": {
     "setup": "node scripts/setup.mjs",
@@ -24,6 +25,7 @@
     "dev:dispatch": "npm run dev -w @viajes/dispatch",
     "dev:identity": "npm run dev -w @viajes/identity",
     "dev:location": "npm run dev -w @viajes/location",
+    "dev:web": "npm run dev -w @viajes/web",
     "seed": "npm run seed -w @viajes/identity",
     "local": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/local.ps1"
   },
