@@ -151,4 +151,28 @@ La máquina era la misma y no se lanzó otra carga a propósito. Pero es un Wind
 **Limitaciones de esta medición:**
 - **Es local:** k6 corre en la misma máquina que el sistema, y el disco es el virtual de Docker Desktop. En un servidor con un disco más rápido, la ingenua rendiría más, aunque el commit por ping seguiría siendo su límite.
 - **El lag y la memoria no excluyen el calentamiento,** porque se miden desde que arranca location.
-- **No mide dispatch:** falta la latencia de la solicitud de viaje y el tiempo hasta la asignación que pide 6.6. Se agregan cuando dispatch use location (PR de Iván).
+- **No mide dispatch** (para eso está la [prueba piloto](#prueba-piloto-una-solicitud-real-bajo-la-carga-de-ubicaciones) de abajo): falta la latencia de la solicitud de viaje y el tiempo hasta la asignación que pide 6.6. Se agregan cuando dispatch use location (PR de Iván).
+
+## Prueba piloto: una solicitud real bajo la carga de ubicaciones
+
+**22/11, una corrida corta** con `medir.ps1 -Estrategia optimizada -Medicion 60 -Calentamiento 10 -Solicitudes` (ver [carga/README.md](../carga/README.md#solicitud-real-prueba-piloto)). Es una **prueba piloto de latencia bajo carga**: muestra que el flujo real funciona de punta a punta mientras location absorbe 250 pings/s. No es todavía la medición del informe.
+
+| | Resultado |
+|---|---|
+| Ventana de las solicitudes | Dentro de la fase de medición de k6: empezó 12 s después de detectar sus pings (2 s después del calentamiento) y terminó a los 66 s, unos 4 s antes del final |
+| Iteraciones | 41: crear, oferta por SSE, aceptar, `ASIGNADO` por `GET`, cancelar, `CANCELADO_PASAJERO` por `GET` |
+| Asignadas confirmadas por `GET` | **41**, sin ninguna sin asignar, sin `SIN_CHOFERES`, sin ofertas vencidas ni reintentos |
+| Incremento del histograma de dispatch | **41: coincide** con las confirmadas por `GET` |
+| Tiempo hasta la asignación, en el cliente | p50 **220 ms**, p95 **346 ms**, máximo 444 ms |
+| El mismo tiempo, en el servidor | 35 de 41 entre 100 y 250 ms, y 6 entre 250 y 500 ms |
+| Ofertas que llegaron antes del 201 | 0 (el script las habría cruzado por `solicitudId`) |
+| Lag del event loop de dispatch (desde el arranque) | p50 0,1 ms, p99 0,9 ms, máximo 99 ms. El máximo es del arranque: no se puede separar |
+| CPU de dispatch | 7 % de promedio y 10 % de máximo, de 1 CPU |
+| Carga de ubicaciones en la misma corrida | 250 pings/s, 0 % de errores, p95 de 6,7 ms y p99 de 38,8 ms |
+
+- **Cliente y servidor:** el tiempo del cliente incluye la entrega de la oferta por el outbox y el SSE: el relay publica cada `RELAY_INTERVALO_MS` (100 ms). Por eso es más alto que el del servidor, que va desde antes de buscar candidatos hasta el COMMIT de la aceptación. El servidor solo da cubetas.
+- **Qué se puede concluir:** el camino real funciona bajo la carga de 6.6. La búsqueda contra location, la oferta por SSE, la aceptación y la liberación no fallaron ni una vez, y dispatch casi no tiene lag mientras location recibe los pings: es la evidencia esperada de que separar location protege la asignación.
+- **Qué no se puede concluir todavía:**
+  - **la disponibilidad ya existe** (PR 1 de flotas: `drivers.available`), **pero dispatch todavía no la usa para filtrar candidatos**. Tampoco filtra por flota ni por zona, porque las zonas en PostGIS están pendientes. El tiempo medido no incluye resolver la zona del origen ni filtrar por flota, zona y disponibilidad, ni los lotes crecientes;
+  - un solo flujo con un chofer aislado: **no hay competencia** entre choferes ni entre solicitudes. Es latencia del camino, no capacidad;
+  - 60 s de medición en una máquina local: para el informe hay que repetirla con la medición completa, alternada con la ingenua, y con varias solicitudes en paralelo.
