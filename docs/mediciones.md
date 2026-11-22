@@ -176,3 +176,17 @@ La máquina era la misma y no se lanzó otra carga a propósito. Pero es un Wind
   - **la disponibilidad ya existe** (PR 1 de flotas: `drivers.available`), **pero dispatch todavía no la usa para filtrar candidatos**. Tampoco filtra por flota ni por zona, porque las zonas en PostGIS están pendientes. El tiempo medido no incluye resolver la zona del origen ni filtrar por flota, zona y disponibilidad, ni los lotes crecientes;
   - un solo flujo con un chofer aislado: **no hay competencia** entre choferes ni entre solicitudes. Es latencia del camino, no capacidad;
   - 60 s de medición en una máquina local: para el informe hay que repetirla con la medición completa, alternada con la ingenua, y con varias solicitudes en paralelo.
+
+## 6.3 — Carrera de la asignación única con k6, contra el sistema en contenedores
+
+**22/11, una corrida de validación** con `carga/carrera.ps1` (ver [carga/README.md](../carga/README.md#carrera-de-la-asignación-única-63)). Reproduce el test `asignacion-unica.test.ts`: 50 choferes aceptan a la vez las 50 ofertas de la misma solicitud. La evidencia está en [mediciones/2026-11-22/carrera-1/](mediciones/2026-11-22/carrera-1/), sin credenciales.
+
+| | Resultado |
+|---|---|
+| Respuestas | **1×200 y 49×409**, todos `SOLICITUD_NO_DISPONIBLE`. Los 4 checks de k6 pasaron |
+| Ganador | El chofer `c…0009`, que también figura en la respuesta del 200 |
+| PostgreSQL, antes de cancelar | Solicitud `ASIGNADO` con ese chofer, **una sola fila en `driver_active_assignment` y es la suya**, ofertas en `ACEPTADA: 1, CANCELADA: 49` y un solo `TripAssigned` |
+| Después de cancelar | Solicitud `CANCELADO_PASAJERO` y `driver_active_assignment` vacía: el ganador y el pasajero quedaron libres |
+| Lote | Las 50 aceptaciones salieron en un solo `http.batch`: 890 ms en total contra 28,8 s de suma de duraciones, así que corrieron superpuestas |
+
+**Límite:** el test fuerza la superposición con una demora dentro de la transacción, y acá no. El resultado no depende de eso: con o sin superposición tiene que ser 1×200 y 49×409.

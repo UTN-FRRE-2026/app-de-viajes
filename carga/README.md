@@ -18,6 +18,7 @@ Mide las dos estrategias de location (6.6) con 500 choferes que mandan su ubicac
 | `preparar.mjs` | Genera en `carga/.secretos/` (ignorado por git) la contraseña de Postgres, el token de servicio, la clave de carga y 500 tokens de chofer. Nunca imprime secretos |
 | `ubicaciones.js` | Escenario de k6: 250 pings/s, 20 búsquedas/s y `/health` 2/s, en modelo abierto y deterministas |
 | `solicitudes.js` | Solicitud real de punta a punta (Node, por el SSE) durante la medición: ver [Solicitud real](#solicitud-real-prueba-piloto) |
+| `carrera.js`, `carrera.ps1` | La carrera de la asignación única (6.3) con k6: ver [Carrera de la asignación única](#carrera-de-la-asignación-única-63) |
 | `limpiar.ps1` | Vacía `pings` y las claves `carga:location:*`. **Se niega a correr** si algo no es del entorno de carga |
 | `medir.ps1` | Una corrida completa: deja todo en `docs/mediciones/<fecha>/<estrategia>-<corrida>/` |
 | `resumir.mjs` | Arma las tablas del informe con las corridas de una fecha |
@@ -68,6 +69,36 @@ powershell -NoProfile -ExecutionPolicy Bypass -File carga/medir.ps1 -Estrategia 
   - en el **servidor**, el incremento del histograma `dispatch_tiempo_hasta_asignacion_seconds` entre las dos fotos, contrastado con las asignaciones confirmadas por `GET` (`coincide_con_get`), y su p50 y p95 por cubeta;
   - `SIN_CHOFERES`, las ofertas vencidas y el lag del event loop de dispatch.
 - **Qué no mide:** ver las limitaciones en [docs/mediciones.md](../docs/mediciones.md#prueba-piloto-una-solicitud-real-bajo-la-carga-de-ubicaciones).
+
+## Carrera de la asignación única (6.3)
+
+`carrera.ps1` reproduce con k6, contra el sistema en contenedores, el test `services/dispatch/tests/concurrencia/asignacion-unica.test.ts`: **50 choferes aceptan a la vez la misma solicitud**.
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File carga/carrera.ps1 -Corrida 1
+```
+
+1. **Entorno:** baja la imagen de k6 si falta, levanta Postgres, Redis, JWKS, location (optimizada) y dispatch, migra, limpia y **espera a que los servicios estén listos**. Dispatch arranca con 50 ofertas por solicitud y 120 s de vigencia (`CARGA_OFERTAS_SIMULTANEAS` y `CARGA_OFERTA_TTL_SEGUNDOS`; sin esas variables, 3 y 15 s).
+2. **Preparación:**
+   - los primeros 50 choferes de `tokens.json` informan su posición en Córdoba, a 1 m uno del otro;
+   - el pasajero de `tokens-solicitudes.json` pide el viaje y dispatch le ofrece a los 50;
+   - las 50 ofertas **se leen de `dispatch_carga`** (como el test, que las lee del repositorio) y quedan en `ofertas.json` con una `Idempotency-Key` cada una.
+3. **La carrera** (`carrera.js`): un solo `http.batch` con las 50 aceptaciones en paralelo, cada una con el token de su chofer y su clave. 200 y 409 son estados esperados. Los checks exigen **exactamente 1×200 y 49×409 `SOLICITUD_NO_DISPONIBLE`**, y k6 termina con error si alguno falla.
+4. **PostgreSQL, antes de cancelar:**
+   - la solicitud en `ASIGNADO` con el ganador;
+   - **una sola fila en `driver_active_assignment`**, y es la del ganador;
+   - las ofertas en `ACEPTADA: 1, CANCELADA: 49`;
+   - un solo `TripAssigned`.
+5. **Liberar:** el pasajero cancela, la solicitud queda `CANCELADO_PASAJERO` y `driver_active_assignment` queda vacía.
+
+**Evidencia**, en `docs/mediciones/<fecha>/carrera-<corrida>/`, sin tokens ni contraseñas:
+- `ofertas.json` (ofertas, choferes y claves) y `respuestas.json` (estado, código y duración de cada aceptación, y el ganador);
+- `postgres.txt` (cada consulta con su salida), `k6.txt`, `resumen-k6.json` y `dispatch-log.txt`;
+- `resultado.json` (el veredicto, con `ok`).
+
+La corrida termina con error si algo no coincide.
+
+**Límite:** el test fuerza la superposición con una demora dentro de la transacción, y acá no hay demora. Que las 50 salieron juntas se ve en la suma de las duraciones contra el tiempo total del lote, pero la garantía no depende de eso: el resultado tiene que ser el mismo.
 
 ## Qué deja cada corrida
 
