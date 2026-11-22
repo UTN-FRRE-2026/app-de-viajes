@@ -14,6 +14,7 @@ import { cacheTarifasRedis, type CacheTarifas } from '../../src/infra/tarifas/pr
 import { BuscadorCandidatosFijo } from '../../src/infra/externos/buscador-fijo.js';
 import { BusEventosRedis } from '../../src/infra/tiempo-real/bus-redis.js';
 import { HistorialEventosPrisma, relayOutboxPrisma } from '../../src/infra/tiempo-real/outbox-prisma.js';
+import { PosicionesRedis } from '../../src/infra/tiempo-real/posiciones-redis.js';
 import { conDemoraTrasLeer } from './demora.js';
 import { DirectorioFalso } from './directorio-falso.js';
 import { PagosFalso } from './pagos-falso.js';
@@ -90,6 +91,9 @@ export async function levantarDispatch({
   const logger = crearLogger('dispatch-test', 'silent');
   // Un prefijo por dispatch levantado: dos dispatch del mismo test no se mezclan los eventos.
   const bus = new BusEventosRedis(redis, `dispatch-test:eventos:${randomUUID()}:`, logger);
+  // Lo mismo con los canales de posición: el test publica como location, con este prefijo.
+  const prefijoPosiciones = `dispatch-test:location:${randomUUID().slice(0, 8)}:`;
+  const posiciones = new PosicionesRedis(redis, prefijoPosiciones, logger);
   const repoTarifas = new RepositorioTarifasPrisma(prisma, tarifas.repo);
   // Un prefijo por dispatch levantado: los tests no ven el caché de otra corrida.
   const prefijoCache = tarifas.prefijoCache ?? `dispatch-test:tarifas:${randomUUID()}:`;
@@ -111,7 +115,7 @@ export async function levantarDispatch({
     pagos,
     repoFlotas,
     directorio,
-    eventos: { bus, historial: new HistorialEventosPrisma(prisma), relay: relayOutboxPrisma(prisma, bus) },
+    eventos: { bus, historial: new HistorialEventosPrisma(prisma), relay: relayOutboxPrisma(prisma, bus), posiciones },
   });
 
   const servidor: Server = await new Promise((resolver) => {
@@ -126,6 +130,7 @@ export async function levantarDispatch({
     buscador,
     pagos,
     bus,
+    prefijoPosiciones,
     casos: sistema.casos,
     casosFlotas: sistema.casosFlotas,
     directorio,
@@ -151,6 +156,7 @@ export async function levantarDispatch({
     async cerrar() {
       sistema.streams.cerrarTodos();
       await bus.cerrar();
+      await posiciones.cerrar();
       await new Promise<void>((r) => servidor.close(() => r()));
       await prisma.$disconnect();
       redis.disconnect();

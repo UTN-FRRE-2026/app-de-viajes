@@ -1,6 +1,7 @@
 import {
   Cobro,
   ESTADOS_ACTIVOS,
+  ESTADOS_CON_CHOFER,
   Oferta,
   SolicitudViaje,
   type DatosCobro,
@@ -31,6 +32,7 @@ class Mutex {
 
 // Lo mismo que el índice único parcial ride_requests_una_activa_por_pasajero.
 const ACTIVAS = new Set(ESTADOS_ACTIVOS);
+const CON_CHOFER = new Set(ESTADOS_CON_CHOFER);
 
 /**
  * Adaptador en memoria para los tests de dominio y para correr sin Postgres.
@@ -85,6 +87,15 @@ export class RepositorioDespachoMemoria implements RepositorioDespacho {
         this.cobrosActualizados.set(c.solicitudId, ++this.relojCobros);
       }
     }
+  }
+
+  async viajeConChoferDelPasajero(pasajeroId: string) {
+    for (const s of this.solicitudes.values()) {
+      if (s.pasajeroId === pasajeroId && CON_CHOFER.has(s.estado) && s.choferId) {
+        return { solicitudId: s.id, choferId: s.choferId };
+      }
+    }
+    return null;
   }
 
   async obtenerOferta(id: string) {

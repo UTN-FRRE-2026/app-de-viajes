@@ -1,7 +1,9 @@
 import { ErrorHttp, usuarioDe, type Logger } from '@viajes/platform';
 import type { RequestHandler } from 'express';
 import { z } from 'zod';
-import type { BusEventos, EventoEntregable, HistorialEventos } from './tipos.js';
+import type { ViajeConChofer } from '../../dominio/puertos/index.js';
+import { EVENTO_POSICION, EVENTOS_DEL_CHOFER, SeguimientoChofer } from './seguimiento-chofer.js';
+import type { BusEventos, EventoEntregable, FuentePosiciones, HistorialEventos } from './tipos.js';
 
 /** `Last-Event-ID`: el `seq` del último evento que recibió el cliente. Un número, nada más. */
 const UltimoId = z.string().regex(/^\d{1,15}$/, 'tiene que ser el id numérico del último evento recibido');
@@ -18,6 +20,11 @@ export interface OpcionesStreams {
   maxReposicion?: number;
   /** Cuántos `seq` enviados recuerda cada stream para descartar repetidos. */
   memoriaRepetidos?: number;
+  /** La posición del chofer en el stream del pasajero. Sin esto, el stream lleva solo los eventos. */
+  posiciones?: {
+    fuente: FuentePosiciones;
+    viajeConChofer: (pasajeroId: string) => Promise<ViajeConChofer | null>;
+  };
 }
 
 /**
@@ -32,6 +39,8 @@ export interface OpcionesStreams {
  *   llegar por la reposición y también en vivo. Cada stream descarta los `seq` que ya mandó y los que
  *   no superan el `Last-Event-ID`.
  * - **Token vencido:** el stream se cierra cuando vence; el cliente se reconecta con uno nuevo.
+ * - **Posición del chofer:** el stream de un pasajero lleva también la posición en vivo del chofer de
+ *   su viaje activo, y la de nadie más (`SeguimientoChofer`).
  *
  * El cliente usa `fetch` con el encabezado `Authorization` (EventSource no permite encabezados, y el
  * token no va en la URL porque quedaría en los logs). Al reconectar, pide además el estado actual con
@@ -39,7 +48,7 @@ export interface OpcionesStreams {
  */
 export class StreamsEventos {
   private readonly abiertos = new Map<string, Set<() => void>>();
-  private readonly o: Required<OpcionesStreams>;
+  private readonly o: Required<Omit<OpcionesStreams, 'posiciones'>> & Pick<OpcionesStreams, 'posiciones'>;
 
   constructor(opciones: OpcionesStreams) {
     this.o = { maxPorUsuario: 3, latidoMs: 15_000, maxReposicion: 500, memoriaRepetidos: 1000, ...opciones };
@@ -78,7 +87,8 @@ export class StreamsEventos {
       let cerrado = false;
       const timers: { latido?: NodeJS.Timeout; vencimiento?: NodeJS.Timeout } = {};
       let desuscribir: (() => Promise<void>) | undefined;
-      /** Suelta el cupo, los timers y la suscripción. No toca la respuesta. */
+      const seguimiento: { chofer?: SeguimientoChofer } = {};
+      /** Suelta el cupo, los timers y las suscripciones. No toca la respuesta. */
       const liberar = () => {
         if (cerrado) return;
         cerrado = true;
@@ -87,6 +97,7 @@ export class StreamsEventos {
         propios.delete(cerrar);
         if (propios.size === 0) this.abiertos.delete(usuario.id);
         void desuscribir?.().catch(() => {});
+        seguimiento.chofer?.terminar();
       };
       const cerrar = () => {
         liberar();
@@ -102,6 +113,8 @@ export class StreamsEventos {
         enviados.add(e.seq);
         if (enviados.size > this.o.memoriaRepetidos) enviados.delete(enviados.values().next().value as number);
         res.write(`id: ${e.seq}\nevent: ${e.tipo}\ndata: ${JSON.stringify(e.payload)}\n\n`);
+        // Pudo cambiar el chofer a seguir: se vuelve a leer de la base.
+        if (EVENTOS_DEL_CHOFER.has(e.tipo)) void seguimiento.chofer?.sincronizar();
       };
 
       // 1. Suscribirse primero, guardando lo que llegue mientras se repone.
@@ -126,6 +139,16 @@ export class StreamsEventos {
       });
       res.flushHeaders();
       res.write('retry: 3000\n\n');
+
+      // La posición del chofer: solo en el stream del pasajero, y recién con los encabezados enviados.
+      // Sin `id:`, para que no se repongan ni muevan el Last-Event-ID del cliente.
+      if (this.o.posiciones && usuario.rol === 'pasajero') {
+        const { fuente, viajeConChofer } = this.o.posiciones;
+        seguimiento.chofer = new SeguimientoChofer(usuario.id, { posiciones: fuente, viajeConChofer, logger: this.o.logger }, (p) => {
+          if (!cerrado) res.write(`event: ${EVENTO_POSICION}\ndata: ${JSON.stringify(p)}\n\n`);
+        });
+        void seguimiento.chofer.sincronizar();
+      }
 
       // 2. Reponer lo perdido, y 3. lo que llegó mientras tanto, en orden.
       try {

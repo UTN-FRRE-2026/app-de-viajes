@@ -70,6 +70,34 @@ data: {"solicitudId":"…","pasajeroId":"…","choferId":"…","origen":{…},"d
 
 Comprobado que fallan sin el `SKIP LOCKED` del relay, sin el filtro por destinatario de la reposición, sin el descarte de repetidos y sin la espera durante la reposición.
 
+## Posición del chofer en vivo
+
+location publica cada posición que guarda en `<LOCATION_REDIS_PREFIJO>posicion:<choferId>`, con el contrato `PosicionChoferPublicada` (ver [docs/location.md](location.md#posición-en-vivo)). dispatch es quien sabe qué viaje tiene cada chofer, así que la regla de privacidad se aplica acá (`infra/tiempo-real/seguimiento-chofer.ts`):
+
+- **Solo la ve el pasajero del viaje.** El stream de un pasajero sigue al chofer de su viaje activo mientras está `ASIGNADO`, `EN_CAMINO` o `EN_CURSO`. El chofer, otros pasajeros y otros choferes no la reciben.
+- **A quién seguir lo dice la base, no los eventos.** Al conectar, y después de cada `TripAssigned`, `DriverEnRoute`, `TripStarted`, `RideCompleted` o `RideCancelled`, el stream vuelve a leer el viaje activo con chofer del pasajero (`viajeConChoferDelPasajero`, que usa el índice único parcial). Así no importa el orden en que lleguen los eventos, ni si son de la reposición: reponer el `TripAssigned` de un viaje que ya terminó no vuelve a seguir a ese chofer. Las lecturas van de a una, y las que se piden mientras otra espera se juntan en una.
+- **`SUBSCRIBE` al canal de cada chofer seguido**, no `PSUBSCRIBE` a todos, y **una sola suscripción por chofer y por instancia**: si el pasajero tiene dos pestañas, comparten la suscripción; se da de baja con la última. Una conexión de Redis propia para esto.
+- **Solo mensajes válidos y en orden.** Se descarta lo que no cumple el contrato, lo que es de otro chofer que el del canal, y una posición que no es más nueva que la última enviada.
+- **Efímeras.** Van sin `id:`: no se reponen con `Last-Event-ID` (vale la última, y la próxima llega con el siguiente ping) ni mueven el `Last-Event-ID` del cliente. Al empezar a seguir a un chofer no se manda la última posición conocida: llega con su próximo ping.
+- **Si Redis o la base fallan**, el stream sigue con los eventos del viaje; solo se pierde la posición, y se reintenta con el próximo evento.
+- dispatch usa el mismo `LOCATION_REDIS_PREFIJO` que location (`location:` por defecto).
+
+```
+event: DriverLocationUpdated
+data: {"solicitudId":"…","choferId":"…","lat":-34.6031,"lng":-58.3815,"actualizadaEn":"2026-11-21T12:00:01.000Z"}
+```
+
+**Tests** (`tests/integracion/posicion-chofer.test.ts`, contra Postgres y Redis, publicando como location; y `tests/externos/sse.test.ts`):
+- el pasajero la ve desde que se asigna hasta que termina el viaje; antes y después, nada, y el canal queda sin suscripción;
+- nadie más la ve: ni el chofer, ni otro pasajero, ni otro chofer;
+- si el pasajero cancela, deja de seguir al chofer;
+- conectarse a mitad del viaje lo sigue enseguida; dos pestañas, una sola suscripción, que se suelta al cerrar las dos;
+- reponer los eventos de un viaje terminado no vuelve a seguir a su chofer;
+- se descartan la atrasada, la repetida, la de otro chofer y las que no cumplen el contrato;
+- cambia de chofer cuando la base dice otro, y suelta al anterior; el stream de un chofer no sigue a nadie; si fallan Redis o la base, los eventos siguen llegando.
+
+Comprobado que fallan sin cada una de estas cosas: el filtro por rol, la nueva lectura después de los eventos, el descarte de atrasadas, la verificación del chofer, la suscripción compartida, la baja al cerrar el stream y el filtro por estado.
+
 ## Catálogo
 
 Los esquemas están en [`packages/contracts/src/dispatch.ts`](../packages/contracts/src/dispatch.ts) (`EventosDispatch`). En el stream, `event:` es el tipo y `data:` el payload.
@@ -87,9 +115,10 @@ Los esquemas están en [`packages/contracts/src/dispatch.ts`](../packages/contra
 | `RideCancelled` | Cancela el pasajero, el chofer o el operador | `solicitudId, pasajeroId, choferId \| null, estabaAsignada, canceladoPor, motivo` | pasajero y chofer |
 | `PaymentCaptured` | El proveedor aprobó el cobro | `cobroId, solicitudId, pasajeroId, montoCentavos, moneda, referencia` | pasajero |
 | `PaymentDeclined` | El proveedor rechazó el cobro | lo mismo, más `motivo` | pasajero |
+| `DriverLocationUpdated` | Llega una posición del chofer (de location, sin `id`) | `solicitudId, choferId, lat, lng, actualizadaEn` | el pasajero de ese viaje |
 
 ## Pendiente
 
-- **Posición del chofer en vivo.** Mientras el viaje está activo, el stream del pasajero tiene que escuchar también el canal de posición del chofer asignado. **location ya publica** cada posición en `<LOCATION_REDIS_PREFIJO>posicion:<choferId>`, con el payload `PosicionChoferPublicada` (`tipo: "DriverLocationUpdated"`, `choferId`, `lat`, `lng`, `actualizadaEn`) de `packages/contracts/src/location.ts`; detalle y garantías en [docs/location.md](location.md#posición-en-vivo). Falta la suscripción en dispatch (Ivan, con Maxi): `SUBSCRIBE` al canal del chofer asignado, no `PSUBSCRIBE` a todos, y dispatch necesita conocer el prefijo de location. Esas posiciones son efímeras: van sin `id` y no se reponen.
+- **Posición del pasajero para su chofer** (PLAN 3.5): location no la publica todavía.
 - **nginx:** `proxy_buffering off` y un `proxy_read_timeout` mayor que el latido, en el contenedor `web`.
 - **ADR 0007** (SSE frente a WebSocket, con Agos).
