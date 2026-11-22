@@ -12,6 +12,13 @@ const detenerRelay = iniciarBarrido(sistema.relayEventos, config.RELAY_INTERVALO
 // El cobro de cada viaje completado: se procesa solo, sin que nadie lo pida. Si el proveedor no
 // contesta, el cobro sigue PENDIENTE y el próximo barrido lo reintenta con la misma clave.
 const detenerCobros = iniciarBarrido(() => sistema.casos.cobrarPendientes(), config.BARRIDO_INTERVALO_MS, logger, 'cobros procesados');
+// Las respuestas guardadas por Idempotency-Key se borran pasada la retención, para que la tabla no crezca sin límite.
+const detenerPurga = iniciarBarrido(
+  sistema.purgarIdempotencia,
+  config.IDEMPOTENCIA_PURGA_INTERVALO_MS,
+  logger,
+  'claves de idempotencia vencidas borradas',
+);
 
 const servidor = sistema.app.listen(config.PUERTO, () => {
   logger.info({ puerto: config.PUERTO, persistencia: config.DISPATCH_PERSISTENCIA, buscador: config.DISPATCH_BUSCADOR }, 'dispatch escuchando');
@@ -31,5 +38,5 @@ registrarApagadoOrdenado({
   timeoutMs: config.APAGADO_TIMEOUT_MS,
   // Los streams SSE no terminan solos: se cortan al empezar, y el cliente se reconecta a otra instancia.
   alEmpezar: [() => sistema.streams.cerrarTodos()],
-  alCerrar: [detenerBarrido, detenerCobros, detenerRelay, sistema.cerrar],
+  alCerrar: [detenerBarrido, detenerCobros, detenerRelay, detenerPurga, sistema.cerrar],
 });

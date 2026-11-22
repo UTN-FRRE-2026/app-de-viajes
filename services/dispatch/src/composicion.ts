@@ -32,7 +32,7 @@ import type { Config } from './config/index.js';
 import { crearPrisma } from './infra/db/cliente.js';
 import { RepositorioDespachoPrisma } from './infra/db/repositorio-prisma.js';
 import { RepositorioFlotasPrisma } from './infra/db/flotas-prisma.js';
-import { AlmacenIdempotenciaPrisma } from './infra/db/idempotencia-prisma.js';
+import { AlmacenIdempotenciaPrisma, purgarIdempotenciaPrisma } from './infra/db/idempotencia-prisma.js';
 import { chequeoRedis, chequeosBase } from './infra/db/salud.js';
 import { BuscadorCandidatosFijo } from './infra/externos/buscador-fijo.js';
 import { BuscadorCandidatosLocation } from './infra/externos/buscador-location.js';
@@ -101,6 +101,8 @@ export interface Sistema {
   /** Lo corre el servidor cada RELAY_INTERVALO_MS; los tests, cuando lo necesitan. */
   relayEventos: RelayEventos;
   streams: StreamsEventos;
+  /** Borra las claves de idempotencia vencidas; lo corre el servidor cada IDEMPOTENCIA_PURGA_INTERVALO_MS. */
+  purgarIdempotencia: () => Promise<number>;
   cerrar: () => Promise<void>;
 }
 
@@ -150,6 +152,8 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
   let repoFlotas: RepositorioFlotas = reemplazos.repoFlotas ?? new RepositorioFlotasMemoria();
 
   let tiempoReal: TiempoReal | undefined = reemplazos.eventos;
+  // En memoria no hace falta: el almacén vive lo que vive el proceso.
+  let purgarIdempotencia = async () => 0;
 
   if (reemplazos.repo) {
     repo = reemplazos.repo;
@@ -163,6 +167,7 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
       almacen: new AlmacenIdempotenciaPrisma(prisma),
       cerrojo: cerrojoRedis(redis, 'dispatch:idempotencia:'),
     };
+    purgarIdempotencia = purgarIdempotenciaPrisma(prisma, { retencionMs: config.IDEMPOTENCIA_RETENCION_HORAS * 3_600_000 });
     repoTarifas = reemplazos.repoTarifas ?? new RepositorioTarifasPrisma(prisma);
     repoFlotas = reemplazos.repoFlotas ?? new RepositorioFlotasPrisma(prisma);
     // El mismo Redis que la idempotencia. Tiempo límite corto: si no responde, se lee Postgres.
@@ -293,6 +298,7 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
     repoFlotas,
     relayEventos: eventos.relay,
     streams,
+    purgarIdempotencia,
     cerrar: async () => {
       metricas.detener();
       streams.cerrarTodos();

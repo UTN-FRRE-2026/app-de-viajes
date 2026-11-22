@@ -18,6 +18,48 @@ export class AlmacenIdempotenciaPrisma implements AlmacenIdempotencia {
   }
 }
 
+export interface OpcionesPurga {
+  /** Cuánto se guarda cada registro. Pasado ese tiempo, la misma clave vuelve a ejecutar el pedido. */
+  retencionMs: number;
+  /** Filas por DELETE: lotes chicos, para no bloquear la tabla ni generar una transacción enorme. */
+  lote?: number;
+  /** Lotes por pasada, como mucho. Si queda más, sigue en la próxima. */
+  maxLotes?: number;
+}
+
+/**
+ * Borra los registros de Idempotency-Key más viejos que la retención. Sin esto, `idempotency_keys`
+ * crece con cada pedido para siempre. Lo corre el servidor cada IDEMPOTENCIA_PURGA_INTERVALO_MS.
+ *
+ * - Por lotes, los más viejos primero, usando el índice por `created_at`.
+ * - `FOR UPDATE SKIP LOCKED`: con varias instancias de dispatch, cada una borra filas distintas sin
+ *   esperar a la otra.
+ * - La hora es la de la base (`now()`), la misma que puso `created_at`.
+ *
+ * La retención es un mínimo: una clave se respeta **al menos** ese tiempo (puede durar hasta la
+ * próxima pasada). Devuelve cuántos borró.
+ */
+export function purgarIdempotenciaPrisma(prisma: PrismaClient, { retencionMs, lote = 1000, maxLotes = 20 }: OpcionesPurga) {
+  return async (): Promise<number> => {
+    let total = 0;
+    for (let i = 0; i < maxLotes; i++) {
+      const borrados = await prisma.$executeRaw`
+        DELETE FROM idempotency_keys
+        WHERE (scope, key) IN (
+          SELECT scope, key
+          FROM idempotency_keys
+          WHERE created_at < now() - ${retencionMs}::float8 * interval '1 millisecond'
+          ORDER BY created_at
+          LIMIT ${lote}::int
+          FOR UPDATE SKIP LOCKED
+        )`;
+      total += borrados;
+      if (borrados < lote) break;
+    }
+    return total;
+  };
+}
+
 /**
  * Dentro de la transacción del efecto: si el pedido trae Idempotency-Key, el registro confirma junto
  * con el efecto o no confirma. El cuerpo es el resultado del caso de uso, que es lo que responde la ruta.

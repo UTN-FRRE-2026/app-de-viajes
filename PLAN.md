@@ -203,7 +203,8 @@ El ADR 0006 registra la decisión con sus alternativas reales: monolito modular 
     - El reintento sale con `Idempotent-Replayed: true`. Si Redis no responde: 503, falla cerrado.
     - Si el cerrojo vence con el pedido en curso (30 s, `IDEMPOTENCIA_EN_VUELO_SEGUNDOS`), la clave primaria del registro impide el segundo efecto. Lo que agrega el cerrojo es que los duplicados no lleguen al caso de uso: sin él, igual repetirían lo que pasa fuera de la base (la búsqueda en location, o el cobro al proveedor).
     - Tests contra Postgres y Redis (`tests/seguridad/idempotencia.test.ts` y `tests/concurrencia/idempotencia.test.ts`). Comprobado que fallan si se saca el cerrojo, el registro en la transacción o la comparación de la huella.
-    - Falta: borrar los registros viejos (el índice por `created_at` ya está) y el ADR 0010.
+    - Las respuestas se guardan como mínimo 24 h (`IDEMPOTENCIA_RETENCION_HORAS`). Cada minuto, una purga borra las vencidas por lotes, con `FOR UPDATE SKIP LOCKED` para que varias instancias no se esperen (`tests/integracion/purga-idempotencia.test.ts`). Pasada la retención, la misma clave vuelve a ejecutar el pedido.
+    - Falta: el ADR 0010.
 - **Tiempo real por SSE**, en dispatch:
   - un relay lee el `outbox` y publica en Redis Pub/Sub; el endpoint SSE se suscribe solo a los viajes del usuario;
   - mientras el viaje está activo, el endpoint se suscribe también al canal de posición del chofer asignado, que publica location;
@@ -211,41 +212,41 @@ El ADR 0006 registra la decisión con sus alternativas reales: monolito modular 
   - **Hecho** (`GET /eventos`, detalle en `docs/eventos.md`), también la posición del chofer: el stream del pasajero sigue al chofer de su viaje activo (`DriverLocationUpdated`), con una suscripción por chofer y por instancia, y nadie más la ve. Relay con `FOR UPDATE SKIP LOCKED`, un canal por usuario, reposición desde el outbox, descarte de repetidos, 3 streams por usuario (429), cierre al vencer el token y al apagar. Comprobado que los tests fallan sin el `SKIP LOCKED`, sin el filtro por destinatario, sin el descarte de repetidos y sin la espera durante la reposición.
 - **Inventario de carreras** (bloque 6, punto 1), en un ADR: aceptar contra aceptar, aceptar contra cancelar, chofer con dos viajes, pasajero con dos solicitudes, vencimiento contra aceptación, activación de choferes, email duplicado en el registro, clave de idempotencia duplicada y doble finalización con doble cobro.
 
-## 4. Requisitos de ProgIV: estado al 13/11
+## 4. Requisitos de ProgIV: estado al 22/11
 
-✅ hecho · 🟡 parcial · ⬜ falta. El CI está en verde en `main`. Hay 188 tests: 63 de dispatch y 125 de identity.
+✅ hecho · 🟡 parcial · ⬜ falta. El CI está en verde en `main`. Hay 800 tests: 512 de dispatch, 163 de identity y 125 de location.
 
 | Requisito | Estado | Qué falta |
 |---|---|---|
 | **B1** Arranque reproducible | ✅ | `npm run setup` (script de Node: `.env`, clave RS256, Postgres y Redis, bases que falten, migraciones y seed), `npm run dev` y `npm start`. Probado en un clon limpio con un volumen vacío, en Linux y en Windows |
-| **B2** Hexagonal | ✅ | Mantenerlo en location y en los módulos nuevos de dispatch. Puertos con doble adaptador: mapas, pagos, notificador, publicador de eventos |
-| **B3** Configuración y ciclo de vida | ✅ | Preparar la demo de SIGTERM con un pedido lento |
+| **B2** Hexagonal | ✅ | Puertos con doble adaptador en los tres servicios: mapas, pagos, candidatos (location o lista fija), directorio de identity, estrategia de ubicaciones (ingenua u optimizada), bus de eventos y posiciones (Redis o memoria) |
+| **B3** Configuración y ciclo de vida | ✅ | Configuración validada con Zod al arrancar y apagado ordenado (corta los streams SSE, espera los barridos). Falta preparar la demo de SIGTERM con un pedido lento |
 | **B4** Errores y logs | 🟡 | No hay **log por pedido** (método, ruta, estado, duración): hoy solo se loguean los errores, y no se puede relacionar pedido y error por `requestId` |
-| **B5** Autenticación | ✅ | argon2id con costo declarado, RS256 |
-| **B5** Autorización por recurso | 🟡 | Hecha y testeada en viajes, historial y flotas (`fleetId` del token, 404 a otra flota, en el caso de uso). Falta en location |
+| **B5** Autenticación | ✅ | argon2id con costo declarado, RS256, refresh con rotación y detección de reuso |
+| **B5** Autorización por recurso | ✅ | En el caso de uso: viajes, historial, cobro, flotas (`fleetId` del token, 404 a otra flota) y el stream SSE (cada uno recibe solo lo suyo, también la posición del chofer). En location, la posición sale del token: nadie informa la de otro |
 | **B5** Tres roles con tabla en el README | 🟡 | Hay cinco roles en código; falta la tabla |
-| **B5** Validación con esquema | ✅ | Cuerpo, parámetros, query y encabezados (`Idempotency-Key`, con test de cada formato inválido) |
+| **B5** Validación con esquema | ✅ | Cuerpo, parámetros, query y encabezados (`Idempotency-Key`, `Last-Event-ID`), con test de cada formato inválido |
 | **B5** Prototype pollution | 🟡 | Solo se prueba `__proto__` en la raíz. Falta `constructor.prototype` y posiciones anidadas |
 | **B5** Inyección SQL | ✅ | Consultas parametrizadas y tests con cargas típicas en la búsqueda del panel (`GET /panel/viajes?q=`) |
-| **B5** Límite de tasa | 🟡 | Solo en login. Falta en solicitud de viaje y ubicación, con 429 y encabezados |
-| **B5** Helmet, CSP y CORS | 🟡 | Hecho: helmet en `crearApp` de `platform`, con una CSP que lo niega todo (`default-src 'none'`), así la heredan los tres servicios; con test en cada uno. Falta: CORS y la CSP de la página en nginx (Fase B). Detrás de nginx el frontend queda en el mismo origen |
+| **B5** Límite de tasa | 🟡 | En login, y 3 streams SSE por usuario. Falta en solicitud de viaje y ubicación, con 429 y encabezados |
+| **B5** Helmet, CSP y CORS | 🟡 | Hecho: helmet en `crearApp` de `platform`, con una CSP que lo niega todo (`default-src 'none'`), así la heredan los tres servicios; con test en cada uno. Falta: la CSP de la página en nginx (contenedor `web`). Detrás de nginx el frontend queda en el mismo origen y no hace falta CORS |
 | **B5** `npm audit` | ✅ | En el CI |
 | **B6** ADR de carreras + test de 50 | ✅ | Falta el inventario completo (3.5) |
-| **B6** Idempotencia | 🟡 | Hecha en los `POST` de dispatch, el `PUT` de tarifas y el cobro, que además usa el id del cobro como clave con el proveedor (3.5). Falta en el registro de identity y la activación de chofer, y el ADR 0010 |
-| **B7** Tarea pesada, dos versiones, medida | ⬜ | 3.2. Es lo que se muestra en el Control 3 |
+| **B6** Idempotencia | 🟡 | Hecha en los `POST` de dispatch, el `PUT` de tarifas, el cobro (que además usa el id del cobro como clave con el proveedor) y las rutas de flotas, con la activación de choferes. Las respuestas se guardan 24 h y una purga borra las vencidas (3.5). Falta en el registro de identity, y el ADR 0010 |
+| **B7** Tarea pesada, dos versiones, medida | ✅ | location: ingenua (Postgres) frente a optimizada (Redis GEO e historial en lotes), con hipótesis escrita antes y 3 corridas de k6 por versión (`docs/mediciones.md`). Es lo que se muestra en el Control 3 |
 | **B8** Tres niveles de tests, un comando | ✅ | Sostenerlo |
-| **6.2** Alcance funcional | 🟡 | Hecho: registro, login, solicitud, ofertas, ubicación, estados completos del viaje, estimación de tarifa (`GET /tarifas/estimacion`), tarifa final y cobro, historial, panel. flotas con vehículo, habilitación y disponibilidad del chofer. Falta: seguimiento |
+| **6.2** Alcance funcional | 🟡 | Hecho en el backend: registro, login, solicitud, ofertas, ubicación, estados completos del viaje, estimación, tarifa final y cobro, historial, panel, flotas y seguimiento en vivo. Falta el frontend |
 | **6.3** ADR + 3 tests | ✅ | — |
-| **6.4** Búsqueda, retención, privacidad | ⬜ | 3.2 |
+| **6.4** Búsqueda, retención, privacidad | 🟡 | Hecho: la búsqueda de candidatos con vigencia de 30 s (los choferes que dejan de reportar no aparecen) y la privacidad de la posición (solo la ve el pasajero del viaje). Falta la retención del historial de ubicaciones |
 | **6.5** Tarifa | ✅ | Cálculo, estimación, configuración por el admin, tarifa final con por qué difiere, y cobro (3.4) |
 | **6.5** Oferta con vencimiento | ✅ | Barrido cada 2 s, TTL de 15 s |
 | **6.5** Tiempo real | ✅ | SSE con los eventos del viaje, reconexión con `Last-Event-ID` y la posición del chofer en vivo, solo para su pasajero (3.5) |
-| **6.6** Simulador de 500 choferes y mediciones | ⬜ | 3.2 y 5.5 |
+| **6.6** Simulador de 500 choferes y mediciones | 🟡 | Hecho: 500 choferes con k6 contra location, en un entorno de carga aislado (`carga/`). Falta medir de punta a punta con dispatch: el tiempo hasta la asignación, con su hipótesis escrita antes |
 | **6.7 G** Flotas y zonas | 🟡 | Hecho: flotas, choferes con vehículo, habilitación, disponibilidad, límite de activos con la carrera G (test de 50 contra 10) y aislamiento entre flotas (3.3, `docs/flotas.md`). Falta: zonas en PostGIS, filtro de candidatos por flota y zona, y reporte |
-| **7.1** Seis ADR o más | 🟡 | Hay cuatro: 0001, 0004, 0005 y 0006 |
-| **7.2** `docs/mediciones.md` | ⬜ | Cubre la tarea pesada **y también la carrera principal** |
-| **7.3** Historial de Git | 🟡 | **Maxi todavía no tiene commits.** El PR #1 se mergeó sin revisión |
-| **2.5** README, `modelo.md`, `api.md`, `ataque.md` | ⬜ | — |
+| **7.1** Seis ADR o más | 🟡 | Hay cuatro: 0001, 0004, 0005 y 0006. Faltan, entre otros, 0007 (SSE), 0008 (búsqueda geográfica) y 0010 (idempotencia) |
+| **7.2** `docs/mediciones.md` | 🟡 | Cubre la tarea pesada. Falta **la carrera principal** y el tiempo hasta la asignación |
+| **7.3** Historial de Git | 🟡 | Los tres tienen commits y cada PR pasa por revisión de otro. El PR #1 se mergeó sin revisión |
+| **2.5** README, `modelo.md`, `api.md`, `ataque.md` | 🟡 | Hay README. Faltan `modelo.md`, `api.md` y `ataque.md` |
 | **8** Ataque cruzado | ⬜ | Entorno publicado y congelado, usuarios de prueba, bitácora |
 
 ## 5. Rúbrica del Integrador: cómo se cumple cada ítem
