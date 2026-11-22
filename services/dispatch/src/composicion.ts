@@ -2,11 +2,13 @@ import { fileURLToPath } from 'node:url';
 import type { Reloj } from '@viajes/kernel';
 import {
   AlmacenIdempotenciaMemoria,
+  almacenIdempotenciaSql,
   CerrojoMemoria,
   cerrojoRedis,
   crearApp,
   crearIdempotencia,
   crearMetricas,
+  purgarIdempotenciaSql,
   verificadorJwks,
   type AlmacenIdempotencia,
   type CerrojoEnVuelo,
@@ -32,7 +34,6 @@ import type { Config } from './config/index.js';
 import { crearPrisma } from './infra/db/cliente.js';
 import { RepositorioDespachoPrisma } from './infra/db/repositorio-prisma.js';
 import { RepositorioFlotasPrisma } from './infra/db/flotas-prisma.js';
-import { AlmacenIdempotenciaPrisma, purgarIdempotenciaPrisma } from './infra/db/idempotencia-prisma.js';
 import { chequeoRedis, chequeosBase } from './infra/db/salud.js';
 import { BuscadorCandidatosFijo } from './infra/externos/buscador-fijo.js';
 import { BuscadorCandidatosLocation } from './infra/externos/buscador-location.js';
@@ -164,10 +165,10 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
     const redis = crearRedis(config.REDIS_URL as string, logger);
     repo = new RepositorioDespachoPrisma(prisma);
     idempotencia = reemplazos.idempotencia ?? {
-      almacen: new AlmacenIdempotenciaPrisma(prisma),
+      almacen: almacenIdempotenciaSql(prisma),
       cerrojo: cerrojoRedis(redis, 'dispatch:idempotencia:'),
     };
-    purgarIdempotencia = purgarIdempotenciaPrisma(prisma, { retencionMs: config.IDEMPOTENCIA_RETENCION_HORAS * 3_600_000 });
+    purgarIdempotencia = purgarIdempotenciaSql(prisma, { retencionMs: config.IDEMPOTENCIA_RETENCION_HORAS * 3_600_000 });
     repoTarifas = reemplazos.repoTarifas ?? new RepositorioTarifasPrisma(prisma);
     repoFlotas = reemplazos.repoFlotas ?? new RepositorioFlotasPrisma(prisma);
     // El mismo Redis que la idempotencia. Tiempo límite corto: si no responde, se lee Postgres.

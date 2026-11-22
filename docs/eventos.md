@@ -1,6 +1,6 @@
 # Eventos y tiempo real (dispatch)
 
-Reescrito para el [plan v2](../PLAN.md) (sección 3.5): sin RabbitMQ. Los eventos de dispatch se guardan en su `outbox`, un relay los publica en Redis Pub/Sub y el pasajero y el chofer los reciben por **Server-Sent Events** en `GET /eventos`.
+Reescrito para el [plan v2](../PLAN.md) (sección 3.5): sin RabbitMQ. Los eventos de dispatch se guardan en su `outbox`, un relay los publica en Redis Pub/Sub y el pasajero y el chofer los reciben por **Server-Sent Events** en `GET /eventos`. Por qué SSE y no WebSocket ni polling: [ADR 0007](adr/0007-tiempo-real-sse.md).
 
 ```
 caso de uso ──(misma transacción)──▶ outbox ──relay cada 100 ms──▶ Redis Pub/Sub ──▶ GET /eventos (SSE)
@@ -120,4 +120,3 @@ Los esquemas están en [`packages/contracts/src/dispatch.ts`](../packages/contra
 ## Pendiente
 
 - **Posición del pasajero para su chofer** (PLAN 3.5): location no la publica todavía.
-- **ADR 0007** (SSE frente a WebSocket, con Agos).

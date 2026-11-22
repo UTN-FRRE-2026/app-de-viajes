@@ -3,7 +3,7 @@ import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { HasherArgon2 } from '../../src/infra/externos/hasher-argon2.js';
 import { FLOTA_DEMO_ID, sembrarUsuarios, USUARIOS_SEMILLA } from '../../src/infra/db/semilla.js';
-import { CONTRASENA, datosRegistro, levantarIdentity, type Identity } from '../soporte/sistema.js';
+import { clave, CONTRASENA, datosRegistro, levantarIdentity, type Identity } from '../soporte/sistema.js';
 
 let d: Identity;
 
@@ -17,7 +17,7 @@ beforeEach(async () => {
   await d.limpiar();
 });
 
-const registrar = (extra = {}) => request(d.url).post('/registro').send(datosRegistro(extra));
+const registrar = (extra = {}) => request(d.url).post('/registro').set(clave()).send(datosRegistro(extra));
 const login = (email: string, contrasena = CONTRASENA) => request(d.url).post('/login').send({ email, contrasena });
 
 describe('registro contra Postgres', () => {

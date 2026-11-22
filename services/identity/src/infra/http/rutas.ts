@@ -1,6 +1,7 @@
+import { createHash } from 'node:crypto';
 import { LoginBody, ParamsUsuarioInterno, RefreshBody, RegistroBody, type UsuarioInterno } from '@viajes/contracts';
-import { exigirTokenServicio, validar, type Logger } from '@viajes/platform';
-import { Router, type Response } from 'express';
+import { exigirTokenServicio, validar, type crearIdempotencia, type Logger } from '@viajes/platform';
+import { Router, type Request, type Response } from 'express';
 import type { CasosDeUso, Sesion } from '../../dominio/casos-uso/index.js';
 import type { LimitadorLogin } from '../../dominio/puertos/index.js';
 import { limitarLogin } from './limite-login.js';
@@ -17,11 +18,28 @@ function responderSesion(res: Response, sesion: Sesion) {
   });
 }
 
+/**
+ * Idempotency-Key del registro (ADR 0010). No hay token, así que la clave es de un email: la misma
+ * clave con otro email es otro registro. En el hash del email, así Redis no guarda emails en sus claves.
+ */
+const porEmail = (req: Request) =>
+  `registro:${createHash('sha256').update((req.body as RegistroBody).email).digest('hex')}`;
+
+/**
+ * La huella se guarda en la base, y un SHA-256 sin sal de un cuerpo con la contraseña permitiría
+ * probar contraseñas con una copia de la base, sin pasar por argon2. Por eso cuentan solo estos campos.
+ */
+const sinContrasena = (cuerpo: unknown) => {
+  const { email, nombre, rol } = cuerpo as RegistroBody;
+  return { email, nombre, rol };
+};
+
 export function rutasIdentidad(
   casos: CasosDeUso,
   limitador: LimitadorLogin,
   logger: Logger,
   tokenServicio: string,
+  idempotente: ReturnType<typeof crearIdempotencia>,
 ): Router {
   const r = Router();
 
@@ -36,9 +54,16 @@ export function rutasIdentidad(
     res.set('Cache-Control', 'public, max-age=300').json({ keys: casos.clavesPublicas() });
   });
 
-  r.post('/registro', validar({ body: RegistroBody }), async (req, res) => {
-    res.status(201).json(await casos.registrarUsuario(req.body as RegistroBody));
-  });
+  // Exige Idempotency-Key, como los POST de dispatch: un reintento recibe el mismo 201 en lugar
+  // de un 409 por el email, y no vuelve a correr argon2.
+  r.post(
+    '/registro',
+    validar({ body: RegistroBody }),
+    idempotente(201, { alcance: porEmail, huella: sinContrasena }),
+    async (req, res) => {
+      res.status(201).json(await casos.registrarUsuario(req.body as RegistroBody));
+    },
+  );
 
   r.post('/login', validar({ body: LoginBody }), limitarLogin(limitador, logger), async (req, res) => {
     const body = req.body as LoginBody;

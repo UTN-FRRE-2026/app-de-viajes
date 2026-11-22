@@ -3,7 +3,7 @@ import { decodeJwt } from 'jose';
 import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { RelojFalso } from '../soporte/memoria.js';
-import { CONTRASENA, datosRegistro, levantarIdentity, type Identity } from '../soporte/sistema.js';
+import { clave, CONTRASENA, datosRegistro, levantarIdentity, type Identity } from '../soporte/sistema.js';
 
 const TTL_REFRESH = 3600;
 const reloj = new RelojFalso(new Date());
@@ -22,7 +22,7 @@ beforeEach(async () => {
 const refrescar = (refreshToken: unknown) => request(d.url).post('/refresh').send({ refreshToken });
 
 async function entrar() {
-  const { body: usuario } = await request(d.url).post('/registro').send(datosRegistro()).expect(201);
+  const { body: usuario } = await request(d.url).post('/registro').set(clave()).send(datosRegistro()).expect(201);
   const { body: sesion } = await request(d.url).post('/login').send({ email: 'ana@viajes.test', contrasena: CONTRASENA }).expect(200);
   return { usuario, sesion };
 }

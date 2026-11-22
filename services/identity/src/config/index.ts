@@ -44,6 +44,10 @@ export const EsquemaConfig = z
     IDENTITY_LOGIN_MAX_POR_EMAIL: z.coerce.number().int().min(1).default(5),
     IDENTITY_LOGIN_MAX_POR_IP: z.coerce.number().int().min(1).default(30),
     IDENTITY_LOGIN_VENTANA_SEGUNDOS: z.coerce.number().int().min(1).default(900),
+    // Idempotency-Key del registro. Los mismos nombres y valores que en dispatch: el .env es compartido.
+    IDEMPOTENCIA_EN_VUELO_SEGUNDOS: z.coerce.number().int().min(5).max(300).default(30),
+    IDEMPOTENCIA_RETENCION_HORAS: z.coerce.number().int().min(1).max(720).default(24),
+    IDEMPOTENCIA_PURGA_INTERVALO_MS: z.coerce.number().int().min(1000).max(3_600_000).default(60_000),
     APAGADO_TIMEOUT_MS: z.coerce.number().int().positive().default(10_000),
     // Bearer de GET /metrics (Alloy). El mismo en los tres servicios: el .env es compartido.
     METRICAS_TOKEN: tokenMetricas,
@@ -56,7 +60,7 @@ export const EsquemaConfig = z
   })
   .refine((c) => c.IDENTITY_PERSISTENCIA !== 'postgres' || c.REDIS_URL, {
     path: ['REDIS_URL'],
-    message: 'es obligatoria cuando IDENTITY_PERSISTENCIA=postgres (límite de intentos de login)',
+    message: 'es obligatoria cuando IDENTITY_PERSISTENCIA=postgres (límite de intentos de login e Idempotency-Key)',
   });
 
 export type Config = z.infer<typeof EsquemaConfig>;

@@ -1,7 +1,7 @@
 import request from 'supertest';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { Reemplazos } from '../../src/composicion.js';
-import { configTest, CONTRASENA, datosRegistro, levantarIdentity, type Identity } from '../soporte/sistema.js';
+import { clave, configTest, CONTRASENA, datosRegistro, levantarIdentity, type Identity } from '../soporte/sistema.js';
 
 const MAX_EMAIL = 5;
 
@@ -15,7 +15,7 @@ afterAll(async () => {
 });
 beforeEach(async () => {
   await d.limpiar();
-  await request(d.url).post('/registro').send(datosRegistro()).expect(201);
+  await request(d.url).post('/registro').set(clave()).send(datosRegistro()).expect(201);
 });
 
 const fallar = (url = d.url) => request(url).post('/login').send({ email: 'ana@viajes.test', contrasena: 'incorrecta-123' });

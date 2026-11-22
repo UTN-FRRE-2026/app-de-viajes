@@ -10,7 +10,7 @@ import { sembrarUsuarios } from '../../src/infra/db/semilla.js';
 import { EmisorJwt } from '../../src/infra/externos/emisor-jwt.js';
 import { HasherArgon2 } from '../../src/infra/externos/hasher-argon2.js';
 import { idsAleatorios, relojSistema } from '../../src/infra/externos/sistema.js';
-import { AUDIENCE, CONTRASENA, datosRegistro, ISSUER, levantarIdentity, type Identity } from '../soporte/sistema.js';
+import { AUDIENCE, clave, CONTRASENA, datosRegistro, ISSUER, levantarIdentity, type Identity } from '../soporte/sistema.js';
 
 // Prueba de caja negra: el dispatch REAL (su servidor, sus rutas y el verificador de platform) en
 // un proceso aparte, bajando las claves del JWKS de identity por HTTP. No se importa su código:
@@ -64,8 +64,8 @@ const pedirViaje = (token: string) =>
 beforeAll(async () => {
   d = await levantarIdentity();
   await d.limpiar();
-  await request(d.url).post('/registro').send(datosRegistro()).expect(201);
-  await request(d.url).post('/registro').send(datosRegistro({ email: 'beto@viajes.test', rol: 'chofer' })).expect(201);
+  await request(d.url).post('/registro').set(clave()).send(datosRegistro()).expect(201);
+  await request(d.url).post('/registro').set(clave()).send(datosRegistro({ email: 'beto@viajes.test', rol: 'chofer' })).expect(201);
 
   const puerto = await puertoLibre();
   urlDispatch = `http://127.0.0.1:${puerto}`;

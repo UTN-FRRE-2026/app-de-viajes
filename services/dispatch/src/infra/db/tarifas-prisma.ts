@@ -1,8 +1,7 @@
-import { idempotenciaPendiente, idempotenciaRegistrada, requestIdActual } from '@viajes/platform';
+import { idempotenciaPendiente, idempotenciaRegistrada, registrarIdempotenciaEnTransaccion, requestIdActual } from '@viajes/platform';
 import type { RepositorioTarifas } from '../../dominio/puertos/index.js';
 import { AUTOR_SEMILLA, type TarifaVigente, type ValoresTarifa } from '../../dominio/tarifas/parametros.js';
 import { Prisma, type PrismaClient } from './generated/client.js';
-import { registrarEnTransaccion } from './idempotencia-prisma.js';
 
 interface FilaTarifa {
   version: number;
@@ -141,7 +140,7 @@ export class RepositorioTarifasPrisma implements RepositorioTarifas {
       await this.opciones.dentroDelCambio?.();
       const nuevaTarifa = aTarifa(fila as FilaTarifa);
       // Lo que se guarda para la Idempotency-Key es la respuesta de la ruta: solo la tarifa nueva.
-      if (idempotencia) await registrarEnTransaccion(tx, idempotencia, nuevaTarifa);
+      if (idempotencia) await registrarIdempotenciaEnTransaccion(tx, idempotencia, nuevaTarifa);
       return { nueva: nuevaTarifa, anterior: vigente ? etiqueta(vigente.version) : null };
     }, OPCIONES_TX);
     if (idempotencia) idempotenciaRegistrada();

@@ -1,7 +1,7 @@
 import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { HasherArgon2 } from '../../src/infra/externos/hasher-argon2.js';
-import { datosRegistro, levantarIdentity, type Identity } from '../soporte/sistema.js';
+import { clave, datosRegistro, levantarIdentity, type Identity } from '../soporte/sistema.js';
 
 const MAX_EMAIL = 5;
 
@@ -34,7 +34,7 @@ describe('concurrencia contra Postgres y Redis reales', () => {
   // Protección: el índice único de users.email. Sin él, este test falla.
   it('20 registros simultáneos con el mismo email → 1 gana y 19 reciben 409', async () => {
     const respuestas = await Promise.all(
-      Array.from({ length: 20 }, () => request(d.url).post('/registro').send(datosRegistro())),
+      Array.from({ length: 20 }, () => request(d.url).post('/registro').set(clave()).send(datosRegistro())),
     );
     const estados = respuestas.map((r) => r.status);
     expect(contar(estados, 201)).toBe(1);
@@ -42,10 +42,29 @@ describe('concurrencia contra Postgres y Redis reales', () => {
     expect(await d.prisma.usuario.count()).toBe(1);
   });
 
+  // Protección: el cerrojo de Redis de la Idempotency-Key. Sin él, los reintentos llegan al caso de
+  // uso: cada uno corre argon2 y el índice único los frena recién con 409 IDENTIFICADOR_EN_USO.
+  it('20 reintentos simultáneos del mismo registro (misma clave) → uno se procesa y ninguno llega al caso de uso', async () => {
+    const encabezados = clave();
+    const respuestas = await Promise.all(
+      Array.from({ length: 20 }, () => request(d.url).post('/registro').set(encabezados).send(datosRegistro())),
+    );
+    const procesadas = respuestas.filter((r) => r.status === 201 && !r.headers['idempotent-replayed']);
+    const repetidas = respuestas.filter((r) => r.status === 201 && r.headers['idempotent-replayed'] === 'true');
+    const enCurso = respuestas.filter((r) => r.status === 409 && r.body.error.code === 'CLAVE_IDEMPOTENCIA_EN_CURSO');
+    expect(procesadas).toHaveLength(1);
+    expect(procesadas.length + repetidas.length + enCurso.length).toBe(20);
+    // argon2 tarda: los demás llegan con el primero en vuelo.
+    expect(enCurso.length).toBeGreaterThan(0);
+    for (const r of repetidas) expect(r.text).toBe(procesadas[0]!.text);
+    expect(await d.prisma.usuario.count()).toBe(1);
+    expect(await d.prisma.registroIdempotencia.count()).toBe(1);
+  });
+
   // Protección: el contador atómico ANTES de argon2. Las respuestas solas no alcanzan: si se
   // contara después de verificar darían igual, pero argon2 correría 50 veces.
   it('50 intentos simultáneos con contraseña mala → exactamente 5 llegan a verificar', async () => {
-    await request(d.url).post('/registro').send(datosRegistro()).expect(201);
+    await request(d.url).post('/registro').set(clave()).send(datosRegistro()).expect(201);
     const respuestas = await Promise.all(
       Array.from({ length: 50 }, () =>
         request(d.url).post('/login').send({ email: 'ana@viajes.test', contrasena: 'incorrecta-123' }),
@@ -60,7 +79,7 @@ describe('concurrencia contra Postgres y Redis reales', () => {
   // Protección: el UPDATE condicional sobre used_at. Con "leer y después marcar", varios pedidos
   // verían el token sin usar y cada uno sacaría su propia rama de la sesión.
   it('20 refresh simultáneos con el mismo token → 1 rota, 19 cuentan como reuso y la familia queda revocada', async () => {
-    await request(d.url).post('/registro').send(datosRegistro()).expect(201);
+    await request(d.url).post('/registro').set(clave()).send(datosRegistro()).expect(201);
     const { body: sesion } = await request(d.url)
       .post('/login')
       .send({ email: 'ana@viajes.test', contrasena: datosRegistro().contrasena })
@@ -85,7 +104,7 @@ describe('concurrencia contra Postgres y Redis reales', () => {
   // espera la fila del token que se está rotando y, al seguir, no ve el token recién creado:
   // revoca los viejos y el nuevo queda vivo, justo después de detectar un robo.
   it('reuso de un token viejo mientras se rota el actual → el token recién creado también queda revocado', async () => {
-    await request(d.url).post('/registro').send(datosRegistro()).expect(201);
+    await request(d.url).post('/registro').set(clave()).send(datosRegistro()).expect(201);
     const { body: a } = await request(d.url)
       .post('/login')
       .send({ email: 'ana@viajes.test', contrasena: datosRegistro().contrasena })

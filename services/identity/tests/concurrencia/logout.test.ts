@@ -1,7 +1,7 @@
 import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { generadorRefresh } from '../../src/infra/externos/generador-refresh.js';
-import { CONTRASENA, datosRegistro, levantarIdentity, type Identity } from '../soporte/sistema.js';
+import { clave, CONTRASENA, datosRegistro, levantarIdentity, type Identity } from '../soporte/sistema.js';
 
 let d: Identity;
 
@@ -45,7 +45,7 @@ describe('logout y refresh al mismo tiempo, contra Postgres', () => {
   // reuso). Sin él, el UPDATE del logout espera la fila del token que se está rotando y, al seguir,
   // no ve el token recién creado: la sesión "cerrada" seguiría renovándose.
   it('un refresh en curso cuando llega el logout → su token nuevo nace revocado', async () => {
-    await request(d.url).post('/registro').send(datosRegistro()).expect(201);
+    await request(d.url).post('/registro').set(clave()).send(datosRegistro()).expect(201);
     const a = await entrar();
     const otra = await entrar();
 
@@ -70,7 +70,7 @@ describe('logout y refresh al mismo tiempo, contra Postgres', () => {
   });
 
   it('20 refresh simultáneos con un logout en el medio → ningún token de la sesión queda vivo', async () => {
-    await request(d.url).post('/registro').send(datosRegistro()).expect(201);
+    await request(d.url).post('/registro').set(clave()).send(datosRegistro()).expect(201);
     const a = await entrar();
 
     const pedidos = [

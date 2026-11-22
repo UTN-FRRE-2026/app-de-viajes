@@ -1,8 +1,7 @@
-import { idempotenciaPendiente, idempotenciaRegistrada } from '@viajes/platform';
+import { idempotenciaPendiente, idempotenciaRegistrada, registrarIdempotenciaEnTransaccion } from '@viajes/platform';
 import { ChoferFlota, type DatosFlota, type Flota } from '../../dominio/flotas/index.js';
 import type { Pagina, RepositorioFlotas, TransaccionFlotas } from '../../dominio/puertos/index.js';
 import { Prisma, type PrismaClient } from './generated/client.js';
-import { registrarEnTransaccion } from './idempotencia-prisma.js';
 
 interface FilaChofer {
   id: string;
@@ -134,7 +133,7 @@ export class RepositorioFlotasPrisma implements RepositorioFlotas {
     const resultado = await this.prisma.$transaction(
       async (tx) => {
         const r = await trabajo(transaccion(tx, this.opciones));
-        if (idempotencia) await registrarEnTransaccion(tx, idempotencia, r);
+        if (idempotencia) await registrarIdempotenciaEnTransaccion(tx, idempotencia, r);
         return r;
       },
       {

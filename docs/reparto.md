@@ -22,7 +22,7 @@ Cada integrante es **dueño** de un problema central y de los módulos que lo ro
 **Fase B**
 - [x] viajes: `EN_CAMINO`, `EN_CURSO`, `CANCELADO_CHOFER`, cancelación del operador con motivo, finalizar liberando al chofer en la misma transacción, y un test por transición.
 - [x] Historial por pasajero y por chofer; panel del operador con búsqueda.
-- [x] Idempotency-Key en `platform` (Redis `SET NX` + registro en la transacción del efecto), aplicada a los seis `POST` de dispatch.
+- [x] Idempotency-Key en `platform` (Redis `SET NX` + registro en la transacción del efecto), aplicada a los seis `POST` de dispatch y al registro de identity.
 - [x] SSE: relay del `outbox` a Redis Pub/Sub, suscripción solo a viajes propios, reconexión con `Last-Event-ID` ([docs/eventos.md](eventos.md)).
 - [x] SSE: posición del chofer asignado, solo para su pasajero ([docs/eventos.md](eventos.md#posición-del-chofer-en-vivo)). location publica las posiciones (Maxi).
 - [ ] Frontend: pantallas de pasajero y de operador.
@@ -54,7 +54,7 @@ Cada integrante es **dueño** de un problema central y de los módulos que lo ro
 **Fase C y ataque cruzado**
 - [ ] Playwright: los cinco flujos de la sección 5.3 del plan.
 - [ ] Ataque a los otros grupos: autenticación, recursos ajenos y rate limit.
-- [ ] ADR 0007 (SSE frente a WebSocket, con Ivan) y 0009 (límite por flota).
+- [ ] ADR 0007 (SSE frente a WebSocket, con Ivan) y 0009 (límite por flota). Hecho: [0007](adr/0007-tiempo-real-sse.md), lo escribió Ivan.
 
 ## Maxi
 
@@ -80,7 +80,7 @@ Cada integrante es **dueño** de un problema central y de los módulos que lo ro
 - [ ] Grafana Cloud: Alloy en un perfil de Compose, métricas de negocio y tres dashboards exportados.
 - [ ] `carga/estres.js` y `carga/carrera.js`; mediciones finales con tres corridas.
 - [ ] Ataque a los otros grupos: validación, montos y operaciones costosas.
-- [ ] ADR 0008 (búsqueda geográfica) y 0010 (idempotencia, con Ivan).
+- [ ] ADR 0008 (búsqueda geográfica) y 0010 (idempotencia, con Ivan). Hecho: [0010](adr/0010-idempotencia.md), lo escribió Ivan.
 
 ## Dependencias
 

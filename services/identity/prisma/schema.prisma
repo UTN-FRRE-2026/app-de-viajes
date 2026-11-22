@@ -44,3 +44,18 @@ model RefreshToken {
   @@index([usuarioId])
   @@map("refresh_tokens")
 }
+
+/// Idempotency-Key del registro: se escribe en la misma transacción que el usuario.
+/// El alcance es un hash del email y la huella no incluye la contraseña (ver infra/http/rutas.ts).
+model RegistroIdempotencia {
+  alcance   String   @map("scope")
+  clave     String   @map("key")
+  huella    String   @map("request_hash") @db.Char(64)
+  estado    Int      @map("status_code") @db.SmallInt
+  respuesta Json     @map("response") @db.Json
+  creadoEn  DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@id([alcance, clave])
+  @@index([creadoEn])
+  @@map("idempotency_keys")
+}

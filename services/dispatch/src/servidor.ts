@@ -1,12 +1,11 @@
-import { cargarConfig, crearLogger, registrarApagadoOrdenado } from '@viajes/platform';
+import { cargarConfig, crearLogger, iniciarBarrido, registrarApagadoOrdenado } from '@viajes/platform';
 import { componer } from './composicion.js';
 import { EsquemaConfig } from './config/index.js';
-import { iniciarBarrido } from './infra/barrido.js';
 
 const config = cargarConfig(EsquemaConfig);
 const logger = crearLogger('dispatch', config.NIVEL_LOG);
 const sistema = componer(config, logger);
-const detenerBarrido = iniciarBarrido(sistema.casos.vencerOfertas, config.BARRIDO_INTERVALO_MS, logger);
+const detenerBarrido = iniciarBarrido(sistema.casos.vencerOfertas, config.BARRIDO_INTERVALO_MS, logger, 'ofertas vencidas procesadas');
 // Tiempo real: publica en Redis lo nuevo del outbox. Su intervalo es la demora máxima de un evento.
 const detenerRelay = iniciarBarrido(sistema.relayEventos, config.RELAY_INTERVALO_MS, logger, 'eventos publicados', 'debug');
 // El cobro de cada viaje completado: se procesa solo, sin que nadie lo pida. Si el proveedor no

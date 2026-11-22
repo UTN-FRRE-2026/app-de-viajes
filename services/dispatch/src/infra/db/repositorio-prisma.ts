@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { idempotenciaPendiente, idempotenciaRegistrada, requestIdActual } from '@viajes/platform';
+import { idempotenciaPendiente, idempotenciaRegistrada, registrarIdempotenciaEnTransaccion, requestIdActual } from '@viajes/platform';
 import {
   Cobro,
   ESTADOS_CON_CHOFER,
@@ -18,7 +18,6 @@ import type {
   TransaccionDespacho,
 } from '../../dominio/puertos/index.js';
 import { Prisma, type PrismaClient } from './generated/client.js';
-import { registrarEnTransaccion } from './idempotencia-prisma.js';
 import { destinatariosDe } from '../tiempo-real/tipos.js';
 
 interface FilaSolicitud {
@@ -333,7 +332,7 @@ export class RepositorioDespachoPrisma implements RepositorioDespacho {
     const resultado = await this.prisma.$transaction(
       async (tx) => {
         const r = await trabajo(transaccion(tx));
-        if (idempotencia) await registrarEnTransaccion(tx, idempotencia, r);
+        if (idempotencia) await registrarIdempotenciaEnTransaccion(tx, idempotencia, r);
         return r;
       },
       {

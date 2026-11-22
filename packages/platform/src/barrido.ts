@@ -1,20 +1,21 @@
-import type { Logger } from '@viajes/platform';
+import type { Logger } from './logger.js';
 
 /**
- * Tarea periódica: el barrido de ofertas vencidas y el de cobros pendientes.
+ * Tarea periódica del servidor: en dispatch, el barrido de ofertas vencidas, el de cobros pendientes
+ * y el relay de eventos; en los dos servicios con Idempotency-Key, la purga de las claves vencidas.
  * `tarea` devuelve cuántas cosas procesó; si es más de cero, se loguea con `que`.
- * TODO(Fase 1): job diferido de BullMQ por oferta para reaccionar al instante; este barrido queda de respaldo.
+ * Devuelve cómo detenerla: espera a que termine la pasada en curso (para el apagado ordenado).
  */
 export function iniciarBarrido(
   tarea: () => Promise<number>,
   intervaloMs: number,
   logger: Logger,
-  que = 'ofertas vencidas procesadas',
+  que: string,
   nivel: 'info' | 'debug' = 'info',
 ): () => Promise<void> {
   let enCurso: Promise<unknown> = Promise.resolve();
   const timer = setInterval(() => {
-    // Nunca dos barridos superpuestos en el mismo proceso.
+    // Nunca dos pasadas superpuestas en el mismo proceso.
     enCurso = enCurso.then(async () => {
       try {
         const n = await tarea();
