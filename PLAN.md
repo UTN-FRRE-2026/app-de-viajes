@@ -167,7 +167,7 @@ El ADR 0006 registra la decisión con sus alternativas reales: monolito modular 
   - De las cuatro estrategias de 3.3 es la **cola**, más un índice geográfico. Va en el ADR 0005.
 - El ADR 0008 compara Redis GEO, PostGIS y geohash (6.4 pide al menos dos opciones con su costo).
 - Retención: puntos crudos solo durante el viaje, conservados 30 días; pings de choferes sin viaje, descartados a las 24 h.
-- Seguimiento: location publica cada posición en un canal de Redis por chofer (**hecho**: canal `<prefijo>posicion:<choferId>`, contrato `PosicionChoferPublicada`, en orden por timestamp y sin anunciar pings vencidos; ver `docs/location.md`). dispatch es quien sabe qué viaje tiene cada chofer, así que la regla de privacidad se aplica ahí: la posición del chofer solo la ve su pasajero actual, y la del pasajero solo su chofer asignado. Con test. **Hecho también en location:** la posición del pasajero (`POST /ubicaciones/pasajero`, canal `<prefijo>posicion-pasajero:<pasajeroId>`, contrato `PosicionPasajeroPublicada`), efímera y fuera de la búsqueda de candidatos; falta que dispatch la entregue al chofer del viaje activo.
+- Seguimiento: location publica cada posición en un canal de Redis por chofer (**hecho**: canal `<prefijo>posicion:<choferId>`, contrato `PosicionChoferPublicada`, en orden por timestamp y sin anunciar pings vencidos; ver `docs/location.md`). dispatch es quien sabe qué viaje tiene cada chofer, así que la regla de privacidad se aplica ahí: la posición del chofer solo la ve su pasajero actual, y la del pasajero solo su chofer asignado. Con test. **Hecho también en location:** la posición del pasajero (`POST /ubicaciones/pasajero`, canal `<prefijo>posicion-pasajero:<pasajeroId>`, contrato `PosicionPasajeroPublicada`), efímera y fuera de la búsqueda de candidatos. **Hecho en dispatch:** el stream del chofer la recibe (`PassengerLocationUpdated`), solo la del pasajero de su viaje activo.
 - `GET /interno/candidatos` solo acepta el token de servicio y no se publica por nginx.
 - Tiempo declarado hasta la asignación bajo carga: lo fija el grupo **antes** de medir y va como hipótesis.
 
@@ -207,14 +207,14 @@ El ADR 0006 registra la decisión con sus alternativas reales: monolito modular 
     - Decisión, alternativas y cómo se verifica: [ADR 0010](docs/adr/0010-idempotencia.md).
 - **Tiempo real por SSE**, en dispatch:
   - un relay lee el `outbox` y publica en Redis Pub/Sub; el endpoint SSE se suscribe solo a los viajes del usuario;
-  - mientras el viaje está activo, el endpoint se suscribe también al canal de posición del chofer asignado, que publica location;
+  - mientras el viaje está activo, el endpoint del pasajero se suscribe también al canal de posición del chofer asignado, y el del chofer al del pasajero, que publica location;
   - al reconectar, el cliente pide el estado actual (`GET /solicitudes/:id`) y se vuelve a suscribir con `Last-Event-ID`.
-  - **Hecho** (`GET /eventos`, detalle en `docs/eventos.md`), también la posición del chofer: el stream del pasajero sigue al chofer de su viaje activo (`DriverLocationUpdated`), con una suscripción por chofer y por instancia, y nadie más la ve. Relay con `FOR UPDATE SKIP LOCKED`, un canal por usuario, reposición desde el outbox, descarte de repetidos, 3 streams por usuario (429), cierre al vencer el token y al apagar. Comprobado que los tests fallan sin el `SKIP LOCKED`, sin el filtro por destinatario, sin el descarte de repetidos y sin la espera durante la reposición. Decisión y alternativas: [ADR 0007](docs/adr/0007-tiempo-real-sse.md).
+  - **Hecho** (`GET /eventos`, detalle en `docs/eventos.md`), también las posiciones en vivo: el stream del pasajero sigue al chofer de su viaje activo (`DriverLocationUpdated`) y el del chofer al pasajero (`PassengerLocationUpdated`), con una suscripción por canal y por instancia, y nadie más las ve. Relay con `FOR UPDATE SKIP LOCKED`, un canal por usuario, reposición desde el outbox, descarte de repetidos, 3 streams por usuario (429), cierre al vencer el token y al apagar. Comprobado que los tests fallan sin el `SKIP LOCKED`, sin el filtro por destinatario, sin el descarte de repetidos y sin la espera durante la reposición. Decisión y alternativas: [ADR 0007](docs/adr/0007-tiempo-real-sse.md).
 - **Inventario de carreras** (bloque 6, punto 1), en un ADR: aceptar contra aceptar, aceptar contra cancelar, chofer con dos viajes, pasajero con dos solicitudes, vencimiento contra aceptación, activación de choferes, email duplicado en el registro, clave de idempotencia duplicada y doble finalización con doble cobro.
 
 ## 4. Requisitos de ProgIV: estado al 22/11
 
-✅ hecho · 🟡 parcial · ⬜ falta. El CI está en verde en `main`. Hay 811 tests: 512 de dispatch, 174 de identity y 125 de location.
+✅ hecho · 🟡 parcial · ⬜ falta. El CI está en verde en `main`. Hay 830 tests: 518 de dispatch, 174 de identity y 138 de location.
 
 | Requisito | Estado | Qué falta |
 |---|---|---|
@@ -223,7 +223,7 @@ El ADR 0006 registra la decisión con sus alternativas reales: monolito modular 
 | **B3** Configuración y ciclo de vida | ✅ | Configuración validada con Zod al arrancar y apagado ordenado (corta los streams SSE, espera los barridos). Falta preparar la demo de SIGTERM con un pedido lento |
 | **B4** Errores y logs | 🟡 | No hay **log por pedido** (método, ruta, estado, duración): hoy solo se loguean los errores, y no se puede relacionar pedido y error por `requestId` |
 | **B5** Autenticación | ✅ | argon2id con costo declarado, RS256, refresh con rotación y detección de reuso |
-| **B5** Autorización por recurso | ✅ | En el caso de uso: viajes, historial, cobro, flotas (`fleetId` del token, 404 a otra flota) y el stream SSE (cada uno recibe solo lo suyo, también la posición del chofer). En location, la posición sale del token: nadie informa la de otro |
+| **B5** Autorización por recurso | ✅ | En el caso de uso: viajes, historial, cobro, flotas (`fleetId` del token, 404 a otra flota) y el stream SSE (cada uno recibe solo lo suyo, también las posiciones en vivo: la del chofer solo su pasajero, y la del pasajero solo su chofer). En location, la posición sale del token: nadie informa la de otro |
 | **B5** Tres roles con tabla en el README | 🟡 | Hay cinco roles en código; falta la tabla |
 | **B5** Validación con esquema | ✅ | Cuerpo, parámetros, query y encabezados (`Idempotency-Key`, `Last-Event-ID`), con test de cada formato inválido |
 | **B5** Prototype pollution | 🟡 | Solo se prueba `__proto__` en la raíz. Falta `constructor.prototype` y posiciones anidadas |
@@ -237,10 +237,10 @@ El ADR 0006 registra la decisión con sus alternativas reales: monolito modular 
 | **B8** Tres niveles de tests, un comando | ✅ | Sostenerlo |
 | **6.2** Alcance funcional | 🟡 | Hecho en el backend: registro, login, solicitud, ofertas, ubicación, estados completos del viaje, estimación, tarifa final y cobro, historial, panel, flotas y seguimiento en vivo. Falta el frontend |
 | **6.3** ADR + 3 tests | ✅ | — |
-| **6.4** Búsqueda, retención, privacidad | 🟡 | Hecho: la búsqueda de candidatos con vigencia de 30 s (los choferes que dejan de reportar no aparecen) y la privacidad de la posición (solo la ve el pasajero del viaje). Falta la retención del historial de ubicaciones |
+| **6.4** Búsqueda, retención, privacidad | 🟡 | Hecho: la búsqueda de candidatos con vigencia de 30 s (los choferes que dejan de reportar no aparecen) y la privacidad de la posición (la del chofer solo la ve el pasajero del viaje, y la del pasajero solo su chofer). Falta la retención del historial de ubicaciones |
 | **6.5** Tarifa | ✅ | Cálculo, estimación, configuración por el admin, tarifa final con por qué difiere, y cobro (3.4) |
 | **6.5** Oferta con vencimiento | ✅ | Barrido cada 2 s, TTL de 15 s |
-| **6.5** Tiempo real | ✅ | SSE con los eventos del viaje, reconexión con `Last-Event-ID` y la posición del chofer en vivo, solo para su pasajero (3.5) |
+| **6.5** Tiempo real | ✅ | SSE con los eventos del viaje, reconexión con `Last-Event-ID` y las posiciones en vivo: la del chofer para su pasajero, y la del pasajero para su chofer (3.5) |
 | **6.6** Simulador de 500 choferes y mediciones | 🟡 | Hecho: 500 choferes con k6 contra location, en un entorno de carga aislado (`carga/`). Falta medir de punta a punta con dispatch: el tiempo hasta la asignación, con su hipótesis escrita antes |
 | **6.7 G** Flotas y zonas | 🟡 | Hecho: flotas, choferes con vehículo, habilitación, disponibilidad, límite de activos con la carrera G (test de 50 contra 10) y aislamiento entre flotas (3.3, `docs/flotas.md`). Falta: zonas en PostGIS, filtro de candidatos por flota y zona, y reporte |
 | **7.1** Seis ADR o más | ✅ | Hay seis: 0001, 0004, 0005, 0006, 0007 (SSE) y 0010 (idempotencia). Faltan 0002, 0003, 0008, 0009, 0011 y 0012 |
@@ -346,7 +346,7 @@ Al cerrar esta fase el sistema tiene que poder congelarse para el ataque cruzado
 
 - [x] `viajes`: estados completos, historial, panel del operador con búsqueda (Ivan).
 - [x] Idempotency-Key en `platform` y en los `POST` de dispatch (Ivan).
-- [x] SSE con los eventos del viaje y reconexión (Ivan), y la posición del chofer en vivo: location la publica (Maxi) y dispatch la reenvía al pasajero (Ivan).
+- [x] SSE con los eventos del viaje y reconexión (Ivan), y las posiciones en vivo: location las publica (Maxi) y dispatch reenvía la del chofer al pasajero y la del pasajero al chofer (Ivan).
 - [ ] Zonas, candidatos filtrados por flota y zona, reporte, aislamiento entre flotas (Agos). Hecho: el aislamiento entre flotas (PR 1 de flotas). Falta: zonas, filtro y reporte.
 - [ ] Seguridad transversal: CORS, rate limit, encabezados, log por pedido y los tests que faltan del bloque 5 (Agos).
 - [x] `tarifas`, cobro simulado y adaptadores de mapas y pagos con timeout: cálculo, estimación y mapas con timeout (Maxi); configuración por el admin con caché en Redis (Agostina); tarifa final, cobro y pagos (Ivan).

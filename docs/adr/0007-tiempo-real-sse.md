@@ -68,7 +68,7 @@ caso de uso ──(misma transacción)──▶ outbox ──relay cada 100 ms�
 - la reconexión repone exactamente lo perdido, incluso lo que el relay todavía no publicó; un evento publicado dos veces llega una vez; lo que llega durante la reposición sale después y en orden;
 - cuatro relays a la vez sobre 300 eventos publican cada uno exactamente una vez;
 - el límite de streams, el token vencido, el apagado, el latido y el 503;
-- la posición del chofer: solo la ve su pasajero, mientras el viaje está activo, con una suscripción por chofer.
+- las posiciones en vivo: la del chofer solo la ve su pasajero, y la del pasajero solo su chofer, mientras el viaje está activo, con una suscripción por canal.
 
 Comprobado que fallan sin el `SKIP LOCKED` del relay, sin el filtro por destinatario de la reposición, sin el descarte de repetidos, sin la espera durante la reposición y sin cada regla de la posición del chofer ([docs/eventos.md](../eventos.md)). `npm run web:probar` comprueba que el stream pasa por nginx sin buffer.
 

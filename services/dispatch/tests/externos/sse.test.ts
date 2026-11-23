@@ -3,7 +3,7 @@ import type { Server } from 'node:http';
 import { crearLogger, middlewareErrores, type Usuario } from '@viajes/platform';
 import express from 'express';
 import { afterEach, describe, expect, it } from 'vitest';
-import type { ViajeConChofer } from '../../src/dominio/puertos/index.js';
+import type { ViajeConChofer, ViajeConPasajero } from '../../src/dominio/puertos/index.js';
 import { BusEventosMemoria } from '../../src/infra/tiempo-real/bus-memoria.js';
 import { PosicionesMemoria } from '../../src/infra/tiempo-real/posiciones-memoria.js';
 import { StreamsEventos, type OpcionesStreams } from '../../src/infra/tiempo-real/sse.js';
@@ -117,7 +117,7 @@ describe('stream SSE', () => {
     const fuente = new PosicionesMemoria();
     const [a, b] = ['00000000-0000-4000-8000-00000000000a', '00000000-0000-4000-8000-00000000000b'];
     const base: { viaje: ViajeConChofer | null } = { viaje: { solicitudId: 's1', choferId: a } };
-    const { abrir } = await levantar({ bus, posiciones: { fuente, viajeConChofer: async () => base.viaje } });
+    const { abrir } = await levantar({ bus, posiciones: { fuente, viajeConChofer: async () => base.viaje, viajeConPasajero: async () => null } });
     const s = await abrir();
     const pos = (choferId: string, seg: number) => ({
       tipo: 'DriverLocationUpdated' as const,
@@ -126,14 +126,14 @@ describe('stream SSE', () => {
       lng: -58.38,
       actualizadaEn: new Date(Date.UTC(2026, 10, 21, 12, 0, seg)).toISOString(),
     });
-    await esperarHasta(() => fuente.oyentes(a) === 1);
+    await esperarHasta(() => fuente.oyentes('chofer', a) === 1);
     fuente.publicar(pos(a, 1));
     await s.esperar((e) => e.tipo === 'DriverLocationUpdated');
 
     // Otro viaje con otro chofer: con el próximo evento se vuelve a leer la base.
     base.viaje = { solicitudId: 's2', choferId: b };
     await bus.publicar(evento(1));
-    await esperarHasta(() => fuente.oyentes(a) === 0 && fuente.oyentes(b) === 1);
+    await esperarHasta(() => fuente.oyentes('chofer', a) === 0 && fuente.oyentes('chofer', b) === 1);
     fuente.publicar(pos(a, 2));
     fuente.publicar(pos(b, 3));
     await s.esperar((e) => e.tipo === 'DriverLocationUpdated' && e.data['choferId'] === b);
@@ -144,14 +144,15 @@ describe('stream SSE', () => {
 
     base.viaje = null;
     await bus.publicar(evento(2));
-    await esperarHasta(() => fuente.oyentes(b) === 0);
+    await esperarHasta(() => fuente.oyentes('chofer', b) === 0);
   });
 
   it('si no se puede seguir al chofer (falla Redis o la base), el stream sigue con los eventos', async () => {
     const fuenteRota: FuentePosiciones = { suscribir: () => Promise.reject(new Error('ECONNREFUSED')), cerrar: async () => {} };
+    const sinPasajero = async () => null;
     const casos = [
-      { fuente: fuenteRota, viajeConChofer: async () => ({ solicitudId: 's1', choferId: USUARIO }) },
-      { fuente: new PosicionesMemoria(), viajeConChofer: () => Promise.reject(new Error('base caída')) },
+      { fuente: fuenteRota, viajeConChofer: async () => ({ solicitudId: 's1', choferId: USUARIO }), viajeConPasajero: sinPasajero },
+      { fuente: new PosicionesMemoria(), viajeConChofer: () => Promise.reject(new Error('base caída')), viajeConPasajero: sinPasajero },
     ];
     for (const posiciones of casos) {
       const bus = new BusEventosMemoria();
@@ -164,11 +165,14 @@ describe('stream SSE', () => {
     }
   });
 
-  it('el stream de un chofer no sigue a nadie', async () => {
+  it('el stream de un chofer sigue al pasajero de su viaje, con su propio evento', async () => {
+    const bus = new BusEventosMemoria();
     const fuente = new PosicionesMemoria();
+    const pasajero = '00000000-0000-4000-8000-00000000000c';
     const consultas: string[] = [];
+    const base: { viaje: ViajeConPasajero | null } = { viaje: { solicitudId: 's1', pasajeroId: pasajero } };
     const { abrir } = await levantar({
-      bus: new BusEventosMemoria(),
+      bus,
       rol: 'chofer',
       posiciones: {
         fuente,
@@ -176,11 +180,44 @@ describe('stream SSE', () => {
           consultas.push(p);
           return null;
         },
+        viajeConPasajero: async () => base.viaje,
       },
     });
-    await abrir();
-    await dormir(50);
+    const s = await abrir();
+    await esperarHasta(() => fuente.oyentes('pasajero', pasajero) === 1);
+    // Del canal de un chofer con el mismo id no le llega nada: son otro espacio de nombres.
+    expect(fuente.oyentes('chofer', pasajero)).toBe(0);
+    const actualizadaEn = '2026-11-21T12:00:01.000Z';
+    fuente.publicar({ tipo: 'PassengerLocationUpdated', pasajeroId: pasajero, lat: -34.6, lng: -58.38, actualizadaEn });
+    const recibida = await s.esperar((e) => e.tipo === 'PassengerLocationUpdated');
+    expect(recibida.data).toEqual({ solicitudId: 's1', pasajeroId: pasajero, lat: -34.6, lng: -58.38, actualizadaEn });
+    expect(recibida.id).toBeUndefined();
+    expect(s.eventos.some((e) => e.tipo === 'DriverLocationUpdated')).toBe(false);
+    // Nunca pregunta por el chofer de un pasajero con el id del chofer.
     expect(consultas).toEqual([]);
+
+    // Termina el viaje: con el próximo evento suelta al pasajero.
+    base.viaje = null;
+    await bus.publicar(evento(1));
+    await esperarHasta(() => fuente.oyentes('pasajero', pasajero) === 0);
+  });
+
+  it('el stream de un operador o de un admin de flota no sigue a nadie', async () => {
+    for (const rol of ['operador', 'admin_flota'] as const) {
+      const consultas: string[] = [];
+      const anotar = async (id: string) => {
+        consultas.push(id);
+        return null;
+      };
+      const { abrir } = await levantar({
+        bus: new BusEventosMemoria(),
+        rol,
+        posiciones: { fuente: new PosicionesMemoria(), viajeConChofer: anotar, viajeConPasajero: anotar },
+      });
+      await abrir();
+      await dormir(50);
+      expect(consultas).toEqual([]);
+    }
   });
 
   it('al cerrarse el cliente, se da de baja del bus', async () => {

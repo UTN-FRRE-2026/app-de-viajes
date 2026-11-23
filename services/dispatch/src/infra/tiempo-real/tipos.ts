@@ -1,5 +1,3 @@
-import type { PosicionChoferPublicada } from '@viajes/contracts';
-
 /** Un evento del outbox, listo para entregar por SSE. */
 export interface EventoEntregable {
   /** El `id:` del stream SSE: crece con cada evento, y el cliente lo devuelve en `Last-Event-ID`. */
@@ -24,13 +22,28 @@ export interface HistorialEventos {
   desde(usuarioId: string, desde: number, limite: number): Promise<EventoEntregable[]>;
 }
 
+/** De quién es una posición en vivo: location publica las dos, cada una en su canal y con su contrato. */
+export type Seguido = 'chofer' | 'pasajero';
+
 /**
- * Las posiciones en vivo que publica location, un canal por chofer (`PosicionChoferPublicada`). Solo
- * entrega mensajes válidos y del chofer de su canal. Lo que no se escucha, se pierde: no hay historial.
+ * Una posición en vivo ya validada con su contrato (`PosicionChoferPublicada` o
+ * `PosicionPasajeroPublicada`): `id` es el del chofer o el del pasajero, según el canal.
+ */
+export interface PosicionEnVivo {
+  id: string;
+  lat: number;
+  lng: number;
+  actualizadaEn: string;
+}
+
+/**
+ * Las posiciones en vivo que publica location, un canal por chofer y uno por pasajero. Solo entrega
+ * mensajes válidos para el contrato de ese canal y de la persona del canal. Lo que no se escucha, se
+ * pierde: no hay historial.
  */
 export interface FuentePosiciones {
   /** Devuelve la función para dejar de escuchar. */
-  suscribir(choferId: string, alRecibir: (posicion: PosicionChoferPublicada) => void): Promise<() => Promise<void>>;
+  suscribir(de: Seguido, id: string, alRecibir: (posicion: PosicionEnVivo) => void): Promise<() => Promise<void>>;
   cerrar(): Promise<void>;
 }
 

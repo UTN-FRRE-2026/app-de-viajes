@@ -24,7 +24,7 @@ Cada integrante es **dueño** de un problema central y de los módulos que lo ro
 - [x] Historial por pasajero y por chofer; panel del operador con búsqueda.
 - [x] Idempotency-Key en `platform` (Redis `SET NX` + registro en la transacción del efecto), aplicada a los seis `POST` de dispatch y al registro de identity.
 - [x] SSE: relay del `outbox` a Redis Pub/Sub, suscripción solo a viajes propios, reconexión con `Last-Event-ID` ([docs/eventos.md](eventos.md)).
-- [x] SSE: posición del chofer asignado, solo para su pasajero ([docs/eventos.md](eventos.md#posición-del-chofer-en-vivo)). location publica las posiciones (Maxi).
+- [x] SSE: posición del chofer asignado, solo para su pasajero, y la del pasajero, solo para su chofer ([docs/eventos.md](eventos.md#posición-en-vivo)). location publica las posiciones (Maxi).
 - [ ] Frontend: pantallas de pasajero y de operador.
 - [x] Contenedor `web`: nginx como punto de entrada único, reverse proxy a los tres servicios, CSP de la página, SSE sin buffer y la IP del cliente para los servicios ([docs/web.md](web.md)). Falta servir el frontend cuando esté.
 - [ ] Despliegue y tag `congelado`.

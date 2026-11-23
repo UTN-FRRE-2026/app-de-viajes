@@ -98,6 +98,13 @@ export class RepositorioDespachoMemoria implements RepositorioDespacho {
     return null;
   }
 
+  async viajeConPasajeroDelChofer(choferId: string) {
+    for (const s of this.solicitudes.values()) {
+      if (s.choferId === choferId && CON_CHOFER.has(s.estado)) return { solicitudId: s.id, pasajeroId: s.pasajeroId };
+    }
+    return null;
+  }
+
   async obtenerOferta(id: string) {
     const d = this.ofertas.get(id);
     return d ? Oferta.reconstruir(d) : null;

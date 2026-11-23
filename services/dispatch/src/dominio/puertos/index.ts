@@ -68,11 +68,21 @@ export interface RepositorioDespacho {
    * como mucho uno: el índice único parcial no deja que un pasajero tenga dos activos.
    */
   viajeConChoferDelPasajero(pasajeroId: string): Promise<ViajeConChofer | null>;
+  /**
+   * El viaje activo del chofer (ASIGNADO, EN_CAMINO o EN_CURSO) y su pasajero, o null. Hay como mucho
+   * uno: la asignación activa es una fila por chofer.
+   */
+  viajeConPasajeroDelChofer(choferId: string): Promise<ViajeConPasajero | null>;
 }
 
 export interface ViajeConChofer {
   solicitudId: string;
   choferId: string;
+}
+
+export interface ViajeConPasajero {
+  solicitudId: string;
+  pasajeroId: string;
 }
 
 export interface FiltroSolicitudes {
