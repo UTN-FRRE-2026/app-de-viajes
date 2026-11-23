@@ -21,6 +21,7 @@ export function conDemoraTrasLeer(repo: RepositorioDespacho, ms: number): Reposi
     registrarFalloCobro: (id, motivo) => repo.registrarFalloCobro(id, motivo),
     viajeConChoferDelPasajero: (pasajeroId) => repo.viajeConChoferDelPasajero(pasajeroId),
     viajeConPasajeroDelChofer: (choferId) => repo.viajeConPasajeroDelChofer(choferId),
+    ofertasPendientesDelChofer: (choferId, ahora) => repo.ofertasPendientesDelChofer(choferId, ahora),
     enTransaccion: (trabajo) =>
       repo.enTransaccion((tx) =>
         trabajo({

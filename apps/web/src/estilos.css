@@ -7,6 +7,7 @@
   --suave: #5b6475;
   --acento: #1f6feb;
   --error: #b42318;
+  --ok: #1a7f37;
   font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   line-height: 1.5;
   color: var(--texto);
@@ -119,4 +120,138 @@ button:disabled {
   text-align: center;
   color: var(--suave);
   margin-top: 4rem;
+}
+
+/* --- Pantallas de viaje (chofer; el pasajero reutiliza las mismas clases) --- */
+h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.encabezado {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.tarjeta p {
+  margin: 0;
+}
+
+.conexion,
+.etiqueta {
+  font-size: 0.85rem;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  background: #e8edf5;
+  color: var(--suave);
+}
+
+.conexion.conectado {
+  background: #e3f4e8;
+  color: var(--ok);
+}
+
+.conexion.reconectando,
+.conexion.detenido {
+  background: #fdecea;
+  color: var(--error);
+}
+
+.ok {
+  color: var(--ok);
+}
+
+.disponibilidad,
+.ubicacion {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+
+.opciones {
+  display: flex;
+  gap: 1rem;
+}
+
+label.opcion {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 400;
+}
+
+.coordenadas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+
+.coordenadas input {
+  width: 9.5rem;
+}
+
+.aviso {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  background: #fff6e0;
+  border: 1px solid #f0d58c;
+}
+
+.aviso p {
+  margin: 0;
+}
+
+.oferta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border: 1px solid #dde2ea;
+  border-radius: 8px;
+}
+
+.oferta.resaltada {
+  border-color: var(--acento);
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.oferta.vencida {
+  opacity: 0.55;
+}
+
+.datos {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.acciones {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.cuenta {
+  font-variant-numeric: tabular-nums;
+  color: var(--suave);
+}
+
+.resumen {
+  border-color: var(--ok);
 }

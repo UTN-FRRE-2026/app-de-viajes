@@ -121,6 +121,12 @@ export async function pedir<T>(metodo: string, ruta: string, { cuerpo, clave }: 
 export async function cerrarSesion(): Promise<void> {
   const { refreshToken } = useSesion.getState();
   useSesion.getState().cerrar();
+  // Las coordenadas manuales (demo) son del usuario que se va: no quedan para el próximo.
+  try {
+    for (const k of Object.keys(sessionStorage)) if (k.startsWith('viajes:ubicacion-manual:')) sessionStorage.removeItem(k);
+  } catch {
+    // Sin almacenamiento: no hay nada guardado.
+  }
   if (!refreshToken) return;
   // keepalive: el aviso llega aunque la página navegue o se cierre enseguida. Si falla, el refresh
   // igual vence solo; el usuario ya no tiene sesión en este navegador.

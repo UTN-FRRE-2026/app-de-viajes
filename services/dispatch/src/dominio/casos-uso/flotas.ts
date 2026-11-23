@@ -144,6 +144,11 @@ export function crearCasosDeFlotas({ repoFlotas, directorio }: DependenciasFlota
       });
     },
 
+    /** El registro del chofer del token, o null si todavía no está en ninguna flota. */
+    async registroPropio(choferId: string): Promise<DatosChoferFlota | null> {
+      return (await repoFlotas.obtenerChofer(choferId))?.aDatos() ?? null;
+    },
+
     /** El chofer del token, sobre su propio registro. */
     async cambiarDisponibilidad(choferId: string, disponible: boolean): Promise<DatosChoferFlota> {
       return repoFlotas.enTransaccion(async (tx) => {

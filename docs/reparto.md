@@ -74,7 +74,7 @@ Cada integrante es **dueño** de un problema central y de los módulos que lo ro
 - [x] Cobro simulado idempotente que falla cerrado, con la tarifa final y por qué difiere de la estimación. **Lo hizo Ivan** (PR 3 de tarifas, [docs/tarifas.md](tarifas.md)).
 - [ ] Puertos de mapas y pagos con timeout. Hecho: mapas (simulado, con timeout y falla cerrado). Falta: pagos.
 - [ ] Caché en Redis de tarifas y zonas, con invalidación. Hecho el de tarifas, por versión (Agostina, PR 2 de tarifas). Falta el de zonas.
-- [ ] Frontend: pantallas del chofer.
+- [x] Frontend: pantalla del chofer. Tiene disponibilidad, ubicación (GPS o manual), ofertas por SSE con su vencimiento, aceptar, en camino, iniciar y finalizar, y la posición del pasajero. `GET /chofer/estado` la recupera al recargar ([docs/web.md](web.md#la-pantalla-del-chofer-chofer)). El cliente SSE, las claves de operación y el envío de ubicación quedan listos para la del pasajero.
 
 **Fase C y ataque cruzado**
 - [ ] Grafana Cloud: Alloy en un perfil de Compose, métricas de negocio y tres dashboards exportados.

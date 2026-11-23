@@ -112,6 +112,7 @@ El chofer queda deshabilitado, inactivo y no disponible.
 | `GET /flota/choferes/:id` | `admin_flota` | 404 si es de otra flota |
 | `POST /flota/choferes/:id/activar` y `/desactivar` | `admin_flota` | Ocupa o libera el cupo |
 | `PUT /chofer/disponibilidad` `{disponible}` | `chofer` | Su propio registro, el del token |
+| `GET /chofer/estado` | `chofer` | Lo que relee la pantalla del chofer, todo del token: `ahora` (la hora del servidor), `registro` (el suyo, o null si no está en una flota), `viaje` (el activo: `ASIGNADO`, `EN_CAMINO` o `EN_CURSO`) y `ofertas` (las pendientes y sin vencer de solicitudes que siguen buscando; vacía con un viaje activo). Contrato: `EstadoChoferRespuesta` (`packages/contracts/src/chofer.ts`) |
 
 Todas las escrituras llevan `Idempotency-Key`. Los demás roles reciben 403 `ROL_NO_PERMITIDO`.
 

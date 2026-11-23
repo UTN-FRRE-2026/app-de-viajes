@@ -34,7 +34,7 @@ Cada `RELAY_INTERVALO_MS` (100 ms; es la demora máxima de un evento), en una tr
 - Opcional: `Last-Event-ID: <seq>`, el `id` del último evento recibido. Si no es un número, 400 `LAST_EVENT_ID_INVALIDO`.
 - No hay parámetros: el usuario sale del token y nadie puede pedir los eventos de otro.
 
-**El cliente:** `EventSource` no permite mandar encabezados, y el token no va en la URL porque quedaría en los logs de nginx. El frontend usa `fetch` con el `Authorization` y lee el cuerpo como stream (por ejemplo, con `@microsoft/fetch-event-source`). Al reconectar, manda el `Last-Event-ID` y, además, pide el estado actual con `GET /solicitudes/:id`: el stream avisa de los cambios, pero la fuente de verdad sigue siendo la base.
+**El cliente:** `EventSource` no permite mandar encabezados, y el token no va en la URL porque quedaría en los logs de nginx. El frontend usa `fetch` con el `Authorization` y lee el cuerpo como stream (`apps/web/src/tiempo-real/`, ver [docs/web.md](web.md#lo-compartido-entre-las-pantallas-de-viaje)). Al reconectar pide el estado actual: el stream avisa de los cambios, pero la fuente de verdad sigue siendo la base. La pantalla del chofer relee `GET /chofer/estado` (su viaje activo y sus ofertas pendientes) al conectar y con cada evento, así que no necesita `Last-Event-ID`. El pasajero puede usar `GET /solicitudes/:id`.
 
 **Respuesta:** `200`, `Content-Type: text/event-stream`, `Cache-Control: no-cache, no-transform` y `X-Accel-Buffering: no` (para que nginx no junte los eventos en su buffer). Detrás del contenedor `web`, la ruta es `/api/viajes/eventos`, sin buffer y con un `proxy_read_timeout` de 60 s, mayor que el latido ([docs/web.md](web.md#sse)).
 

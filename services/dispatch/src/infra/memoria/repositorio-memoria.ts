@@ -105,6 +105,17 @@ export class RepositorioDespachoMemoria implements RepositorioDespacho {
     return null;
   }
 
+  async ofertasPendientesDelChofer(choferId: string, ahora: Date) {
+    return [...this.ofertas.values()]
+      .filter((o) => o.choferId === choferId && o.estado === 'PENDIENTE' && ahora < o.venceEn)
+      .flatMap((o) => {
+        const s = this.solicitudes.get(o.solicitudId);
+        return s && s.estado === 'BUSCANDO' ? [{ oferta: Oferta.reconstruir(o), solicitud: SolicitudViaje.reconstruir(s) }] : [];
+      })
+      .sort((a, b) => a.oferta.venceEn.getTime() - b.oferta.venceEn.getTime() || a.oferta.id.localeCompare(b.oferta.id))
+      .slice(0, 20);
+  }
+
   async obtenerOferta(id: string) {
     const d = this.ofertas.get(id);
     return d ? Oferta.reconstruir(d) : null;

@@ -426,6 +426,18 @@ export class RepositorioDespachoPrisma implements RepositorioDespacho {
     return f ? { solicitudId: f.id, pasajeroId: f.passenger_id } : null;
   }
 
+  async ofertasPendientesDelChofer(choferId: string, ahora: Date) {
+    // Las pendientes son pocas (viven OFERTA_TTL_SEGUNDOS): el índice (status, expires_at) alcanza.
+    // El tope solo acota la respuesta; un chofer nunca tiene tantas a la vez.
+    const filas = await this.prisma.oferta.findMany({
+      where: { choferId, estado: 'PENDIENTE', venceEn: { gt: ahora }, solicitud: { estado: 'BUSCANDO' } },
+      include: { solicitud: true },
+      orderBy: [{ venceEn: 'asc' }, { id: 'asc' }],
+      take: 20,
+    });
+    return filas.map((f) => ({ oferta: aOferta(f), solicitud: aSolicitud(f.solicitud) }));
+  }
+
   async registrarFalloCobro(cobroId: string, motivo: string) {
     // Solo si sigue pendiente: un fallo que llega tarde no toca un cobro ya resuelto.
     await this.prisma.cobro.updateMany({

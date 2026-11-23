@@ -1,7 +1,8 @@
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['**/dist/**', '**/node_modules/**', '**/generated/**', 'apps/**'] },
+  // apps/web entra al lint (sus .ts y .tsx): solo se ignora su build, por la regla de dist.
+  { ignores: ['**/dist/**', '**/node_modules/**', '**/generated/**'] },
   ...tseslint.configs.recommended,
   {
     rules: {
