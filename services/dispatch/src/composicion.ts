@@ -199,7 +199,11 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
     historial: eventos.historial,
     logger,
     maxPorUsuario: config.SSE_MAX_POR_USUARIO,
-    posiciones: { fuente: eventos.posiciones, viajeConChofer: (pasajeroId) => repo.viajeConChoferDelPasajero(pasajeroId) },
+    posiciones: {
+      fuente: eventos.posiciones,
+      viajeConChofer: (pasajeroId) => repo.viajeConChoferDelPasajero(pasajeroId),
+      viajeConPasajero: (choferId) => repo.viajeConPasajeroDelChofer(choferId),
+    },
   });
 
   // Mapas siempre detrás del timeout: el simulado no lo necesita, pero un proveedor real sí, y así

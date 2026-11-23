@@ -412,6 +412,20 @@ export class RepositorioDespachoPrisma implements RepositorioDespacho {
     return f ? { solicitudId: f.id, choferId: f.driver_id } : null;
   }
 
+  async viajeConPasajeroDelChofer(choferId: string) {
+    // Por la asignación activa (una fila por chofer, por su clave primaria), y con el estado de la
+    // solicitud: la asignación de un viaje terminado no cuenta.
+    const filas = await this.prisma.$queryRaw<{ id: string; passenger_id: string }[]>`
+      SELECT r.id, r.passenger_id
+      FROM driver_active_assignment a
+      JOIN ride_requests r ON r.id = a.request_id
+      WHERE a.driver_id = ${choferId}::uuid
+        AND r.status IN (${Prisma.join(ESTADOS_CON_CHOFER)})
+        AND r.driver_id = a.driver_id`;
+    const f = filas[0];
+    return f ? { solicitudId: f.id, pasajeroId: f.passenger_id } : null;
+  }
+
   async registrarFalloCobro(cobroId: string, motivo: string) {
     // Solo si sigue pendiente: un fallo que llega tarde no toca un cobro ya resuelto.
     await this.prisma.cobro.updateMany({
