@@ -7,6 +7,7 @@ import {
   PanelQuery,
   ParamsId,
   SinBody,
+  type EstadoChoferRespuesta,
   type EstimacionRespuesta,
 } from '@viajes/contracts';
 import {
@@ -86,6 +87,21 @@ export function rutasDespacho(
     res.json(
       await casos.historial({ usuarioId: usuario.id, como: usuario.rol === 'chofer' ? 'chofer' : 'pasajero', limite, desde }),
     );
+  });
+
+  // La pantalla del chofer: su registro, su viaje activo y sus ofertas pendientes, en una lectura. La
+  // relee al abrir, al reconectar el SSE y con cada evento (los eventos avisan; la base es la verdad).
+  // Todo sale del token: nadie puede pedir el estado de otro chofer.
+  r.get('/chofer/estado', requerirRol('chofer'), async (req, res) => {
+    const choferId = usuarioDe(req).id;
+    const [registro, situacion] = await Promise.all([casosFlotas.registroPropio(choferId), casos.situacionChofer(choferId)]);
+    const cuerpo: EstadoChoferRespuesta = {
+      ahora: situacion.ahora.toISOString(),
+      registro,
+      viaje: situacion.viaje,
+      ofertas: situacion.ofertas.map((o) => ({ ...o, venceEn: o.venceEn.toISOString() })),
+    };
+    res.set('Cache-Control', 'no-store').json(cuerpo);
   });
 
   r.get('/panel/viajes', requerirRol('operador', 'admin'), validar({ query: PanelQuery }), async (req, res) => {

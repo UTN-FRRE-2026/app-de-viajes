@@ -73,6 +73,17 @@ export interface RepositorioDespacho {
    * uno: la asignación activa es una fila por chofer.
    */
   viajeConPasajeroDelChofer(choferId: string): Promise<ViajeConPasajero | null>;
+  /**
+   * Las ofertas del chofer que todavía puede aceptar: PENDIENTE, sin vencer según `ahora` y de una
+   * solicitud que sigue BUSCANDO. Con su solicitud, la que vence primero adelante. Las que se cancelaron
+   * porque otro chofer ganó o porque el pasajero canceló no aparecen.
+   */
+  ofertasPendientesDelChofer(choferId: string, ahora: Date): Promise<OfertaConSolicitud[]>;
+}
+
+export interface OfertaConSolicitud {
+  oferta: Oferta;
+  solicitud: SolicitudViaje;
 }
 
 export interface ViajeConChofer {

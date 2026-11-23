@@ -4,6 +4,7 @@ import { cancelarSolicitud } from './cancelar-solicitud.js';
 import { cobrarPendientes, cobrarViaje } from './cobrar.js';
 import { crearSolicitud } from './crear-solicitud.js';
 import type { DependenciasDespacho } from './dependencias.js';
+import { situacionChofer } from './estado-chofer.js';
 import { estimarTarifa } from './estimar-tarifa.js';
 import { configurarTarifa, obtenerTarifa } from './tarifas-admin.js';
 import { historial, panelOperador } from './listar-viajes.js';
@@ -25,6 +26,7 @@ export function crearCasosDeUso(deps: DependenciasDespacho) {
     vencerOfertas: vencerOfertas(deps),
     obtenerSolicitud: obtenerSolicitud(deps),
     historial: historial(deps),
+    situacionChofer: situacionChofer(deps),
     panelOperador: panelOperador(deps),
     estimarTarifa: estimarTarifa(deps),
     obtenerTarifa: obtenerTarifa(deps),

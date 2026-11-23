@@ -34,6 +34,7 @@ export const EstadoSolicitud = z.enum([
   'CANCELADO_OPERADOR',
   'SIN_CHOFERES',
 ]);
+export type EstadoSolicitud = z.infer<typeof EstadoSolicitud>;
 
 // En la query todo llega como texto (y un parámetro repetido llega como lista: se rechaza).
 const entero = (min: number, max: number) =>

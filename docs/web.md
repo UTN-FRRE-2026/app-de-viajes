@@ -27,7 +27,7 @@ React + Vite + Zustand (PLAN 5.2), mínimo y sin PWA. Es un workspace más: `npm
 **Cliente HTTP** (`src/api/cliente.ts`):
 - `pedir(metodo, '/viajes/solicitudes', { cuerpo, clave })` usa rutas relativas (`/api` + la ruta), agrega el `Authorization` y normaliza los errores en `ErrorApi`, con el formato `{error:{code,message,requestId}}` de los servicios. Si no hubo respuesta, el código es `RED`;
 - con un **401**, una sola vez más: con el token vigente, si otro pedido ya lo renovó mientras este viajaba (un 401 que llegó tarde), o renovando. **El reintento conserva la misma `Idempotency-Key`.** Si igual da 401, la sesión termina;
-- **`clave`:** las rutas que exigen `Idempotency-Key` son los POST y PUT con efecto de dispatch y `POST /identity/registro`. Se genera una por operación (`nuevaClave()`) y se reutiliza en cualquier reintento de esa misma operación. Los reintentos automáticos con espera y un `useOperacion()` para formularios se suman con el primer formulario que los necesite;
+- **`clave`:** las rutas que exigen `Idempotency-Key` son los POST y PUT con efecto de dispatch y `POST /identity/registro`. Se genera una por operación (`nuevaClave()`, o `ClavesDeOperacion` de `src/api/operacion.ts`) y se reutiliza en cualquier reintento de esa misma operación, también cuando el resultado fue incierto (ver [La pantalla del chofer](#la-pantalla-del-chofer-chofer));
 - **el login** va por su cuenta (`src/sesion/login.ts`): un 401 ahí es «email o contraseña incorrectos», no una sesión vencida. El 429 del límite de intentos muestra cuándo volver a probar.
 
 **Errores.** `MensajeError` muestra el mensaje y el `requestId` (para buscarlo en el log), y ofrece «Reintentar» con red caída o 5xx. Un `ErrorBoundary` en el layout y el `errorElement` del router contienen las fallas al dibujar.
@@ -48,7 +48,52 @@ Para sumar una pantalla:
 2. una entrada en `rutas` (relativa a `base`) y, si va en el menú, otra en `menu`, en el archivo del rol;
 3. las llamadas con `pedir()`, pasando `clave` si la ruta exige Idempotency-Key.
 
-Hoy cada rol tiene solo un inicio provisorio: las pantallas reales las suma su dueño (pasajero y operador, Iván; chofer, Maxi; admin de flota, Agos).
+La del chofer ya está ([abajo](#la-pantalla-del-chofer-chofer)). Pasajero, operador y admin de flota tienen un inicio provisorio: las pantallas reales las suma su dueño (pasajero y operador, Iván; admin de flota, Agos).
+
+## La pantalla del chofer (`/chofer`)
+
+Una sola pantalla (`src/roles/chofer/Panel.tsx`) con tres bloques: disponibilidad y ubicación, las ofertas y el viaje activo. Su estado vive en un store de Zustand propio (`store.ts`). Cómo se aplican las lecturas, las respuestas y los eventos está aparte, sin React ni red (`logica.ts`), y se testea solo (`apps/web/tests/`).
+
+**La base manda, el SSE avisa.** Todo lo que se muestra sale de `GET /api/viajes/chofer/estado`: el registro en la flota, el viaje activo y las ofertas pendientes (ver [docs/flotas.md](flotas.md#rutas)). Se relee:
+- al abrir la pantalla: así, **al recargar**, el viaje activo y las ofertas pendientes vuelven solos;
+- cada vez que el stream conecta o reconecta;
+- con cada evento del viaje o de una oferta: `OfferCreated`, `OfferExpired`, `TripAssigned`, `DriverEnRoute`, `TripStarted`, `RideCompleted` o `RideCancelled`.
+
+Las relecturas se juntan: una en vuelo y, como mucho, otra pendiente. No se usa `Last-Event-ID`: lo que pasó con la pestaña cerrada aparece en la relectura. La posición del pasajero (`PassengerLocationUpdated`) se aplica directo, solo si es del viaje activo y más nueva que la anterior.
+
+**Lecturas atrasadas.** Las lecturas y las respuestas de las acciones (aceptar, avanzar y cambiar la disponibilidad) toman una marca de un mismo contador creciente.
+- **Una lectura que empezó antes de la última respuesta** se descarta entera, y se pide otra. Así, un GET lento que salió antes de aceptar no puede volver con `viaje: null` y borrar el viaje recién aceptado.
+- **Una lectura que empezó después** se aplica tal cual, aunque diga que el viaje terminó o que es otro.
+- **El `version`** solo se compara dentro del mismo viaje: una respuesta repetida por idempotencia no pisa un estado más nuevo.
+
+**Ofertas que vencen en pantalla.**
+- La cuenta regresiva usa `venceEn` con el reloj del servidor. El desfase se calcula con el `ahora` de la respuesta y la hora local a mitad del pedido, y corrige un reloj corrido.
+- Al llegar a 0, la tarjeta queda «Venció», con el botón deshabilitado, y sale a los 2 s. No espera a `OfferExpired`, que el barrido marca hasta 2 s tarde. Si `OfferExpired` llega antes, la saca enseguida.
+- Si otro chofer gana o el pasajero cancela, este chofer no recibe ningún evento. La oferta desaparece en la próxima relectura; si la acepta antes, recibe un 409 y la tarjeta sale con el aviso «Otro chofer tomó el viaje o el pasajero lo canceló».
+
+**Aceptar con resultado incierto.** Si «Aceptar» falla sin una respuesta definitiva (red, 5xx o `CLAVE_IDEMPOTENCIA_EN_CURSO`), no se sabe si el servidor la aceptó. La operación queda en el store, con la oferta y su `Idempotency-Key`, aunque la tarjeta venza y desaparezca. Enseguida se relee el estado:
+- si ya aparece el viaje de esa solicitud, se muestra y la operación se cierra;
+- si no, la pantalla dice «No sabemos si se aceptó la oferta» y ofrece «Reintentar» con la MISMA clave. Si el primer intento había entrado, la API repite su respuesta (200), aunque la oferta ya haya vencido.
+
+Lo mismo con «Voy en camino», «Inició el viaje» y «Finalizar»: una clave por acción, que se conserva mientras el resultado es incierto. Si una relectura muestra que el viaje ya cambió de estado, la acción se aplicó y no hay nada que reintentar.
+
+**Ubicación.** Se envía mientras el chofer está disponible o tiene un viaje activo. A los 30 s sin envíos, location deja de contarlo como candidato. Por eso, ponerse no disponible lo saca de las ofertas aunque dispatch todavía no filtre por disponibilidad. Las posiciones viejas no se envían: ver la sección siguiente.
+
+## Lo compartido entre las pantallas de viaje
+
+Para la pantalla del pasajero (Iván) y las que vengan:
+
+| Módulo | Qué hace |
+|---|---|
+| `src/tiempo-real/eventos.ts` y `useEventos()` | El cliente del SSE. Usa `fetch` con el `Authorization` (EventSource no permite encabezados) y un lector de `text/event-stream` (`lector-sse.ts`). Reconecta con el `retry:` del servidor más un poco de azar; con cada falla seguida espera el doble, hasta 30 s. Con 401 renueva el token una vez; con 403 se detiene; con 429 (más de 3 pestañas) o 503, avisa y espera. Se cierra al cerrar la sesión. `alConectar` es el momento de releer el estado |
+| `src/api/operacion.ts` | `esIncierto(error)` y `ClavesDeOperacion`: una `Idempotency-Key` por objetivo (`disponible:true`, `aceptar:<id>`). Se conserva mientras el resultado es incierto y se descarta con éxito o con un error definitivo |
+| `src/ubicacion/` | `useEnvioUbicacion(ruta, activo)` y `ControlUbicacion`: GPS con `watchPosition`, o coordenadas cargadas a mano (**Manual (demo)**, también si se rechaza el permiso). El pasajero lo usa con `/ubicacion/ubicaciones/pasajero` |
+| `src/viaje/` | Los tipos de las respuestas (de `@viajes/contracts`, solo tipos), las etiquetas de cada estado, la distancia y `Posicion`: la posición en vivo de la otra parte, con «sin datos recientes» pasados los 30 s |
+
+**Posiciones viejas.** location le pone a cada ping la hora del servidor: reenviar un GPS viejo lo haría parecer actual.
+- El reenvío cada 5 s manda solo una posición **reciente**: tomada hace 15 s o menos, según el `timestamp` del GPS. Es la mitad de los 30 s de vigencia de location.
+- Pasado ese tiempo deja de enviar, y la pantalla muestra «GPS sin posición reciente (hace N s): no se envía».
+- Las coordenadas manuales las declara el usuario: se reenvían mientras estén puestas. Se recuerdan en la pestaña (`sessionStorage`), así una recarga a mitad de viaje sigue enviando, y se borran al cerrar sesión.
 
 ## Qué no se publica
 
