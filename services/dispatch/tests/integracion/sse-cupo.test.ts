@@ -112,11 +112,84 @@ describe('cupo de streams SSE entre instancias', () => {
   it('si el cupo no responde, el stream se abre igual (falla abierto) y queda el límite local', async () => {
     const roto: CupoConexiones = {
       tomar: () => Promise.reject(new Error('redis caído')),
-      renovar: () => Promise.resolve(),
+      renovar: () => Promise.resolve(true),
       soltar: () => Promise.resolve(),
     };
     const abrir = await instancia(randomUUID(), roto);
     for (let i = 0; i < 3; i++) expect((await abrir()).estado).toBe(200);
     expect((await abrir()).estado).toBe(429);
+  });
+});
+
+/** Espera hasta que se cumpla la condición (con un tope), revisando cada 25 ms. */
+async function esperarHasta(condicion: () => Promise<boolean>, ms = 2000) {
+  const limite = performance.now() + ms;
+  while (!(await condicion())) {
+    if (performance.now() > limite) throw new Error('no se cumplió la condición a tiempo');
+    await dormir(25);
+  }
+}
+
+describe('cupo compartido: lugares perdidos (Redis caído más que el TTL, o reiniciado sin datos)', () => {
+  it('si el lugar desaparece, el latido lo vuelve a tomar y el stream sigue contado', async () => {
+    const usuario = randomUUID();
+    const prefijo = `dispatch-test:sse:${randomUUID()}:`;
+    const abrir = await instancia(usuario, cupoConexionesRedis(redis, prefijo), 50);
+    const s = await abrir();
+    expect(s.estado).toBe(200);
+    expect(await redis.zcard(`${prefijo}${usuario}`)).toBe(1);
+
+    // Como un Redis que se reinició sin datos.
+    await redis.del(`${prefijo}${usuario}`);
+    await esperarHasta(async () => (await redis.zcard(`${prefijo}${usuario}`)) === 1);
+  });
+
+  it('si el lugar desaparece y ya no hay otro (otra instancia ocupó los 3), el stream se cierra', async () => {
+    const usuario = randomUUID();
+    const prefijo = `dispatch-test:sse:${randomUUID()}:`;
+    const abrir = await instancia(usuario, cupoConexionesRedis(redis, prefijo), 50);
+    const s = await abrir();
+    expect(s.estado).toBe(200);
+
+    // Se pierde su lugar y otra instancia ocupa los 3, de una (MULTI): el latido no se mete en el medio.
+    const clave = `${prefijo}${usuario}`;
+    const vence = Date.now() + 10_000;
+    await redis.multi().del(clave).zadd(clave, vence, 'otra-1', vence, 'otra-2', vence, 'otra-3').pexpire(clave, 10_000).exec();
+
+    // Sin el arreglo, quedaba abierto sin contarse: 4 streams del mismo usuario.
+    await Promise.race([s.cerrado, dormir(2000).then(() => Promise.reject(new Error('el stream no se cerró')))]);
+    expect(await redis.zcard(`${prefijo}${usuario}`)).toBe(3);
+  });
+
+  it('un stream abierto con Redis caído toma su lugar cuando Redis vuelve', async () => {
+    const usuario = randomUUID();
+    const prefijo = `dispatch-test:sse:${randomUUID()}:`;
+    const real = cupoConexionesRedis(redis, prefijo);
+    let caido = true;
+    const intermitente: CupoConexiones = {
+      tomar: (...a) => (caido ? Promise.reject(new Error('redis caído')) : real.tomar(...a)),
+      renovar: (...a) => (caido ? Promise.reject(new Error('redis caído')) : real.renovar(...a)),
+      soltar: (...a) => real.soltar(...a),
+    };
+    const abrir = await instancia(usuario, intermitente, 50);
+    expect((await abrir()).estado).toBe(200);
+    await dormir(150);
+    expect(await redis.zcard(`${prefijo}${usuario}`)).toBe(0);
+
+    caido = false;
+    await esperarHasta(async () => (await redis.zcard(`${prefijo}${usuario}`)) === 1);
+  });
+
+  it('renovar dice si el lugar sigue: true si está, false si se perdió o venció', async () => {
+    const usuario = randomUUID();
+    const prefijo = `dispatch-test:sse:${randomUUID()}:`;
+    const cupo = cupoConexionesRedis(redis, prefijo);
+    const id = randomUUID();
+    expect(await cupo.tomar(usuario, id, 3, 200)).toBe(true);
+    expect(await cupo.renovar(usuario, id, 200)).toBe(true);
+    await dormir(300);
+    // Vencido: no se revive (pudo dejar de contarse en un tomar de otra instancia).
+    expect(await cupo.renovar(usuario, id, 200)).toBe(false);
+    expect(await redis.zcard(`${prefijo}${usuario}`)).toBe(0);
   });
 });

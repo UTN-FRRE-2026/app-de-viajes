@@ -455,4 +455,4 @@ El historial de posiciones de los choferes. Las dos versiones de 6.6 escriben ac
 
 - El prefijo de location es `LOCATION_REDIS_PREFIJO` (`location:` por defecto; `carga:location:` en el entorno de k6).
 - **Con la estrategia ingenua** (la del Compose), location no guarda posiciones en Redis, y el contador del límite de tasa queda **en memoria del proceso**. Con `REDIS_URL`, igual publica la posición en vivo.
-- El límite de 3 streams SSE por usuario se cuenta en cada proceso y, entre instancias, en `dispatch:sse:<usuarioId>` (ZSET: un miembro por stream, con su vencimiento; lo renueva el latido).
+- El límite de 3 streams SSE por usuario se cuenta en cada proceso y, entre instancias, en `dispatch:sse:<usuarioId>` (ZSET: un miembro por stream, con su vencimiento; lo renueva el latido, y si el lugar se perdió lo vuelve a tomar dentro del límite o cierra el stream).

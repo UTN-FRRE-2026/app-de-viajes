@@ -230,9 +230,34 @@ export class StreamsEventos {
       reponiendo = false;
       for (const e of enEspera.sort((a, b) => a.seq - b.seq)) enviar(e);
 
+      // Con cada latido, el lugar en el cupo compartido: se renueva y, si ya no está (Redis no respondió
+      // más que el TTL, se reinició sin datos, o no estaba cuando se abrió el stream), se vuelve a tomar
+      // respetando el límite. Sin lugar, el stream se cierra: si no, quedaría abierto sin contarse y otra
+      // instancia dejaría pasar el límite. Si Redis no responde, el stream sigue y se reintenta.
+      let manteniendo = false;
+      const mantenerCupo = async () => {
+        if (!cupo || cerrado || manteniendo) return;
+        manteniendo = true;
+        try {
+          if (enCupo && (await cupo.renovar(usuario.id, idConexion, ttlCupoMs))) return;
+          enCupo = false;
+          const tomado = await cupo.tomar(usuario.id, idConexion, this.o.maxPorUsuario, ttlCupoMs);
+          if (tomado) {
+            enCupo = true;
+            if (cerrado) soltarCupo();
+          } else if (!cerrado) {
+            this.o.logger.info({ usuarioId: usuario.id }, 'eventos: el stream perdió su lugar en el cupo y no hay otro; se cierra');
+            cerrar();
+          }
+        } catch {
+          // Redis no responde: se reintenta en el próximo latido.
+        } finally {
+          manteniendo = false;
+        }
+      };
       timers.latido = setInterval(() => {
         res.write(': latido\n\n');
-        if (cupo && enCupo) void cupo.renovar(usuario.id, idConexion, ttlCupoMs).catch(() => {});
+        void mantenerCupo();
       }, this.o.latidoMs);
       if (usuario.venceEn) {
         timers.vencimiento = setTimeout(cerrar, Math.max(0, usuario.venceEn.getTime() - Date.now()));
