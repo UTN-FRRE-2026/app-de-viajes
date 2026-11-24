@@ -86,6 +86,11 @@ services:
       METRICAS_TOKEN: ${METRICAS_TOKEN:-}
       # Con :- para que `npm run infra:up` funcione sin él. Si falta, location no arranca y lo dice.
       LOCATION_TOKEN_SERVICIO: ${LOCATION_TOKEN_SERVICIO:-}
+      # Retención del historial (docs/location.md#retención-del-historial). Vacías si no están en el .env:
+      # location usa sus valores por defecto (720 h, 5 min y lotes de 5000), definidos en src/config.
+      LOCATION_HISTORIAL_RETENCION_HORAS: ${LOCATION_HISTORIAL_RETENCION_HORAS:-}
+      LOCATION_HISTORIAL_RETENCION_INTERVALO_MS: ${LOCATION_HISTORIAL_RETENCION_INTERVALO_MS:-}
+      LOCATION_HISTORIAL_RETENCION_LOTE: ${LOCATION_HISTORIAL_RETENCION_LOTE:-}
     ports:
       - "3004:3004"
     networks:

@@ -149,6 +149,39 @@ Es la línea de base que pide 6.6 para medir con k6:
 - **Estrategia `memoria`.** Sirve para los tests y para correr sin base.
 - **Su cuello de botella.** Bajo carga, cada `INSERT` espera el `fsync` de su propio commit (`WALWrite`/`WALSync`). Los `INSERT` ocupan el pool de conexiones y las búsquedas esperan detrás. Ver [docs/mediciones.md](mediciones.md).
 
+## Retención del historial
+
+La tabla `pings` es el historial de las dos estrategias: la ingenua inserta cada ping y la optimizada los escribe en lotes desde el stream. Una purga periódica borra los pings vencidos (`src/infra/db/retencion.ts`). La lanza `iniciarBarrido`, en cualquier estrategia con Postgres.
+
+| Variable | Por defecto | Qué es |
+|---|---|---|
+| `LOCATION_HISTORIAL_RETENCION_HORAS` | 720 (30 días) | Cuánto se conserva cada ping, contado desde su `recorded_at`. Mínimo 1 h |
+| `LOCATION_HISTORIAL_RETENCION_INTERVALO_MS` | 300 000 (5 min) | Cada cuánto pasa la purga |
+| `LOCATION_HISTORIAL_RETENCION_LOTE` | 5000 | Filas por `DELETE`. Cada pasada hace como mucho 20 lotes |
+
+**Cómo borra:**
+- en cada lote, primero elige los pings con `recorded_at` anterior al corte, después los ordena por `(recorded_at, id)` y recién ahí aplica el `LIMIT`;
+- el índice `(recorded_at, id)` (migración `20261125000000_retencion_historial`) acompaña esa consulta: cada lote lee solo las filas que va a borrar;
+- la optimizada puede escribir tarde un ping viejo, con un `id` mayor que el de uno reciente. Ese ping igual se borra en la misma pasada;
+- `FOR UPDATE SKIP LOCKED`: varias instancias pueden purgar a la vez sin esperarse;
+- la pasada termina cuando un lote borra menos de 5000 filas, o a los 20 lotes.
+
+**Margen (teórico, no medido):**
+- 20 × 5000 cada 5 minutos dan un tope teórico de unos 333 pings por segundo, más que los 250 por segundo de 500 choferes;
+- no se midió cuánto tarda una pasada bajo carga;
+- si la purga se atrasa, se pone al día en las pasadas siguientes.
+
+**En el Compose:** las tres variables pasan a `location` con `${…:-}`. Si no están en el `.env`, llegan vacías y valen los valores por defecto de `src/config` (`vacioComoAusente`).
+
+**La búsqueda no cambia:**
+- la ingenua solo lee los pings de los últimos `UBICACION_VIGENCIA_SEGUNDOS` (como mucho 600 s), y la retención mínima es de 1 h, así que la purga nunca borra una posición vigente;
+- la optimizada busca en Redis, que tiene su propia purga.
+
+**Pendiente:**
+- `PLAN.md` pide 30 días para los puntos de un viaje y **24 h para los pings de choferes sin viaje**. location no sabe qué ping fue parte de un viaje: eso lo sabe dispatch;
+- por ahora hay un solo plazo, de 30 días, para todos;
+- el de 24 h para los pings sin viaje queda para cuando dispatch le informe a location los tramos de cada viaje.
+
 ## Posición en vivo
 
 Cada ping que se guarda se publica por **Redis Pub/Sub** en el canal de su chofer. dispatch es quien sabe qué viaje tiene cada chofer: se suscribe al canal del chofer asignado mientras el viaje está activo y reenvía la posición por SSE solo a ese pasajero (la regla de privacidad se aplica ahí, ver [docs/eventos.md](eventos.md)). Funciona con las dos estrategias de 6.6: Compose corre la ingenua.
@@ -439,6 +472,10 @@ npm run test:dominio -w @viajes/location
   - 300 choferes y 200 búsquedas generados con una semilla fija dan resultados idénticos en las tres: ids, orden, distancias y fechas;
   - también el borde del radio (r − 0,5, r − 0,3, r + 0,3 y r + 0,9 m), los empates y las diferencias de centímetros;
   - y las latitudes polares y el antimeridiano.
+- **Retención** (`tests/integracion/retencion.test.ts`):
+  - solo se borran los pings vencidos, en lotes, y la búsqueda de la ingenua devuelve lo mismo antes y después;
+  - un ping viejo insertado después de uno reciente se borra en la misma pasada;
+  - el tope de lotes corta la pasada, y la siguiente la termina.
 - **Historial** (`tests/integracion/historial.test.ts`):
   - Postgres cae y vuelve, y no quedan duplicados;
   - la escritura sale bien y falla la confirmación;
@@ -451,7 +488,7 @@ npm run test:dominio -w @viajes/location
 1. **Medir de punta a punta** con dispatch integrado: tiempo hasta la asignación que pide 6.6 (con la hipótesis escrita antes) y lag del event loop de dispatch mientras corre el simulador. Lotes crecientes cuando entre el filtro de flota y zona.
 2. **Después:**
    - límite de pedidos en `/ubicaciones`;
-   - retención del historial;
+   - ~~retención del historial~~ (hecho, con un solo plazo, ver [Retención del historial](#retención-del-historial)). Falta el plazo de 24 h para los pings sin viaje;
    - ~~publicación por Redis para el seguimiento~~ (hecho, ver [Posición en vivo](#posición-en-vivo)); la regla de privacidad la aplica dispatch al suscribirse;
    - Alloy y los dashboards de Grafana sobre el `/metrics` de `platform` (ya hecho);
    - ADR 0008 (Redis GEO frente a PostGIS frente a geohash), con los números de [docs/mediciones.md](mediciones.md).
