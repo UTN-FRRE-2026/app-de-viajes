@@ -1,0 +1,568 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-24T03:48:55.478Z",
+  "title": "Design System: Viajes",
+  "extensions": {
+    "colorMeta": {
+      "fondo": {
+        "role": "neutral",
+        "displayName": "Gris Frío de Fondo",
+        "canonical": "#f4f6f8",
+        "oklch": "oklch(97.2% 0.003 247.9)",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#242526",
+          "#414243",
+          "#606163",
+          "#818284",
+          "#a4a5a6",
+          "#c8c9ca",
+          "#eeeeef"
+        ]
+      },
+      "tarjeta": {
+        "role": "neutral",
+        "displayName": "Blanco Tarjeta",
+        "canonical": "#ffffff",
+        "oklch": "oklch(100.0% 0.000 89.9)",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#a5a5a5",
+          "#c9c9c9",
+          "#eeeeee"
+        ]
+      },
+      "texto": {
+        "role": "neutral",
+        "displayName": "Tinta Azulada",
+        "canonical": "#1d2330",
+        "oklch": "oklch(25.6% 0.026 265.3)",
+        "tonalRamp": [
+          "#0a0b0e",
+          "#22252b",
+          "#3d424c",
+          "#5b616f",
+          "#7c8291",
+          "#a0a5b1",
+          "#c5c9d2",
+          "#eceef3"
+        ]
+      },
+      "suave": {
+        "role": "neutral",
+        "displayName": "Pizarra Suave",
+        "canonical": "#5b6475",
+        "oklch": "oklch(50.2% 0.029 263.2)",
+        "tonalRamp": [
+          "#090b0f",
+          "#21252c",
+          "#3c424d",
+          "#596171",
+          "#7a8393",
+          "#9ea5b2",
+          "#c4c9d3",
+          "#eceff4"
+        ]
+      },
+      "acento": {
+        "role": "primary",
+        "displayName": "Azul de Acción",
+        "canonical": "#1f6feb",
+        "oklch": "oklch(56.9% 0.202 259.7)",
+        "tonalRamp": [
+          "#010922",
+          "#032253",
+          "#0a3d8a",
+          "#135ac5",
+          "#397eed",
+          "#6fa5fb",
+          "#a4cbff",
+          "#d9f0ff"
+        ]
+      },
+      "acento-texto": {
+        "role": "primary",
+        "displayName": "Azul Tinta",
+        "canonical": "#174ea6",
+        "oklch": "oklch(44.3% 0.153 259.9)",
+        "tonalRamp": [
+          "#030a1c",
+          "#0e2448",
+          "#1d4079",
+          "#2e5eae",
+          "#4f81d3",
+          "#7ea6e7",
+          "#adcbfa",
+          "#def0ff"
+        ]
+      },
+      "acento-suave": {
+        "role": "primary",
+        "displayName": "Azul Suave",
+        "canonical": "#e3ecfd",
+        "oklch": "oklch(94.1% 0.025 263.3)",
+        "tonalRamp": [
+          "#0a0b0e",
+          "#22252b",
+          "#3d424b",
+          "#5b616e",
+          "#7b8390",
+          "#9fa5b0",
+          "#c5c9d1",
+          "#eceef3"
+        ]
+      },
+      "seleccion": {
+        "role": "primary",
+        "displayName": "Azul Selección",
+        "canonical": "#cfe0fb",
+        "oklch": "oklch(90.2% 0.041 259.6)",
+        "tonalRamp": [
+          "#080b10",
+          "#1f252f",
+          "#394251",
+          "#556277",
+          "#758399",
+          "#9ba6b7",
+          "#c2cad6",
+          "#eaeff6"
+        ]
+      },
+      "ok": {
+        "role": "secondary",
+        "displayName": "Verde Hecho",
+        "canonical": "#1a7f37",
+        "oklch": "oklch(52.4% 0.140 148.0)",
+        "tonalRamp": [
+          "#010f03",
+          "#072e11",
+          "#124f22",
+          "#1f7435",
+          "#469655",
+          "#7ab683",
+          "#acd6b1",
+          "#def6e0"
+        ]
+      },
+      "ok-suave": {
+        "role": "secondary",
+        "displayName": "Verde Suave",
+        "canonical": "#e3f4e8",
+        "oklch": "oklch(95.1% 0.024 155.1)",
+        "tonalRamp": [
+          "#090c0a",
+          "#212723",
+          "#3b453e",
+          "#58655c",
+          "#79867d",
+          "#9da8a1",
+          "#c4cbc6",
+          "#ebf0ec"
+        ]
+      },
+      "riel-hecho": {
+        "role": "secondary",
+        "displayName": "Verde Riel",
+        "canonical": "#a9d8b6",
+        "oklch": "oklch(84.0% 0.068 153.4)",
+        "tonalRamp": [
+          "#060d08",
+          "#182a1e",
+          "#2e4936",
+          "#456c51",
+          "#668d71",
+          "#8fae98",
+          "#bad0bf",
+          "#e6f2e9"
+        ]
+      },
+      "error": {
+        "role": "tertiary",
+        "displayName": "Rojo Cortado",
+        "canonical": "#b42318",
+        "oklch": "oklch(50.0% 0.182 29.5)",
+        "tonalRamp": [
+          "#1c0301",
+          "#470d08",
+          "#771d14",
+          "#aa2e22",
+          "#d25344",
+          "#e98576",
+          "#fdb4a8",
+          "#ffe3db"
+        ]
+      },
+      "error-suave": {
+        "role": "tertiary",
+        "displayName": "Rojo Suave",
+        "canonical": "#fdecea",
+        "oklch": "oklch(95.6% 0.019 25.6)",
+        "tonalRamp": [
+          "#0d0a0a",
+          "#292323",
+          "#493f3e",
+          "#6b5e5c",
+          "#8c7f7d",
+          "#ada2a1",
+          "#cfc7c6",
+          "#f2eded"
+        ]
+      },
+      "aviso-fondo": {
+        "role": "tertiary",
+        "displayName": "Ámbar de Aviso",
+        "canonical": "#fff6e0",
+        "oklch": "oklch(97.4% 0.030 88.4)",
+        "tonalRamp": [
+          "#0d0b07",
+          "#28251d",
+          "#474235",
+          "#686150",
+          "#898270",
+          "#aaa597",
+          "#cdc9bf",
+          "#f1eee8"
+        ]
+      },
+      "aviso-borde": {
+        "role": "tertiary",
+        "displayName": "Borde Ámbar",
+        "canonical": "#f0d58c",
+        "oklch": "oklch(87.9% 0.097 90.0)",
+        "tonalRamp": [
+          "#0f0b01",
+          "#2e2406",
+          "#504011",
+          "#745f1d",
+          "#968041",
+          "#b5a475",
+          "#d5c8a7",
+          "#f5eedb"
+        ]
+      },
+      "borde": {
+        "role": "neutral",
+        "displayName": "Borde de Tarjeta",
+        "canonical": "#dde2ea",
+        "oklch": "oklch(91.1% 0.012 259.8)",
+        "tonalRamp": [
+          "#0a0b0d",
+          "#232528",
+          "#3f4247",
+          "#5e6168",
+          "#7e8389",
+          "#a2a5aa",
+          "#c7c9cd",
+          "#edeef1"
+        ]
+      },
+      "borde-control": {
+        "role": "neutral",
+        "displayName": "Borde de Control",
+        "canonical": "#c5ccd8",
+        "oklch": "oklch(84.3% 0.018 261.3)",
+        "tonalRamp": [
+          "#0a0b0d",
+          "#232529",
+          "#3e4249",
+          "#5c616b",
+          "#7d838d",
+          "#a1a5ad",
+          "#c6c9cf",
+          "#eceef2"
+        ]
+      },
+      "divisor": {
+        "role": "neutral",
+        "displayName": "Divisor",
+        "canonical": "#eef1f5",
+        "oklch": "oklch(95.7% 0.006 255.5)",
+        "tonalRamp": [
+          "#0b0b0c",
+          "#242526",
+          "#404244",
+          "#5f6164",
+          "#808286",
+          "#a3a5a8",
+          "#c8c9cb",
+          "#eeeeef"
+        ]
+      },
+      "pastilla-neutra": {
+        "role": "neutral",
+        "displayName": "Gris de Pastilla",
+        "canonical": "#e8edf5",
+        "oklch": "oklch(94.5% 0.012 259.8)",
+        "tonalRamp": [
+          "#0a0b0d",
+          "#232528",
+          "#3f4246",
+          "#5e6168",
+          "#7f8389",
+          "#a2a5aa",
+          "#c7c9cd",
+          "#edeef1"
+        ]
+      },
+      "gris-apagado": {
+        "role": "neutral",
+        "displayName": "Gris Apagado",
+        "canonical": "#8a93a3",
+        "oklch": "oklch(66.1% 0.026 262.1)",
+        "tonalRamp": [
+          "#0a0b0e",
+          "#22252b",
+          "#3d424c",
+          "#5a626f",
+          "#7b8391",
+          "#9fa5b1",
+          "#c5c9d1",
+          "#eceff3"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Monto",
+        "purpose": "Solo el monto grande de la estimación o la tarifa final; tabular."
+      },
+      "headline": {
+        "displayName": "Título de pantalla",
+        "purpose": "h1 de cada tarjeta principal; 1.25rem en la columna angosta del pasajero."
+      },
+      "title": {
+        "displayName": "Título de tarjeta",
+        "purpose": "h2 de las tarjetas de viaje; h3 del detalle a 1rem."
+      },
+      "body": {
+        "displayName": "Cuerpo",
+        "purpose": "Texto corriente; tablas a 0.93rem; etiquetas de formulario a 500."
+      },
+      "nota": {
+        "displayName": "Nota",
+        "purpose": "Aclaraciones, motivos y ayuda, en color suave."
+      },
+      "label": {
+        "displayName": "Etiqueta",
+        "purpose": "Pastillas, horas y detalle de la línea de tiempo, encabezados de tabla, códigos."
+      }
+    },
+    "shadows": [
+      {
+        "name": "flotante-mapa",
+        "value": "0 4px 12px rgba(29, 35, 48, 0.16)",
+        "purpose": "Solo la pastilla de ayuda que flota sobre el mapa."
+      },
+      {
+        "name": "anillo-actual",
+        "value": "0 0 0 5px rgba(31, 111, 235, 0.18)",
+        "purpose": "Halo del punto del paso actual en la línea de tiempo."
+      },
+      {
+        "name": "hundido",
+        "value": "inset 0 0 0 1px #c5ccd8",
+        "purpose": "Botón «Cancelar» de la fila abierta en la tabla del operador (con fondo #dfe5ee)."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-prender",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Curva del único movimiento: el paso de la línea de tiempo que se prende."
+      },
+      {
+        "name": "prender",
+        "value": "0.6s",
+        "purpose": "El punto de un paso hecho crece desde scale(0.4)."
+      },
+      {
+        "name": "prender-actual",
+        "value": "0.9s",
+        "purpose": "El punto del paso actual crece y suelta un anillo que se apaga hasta quedar en anillo-actual."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "animation: none",
+        "purpose": "Con prefers-reduced-motion: reduce no se anima nada."
+      },
+      {
+        "name": "hover-boton",
+        "value": "filter: brightness(0.94)",
+        "purpose": "Hover de todos los botones habilitados; sin transición."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "contenido",
+        "value": "960px",
+        "purpose": "Contenedor de las pantallas de un solo flujo."
+      },
+      {
+        "name": "ancho",
+        "value": "1360px",
+        "purpose": "Contenedor de pasajero y operador (.ancho)."
+      },
+      {
+        "name": "dos-columnas",
+        "value": "1180px",
+        "purpose": "El pasajero pasa a dos columnas."
+      },
+      {
+        "name": "tabla-desplazable",
+        "value": "900px",
+        "purpose": "Las tablas se desplazan en horizontal."
+      },
+      {
+        "name": "una-columna",
+        "value": "760px",
+        "purpose": "El pasajero pasa a una columna; mapa de 340px."
+      },
+      {
+        "name": "acciones-envuelven",
+        "value": "480px",
+        "purpose": "Las filas de acciones se envuelven."
+      }
+    ],
+    "constraints": [
+      "CSP estricta: todo estilo vive en src/estilos.css; nunca style= ni estilos o scripts en línea. npm run build falla si los encuentra (scripts/revisar-csp.mjs).",
+      "Ningún recurso de otro origen (fuentes, íconos, CDN); solo las teselas de OpenStreetMap."
+    ]
+  },
+  "components": [
+    {
+      "name": "Botón primario",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Acción que avanza el flujo; azul de acción.",
+      "html": "<button class=\"ds-btn\">Aceptar</button>",
+      "css": ".ds-btn { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; line-height: 1.5; font-size: 1rem; padding: 0.5rem 0.9rem; border: 0; border-radius: 6px; cursor: pointer; background: var(--acento, #1f6feb); color: #fff; } .ds-btn:hover { filter: brightness(0.94); } .ds-btn:focus-visible { outline: 2px solid var(--acento, #1f6feb); outline-offset: 2px; } .ds-btn:disabled { opacity: 0.6; cursor: default; }"
+    },
+    {
+      "name": "Botón principal",
+      "kind": "button",
+      "refersTo": "button-principal",
+      "description": "La acción principal de un formulario: todo el ancho, más alta, a 600.",
+      "html": "<button class=\"ds-btn-principal\">Pedir viaje</button>",
+      "css": ".ds-btn-principal { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; line-height: 1.5; font-size: 1rem; padding: 0.5rem 0.9rem; border: 0; border-radius: 6px; cursor: pointer; width: 100%; padding: 0.7rem 1rem; font-weight: 600; background: var(--acento, #1f6feb); color: #fff; } .ds-btn-principal:hover { filter: brightness(0.94); } .ds-btn-principal:focus-visible { outline: 2px solid var(--acento, #1f6feb); outline-offset: 2px; }"
+    },
+    {
+      "name": "Botón secundario",
+      "kind": "button",
+      "refersTo": "button-secundario",
+      "description": "Acción que no avanza el flujo: actualizar, volver, cancelar como segunda opción.",
+      "html": "<button class=\"ds-btn-secundario\">Actualizar</button>",
+      "css": ".ds-btn-secundario { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; line-height: 1.5; font-size: 1rem; padding: 0.5rem 0.9rem; border: 0; border-radius: 6px; cursor: pointer; background: #e8edf5; color: var(--texto, #1d2330); } .ds-btn-secundario:hover { filter: brightness(0.94); } .ds-btn-secundario:focus-visible { outline: 2px solid var(--acento, #1f6feb); outline-offset: 2px; }"
+    },
+    {
+      "name": "Botón de peligro",
+      "kind": "button",
+      "refersTo": "button-peligro",
+      "description": "Solo para confirmar una cancelación.",
+      "html": "<button class=\"ds-btn-peligro\">Sí, cancelar el viaje</button>",
+      "css": ".ds-btn-peligro { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; line-height: 1.5; font-size: 1rem; padding: 0.5rem 0.9rem; border: 0; border-radius: 6px; cursor: pointer; background: var(--error, #b42318); color: #fff; } .ds-btn-peligro:hover { filter: brightness(0.94); } .ds-btn-peligro:focus-visible { outline: 2px solid var(--acento, #1f6feb); outline-offset: 2px; }"
+    },
+    {
+      "name": "Botón enlace",
+      "kind": "button",
+      "refersTo": "button-enlace",
+      "description": "Acción menor en línea; con aria-pressed pasa a 600 sin subrayado.",
+      "html": "<button class=\"ds-btn-enlace\">Elegir en el mapa</button> <button class=\"ds-btn-enlace\" aria-pressed=\"true\">Marcando…</button>",
+      "css": ".ds-btn-enlace { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; line-height: 1.5; font-size: 1rem; padding: 0; border: 0; background: none; color: var(--acento, #1f6feb); text-decoration: underline; text-underline-offset: 0.2em; cursor: pointer; } .ds-btn-enlace[aria-pressed='true'] { font-weight: 600; text-decoration: none; } .ds-btn-enlace:focus-visible { outline: 2px solid var(--acento, #1f6feb); outline-offset: 2px; }"
+    },
+    {
+      "name": "Campo",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Etiqueta arriba a 500, campo con borde de control.",
+      "html": "<label class=\"ds-label\">Buscar<input class=\"ds-input\" placeholder=\"Pasajero, chofer o id\"></label>",
+      "css": ".ds-label { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; line-height: 1.5; display: flex; flex-direction: column; gap: 0.25rem; font-weight: 500; color: var(--texto, #1d2330); } .ds-input { font: inherit; font-weight: 400; padding: 0.5rem 0.6rem; border: 1px solid #c5ccd8; border-radius: 6px; background: #fff; color: var(--texto, #1d2330); } .ds-input:focus-visible { outline: 2px solid var(--acento, #1f6feb); outline-offset: 2px; }"
+    },
+    {
+      "name": "Pastillas de estado",
+      "kind": "chip",
+      "refersTo": "pastilla",
+      "description": "Conexión y estado del viaje: neutra, en marcha, ok, cortado.",
+      "html": "<span class=\"ds-pill\">Sin viaje</span> <span class=\"ds-pill ds-pill-marcha\">En camino</span> <span class=\"ds-pill ds-pill-ok\">En vivo</span> <span class=\"ds-pill ds-pill-error\">Reconectando</span>",
+      "css": ".ds-pill { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; line-height: 1.5; display: inline-block; font-size: 0.85rem; padding: 0.15rem 0.6rem; border-radius: 999px; background: #e8edf5; color: var(--suave, #5b6475); white-space: nowrap; } .ds-pill-marcha { background: #e3ecfd; color: #174ea6; } .ds-pill-ok { background: #e3f4e8; color: var(--ok, #1a7f37); } .ds-pill-error { background: #fdecea; color: var(--error, #b42318); }"
+    },
+    {
+      "name": "Tarjeta",
+      "kind": "card",
+      "refersTo": "tarjeta",
+      "description": "Contenedor base: blanco, borde fino, 10px, encabezado con título y pastilla.",
+      "html": "<section class=\"ds-card\"><div class=\"ds-card-head\"><h2>Tu viaje</h2><span class=\"ds-card-pill\">En vivo</span></div><p class=\"ds-card-nota\">Esperando que un chofer acepte.</p><div class=\"ds-card-bloque\"><strong>$ 4.250</strong></div></section>",
+      "css": ".ds-card { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; line-height: 1.5; background: #fff; border: 1px solid #dde2ea; border-radius: 10px; padding: 1.5rem; display: flex; flex-direction: column; gap: 0.75rem; color: var(--texto, #1d2330); max-width: 320px; } .ds-card-head { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; } .ds-card-head h2 { margin: 0; font-size: 1.15rem; } .ds-card-pill { font-size: 0.85rem; padding: 0.15rem 0.6rem; border-radius: 999px; background: #e3f4e8; color: #1a7f37; } .ds-card-nota { margin: 0; font-size: 0.9rem; color: #5b6475; } .ds-card-bloque { padding-top: 0.75rem; border-top: 1px solid #eef1f5; font-variant-numeric: tabular-nums; }"
+    },
+    {
+      "name": "Aviso",
+      "kind": "custom",
+      "refersTo": "aviso",
+      "description": "Franja ámbar que pide una acción: texto a la izquierda, botón a la derecha.",
+      "html": "<div class=\"ds-aviso\"><p>Tenés una oferta nueva.</p><button>Ver</button></div>",
+      "css": ".ds-aviso { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; line-height: 1.5; display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.75rem 1rem; border-radius: 10px; background: #fff6e0; border: 1px solid #f0d58c; color: #1d2330; } .ds-aviso p { margin: 0; } .ds-aviso button { font: inherit; padding: 0.5rem 0.9rem; border: 0; border-radius: 6px; background: #e8edf5; color: #1d2330; cursor: pointer; }"
+    },
+    {
+      "name": "Línea de tiempo del viaje",
+      "kind": "custom",
+      "refersTo": "linea-tiempo",
+      "description": "Componente insignia: cada paso se prende cuando llega su evento; único movimiento de la app.",
+      "html": "<ol class=\"ds-lt\"><li class=\"ds-paso hecho\"><strong>Pedido</strong><span class=\"ds-hora\">14:02</span></li><li class=\"ds-paso hecho\"><strong>Chofer asignado</strong><span class=\"ds-hora\">14:03</span></li><li class=\"ds-paso actual\"><strong>En camino</strong><span class=\"ds-hora\">14:03</span></li><li class=\"ds-paso\"><strong>En viaje</strong></li><li class=\"ds-paso\"><strong>Terminado</strong></li></ol>",
+      "css": ".ds-lt { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; line-height: 1.5; list-style: none; margin: 0; padding: 0; color: #1d2330; } .ds-paso { position: relative; display: flex; flex-direction: column; padding: 0 0 1.35rem 2.2rem; color: #5b6475; } .ds-paso strong { font-weight: 500; } .ds-paso.hecho, .ds-paso.actual { color: #1d2330; } .ds-paso.hecho strong, .ds-paso.actual strong { font-weight: 700; } .ds-paso:last-child { padding-bottom: 0; } .ds-paso::before { content: ''; position: absolute; left: 4px; top: 4px; width: 16px; height: 16px; border-radius: 50%; background: #fff; border: 2px solid #c5ccd8; box-sizing: border-box; } .ds-paso:not(:last-child)::after { content: ''; position: absolute; left: 11px; top: 20px; bottom: -4px; width: 2px; background: #dde2ea; } .ds-paso.hecho:not(:last-child)::after { background: #a9d8b6; } .ds-paso.hecho::before { background: #1a7f37; border-color: #1a7f37; animation: ds-prender 0.6s cubic-bezier(0.16, 1, 0.3, 1); } .ds-paso.actual::before { background: #1f6feb; border-color: #1f6feb; box-shadow: 0 0 0 5px rgba(31, 111, 235, 0.18); animation: ds-prender-actual 0.9s cubic-bezier(0.16, 1, 0.3, 1); } .ds-paso.actual strong { color: #174ea6; } .ds-hora { font-size: 0.85rem; color: #5b6475; font-variant-numeric: tabular-nums; } @keyframes ds-prender { from { transform: scale(0.4); } to { transform: scale(1); } } @keyframes ds-prender-actual { from { transform: scale(0.4); box-shadow: 0 0 0 0 rgba(31, 111, 235, 0.45); } 60% { transform: scale(1); box-shadow: 0 0 0 12px rgba(31, 111, 235, 0); } to { box-shadow: 0 0 0 5px rgba(31, 111, 235, 0.18); } } @media (prefers-reduced-motion: reduce) { .ds-paso.hecho::before, .ds-paso.actual::before { animation: none; } }"
+    }
+  ],
+  "narrative": {
+    "northStar": "El tablero de la demo",
+    "overview": "Un tablero claro y plano que se lee de un vistazo en la notebook de la defensa. Fondo gris frío, tarjetas blancas con un borde fino, un solo azul de acción y tres colores de estado (azul en marcha, verde hecho, rojo cortado). Nada compite con lo que el backend resuelve: la asignación y el seguimiento en vivo.\n\nLa identidad es la que el equipo ya usaba para chofer y admin de flota; pasajero y operador la extienden sin cambiarla. La densidad es la de una herramienta: textos del sistema, números tabulares, tablas sin adorno. El único gesto expresivo es la línea de tiempo del viaje, donde cada paso se prende cuando llega su evento.\n\nTodo vive en una sola hoja, `src/estilos.css`, con los tokens base en `:root`. La CSP de la página no admite estilos en línea, así que esa hoja es la única fuente de verdad visual.",
+    "keyCharacteristics": [
+      "Plano: profundidad por borde y fondo, casi sin sombras.",
+      "Un acento azul para la acción y el paso actual; el color de estado vive en pastillas.",
+      "Fuente del sistema y números tabulares en todo lo que cambia (horas, montos, cuentas).",
+      "Un solo movimiento: el paso de la línea de tiempo que se prende."
+    ],
+    "rules": [
+      {
+        "name": "La Regla del Estado en Pastilla",
+        "section": "colors",
+        "body": "El estado de un viaje o de la conexión se dice con una pastilla redondeada de fondo suave y texto del color de estado: azul si sigue, verde si terminó bien, rojo si se cortó. No se inventan colores nuevos para estados nuevos; se elige uno de los tres."
+      },
+      {
+        "name": "La Regla del Azul Único",
+        "section": "colors",
+        "body": "El azul de acción es el único color que invita a tocar. El verde y el rojo informan; el rojo solo es botón cuando la acción destruye algo (cancelar un viaje)."
+      },
+      {
+        "name": "La Regla del Número Quieto",
+        "section": "typography",
+        "body": "Todo número que cambia en vivo o se compara en columna (horas, montos, distancias, cuentas regresivas, fechas e importes de tabla) lleva `font-variant-numeric: tabular-nums`."
+      },
+      {
+        "name": "La Regla del Borde, no la Sombra",
+        "section": "elevation",
+        "body": "Una superficie se separa con borde de 1px y cambio de fondo. Una sombra aparece solo cuando algo flota sobre el mapa o marca un estado."
+      },
+      {
+        "name": "La Regla del Único Movimiento",
+        "section": "components",
+        "body": "La línea de tiempo es lo único que se mueve. Ninguna otra superficie anima su entrada o sus cambios."
+      }
+    ],
+    "dos": [
+      "**Do** escribir todo estilo en `src/estilos.css` con clases; la CSP de nginx rechaza `style=` y cualquier estilo o script en línea, y `npm run build` falla si los encuentra.",
+      "**Do** usar los tokens de `:root` (`--fondo`, `--tarjeta`, `--texto`, `--suave`, `--acento`, `--error`, `--ok`) para todo color que ya tenga uno.",
+      "**Do** decir el estado con una pastilla de los tres colores de estado, y la conexión en vivo siempre a la vista.",
+      "**Do** separar bloques dentro de una tarjeta con el divisor de 1px y 0.75rem, no con otra caja.",
+      "**Do** usar números tabulares en horas, montos, distancias y columnas numéricas.",
+      "**Do** respetar `prefers-reduced-motion` en todo lo que se mueva."
+    ],
+    "donts": [
+      "**Don't** usar `style=` ni estilos en línea, ni cargar fuentes, íconos o mapas de otro origen; solo las teselas de OpenStreetMap salen afuera.",
+      "**Don't** agregar sombras a tarjetas o botones en reposo; la separación es borde y fondo.",
+      "**Don't** animar nada fuera de la línea de tiempo del viaje.",
+      "**Don't** usar el rojo para una acción que no destruye nada, ni el verde como botón."
+    ]
+  }
+}

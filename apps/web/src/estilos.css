@@ -352,3 +352,632 @@ button.secundario {
     flex-wrap: wrap;
   }
 }
+
+/* --- Comunes: lo que el navegador dibuja solo, con la paleta de la app --- */
+::selection {
+  background: #cfe0fb;
+  color: var(--texto);
+}
+
+:focus-visible {
+  outline: 2px solid var(--acento);
+  outline-offset: 2px;
+}
+
+select {
+  font: inherit;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid #c5ccd8;
+  border-radius: 6px;
+  background: var(--tarjeta);
+  color: var(--texto);
+}
+
+button:not(:disabled):hover {
+  filter: brightness(0.94);
+}
+
+button.principal {
+  width: 100%;
+  padding: 0.7rem 1rem;
+  font-weight: 600;
+}
+
+button.peligro {
+  background: var(--error);
+}
+
+button.enlace {
+  padding: 0;
+  background: none;
+  color: var(--acento);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+button.enlace[aria-pressed='true'] {
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.solo-lector {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Las pantallas anchas (pasajero, operador) usan más que los 960 px del resto. */
+.contenido:has(.ancho) {
+  max-width: 1360px;
+  margin-top: 1.25rem;
+}
+
+/* Estados del viaje en una pastilla: el color dice si sigue, terminó bien o se cortó. */
+.etiqueta.estado-buscando,
+.etiqueta.estado-asignado,
+.etiqueta.estado-en_camino,
+.etiqueta.estado-en_curso {
+  background: #e3ecfd;
+  color: #174ea6;
+}
+
+.etiqueta.estado-completada {
+  background: #e3f4e8;
+  color: var(--ok);
+}
+
+.etiqueta.estado-cancelado_pasajero,
+.etiqueta.estado-cancelado_chofer,
+.etiqueta.estado-cancelado_operador,
+.etiqueta.estado-sin_choferes {
+  background: #fdecea;
+  color: var(--error);
+}
+
+.monto {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* --- Pasajero: la línea de tiempo como eje, el mapa al centro, el detalle a la derecha --- */
+.pasajero {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr) 320px;
+  gap: 1.25rem;
+  align-items: stretch;
+  min-height: max(560px, calc(100vh - 7rem));
+}
+
+.pasajero > .tarjeta {
+  align-self: start;
+}
+
+.columna-viaje h1 {
+  font-size: 1.25rem;
+}
+
+/* En la columna angosta, el aviso apila el texto y el botón. */
+.columna-viaje .aviso {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.6rem;
+}
+
+.encabezado.envuelve {
+  flex-wrap: wrap;
+}
+
+.encabezado .etiqueta,
+.encabezado .conexion {
+  white-space: nowrap;
+}
+
+.zona-mapa {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 420px;
+}
+
+.mapa {
+  flex: 1;
+  min-height: 420px;
+  border: 1px solid #dde2ea;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #e9ece6;
+}
+
+.ayuda-mapa {
+  position: absolute;
+  left: 50%;
+  bottom: 1.5rem;
+  transform: translateX(-50%);
+  z-index: 500;
+  padding: 0.35rem 0.8rem;
+  border-radius: 999px;
+  background: var(--tarjeta);
+  color: var(--texto);
+  box-shadow: 0 4px 12px rgba(29, 35, 48, 0.16);
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+/* Los puntos del mapa (círculos SVG de Leaflet: el CSS les gana a sus atributos). */
+.mapa.leaflet-container {
+  font: inherit;
+}
+
+.leaflet-interactive.mapa-origen,
+.leaflet-interactive.mapa-destino,
+.mapa-movil {
+  stroke: #fff;
+  stroke-width: 3;
+  fill-opacity: 1;
+}
+
+.mapa-origen {
+  fill: var(--texto);
+}
+
+.mapa-destino {
+  fill: var(--acento);
+}
+
+.mapa-movil {
+  fill: var(--ok);
+}
+
+.mapa-movil.halo {
+  stroke: none;
+  fill: var(--ok);
+  fill-opacity: 0.2;
+}
+
+.mapa-movil.vieja {
+  fill: #8a93a3;
+}
+
+.mapa-recorrido {
+  stroke: var(--acento);
+  stroke-width: 3;
+  stroke-opacity: 0.55;
+  stroke-dasharray: 6 8;
+  fill: none;
+}
+
+/* La línea de tiempo. Cada paso se prende cuando llega su evento: el punto crece desde el centro y
+   suelta un anillo que se apaga. Es el único movimiento de la pantalla. */
+.linea-tiempo {
+  list-style: none;
+  margin: 0.25rem 0 0;
+  padding: 0;
+}
+
+/* El riel se dibuja por paso, de un punto al siguiente: termina en el último, aunque lleve detalle.
+   Entre dos pasos hechos va en verde. */
+.paso:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: 11px;
+  top: 20px;
+  bottom: -4px;
+  width: 2px;
+  background: #dde2ea;
+}
+
+.paso.hecho:not(:last-child)::after {
+  background: #a9d8b6;
+}
+
+.paso {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 0 0 1.35rem 2.2rem;
+}
+
+.paso:last-child {
+  padding-bottom: 0;
+}
+
+.paso::before {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 4px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--tarjeta);
+  border: 2px solid #c5ccd8;
+  box-sizing: border-box;
+}
+
+.paso.pendiente {
+  color: var(--suave);
+}
+
+.paso.pendiente strong {
+  font-weight: 500;
+}
+
+.paso.hecho::before {
+  background: var(--ok);
+  border-color: var(--ok);
+  animation: prender 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.paso.actual::before {
+  background: var(--acento);
+  border-color: var(--acento);
+  box-shadow: 0 0 0 5px rgba(31, 111, 235, 0.18);
+  animation: prender-actual 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.paso.actual strong {
+  color: #174ea6;
+}
+
+.paso.fallo::before {
+  background: var(--error);
+  border-color: var(--error);
+}
+
+.paso.fallo strong {
+  color: var(--error);
+}
+
+.hora,
+.detalle-paso {
+  font-size: 0.85rem;
+  color: var(--suave);
+  font-variant-numeric: tabular-nums;
+}
+
+@keyframes prender {
+  from {
+    transform: scale(0.4);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+@keyframes prender-actual {
+  from {
+    transform: scale(0.4);
+    box-shadow: 0 0 0 0 rgba(31, 111, 235, 0.45);
+  }
+  60% {
+    transform: scale(1);
+    box-shadow: 0 0 0 12px rgba(31, 111, 235, 0);
+  }
+  to {
+    box-shadow: 0 0 0 5px rgba(31, 111, 235, 0.18);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .paso.hecho::before,
+  .paso.actual::before {
+    animation: none;
+  }
+}
+
+/* El formulario de pedido, en la columna de la línea de tiempo. */
+.recorrido {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+/* Origen y destino: dos grupos separados por una línea, no cajas dentro de la tarjeta. */
+fieldset.punto {
+  margin: 0;
+  padding: 0 0 0.9rem;
+  border: 0;
+  border-bottom: 1px solid #eef1f5;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+fieldset.punto legend {
+  padding: 0;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+fieldset.punto.origen legend::before,
+fieldset.punto.destino legend::before {
+  content: '';
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 0.4rem;
+  border-radius: 50%;
+  background: var(--texto);
+}
+
+fieldset.punto.destino legend::before {
+  background: var(--acento);
+}
+
+/* Marcando en el mapa: el título y la lista toman el acento. */
+fieldset.punto.marcando legend {
+  color: #174ea6;
+}
+
+fieldset.punto.marcando select {
+  border-color: var(--acento);
+}
+
+.acciones-punto {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
+  font-size: 0.9rem;
+}
+
+/* La columna del detalle. */
+.detalle {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.detalle h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.datos-viaje {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.35rem 0.75rem;
+  margin: 0;
+  padding-top: 0.75rem;
+  border-top: 1px solid #eef1f5;
+}
+
+.datos-viaje dt {
+  color: var(--suave);
+}
+
+.datos-viaje dd {
+  margin: 0;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.tarifa {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #eef1f5;
+}
+
+.distancia {
+  font-size: 1.15rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.compartir,
+.cobro,
+.incierto,
+.confirmar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #eef1f5;
+}
+
+.confirmar p {
+  margin: 0;
+  font-weight: 600;
+}
+
+.angosto-centrado {
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+/* Hasta una notebook chica, la grilla pasa a dos columnas; en angosto, una. */
+@media (max-width: 1180px) {
+  .pasajero {
+    grid-template-columns: 300px minmax(0, 1fr);
+  }
+
+  .columna-detalle {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 760px) {
+  .pasajero {
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 0;
+  }
+
+  .zona-mapa,
+  .mapa {
+    min-height: 340px;
+  }
+
+  .ayuda-mapa {
+    white-space: normal;
+    width: max-content;
+    max-width: calc(100% - 2rem);
+  }
+}
+
+/* --- Tablas: historial del pasajero y panel del operador --- */
+.tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.93rem;
+}
+
+.tabla th {
+  text-align: left;
+  font-weight: 600;
+  color: var(--suave);
+  font-size: 0.85rem;
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid #dde2ea;
+  white-space: nowrap;
+}
+
+.tabla td {
+  padding: 0.6rem;
+  border-bottom: 1px solid #eef1f5;
+  vertical-align: top;
+}
+
+.tabla tbody tr:hover td {
+  background: #f8fafc;
+}
+
+.tabla .numero {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.tabla .fecha {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.tabla code {
+  font-size: 0.85rem;
+}
+
+.tabla .accion {
+  text-align: right;
+}
+
+.tabla .accion button {
+  padding: 0.3rem 0.7rem;
+  font-size: 0.88rem;
+}
+
+.tabla .motivo {
+  display: block;
+  margin-top: 0.2rem;
+  max-width: 24ch;
+}
+
+.tabla tr.abierta td {
+  background: #fdf6f5;
+  border-bottom-color: transparent;
+}
+
+.tabla tr.fila-cancelar td {
+  background: #fdf6f5;
+  padding: 0.25rem 0.6rem 1rem;
+}
+
+/* --- Panel del operador --- */
+.operador .encabezado {
+  align-items: baseline;
+}
+
+.filtros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem;
+}
+
+.filtros .buscar {
+  flex: 1;
+  min-width: 260px;
+}
+
+/* El select, el campo y los botones del filtro, a la misma altura. */
+.filtros select,
+.filtros input,
+.filtros button {
+  height: 2.5rem;
+}
+
+/* Las columnas no cambian de ancho cuando se abre la fila de cancelar. */
+.operador .tabla {
+  table-layout: fixed;
+}
+
+.operador .tabla th:nth-child(1),
+.operador .tabla th:nth-child(4),
+.operador .tabla th:nth-child(5) {
+  width: 7.5rem;
+}
+
+.operador .tabla th:nth-child(2) {
+  width: 8.5rem;
+}
+
+.operador .tabla th:nth-child(3) {
+  width: 12rem;
+}
+
+.operador .tabla th:nth-child(7) {
+  width: 11.5rem;
+}
+
+.operador .tabla th:nth-child(8) {
+  width: 7rem;
+}
+
+.operador .tabla td {
+  overflow-wrap: anywhere;
+}
+
+/* El «Cancelar» de la fila abierta: hundido, para que se lea que su fila es la que se está editando. */
+.tabla button[aria-expanded='true'] {
+  box-shadow: inset 0 0 0 1px #c5ccd8;
+  background: #dfe5ee;
+}
+
+.vacio {
+  margin: 0;
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--suave);
+  border: 1px dashed #c5ccd8;
+  border-radius: 8px;
+}
+
+.cancelar-viaje {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem;
+}
+
+.cancelar-viaje label {
+  flex: 1;
+  min-width: 280px;
+}
+
+.cancelar-viaje .error,
+.cancelar-viaje .error + .error {
+  flex-basis: 100%;
+}
+
+@media (max-width: 900px) {
+  .tabla {
+    display: block;
+    overflow-x: auto;
+  }
+}

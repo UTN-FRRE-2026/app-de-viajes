@@ -22,10 +22,14 @@ export function ControlUbicacion({ envio, inactivo }: { envio: EnvioUbicacion; i
   };
 
   const estado = estadoPosicion(envio.fijacion, ahora);
-  let linea: string;
+  let linea: string | null;
   let alerta = false;
   if (!envio.activo) linea = inactivo;
-  else if (estado.tipo === 'sin-posicion') linea = envio.modo === 'gps' ? 'Esperando la posición del GPS…' : 'Cargá las coordenadas para empezar a enviar.';
+  else if (estado.tipo === 'sin-posicion') {
+    // Si el GPS ya falló (permiso denegado), «Esperando…» contradiría el error de abajo.
+    if (envio.modo === 'gps') linea = envio.errorGps ? null : 'Esperando la posición del GPS…';
+    else linea = 'Cargá las coordenadas para empezar a enviar.';
+  }
   else if (estado.tipo === 'vieja') {
     alerta = true;
     linea = `GPS sin posición reciente (${hace(estado.edadMs)}): no se envía.`;
@@ -58,9 +62,11 @@ export function ControlUbicacion({ envio, inactivo }: { envio: EnvioUbicacion; i
           {invalida ? <p className="error">Latitud entre -90 y 90, longitud entre -180 y 180.</p> : null}
         </form>
       ) : null}
-      <p className={alerta ? 'error' : 'nota'} role="status">
-        {linea}
-      </p>
+      {linea ? (
+        <p className={alerta ? 'error' : 'nota'} role="status">
+          {linea}
+        </p>
+      ) : null}
       {envio.errorGps ? <p className="error">{envio.errorGps}</p> : null}
       {envio.activo && envio.errorEnvio ? <p className="error">No se pudo enviar la ubicación: {textoDeError(envio.errorEnvio)}</p> : null}
     </div>

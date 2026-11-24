@@ -48,7 +48,7 @@ Para sumar una pantalla:
 2. una entrada en `rutas` (relativa a `base`) y, si va en el menú, otra en `menu`, en el archivo del rol;
 3. las llamadas con `pedir()`, pasando `clave` si la ruta exige Idempotency-Key.
 
-La del chofer ya está ([abajo](#la-pantalla-del-chofer-chofer)). Pasajero, operador y admin de flota tienen un inicio provisorio: las pantallas reales las suma su dueño (pasajero y operador, Iván; admin de flota, Agos).
+Están las cuatro: [chofer](#la-pantalla-del-chofer-chofer), [flota](#el-panel-de-la-flota-flota), [pasajero](#la-pantalla-del-pasajero-pasajero) y [operador](#el-panel-del-operador-operador).
 
 ## La pantalla del chofer (`/chofer`)
 
@@ -104,9 +104,58 @@ Mientras el resultado es incierto, la clave se conserva, y la fila o el formular
 - **Las filas:** una página leída antes de que se activara un chofer no pisa esa fila, pero sí actualiza las demás.
 - **Un alta hecha mientras se recargaba la lista** no se pierde.
 
+## La pantalla del pasajero (`/pasajero`)
+
+Tres columnas, para web de escritorio (en anchos chicos se apilan):
+
+| Columna | Sin viaje | Con viaje |
+|---|---|---|
+| Izquierda | El origen y el destino | **La línea de tiempo**: Pedido, Chofer asignado, En camino, En viaje, Terminado y Cobrado |
+| Centro | El mapa | El mapa |
+| Derecha | La estimación y «Pedir viaje» | El chofer, la tarifa, el cobro y las acciones |
+
+Va en `src/roles/pasajero/`, con la división de las otras pantallas: `Panel.tsx`, `store.ts`, y `logica.ts` sin React ni red (`tests/pasajero-logica.test.ts`). El historial está en `/pasajero/historial`, de a 10 con «Ver más».
+
+**La línea de tiempo.** Cada evento del SSE prende su paso con la hora en que llegó, y la asignación muestra cuánto tardó («en 7 s»).
+- El paso actual va en azul, con «hace N s», y lo hecho en verde.
+- Una cancelación o «sin choferes» termina en un paso en rojo, con el motivo y quién canceló.
+- Lo que pasó con la pantalla cerrada no tiene hora, salvo el pedido, que toma `creadaEn` del servidor.
+- El punto de cada paso se prende con una animación corta, que se apaga con `prefers-reduced-motion`.
+
+**La base manda, el SSE avisa**, como en `/chofer`. El pasajero no tiene un `GET` de su viaje activo: se relee la primera página de `GET /historial` (los más nuevos primero; hay como mucho un viaje activo por pasajero), al abrir, al reconectar y con cada evento que cambia el viaje. Valen las mismas reglas de lecturas atrasadas (la marca de la última acción) y de `version`.
+- Un viaje que terminó **queda en pantalla** con su estado final hasta «Pedir otro viaje», así se ve la tarifa final o el motivo de la cancelación.
+- `DriverLocationUpdated` se aplica directo, solo si es del viaje activo con chofer y más nueva que la anterior.
+
+**El mapa** (`src/mapa/Mapa.tsx`):
+- **Leaflet** (1.9.4, en el bundle y en su propio archivo: se baja solo al entrar como pasajero) con las teselas de **OpenStreetMap**. Es lo único que viene de afuera, y solo como imágenes (`img-src`, ver la CSP abajo).
+- Muestra el origen (oscuro), el destino (azul), el recorrido en línea recta y al chofer en verde. Pasados 30 s sin posición, el chofer se ve gris.
+- Se encuadra solo cuando cambian el origen o el destino, sin animación, no con cada posición del chofer.
+- El origen y el destino se eligen de varias formas:
+  - en una lista de **lugares de la demo** (`lugares.ts`, todos dentro de la zona «CABA» de `npm run demo:flotas`), para la demo y para Playwright;
+  - con un **clic en el mapa**;
+  - con **«Usar mi ubicación»** para el origen.
+
+  Un punto a menos de 60 m de un lugar conocido se muestra con su nombre.
+
+**Pedir, cancelar y cobrar** (operaciones con Idempotency-Key):
+- **Pedir:** con la estimación a la vista (`GET /tarifas/estimacion`). Si el resultado es incierto, «No sabemos si se pidió el viaje» y «Reintentar» con la MISMA clave; la relectura lo resuelve si el viaje ya existe. Los rechazos conocidos tienen su texto: `SOLICITUD_ACTIVA_EXISTENTE`, `ORIGEN_FUERA_DE_ZONA` y `VIAJE_FUERA_DE_RANGO`.
+- **Cancelar:** solo buscando chofer, asignado o con el chofer en camino, lo mismo que permite dispatch; ya en viaje, solo el operador. Se confirma en la misma columna, sin modal. Si el resultado es incierto, se reintenta con la misma clave, y la relectura lo resuelve si el viaje ya no está activo. Si cancela el chofer o un operador, un aviso dice quién y con qué motivo.
+- **El cobro** llega por `PaymentCaptured` o `PaymentDeclined`. Esos eventos no se reponen: si llegaron con el stream cortado, cada relectura de un viaje terminado con el cobro sin resolver lo lee de `GET /solicitudes/:id`, que trae el cobro y no lo procesa. «Ver el cobro ahora» usa `POST /solicitudes/:id/cobrar`: lo procesa en el momento, lo devuelve como está si ya se resolvió y nunca cobra dos veces.
+- **La ubicación del pasajero** se comparte con el chofer mientras viene a buscarlo (`ASIGNADO` y `EN_CAMINO`), con el mismo control de GPS o manual que el chofer.
+
+## El panel del operador (`/operador`)
+
+Para `operador` y `admin` (`src/roles/operador/`). Una tabla de `GET /panel/viajes`:
+- **El filtro:** sin estado, los viajes activos; si no, los de un estado. La búsqueda va en `q`: el id del viaje, del pasajero o del chofer, o el motivo de una cancelación.
+- **Las columnas:** el viaje, el pasajero y el chofer van con los últimos 8 caracteres del id (el completo, al pasar el mouse); además, cuándo se pidió, el estado, el recorrido y el importe (el final o el estimado).
+- **Sin SSE** (`/eventos` es solo para pasajero y chofer): los activos se vuelven a pedir cada 10 s, salvo mientras se escribe un motivo. Arriba dice hace cuánto se actualizó, y hay un «Actualizar».
+- **Cancelar con motivo** (obligatorio para el operador, de 3 a 200 caracteres), en una fila que se abre debajo del viaje, sin modal.
+  - La clave es de `cancelar:<id>:<motivo>`: si el resultado es incierto, «Reintentar» usa la MISMA clave.
+  - `SOLICITUD_NO_CANCELABLE` dice que el viaje ya terminó o estaba cancelado.
+
 ## Lo compartido entre las pantallas de viaje
 
-Para la pantalla del pasajero (Iván) y las que vengan:
+Lo usan las pantallas del pasajero y del chofer:
 
 | Módulo | Qué hace |
 |---|---|
@@ -143,7 +192,7 @@ Con Docker Desktop, todo lo que entra por un puerto publicado le llega a nginx c
 
 ## Encabezados de la página
 
-- **CSP** (PLAN, Fase B): `default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'`. Todo del mismo origen, sin scripts ni estilos en línea. Si se suma un mapa, su servidor de teselas va en `img-src`.
+- **CSP** (PLAN, Fase B): `default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https://tile.openstreetmap.org; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'`. Todo del mismo origen, sin scripts ni estilos en línea. Lo único de afuera son las teselas del mapa de OpenStreetMap, y solo como imágenes: Leaflet va dentro del bundle, posiciona con la CSSOM (que la CSP permite) y dibuja los puntos como SVG. Las teselas llevan `referrerpolicy=strict-origin-when-cross-origin` (solo el origen), porque la política de uso de OpenStreetMap pide el `Referer` y la página manda `no-referrer`.
 - `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`, `Cross-Origin-Opener-Policy: same-origin`.
 - `Permissions-Policy`: geolocalización solo para la página (el chofer comparte su ubicación desde el navegador); cámara, micrófono y pagos, para nadie.
 - `server_tokens off`: nginx no dice su versión.
