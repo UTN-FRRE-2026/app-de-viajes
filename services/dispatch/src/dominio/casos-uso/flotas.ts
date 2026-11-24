@@ -20,11 +20,32 @@ import {
   type Flota,
   type Vehiculo,
 } from '../flotas/index.js';
-import type { DatosZona, DirectorioUsuarios, Pagina, RepositorioFlotas, TransaccionFlotas } from '../puertos/index.js';
+import type {
+  DatosReporteFlota,
+  DatosZona,
+  DirectorioUsuarios,
+  Pagina,
+  PeriodoReporte,
+  RepositorioDespacho,
+  RepositorioFlotas,
+  TransaccionFlotas,
+} from '../puertos/index.js';
 
 export interface DependenciasFlotas {
   repoFlotas: RepositorioFlotas;
   directorio: DirectorioUsuarios;
+  /** Los viajes y los cobros, para el reporte: viven en el repositorio de despacho. */
+  viajes: Pick<RepositorioDespacho, 'reporteFlota'>;
+}
+
+/** El reporte de la flota, con el período que se consultó. */
+export interface ReporteFlota extends DatosReporteFlota {
+  flotaId: string;
+  inicio: string;
+  fin: string;
+  moneda: 'ARS';
+  /** Solo los cobros APROBADO; los pendientes y los rechazados no se facturan. */
+  facturadoCentavos: number;
 }
 
 export interface ListadoChoferes {
@@ -43,7 +64,7 @@ export interface ListadoChoferes {
  * - activar a uno ya activo, cambiar la disponibilidad o bajar el límite no lo tocan.
  * El cambio del chofer y el del contador van en la misma transacción.
  */
-export function crearCasosDeFlotas({ repoFlotas, directorio }: DependenciasFlotas) {
+export function crearCasosDeFlotas({ repoFlotas, directorio, viajes }: DependenciasFlotas) {
   /** La flota del token tiene que existir en dispatch. */
   async function flotaPropia(actor: ActorFlota): Promise<Flota> {
     const flota = await repoFlotas.obtenerFlota(flotaDelActor(actor));
@@ -79,6 +100,25 @@ export function crearCasosDeFlotas({ repoFlotas, directorio }: DependenciasFlota
       return {
         choferes: filas.slice(0, limite).map((c) => c.aDatos()),
         siguiente: filas.length > limite ? desde + limite : null,
+      };
+    },
+
+    /**
+     * Viajes y facturación de la flota del token en [inicio, fin), sobre el inicio de cada viaje. Cuenta
+     * por la flota guardada en el viaje al aceptar (los viajes sin flota quedan fuera) y factura solo
+     * los cobros aprobados. Un período sin viajes da ceros.
+     */
+    async reporte(actor: ActorFlota, periodo: PeriodoReporte): Promise<ReporteFlota> {
+      const flota = await flotaPropia(actor);
+      const datos = await viajes.reporteFlota(flota.id, periodo);
+      return {
+        flotaId: flota.id,
+        inicio: periodo.inicio.toISOString(),
+        fin: periodo.fin.toISOString(),
+        moneda: 'ARS',
+        viajesCompletados: datos.viajesCompletados,
+        facturadoCentavos: datos.cobros.aprobados.centavos,
+        cobros: datos.cobros,
       };
     },
 

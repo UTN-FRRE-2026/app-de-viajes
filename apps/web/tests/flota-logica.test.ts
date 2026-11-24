@@ -5,15 +5,23 @@ import {
   aplicarFlota,
   aplicarLecturaChofer,
   aplicarPagina,
+  aplicarReporte,
   erroresAlta,
   LISTA_INICIAL,
   limiteRecarga,
   motivoSinActivar,
+  mesEnCurso,
   objetivoAlta,
+  pedirReporte,
+  periodoDeFechas,
+  REPORTE_INICIAL,
   textoErrorFlota,
+  textoSinFacturar,
   vehiculoCoincide,
   type Chofer,
   type EstadoLista,
+  type Periodo,
+  type Reporte,
 } from '../src/roles/flota/logica';
 
 const FLOTA = '00000000-0000-4000-8000-0000000000f2';
@@ -103,5 +111,82 @@ describe('reglas y mensajes', () => {
     expect(Object.keys(erroresAlta({ choferId: 'x', vehiculo: { patente: 'A1', marca: '', modelo: 'm' } }))).toEqual(['choferId', 'patente', 'marca']);
     // La clave es por cuerpo: otro vehículo, otra operación.
     expect(objetivoAlta(datos)).not.toBe(objetivoAlta({ ...datos, vehiculo: { ...datos.vehiculo, patente: 'AAA002' } }));
+  });
+});
+
+describe('reporte: el período', () => {
+  const local = (a: number, m: number, d: number) => new Date(a, m - 1, d).toISOString();
+
+  it('las dos fechas van incluidas: fin es la medianoche local del día siguiente a «hasta»', () => {
+    expect(periodoDeFechas('2026-11-01', '2026-11-30')).toEqual({ periodo: { inicio: local(2026, 11, 1), fin: local(2026, 12, 1) } });
+    expect(periodoDeFechas('2026-11-24', '2026-11-24')).toEqual({ periodo: { inicio: local(2026, 11, 24), fin: local(2026, 11, 25) } });
+    expect(periodoDeFechas('2026-12-31', '2026-12-31')).toEqual({ periodo: { inicio: local(2026, 12, 31), fin: local(2027, 1, 1) } });
+  });
+
+  it('el mes en curso va del 1 a hoy', () => {
+    expect(mesEnCurso(new Date(2026, 10, 24, 18, 30))).toEqual({ desde: '2026-11-01', hasta: '2026-11-24' });
+    expect(mesEnCurso(new Date(2026, 0, 1, 0, 5))).toEqual({ desde: '2026-01-01', hasta: '2026-01-01' });
+  });
+
+  it('rechaza un rango al revés, de más de 366 días, o fechas vacías o inexistentes', () => {
+    expect(periodoDeFechas('2026-11-02', '2026-11-01')).toHaveProperty('error');
+    expect(periodoDeFechas('2025-01-01', '2026-01-02')).toHaveProperty('error'); // 367 días
+    expect(periodoDeFechas('2025-01-01', '2026-01-01')).toHaveProperty('periodo'); // 366 justos
+    expect(periodoDeFechas('2025-01-01', '2025-12-31')).toHaveProperty('periodo'); // 365
+    expect(periodoDeFechas('2024-01-01', '2024-12-31')).toHaveProperty('periodo'); // 366, bisiesto
+    expect(periodoDeFechas('', '2026-11-01')).toHaveProperty('error');
+    expect(periodoDeFechas('2026-02-31', '2026-03-01')).toHaveProperty('error');
+  });
+});
+
+describe('reporte: cada consulta con su marca', () => {
+  const OCT: Periodo = { inicio: '2026-10-01T03:00:00.000Z', fin: '2026-11-01T03:00:00.000Z' };
+  const NOV: Periodo = { inicio: '2026-11-01T03:00:00.000Z', fin: '2026-12-01T03:00:00.000Z' };
+  const reporte = (p: Periodo, facturadoCentavos: number): Reporte => ({
+    flotaId: FLOTA,
+    ...p,
+    moneda: 'ARS',
+    viajesCompletados: facturadoCentavos > 0 ? 1 : 0,
+    facturadoCentavos,
+    cobros: {
+      aprobados: { cantidad: facturadoCentavos > 0 ? 1 : 0, centavos: facturadoCentavos },
+      pendientes: { cantidad: 0, centavos: 0 },
+      rechazados: { cantidad: 0, centavos: 0 },
+    },
+  });
+
+  it('con dos períodos pedidos seguidos, la respuesta vieja que llega tarde no pisa al último', () => {
+    let e = pedirReporte(REPORTE_INICIAL, OCT, 1);
+    e = pedirReporte(e, NOV, 2);
+    e = aplicarReporte(e, { datos: reporte(NOV, 500) }, 2);
+    const despues = aplicarReporte(e, { datos: reporte(OCT, 999) }, 1);
+    expect(despues).toBe(e);
+    expect(despues).toMatchObject({ periodo: NOV, datos: { facturadoCentavos: 500 }, cargando: false });
+  });
+
+  it('tampoco la pisa si la vieja llega antes, ni un error de una consulta vieja', () => {
+    let e = pedirReporte(REPORTE_INICIAL, OCT, 1);
+    e = pedirReporte(e, NOV, 2);
+    e = aplicarReporte(e, { datos: reporte(OCT, 999) }, 1);
+    e = aplicarReporte(e, { error: new ErrorApi(500, 'ERROR_INTERNO', 'x', null) }, 1);
+    expect(e).toMatchObject({ periodo: NOV, datos: null, cargando: true, error: null });
+    e = aplicarReporte(e, { datos: reporte(NOV, 0) }, 2);
+    expect(e).toMatchObject({ datos: { facturadoCentavos: 0 }, cargando: false });
+  });
+
+  it('con otro período se dejan de mostrar los números anteriores; con el mismo, se conservan al releer', () => {
+    let e = aplicarReporte(pedirReporte(REPORTE_INICIAL, OCT, 1), { datos: reporte(OCT, 100) }, 1);
+    expect(pedirReporte(e, OCT, 2).datos).toMatchObject({ facturadoCentavos: 100 });
+    e = pedirReporte(e, NOV, 3);
+    expect(e.datos).toBeNull();
+  });
+
+  it('lo no facturado se informa con su monto', () => {
+    const r = reporte(NOV, 1000);
+    r.cobros.pendientes = { cantidad: 2, centavos: 25_050 };
+    r.cobros.rechazados = { cantidad: 1, centavos: 700 };
+    const texto = textoSinFacturar(r).replace(/\s/g, ' ');
+    expect(texto).toContain('Pendientes de cobro: 2 ($ 250,50)');
+    expect(texto).toContain('Rechazados: 1 ($ 7,00)');
   });
 });

@@ -273,6 +273,23 @@ button.secundario {
   height: 0.9rem;
 }
 
+.periodo-reporte {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: flex-end;
+}
+
+.reporte {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.reporte .facturado strong {
+  font-size: 1.6rem;
+}
+
 .formulario-alta {
   display: flex;
   flex-direction: column;

@@ -89,6 +89,29 @@ export interface RepositorioDespacho {
    * porque otro chofer ganó o porque el pasajero canceló no aparecen.
    */
   ofertasPendientesDelChofer(choferId: string, ahora: Date): Promise<OfertaConSolicitud[]>;
+  /**
+   * Reporte de la flota: los viajes COMPLETADA con `fleet_id` = `flotaId` (la flota guardada al aceptar,
+   * no la actual del chofer) e inicio en [inicio, fin), y sus cobros por estado. Los viajes sin flota
+   * (NULL) no entran. Un viaje completado sin cobro cuenta como viaje y no suma en ningún estado.
+   */
+  reporteFlota(flotaId: string, periodo: PeriodoReporte): Promise<DatosReporteFlota>;
+}
+
+export interface PeriodoReporte {
+  /** Incluido. */
+  inicio: Date;
+  /** Excluido. */
+  fin: Date;
+}
+
+export interface CobrosDeUnEstado {
+  cantidad: number;
+  centavos: number;
+}
+
+export interface DatosReporteFlota {
+  viajesCompletados: number;
+  cobros: { aprobados: CobrosDeUnEstado; pendientes: CobrosDeUnEstado; rechazados: CobrosDeUnEstado };
 }
 
 export interface OfertaConSolicitud {

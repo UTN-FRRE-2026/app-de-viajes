@@ -179,6 +179,7 @@ El ADR 0006 registra la decisión con sus alternativas reales: monolito modular 
 - **Carrera G:** `UPDATE fleets SET active_count = active_count + 1 WHERE id = $1 AND active_count < max_active RETURNING ...`, más `CHECK (active_count <= max_active)`. Test: 50 activaciones simultáneas con límite 10 dejan exactamente 10.
 - Reporte por flota: choferes activos, viajes y facturación.
 - **Hecho (PR 1 de flotas, Agostina):** flotas con límite (`PUT /admin/flotas/:id`), alta de choferes con vehículo (la cuenta se verifica en identity con `GET /interno/usuarios/:id`), habilitación por el admin, activación por el admin_flota con la carrera G, disponibilidad del chofer y aislamiento por `fleetId` en el caso de uso. Test de 50 activaciones contra límite 10 contra Postgres, con mutaciones comprobadas. Detalle en `docs/flotas.md`. **Falta:** zonas (PostGIS), filtro de candidatos por flota y zona, y el reporte.
+- **Hecho (reporte por flota, Agostina):** `GET /flota/reporte?inicio&fin` y la tarjeta «Viajes y facturación» en `/flota`. Cuenta los viajes `COMPLETADA` con el `fleet_id` guardado al aceptar (los que tienen NULL quedan fuera), con inicio en el período, y factura solo los cobros aprobados, en centavos y sin redondear. Los pendientes y los rechazados se informan aparte ([docs/flotas.md](docs/flotas.md#el-reporte-de-la-flota)).
 
 ### 3.4 dispatch · tarifas
 
@@ -242,7 +243,7 @@ El ADR 0006 registra la decisión con sus alternativas reales: monolito modular 
 | **6.5** Oferta con vencimiento | ✅ | Barrido cada 2 s, TTL de 15 s |
 | **6.5** Tiempo real | ✅ | SSE con los eventos del viaje, reconexión con `Last-Event-ID` y las posiciones en vivo: la del chofer para su pasajero, y la del pasajero para su chofer (3.5) |
 | **6.6** Simulador de 500 choferes y mediciones | ✅ | 500 choferes con k6 contra location, en un entorno de carga aislado (`carga/`). De punta a punta con dispatch (24/11): viajes en paralelo con el filtro real, ingenua frente a optimizada, y rampa de estrés, con las hipótesis commiteadas antes y 3 corridas por escenario (`docs/mediciones.md`) |
-| **6.7 G** Flotas y zonas | 🟡 | Hecho: flotas, choferes con vehículo, habilitación, disponibilidad, límite de activos con la carrera G (test de 50 contra 10) y aislamiento entre flotas (3.3, `docs/flotas.md`), el panel `/flota` (cupo, alta, activar y desactivar), zonas en PostGIS, filtro de candidatos por flota y zona con lotes crecientes, y la revalidación al aceptar con la flota guardada en el viaje (PR 2). Falta: los viajes y la facturación del reporte |
+| **6.7 G** Flotas y zonas | ✅ | Hecho: flotas, choferes con vehículo, habilitación, disponibilidad, límite de activos con la carrera G (test de 50 contra 10) y aislamiento entre flotas (3.3, `docs/flotas.md`), el panel `/flota` (cupo, alta, activar y desactivar), zonas en PostGIS, filtro de candidatos por flota y zona con lotes crecientes, y la revalidación al aceptar con la flota guardada en el viaje (PR 2), y el reporte de viajes y facturación por flota |
 | **7.1** Seis ADR o más | ✅ | Hay seis: 0001, 0004, 0005, 0006, 0007 (SSE) y 0010 (idempotencia). Faltan 0002, 0003, 0008, 0009, 0011 y 0012 |
 | **7.2** `docs/mediciones.md` | ✅ | Cubre la tarea pesada, la carrera principal (6.3), y las solicitudes bajo carga y estrés con el tiempo hasta la asignación |
 | **7.3** Historial de Git | 🟡 | Los tres tienen commits y cada PR pasa por revisión de otro. El PR #1 se mergeó sin revisión |
@@ -349,7 +350,7 @@ Al cerrar esta fase el sistema tiene que poder congelarse para el ataque cruzado
 - [x] `viajes`: estados completos, historial, panel del operador con búsqueda (Ivan).
 - [x] Idempotency-Key en `platform` y en los `POST` de dispatch (Ivan).
 - [x] SSE con los eventos del viaje y reconexión (Ivan), y las posiciones en vivo: location las publica (Maxi) y dispatch reenvía la del chofer al pasajero y la del pasajero al chofer (Ivan).
-- [ ] Zonas, candidatos filtrados por flota y zona, reporte, aislamiento entre flotas (Agos). Hecho: el aislamiento entre flotas (PR 1 de flotas), los activos del reporte (el cupo, en el panel), y las zonas en PostGIS, el filtro de candidatos y `fleet_id` guardado al aceptar (PR 2). Falta: los viajes y la facturación del reporte (`docs/flotas.md`).
+- [x] Zonas, candidatos filtrados por flota y zona, reporte, aislamiento entre flotas (Agos): el aislamiento entre flotas (PR 1 de flotas), las zonas en PostGIS, el filtro de candidatos y `fleet_id` guardado al aceptar (PR 2), y el reporte de viajes y facturación en `/flota` (`docs/flotas.md`).
 - [ ] Seguridad transversal: CORS, rate limit, encabezados, log por pedido y los tests que faltan del bloque 5 (Agos).
 - [x] `tarifas`, cobro simulado y adaptadores de mapas y pagos con timeout: cálculo, estimación y mapas con timeout (Maxi); configuración por el admin con caché en Redis (Agostina); tarifa final, cobro y pagos (Ivan).
 - [ ] Caché en Redis, retención de ubicaciones y privacidad del seguimiento (Maxi).

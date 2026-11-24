@@ -10,9 +10,11 @@ import {
 } from '../../dominio/entidades/index.js';
 import type { Coordenada } from '../../dominio/entidades/index.js';
 import type {
+  DatosReporteFlota,
   EventoDispatch,
   FiltroSolicitudes,
   Pagina,
+  PeriodoReporte,
   RepositorioDespacho,
   TransaccionDespacho,
 } from '../../dominio/puertos/index.js';
@@ -160,6 +162,24 @@ export class RepositorioDespachoMemoria implements RepositorioDespacho {
       .sort((a, b) => b.creadaEn.getTime() - a.creadaEn.getTime() || (a.id < b.id ? 1 : a.id > b.id ? -1 : 0))
       .slice(desde, desde + limite)
       .map((d) => SolicitudViaje.reconstruir(d));
+  }
+
+  async reporteFlota(flotaId: string, { inicio, fin }: PeriodoReporte): Promise<DatosReporteFlota> {
+    // Como en Postgres: la flota guardada en el viaje, COMPLETADA, inicio en [inicio, fin).
+    const vacio = () => ({ cantidad: 0, centavos: 0 });
+    const cobros = { aprobados: vacio(), pendientes: vacio(), rechazados: vacio() };
+    const clave = { APROBADO: 'aprobados', PENDIENTE: 'pendientes', RECHAZADO: 'rechazados' } as const;
+    let viajesCompletados = 0;
+    for (const s of this.solicitudes.values()) {
+      if (s.flotaId !== flotaId || s.estado !== 'COMPLETADA' || !s.iniciadoEn) continue;
+      if (s.iniciadoEn < inicio || s.iniciadoEn >= fin) continue;
+      viajesCompletados++;
+      const c = this.cobros.get(s.id);
+      if (!c) continue;
+      cobros[clave[c.estado]].cantidad++;
+      cobros[clave[c.estado]].centavos += c.montoCentavos;
+    }
+    return { viajesCompletados, cobros };
   }
 
   async enTransaccion<T>(trabajo: (tx: TransaccionDespacho) => Promise<T>): Promise<T> {

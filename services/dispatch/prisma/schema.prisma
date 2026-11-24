@@ -48,6 +48,8 @@ model SolicitudViaje {
   // Historial del chofer y panel del operador (más nuevos primero).
   @@index([choferId])
   @@index([estado, creadaEn])
+  // Reporte de la flota: sus viajes por estado en un período de inicio (migración 20261128000000).
+  @@index([flotaId, estado, iniciadoEn])
   @@map("ride_requests")
 }
 

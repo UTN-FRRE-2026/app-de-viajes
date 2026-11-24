@@ -12,12 +12,15 @@ import {
   type TarifaViaje,
 } from '../../dominio/entidades/index.js';
 import type {
+  DatosReporteFlota,
   FiltroSolicitudes,
   Pagina,
+  PeriodoReporte,
   RepositorioDespacho,
   TransaccionDespacho,
 } from '../../dominio/puertos/index.js';
 import { Prisma, type PrismaClient } from './generated/client.js';
+import { totalCentavos } from './importes.js';
 import { destinatariosDe } from '../tiempo-real/tipos.js';
 
 interface FilaSolicitud {
@@ -380,6 +383,16 @@ function transaccion(tx: Prisma.TransactionClient, opciones: OpcionesDespachoPri
   };
 }
 
+interface FilaReporte {
+  viajes: number;
+  aprobados: number;
+  aprobados_centavos: string;
+  pendientes: number;
+  pendientes_centavos: string;
+  rechazados: number;
+  rechazados_centavos: string;
+}
+
 export class RepositorioDespachoPrisma implements RepositorioDespacho {
   constructor(
     private readonly prisma: PrismaClient,
@@ -496,6 +509,36 @@ export class RepositorioDespachoPrisma implements RepositorioDespacho {
       take: 20,
     });
     return filas.map((f) => ({ oferta: aOferta(f), solicitud: aSolicitud(f.solicitud) }));
+  }
+
+  async reporteFlota(flotaId: string, { inicio, fin }: PeriodoReporte): Promise<DatosReporteFlota> {
+    // Una sola lectura, por el índice (fleet_id, status, started_at). LEFT JOIN: un viaje completado
+    // sin cobro (sin tarifa) cuenta como viaje y no suma en ningún estado. Los totales son
+    // `SUM(bigint)`, que en Postgres es `numeric`: se leen como texto y se convierten sin redondear.
+    const [f] = await this.prisma.$queryRaw<FilaReporte[]>`
+      SELECT
+        COUNT(*)::int AS viajes,
+        COUNT(p.id) FILTER (WHERE p.status = 'APROBADO')::int AS aprobados,
+        COALESCE(SUM(p.amount_cents) FILTER (WHERE p.status = 'APROBADO'), 0)::text AS aprobados_centavos,
+        COUNT(p.id) FILTER (WHERE p.status = 'PENDIENTE')::int AS pendientes,
+        COALESCE(SUM(p.amount_cents) FILTER (WHERE p.status = 'PENDIENTE'), 0)::text AS pendientes_centavos,
+        COUNT(p.id) FILTER (WHERE p.status = 'RECHAZADO')::int AS rechazados,
+        COALESCE(SUM(p.amount_cents) FILTER (WHERE p.status = 'RECHAZADO'), 0)::text AS rechazados_centavos
+      FROM ride_requests r
+      LEFT JOIN payments p ON p.request_id = r.id
+      WHERE r.fleet_id = ${flotaId}::uuid
+        AND r.status = 'COMPLETADA'
+        AND r.started_at >= ${inicio}
+        AND r.started_at < ${fin}`;
+    if (!f) throw new Error('reporte de flota: la consulta no devolvió la fila de totales');
+    return {
+      viajesCompletados: f.viajes,
+      cobros: {
+        aprobados: { cantidad: f.aprobados, centavos: totalCentavos(f.aprobados_centavos) },
+        pendientes: { cantidad: f.pendientes, centavos: totalCentavos(f.pendientes_centavos) },
+        rechazados: { cantidad: f.rechazados, centavos: totalCentavos(f.rechazados_centavos) },
+      },
+    };
   }
 
   async registrarFalloCobro(cobroId: string, motivo: string) {

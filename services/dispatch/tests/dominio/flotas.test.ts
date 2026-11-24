@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { crearCasosDeFlotas } from '../../src/dominio/casos-uso/flotas.js';
 import { ChoferFlota } from '../../src/dominio/flotas/index.js';
 import { RepositorioFlotasMemoria } from '../../src/infra/memoria/flotas-memoria.js';
+import { RepositorioDespachoMemoria } from '../../src/infra/memoria/repositorio-memoria.js';
 import { DirectorioFalso } from '../soporte/directorio-falso.js';
 import { preparadorFlotas, vehiculo } from '../soporte/flotas.js';
 
@@ -47,7 +48,7 @@ describe('casos de uso de flotas: el alcance se valida en el caso de uso', () =>
   function sistema() {
     const repoFlotas = new RepositorioFlotasMemoria();
     const directorio = new DirectorioFalso();
-    const casos = crearCasosDeFlotas({ repoFlotas, directorio });
+    const casos = crearCasosDeFlotas({ repoFlotas, directorio, viajes: new RepositorioDespachoMemoria() });
     return { repoFlotas, directorio, casos, preparar: preparadorFlotas(casos, directorio) };
   }
 

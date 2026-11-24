@@ -1,12 +1,25 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { ErrorApi } from '../../api/errores';
 import { CopiarCodigo } from '../../componentes/CopiarCodigo';
-import { enLimite, erroresAlta, motivoSinActivar, textoErrorFlota, textoLimite, textoVehiculo, type Chofer } from './logica';
+import {
+  enLimite,
+  erroresAlta,
+  mesEnCurso,
+  motivoSinActivar,
+  periodoDeFechas,
+  textoErrorFlota,
+  textoFacturado,
+  textoLimite,
+  textoSinFacturar,
+  textoVehiculo,
+  textoViajes,
+  type Chofer,
+} from './logica';
 import { useFlota } from './store';
 
 /**
  * El panel del admin de flota: el cupo (activos y límite), la lista de choferes, el alta de un chofer
- * existente con su vehículo, y activar o desactivar. La flota es la del token: la pantalla nunca la
+ * existente con su vehículo, activar o desactivar, y el reporte de viajes y facturación. La flota es la del token: la pantalla nunca la
  * manda. No hay eventos de flotas: se relee al abrir, con «Actualizar» y al volver a la pestaña.
  */
 export function PanelFlota() {
@@ -42,6 +55,7 @@ export function PanelFlota() {
     <div className="panel">
       <Cupo />
       {errorLectura ? <ErrorLectura error={errorLectura} /> : null}
+      <ReporteFlota />
       <FormAlta />
       <Lista />
     </div>
@@ -88,6 +102,85 @@ function Cupo() {
           chofer la hace el admin de la plataforma; activarlo, vos.
         </p>
       )}
+    </section>
+  );
+}
+
+/**
+ * Viajes y facturación de un período (fechas locales, las dos incluidas). Cuenta los viajes
+ * completados de la flota que empezaron en el período y factura solo los cobros aprobados.
+ */
+function ReporteFlota() {
+  const reporte = useFlota((s) => s.reporte);
+  const flota = useFlota((s) => s.flota);
+  const [fechas, setFechas] = useState(() => mesEnCurso(new Date()));
+  const [errorFechas, setErrorFechas] = useState<string | null>(null);
+
+  const consultar = (desde: string, hasta: string) => {
+    const r = periodoDeFechas(desde, hasta);
+    if ('error' in r) {
+      setErrorFechas(r.error);
+      return;
+    }
+    setErrorFechas(null);
+    void useFlota.getState().consultarReporte(r.periodo);
+  };
+
+  // Al abrir, el mes en curso.
+  useEffect(() => {
+    const { desde, hasta } = mesEnCurso(new Date());
+    const r = periodoDeFechas(desde, hasta);
+    if ('periodo' in r) void useFlota.getState().consultarReporte(r.periodo);
+  }, []);
+
+  const enviar = (ev: FormEvent) => {
+    ev.preventDefault();
+    consultar(fechas.desde, fechas.hasta);
+  };
+  const datos = reporte.datos;
+
+  return (
+    <section className="tarjeta" aria-busy={reporte.cargando}>
+      <h2>Viajes y facturación</h2>
+      <form className="periodo-reporte" onSubmit={enviar} noValidate>
+        <label>
+          Desde
+          <input type="date" value={fechas.desde} onChange={(ev) => setFechas({ ...fechas, desde: ev.target.value })} />
+        </label>
+        <label>
+          Hasta
+          <input type="date" value={fechas.hasta} onChange={(ev) => setFechas({ ...fechas, hasta: ev.target.value })} />
+        </label>
+        <button type="submit" className="secundario" disabled={reporte.cargando}>
+          {reporte.cargando ? 'Consultando…' : 'Ver'}
+        </button>
+      </form>
+      {errorFechas ? (
+        <p className="error" role="alert">
+          {errorFechas}
+        </p>
+      ) : null}
+      {reporte.error ? (
+        <p className="error" role="alert">
+          {textoErrorFlota(reporte.error, flota)}
+        </p>
+      ) : null}
+      {datos ? (
+        datos.viajesCompletados === 0 ? (
+          <p className="nota">No hay viajes completados en ese período.</p>
+        ) : (
+          <div className="reporte">
+            <p className="facturado">
+              Facturado: <strong>{textoFacturado(datos)}</strong>
+            </p>
+            <p>{textoViajes(datos)}</p>
+            <p className="nota">{textoSinFacturar(datos)}</p>
+          </div>
+        )
+      ) : reporte.cargando ? (
+        <p className="cargando">Cargando…</p>
+      ) : null}
+      <p className="nota">Cuenta los viajes de tu flota que empezaron en el período. Los anteriores a la asignación de flotas no se incluyen.</p>
     </section>
   );
 }

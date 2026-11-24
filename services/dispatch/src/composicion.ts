@@ -288,6 +288,7 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
   // Flotas: el alta de un chofer verifica la cuenta en identity (falla cerrado si no responde).
   const casosFlotas = crearCasosDeFlotas({
     repoFlotas,
+    viajes: repo,
     directorio:
       reemplazos.directorio ??
       new DirectorioIdentity({
