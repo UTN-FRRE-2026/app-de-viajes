@@ -104,6 +104,13 @@ export interface RegistroSolicitud extends DatosSolicitud {
   creadaEn: Date;
   /** Cuándo subió el pasajero (iniciar). De acá se mide la duración real del viaje. */
   iniciadoEn: Date | null;
+  /**
+   * La zona operativa del origen, resuelta una vez al crear la solicitud. null en las creadas antes de
+   * las zonas: se resuelve desde el origen la próxima vez que se ofrece o se acepta.
+   */
+  zonaId?: string | null;
+  /** La flota del chofer en el momento de aceptar, para atribuirle el viaje. null sin chofer. */
+  flotaId?: string | null;
 }
 
 export interface ResultadoCancelacion {
@@ -128,6 +135,8 @@ export class SolicitudViaje {
     private datos: DatosSolicitud,
     readonly creadaEn: Date,
     private iniciadoEn: Date | null,
+    private zona: string | null = null,
+    private flota: string | null = null,
   ) {}
 
   static nueva(
@@ -137,6 +146,7 @@ export class SolicitudViaje {
     destino: Coordenada,
     creadaEn: Date,
     estimada: TarifaEstimada,
+    zonaId: string | null = null,
   ): SolicitudViaje {
     const tarifa: TarifaViaje = {
       version: estimada.version,
@@ -151,11 +161,12 @@ export class SolicitudViaje {
       { id, pasajeroId, origen, destino, estado: 'BUSCANDO', choferId: null, motivoCancelacion: null, tarifa, version: 0 },
       creadaEn,
       null,
+      zonaId,
     );
   }
 
-  static reconstruir({ creadaEn, iniciadoEn, ...datos }: RegistroSolicitud): SolicitudViaje {
-    return new SolicitudViaje(datos, new Date(creadaEn), iniciadoEn ? new Date(iniciadoEn) : null);
+  static reconstruir({ creadaEn, iniciadoEn, zonaId = null, flotaId = null, ...datos }: RegistroSolicitud): SolicitudViaje {
+    return new SolicitudViaje(datos, new Date(creadaEn), iniciadoEn ? new Date(iniciadoEn) : null, zonaId, flotaId);
   }
 
   get id() {
@@ -185,10 +196,26 @@ export class SolicitudViaje {
   get version() {
     return this.datos.version;
   }
+  get zonaId() {
+    return this.zona;
+  }
+  get flotaId() {
+    return this.flota;
+  }
+
+  /** Solo para las solicitudes de antes de las zonas: la zona del origen, resuelta tarde. */
+  fijarZona(zonaId: string): void {
+    if (this.zona === null) this.zona = zonaId;
+  }
 
   asignar(choferId: string): void {
     if (this.datos.estado !== 'BUSCANDO') throw new SolicitudNoDisponible(this.datos.estado);
     this.cambiar({ estado: 'ASIGNADO', choferId });
+  }
+
+  /** La flota del chofer al aceptar (la del registro bloqueado en la misma transacción). */
+  fijarFlota(flotaId: string): void {
+    this.flota = flotaId;
   }
 
   marcarSinChoferes(): void {
@@ -261,12 +288,14 @@ export class SolicitudViaje {
     return structuredClone(this.datos);
   }
 
-  /** Lo que se guarda: con `creadaEn` e `iniciadoEn`. */
+  /** Lo que se guarda: con `creadaEn`, `iniciadoEn`, la zona y la flota. */
   aRegistro(): RegistroSolicitud {
     return {
       ...structuredClone(this.datos),
       creadaEn: new Date(this.creadaEn),
       iniciadoEn: this.iniciadoEn ? new Date(this.iniciadoEn) : null,
+      zonaId: this.zona,
+      flotaId: this.flota,
     };
   }
 

@@ -26,3 +26,9 @@ done
 crear_base dispatch_test dispatch_svc
 crear_base identity_test identity_svc
 crear_base location_test location_svc
+
+# PostGIS para las zonas de dispatch. Crear la extensión necesita superusuario y dispatch_svc no lo es:
+# se instala acá; la migración de zonas tiene CREATE EXTENSION IF NOT EXISTS, que entonces no hace nada.
+for base in dispatch dispatch_test; do
+  psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$base" -c 'CREATE EXTENSION IF NOT EXISTS postgis;'
+done

@@ -32,6 +32,14 @@ export function metricasDespachoPrometheus({ registro }: Metricas): MetricasDesp
     help: 'Ofertas que el barrido marcó como vencidas.',
     registers: [registro],
   });
+  // No es transaccional: cuenta búsquedas (cada una es una consulta a location y al filtro), aunque
+  // después la transacción de la oferta no confirme.
+  const sinAptos = new Counter({
+    name: 'dispatch_busquedas_sin_aptos_total',
+    help: 'Búsquedas de candidatos sin ningún apto: location no devolvió a nadie, el filtro de flotas y zonas descartó a todos, o descartó también los 100 más cercanos (tope_agotado).',
+    labelNames: ['motivo'] as const,
+    registers: [registro],
+  });
   const hastaAsignacion = new Histogram({
     name: 'dispatch_tiempo_hasta_asignacion_seconds',
     help: 'Desde que el pasajero pide el viaje (antes de buscar candidatos) hasta el COMMIT de la aceptación.',
@@ -42,6 +50,7 @@ export function metricasDespachoPrometheus({ registro }: Metricas): MetricasDesp
   // Los contadores arrancan en 0 con cada resultado: así la serie existe antes del primer pedido.
   solicitudes.inc({ resultado: 'con_ofertas' }, 0);
   solicitudes.inc({ resultado: 'sin_choferes' }, 0);
+  for (const motivo of ['sin_candidatos', 'filtrados', 'tope_agotado'] as const) sinAptos.inc({ motivo }, 0);
 
   return {
     solicitudCreada: (resultado) => solicitudes.inc({ resultado }),
@@ -50,5 +59,6 @@ export function metricasDespachoPrometheus({ registro }: Metricas): MetricasDesp
       hastaAsignacion.observe(Math.max(0, ms) / 1000);
     },
     ofertasVencidas: (cantidad) => vencidas.inc(cantidad),
+    busquedaSinAptos: (motivo) => sinAptos.inc({ motivo }),
   };
 }

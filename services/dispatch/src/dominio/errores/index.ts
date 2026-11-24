@@ -148,3 +148,40 @@ export class CuentaNoEsChofer extends ErrorDeDominio {
     super('CUENTA_NO_ES_CHOFER', 'INVALIDO', 'El usuario no existe o no es chofer');
   }
 }
+
+// --- Zonas (variante G, PR 2 de flotas) ---
+
+/** El origen no está en ninguna zona operativa: ninguna flota opera ahí. No se crea la solicitud. */
+export class OrigenFueraDeZona extends ErrorDeDominio {
+  constructor() {
+    super('ORIGEN_FUERA_DE_ZONA', 'INVALIDO', 'No hay servicio en el lugar de origen');
+  }
+}
+
+/**
+ * Al aceptar, el chofer ya no cumple: dejó de estar habilitado, activo o disponible, o su flota ya no
+ * opera en la zona del viaje.
+ */
+export class ChoferNoApto extends ErrorDeDominio {
+  constructor() {
+    super('CHOFER_NO_APTO', 'CONFLICTO', 'Ya no podés tomar este viaje: revisá tu disponibilidad y tu flota');
+  }
+}
+
+export class ZonaInvalida extends ErrorDeDominio {
+  constructor(motivo: string) {
+    super('ZONA_INVALIDA', 'INVALIDO', `El polígono de la zona no es válido: ${motivo}`);
+  }
+}
+
+export class ZonasSuperpuestas extends ErrorDeDominio {
+  constructor(con: string) {
+    super('ZONAS_SUPERPUESTAS', 'CONFLICTO', `La zona se superpone con otra (${con})`);
+  }
+}
+
+export class ZonaNoEncontrada extends ErrorDeDominio {
+  constructor() {
+    super('ZONA_NO_ENCONTRADA', 'NO_ENCONTRADO', 'La zona no existe');
+  }
+}

@@ -1,6 +1,6 @@
 # Flotas (variante G)
 
-> **Estado:** PR 1 de flotas, y el panel `/flota` de la web ([docs/web.md](web.md#el-panel-de-la-flota-flota)). Hecho: flotas con límite de choferes activos, alta de choferes con su vehículo, habilitación, activación con la **carrera G**, disponibilidad y aislamiento entre flotas. **Falta (PR siguiente):** zonas operativas en PostGIS, filtro de candidatos por flota y zona, y el reporte por flota.
+> **Estado:** PR 1 y PR 2 de flotas, y el panel `/flota` de la web ([docs/web.md](web.md#el-panel-de-la-flota-flota)). Hecho: flotas con límite de choferes activos, alta de choferes con su vehículo, habilitación, activación con la **carrera G**, disponibilidad, aislamiento entre flotas, **zonas operativas en PostGIS**, **filtro de candidatos por flota y zona** y **revalidación al aceptar** (con la flota guardada en el viaje). **Falta:** el reporte de viajes y facturación por flota.
 
 Vive dentro de dispatch ([PLAN.md](../PLAN.md) §3.3): comparte la base y, en el PR siguiente, la transacción con la asignación de viajes.
 
@@ -100,11 +100,106 @@ El `admin_flota` da de alta a un chofer en su flota con `{ choferId, vehiculo }`
 
 El chofer queda deshabilitado, inactivo y no disponible.
 
+## Zonas operativas (PR 2)
+
+Las define el `admin` de la plataforma, igual que la habilitación de los choferes, y las habilita por flota. Viven en PostGIS (migración `20261127000000_zonas`).
+
+| Tabla | Qué guarda |
+|---|---|
+| `zones` | `id`, `name` y `area`, un `geometry(Polygon, 4326)` en lng/lat, con índice GIST y `CHECK (ST_IsValid(area))` |
+| `fleet_zones` | `(fleet_id, zone_id)`: las zonas donde opera cada flota |
+| `ride_requests.zone_id` | La zona del origen, resuelta **una vez**, al crear la solicitud |
+| `ride_requests.fleet_id` | La flota del chofer **al aceptar**, guardada en la misma transacción (ver [Aceptar](#aceptar-revalidación-y-la-carrera-con-la-flota)) |
+
+- **El polígono** llega como un `Polygon` de GeoJSON: solo el anillo exterior, cerrado y de 4 a 1000 vértices. Si se cruza consigo mismo, lo rechaza PostGIS con 422 `ZONA_INVALIDA`.
+- **Dos zonas no se superponen.** Si comparten interior, da 409 `ZONAS_SUPERPUESTAS`; tocarse en un borde está permitido.
+  - Un `CHECK` no puede mirar otras filas, así que lo controla el repositorio.
+  - Todas las escrituras de zonas van en fila, con `pg_advisory_xact_lock`: dos `PUT` simultáneos no pueden dejar dos zonas superpuestas.
+- **La zona del origen** sale de `ST_Covers`, que incluye el borde:
+  - **origen fuera de toda zona:** 422 `ORIGEN_FUERA_DE_ZONA`, y **no se crea la solicitud**. Ninguna flota opera ahí, y el pasajero se entera en el momento. Se comprueba antes de estimar y de consultar a location;
+  - **un punto exacto en un borde compartido:** está en las dos zonas, y gana la de **menor id**. Es una regla determinista, con test;
+  - **cambiar el polígono de una zona** no mueve las solicitudes ya creadas: cada una guardó su zona.
+- **PostGIS en desarrollo.** Crear la extensión necesita superusuario, y `dispatch_svc` no lo es:
+  - en un volumen nuevo la instala el init de Postgres (`infra/postgres/init`), en `dispatch` y `dispatch_test`;
+  - en un volumen que ya existía, la instala `npm run setup`;
+  - la migración tiene `CREATE EXTENSION IF NOT EXISTS postgis`, que en esos dos casos no hace nada. Sin la extensión, la migración falla con 42501 (sin permiso);
+  - en CI y en carga el usuario de la base es superusuario, y la crea la propia migración.
+
+## El filtro de candidatos
+
+location devuelve los choferes con posición vigente más cercanos y no sabe nada de flotas. dispatch los filtra en su base, con una sola consulta por lote (`ElegibilidadPrisma`):
+
+```sql
+SELECT d.id FROM drivers d
+JOIN fleet_zones fz ON fz.fleet_id = d.fleet_id AND fz.zone_id = $zona
+WHERE d.id = ANY($ids) AND d.approved AND d.active AND d.available
+  AND NOT EXISTS (SELECT 1 FROM driver_active_assignment a WHERE a.driver_id = d.id)
+```
+
+Quedan los habilitados, activos y disponibles, sin un viaje activo, y de una flota con la zona del origen habilitada. Se conserva el orden de location, del más cercano al más lejano.
+
+**Lotes crecientes** (`dominio/casos-uso/buscar-aptos.ts`). Si los más cercanos no sirven, puede haber aptos un poco más lejos:
+1. se le pide a location `necesarios + excluidos`, como mínimo 10;
+2. se sacan los ya ofrecidos y se filtra;
+3. si no alcanzan y el lote vino **completo**, se pide el doble: 10, 20, 40, 80 y 100, el tope por consulta. Son como mucho 5 pedidos;
+4. si vino incompleto, no hay más choferes vigentes en el radio: se ofrece a los que quedaron.
+
+Detalles:
+- **`completo`** se calcula con la respuesta **original** de location, antes de sacar a nadie. Un lote lleno de ya ofrecidos sigue con el próximo.
+- **Las llamadas a location** van fuera de la transacción, como antes.
+- **Si falla un pedido**, sube el error de location (503 `UBICACION_NO_DISPONIBLE`): no se crea la solicitud, y en el barrido sigue `BUSCANDO`. Una falla no se confunde con «no hay choferes».
+- **El tope agotado:** si los 100 más cercanos no sirven, la solicitud queda `SIN_CHOFERES`, como cuando no hay nadie.
+  - Que 100 choferes vigentes y cercanos no sirvan es un problema de datos o de configuración, y seguir buscando no lo arregla.
+  - Se cuenta en `dispatch_busquedas_sin_aptos_total{motivo}`: `sin_candidatos`, `filtrados` o `tope_agotado`.
+- **El barrido** usa la zona guardada en la solicitud.
+
+## Aceptar: revalidación y la carrera con la flota
+
+Entre la oferta y la aceptación pueden pasar varias cosas: el `admin_flota` desactiva al chofer, el admin lo deshabilita o le quita la zona a su flota, o el chofer deja de estar disponible. Por eso la aceptación vuelve a validar todo **dentro de su transacción**, con locks:
+
+1. `FOR UPDATE` de la solicitud, como siempre.
+2. **El chofer, con `FOR SHARE`:** tiene que estar habilitado, activo y disponible. Desactivarlo o deshabilitarlo toma `FOR UPDATE` de esa fila, así que esperan.
+3. **La habilitación de la zona en su flota** (la fila de `fleet_zones`), también con `FOR SHARE`. Quitarle la zona a la flota es un `DELETE` de esa fila, y espera.
+4. La reserva única del chofer (`driver_active_assignment`) y el resto, sin cambios.
+5. Se guarda `fleet_id`, la flota del chofer leída de la fila bloqueada. Si la solicitud no tenía zona, se guarda también `zone_id`.
+
+**Lo que pasa en cada orden** (Postgres en `READ COMMITTED`):
+- **Si la otra operación va primero,** la aceptación espera su lock y vuelve a evaluar el `WHERE` con la fila nueva. Ya no es apto: 409 `CHOFER_NO_APTO`, y la oferta y la solicitud quedan como estaban.
+- **Si la aceptación va primero,** la otra espera a que confirme:
+  - el viaje queda asignado y atribuido a la flota;
+  - desactivar con un viaje en curso sigue permitido: libera el cupo, el viaje sigue, y el chofer no recibe más ofertas.
+
+**Orden de los locks:**
+- **aceptar:** solicitud → chofer → zona de la flota;
+- **desactivar:** chofer → flota;
+- **cambiar las zonas de una flota:** flota (con `FOR NO KEY UPDATE`, para no bloquear la clave foránea de `fleet_id`) → zona de la flota.
+
+Nadie los toma al revés, así que no hay ciclo.
+
+**Solicitudes de antes de esta migración** (`zone_id` NULL) se tratan con las reglas nuevas:
+- **al aceptar:** se resuelve la zona desde el origen, se revalida al chofer y se guardan la zona y la flota. Si el origen quedó fuera de toda zona, nadie puede aceptarla (409);
+- **en el barrido:** se resuelve la zona y se guarda. Fuera de toda zona, no hay candidatos y queda `SIN_CHOFERES`;
+- **los viajes históricos,** ya terminados, no se tocan: no se sabe qué flota tenía el chofer entonces.
+
+## Datos de demo y de carga
+
+- **Demo** (`npm run demo:flotas`, contra el Compose): crea por la API las zonas «CABA» y «Norte».
+  - La flota del `admin.flota` opera en CABA, con el chofer del seed habilitado y activo.
+  - La del `admin.flota2` opera en Norte.
+  - Es idempotente. Si una flota ya existe, no toca su nombre ni su límite.
+  - Con `DISPATCH_BUSCADOR=fijo`, la lista fija también pasa por el filtro.
+- **Carga** (`carga/flotas.sql`): `carrera.ps1` y `medir.ps1 -Solicitudes` lo aplican después de `limpiar.ps1`.
+  - Deja aptos a los 500 choferes de k6 y al de `solicitudes.js`, en una flota de carga con las zonas Buenos Aires y Córdoba.
+  - Va por SQL porque carga no tiene identity.
+
 ## Rutas
 
 | Ruta | Rol | Qué hace |
 |---|---|---|
 | `PUT /admin/flotas/:id` `{nombre, maxActivos}` | `admin` | Crea la flota con el id que identity usa como `fleetId`, o cambia su nombre y su límite |
+| `PUT /admin/zonas/:id` `{nombre, area}` | `admin` | Crea o cambia una zona (`area`: `Polygon` de GeoJSON). 422 `ZONA_INVALIDA`, 409 `ZONAS_SUPERPUESTAS` |
+| `GET /admin/zonas` | `admin` | Las zonas, con su polígono |
+| `PUT /admin/flotas/:id/zonas` `{zonas}` | `admin` | Las zonas donde opera la flota (reemplaza las anteriores). 404 si la flota o una zona no existen |
 | `POST /admin/choferes/:id/habilitar` y `/deshabilitar` | `admin` | Deshabilitar libera el cupo si estaba activo |
 | `GET /flota` | `admin_flota` | Su flota: nombre, límite y activos |
 | `GET /flota/choferes?limite&desde` | `admin_flota` | Los choferes de su flota, con `siguiente` para paginar |
@@ -136,12 +231,31 @@ Todas las escrituras llevan `Idempotency-Key`. Los demás roles reciben 403 `ROL
 - **El adaptador de identity** (`tests/externos/directorio-identity.test.ts`): cada forma de fallar da 503.
 - **De punta a punta:** en identity, `tests/integracion/compatibilidad-dispatch.test.ts` levanta el dispatch real y verifica el alta contra el identity real.
 - **La ruta interna de identity** (`tests/seguridad/interno.test.ts`).
+- **Zonas y filtro, contra PostGIS** (`tests/integracion/zonas.test.ts`):
+  - zonas válidas, superpuestas (409), dos `PUT` simultáneos (pasa uno), polígono inválido (422) y validación del cuerpo;
+  - dos flotas en zonas distintas: cada origen le ofrece solo a los aptos de la flota de su zona, aunque el de la otra esté más cerca;
+  - cada condición del filtro, con su caso: sin habilitar, inactivo, no disponible, con viaje activo y una flota sin la zona;
+  - la regla del borde, el origen fuera de zona (422 sin solicitud), y la zona y la flota guardadas al aceptar;
+  - una solicitud con `zone_id` NULL.
+- **La carrera al aceptar** (`tests/concurrencia/aceptar-vs-flota.test.ts`): contra desactivar y contra quitar la zona, en los dos órdenes, con demoras dentro de cada transacción.
+- **Dominio** (`tests/dominio/zonas-busqueda.test.ts` y `zonas-memoria.test.ts`):
+  - los lotes crecientes, el lote incompleto que corta, y el tope agotado;
+  - el error de location en el segundo pedido, en la creación y en el barrido;
+  - `completo` con la respuesta original;
+  - la revalidación al aceptar y las solicitudes sin zona;
+  - la versión en memoria.
+- **Comprobado que fallan** sin el `FOR SHARE` del chofer, sin el de la zona de la flota, sin el advisory lock de las zonas, y con `completo` calculado después de excluir.
 
-## Lo que sigue (PR 2 de flotas)
+## Lo que sigue
 
-- Zonas operativas en PostGIS y zonas habilitadas por flota.
-- Filtro de candidatos: solo choferes habilitados, activos, disponibles, sin viaje activo y de una flota con la zona del origen habilitada. La aceptación de una oferta va a bloquear también la fila del chofer, y desactivar a un chofer con un viaje en curso va a depender de eso: hoy está permitido.
-- Reporte por flota: choferes activos, viajes y facturación.
-  - **Los activos ya están:** el cupo de `GET /flota`, mantenido por la carrera G.
-  - **Los viajes y la facturación necesitan ampliar el modelo.** `ride_requests` no guarda la flota. Contarlos por la flota *actual* del chofer (con un JOIN a `drivers`) no es confiable: sin el filtro de candidatos, un chofer inactivo, o uno que todavía no estaba en la flota, toma viajes que se le sumarían; y un cambio de flota o una baja futuros reescribirían la historia.
-  - **Lo confiable:** guardar `fleet_id` en la solicitud dentro de la transacción de la aceptación (junto con el bloqueo del chofer de la aceptación, de este mismo PR 2). Más un índice `(fleet_id, status, started_at)` para consultar por un período acotado. La facturación, de la tarifa final de los `COMPLETADO` o de los cobros aprobados (a decidir).
+- **El reporte por flota:** choferes activos, viajes y facturación.
+  - **Los activos ya están:** el cupo de `GET /flota`, que mantiene la carrera G.
+  - **La base ya está desde este PR:** `ride_requests.fleet_id` se guarda al aceptar, en la misma transacción, desde la fila del chofer bloqueada.
+    - Contar por la flota *actual* del chofer, con un JOIN a `drivers`, no sería confiable: un cambio de flota o una baja futuros reescribirían la historia.
+    - Los viajes de antes de este PR quedan con `fleet_id` NULL y no se cuentan.
+  - **Falta:**
+    - un índice `(fleet_id, status, started_at)` para consultar por un período acotado;
+    - la consulta;
+    - decidir si la facturación sale de la tarifa final de los `COMPLETADO` o de los cobros aprobados.
+- **Las zonas en la web:** el panel del admin de la plataforma.
+- **Borrar zonas:** hoy no se borran. Las solicitudes y las flotas las referencian.

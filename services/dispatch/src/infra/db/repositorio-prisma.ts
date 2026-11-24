@@ -41,6 +41,8 @@ interface FilaSolicitud {
   started_at: Date | null;
   version: number;
   created_at: Date;
+  zone_id: string | null;
+  fleet_id: string | null;
 }
 
 type ModeloSolicitud = {
@@ -64,6 +66,8 @@ type ModeloSolicitud = {
   iniciadoEn: Date | null;
   version: number;
   creadaEn: Date;
+  zonaId: string | null;
+  flotaId: string | null;
 };
 
 type ModeloOferta = { id: string; solicitudId: string; choferId: string; estado: string; venceEn: Date };
@@ -120,6 +124,8 @@ function aSolicitud(m: ModeloSolicitud): SolicitudViaje {
     version: m.version,
     creadaEn: m.creadaEn,
     iniciadoEn: m.iniciadoEn,
+    zonaId: m.zonaId,
+    flotaId: m.flotaId,
   });
 }
 
@@ -145,6 +151,8 @@ function filaASolicitud(f: FilaSolicitud): SolicitudViaje {
     iniciadoEn: f.started_at,
     version: f.version,
     creadaEn: f.created_at,
+    zonaId: f.zone_id,
+    flotaId: f.fleet_id,
   });
 }
 
@@ -166,9 +174,23 @@ function aCobro(m: ModeloCobro): Cobro {
   });
 }
 
+/**
+ * La zona que cubre el punto (ST_Covers: incluye el borde). Las zonas no se superponen; en un borde
+ * compartido quedan dos y gana la de menor id. Usa el índice GIST de `zones.area`.
+ */
+export async function zonaDelPunto(db: Prisma.TransactionClient | PrismaClient, { lat, lng }: { lat: number; lng: number }) {
+  const [fila] = await db.$queryRaw<{ id: string }[]>`
+    SELECT id FROM zones
+    WHERE ST_Covers(area, ST_SetSRID(ST_MakePoint(${lng}::float8, ${lat}::float8), 4326))
+    ORDER BY id
+    LIMIT 1`;
+  return fila?.id ?? null;
+}
+
 const COLUMNAS_SOLICITUD = Prisma.sql`id, passenger_id, status, origin_lat, origin_lng, destination_lat, destination_lng,
   driver_id, cancel_reason, fare_version, estimated_fare_cents, estimated_distance_m, estimated_duration_s,
-  final_fare_cents, final_distance_m, final_duration_s, fare_difference_reasons, started_at, version, created_at`;
+  final_fare_cents, final_distance_m, final_duration_s, fare_difference_reasons, started_at, version, created_at,
+  zone_id, fleet_id`;
 
 /** Para LIKE: el texto del usuario se busca tal cual, sin que `%` o `_` funcionen como comodines. */
 const escaparLike = (texto: string) => texto.replace(/[\\%_]/g, (c) => `\\${c}`);
@@ -196,7 +218,16 @@ function condicionesListado({ pasajeroId, choferId, estados, texto }: FiltroSoli
  * el FOR UPDATE de la solicitud, la restricción única del chofer y el índice parcial del pasajero.
  * Con DISPATCH_LOG_SQL=1 se ven en el log.
  */
-function transaccion(tx: Prisma.TransactionClient): TransaccionDespacho {
+export interface OpcionesDespachoPrisma {
+  /**
+   * Solo para tests: corre dentro de la aceptación, con el chofer y la zona de su flota ya bloqueados
+   * (FOR SHARE) y antes de confirmar. Una demora acá superpone de verdad la aceptación con desactivar
+   * al chofer o quitarle la zona a la flota.
+   */
+  trasValidarChofer?: () => Promise<void>;
+}
+
+function transaccion(tx: Prisma.TransactionClient, opciones: OpcionesDespachoPrisma = {}): TransaccionDespacho {
   return {
     async obtenerSolicitudParaActualizar(id) {
       // Bloquea la fila hasta COMMIT/ROLLBACK. Otra transacción que pida el mismo lock espera acá.
@@ -221,12 +252,12 @@ function transaccion(tx: Prisma.TransactionClient): TransaccionDespacho {
       const filas = await tx.$queryRaw<{ id: string }[]>`
         INSERT INTO ride_requests (id, passenger_id, status, origin_lat, origin_lng, destination_lat, destination_lng,
                                    fare_version, estimated_fare_cents, estimated_distance_m, estimated_duration_s,
-                                   version, created_at)
+                                   version, created_at, zone_id)
         VALUES (${s.id}::uuid, ${s.pasajeroId}::uuid, ${s.estado},
                 ${s.origen.lat}::float8, ${s.origen.lng}::float8, ${s.destino.lat}::float8, ${s.destino.lng}::float8,
                 ${t?.version ?? null}, ${t?.estimadaCentavos ?? null}::bigint,
                 ${t?.recorridoEstimado.metros ?? null}::int, ${t?.recorridoEstimado.segundos ?? null}::int,
-                ${s.version}, ${s.creadaEn}::timestamptz)
+                ${s.version}, ${s.creadaEn}::timestamptz, ${s.zonaId}::uuid)
         ON CONFLICT DO NOTHING
         RETURNING id`;
       return filas.length === 1;
@@ -234,11 +265,13 @@ function transaccion(tx: Prisma.TransactionClient): TransaccionDespacho {
 
     async guardarSolicitud(s) {
       // La estimación no cambia nunca después de crear la solicitud: solo se escriben la final y el inicio.
-      const { tarifa, iniciadoEn } = s.aRegistro();
+      const { tarifa, iniciadoEn, zonaId, flotaId } = s.aRegistro();
       await tx.solicitudViaje.update({
         where: { id: s.id },
         data: {
           estado: s.estado,
+          zonaId: zonaId ?? null,
+          flotaId: flotaId ?? null,
           choferId: s.choferId,
           motivoCancelacion: s.motivoCancelacion,
           finalCentavos: tarifa?.finalCentavos ?? null,
@@ -274,6 +307,30 @@ function transaccion(tx: Prisma.TransactionClient): TransaccionDespacho {
         ON CONFLICT DO NOTHING
         RETURNING driver_id`;
       return filas.length === 1;
+    },
+
+    async choferAptoParaAceptar(choferId, zonaId) {
+      // 1. El chofer, con FOR SHARE: desactivar y deshabilitar toman FOR UPDATE de esta fila, así que
+      //    esperan a que esta transacción termine. Si uno de ellos llegó antes, esta espera y Postgres
+      //    vuelve a evaluar el WHERE con la fila nueva (READ COMMITTED): ya no es apto → 0 filas.
+      const [chofer] = await tx.$queryRaw<{ fleet_id: string }[]>`
+        SELECT fleet_id FROM drivers
+        WHERE id = ${choferId}::uuid AND approved AND active AND available
+        FOR SHARE`;
+      if (!chofer) return null;
+      // 2. La habilitación de la zona en su flota, también con FOR SHARE: quitarle la zona a la flota
+      //    (DELETE de esta fila) espera, o, si llegó antes, esta no la encuentra.
+      const [zona] = await tx.$queryRaw<{ fleet_id: string }[]>`
+        SELECT fleet_id FROM fleet_zones
+        WHERE fleet_id = ${chofer.fleet_id}::uuid AND zone_id = ${zonaId}::uuid
+        FOR SHARE`;
+      if (!zona) return null;
+      await opciones.trasValidarChofer?.();
+      return { flotaId: chofer.fleet_id };
+    },
+
+    async zonaDelOrigen(origen) {
+      return zonaDelPunto(tx, origen);
     },
 
     async liberarChofer(solicitudId) {
@@ -324,14 +381,17 @@ function transaccion(tx: Prisma.TransactionClient): TransaccionDespacho {
 }
 
 export class RepositorioDespachoPrisma implements RepositorioDespacho {
-  constructor(private readonly prisma: PrismaClient) {}
+  constructor(
+    private readonly prisma: PrismaClient,
+    private readonly opciones: OpcionesDespachoPrisma = {},
+  ) {}
 
   async enTransaccion<T>(trabajo: (tx: TransaccionDespacho) => Promise<T>): Promise<T> {
     // Si el pedido HTTP trae Idempotency-Key, el registro va en esta misma transacción.
     const idempotencia = idempotenciaPendiente();
     const resultado = await this.prisma.$transaction(
       async (tx) => {
-        const r = await trabajo(transaccion(tx));
+        const r = await trabajo(transaccion(tx, this.opciones));
         if (idempotencia) await registrarIdempotenciaEnTransaccion(tx, idempotencia, r);
         return r;
       },

@@ -26,6 +26,16 @@ export interface TransaccionDespacho {
   guardarOfertas(ofertas: Oferta[]): Promise<void>;
   /** Toma el "lock" del chofer. false si ya tiene un viaje activo (restricción única). */
   reservarChofer(choferId: string, solicitudId: string): Promise<boolean>;
+  /**
+   * La aceptación revalida al chofer en la transacción: habilitado, activo, disponible y de una flota
+   * con la zona habilitada. Bloquea (FOR SHARE) la fila del chofer y la de la habilitación de su flota
+   * en la zona: desactivarlo, deshabilitarlo o quitarle la zona a la flota esperan a que la aceptación
+   * termine, y una aceptación que llega después los ve. Orden: solicitud → chofer → zona de la flota.
+   * Devuelve la flota del chofer, o null si no es apto.
+   */
+  choferAptoParaAceptar(choferId: string, zonaId: string): Promise<{ flotaId: string } | null>;
+  /** La zona del punto, como `ElegibilidadChoferes.zonaDelOrigen`, leída en la transacción. */
+  zonaDelOrigen(origen: Coordenada): Promise<string | null>;
   liberarChofer(solicitudId: string): Promise<void>;
   /** Outbox: el evento se publica después, solo si la transacción confirmó. */
   registrarEvento(evento: EventoDispatch): Promise<void>;
@@ -110,8 +120,30 @@ export interface Pagina {
 }
 
 export interface BuscadorCandidatos {
-  /** Choferes disponibles cerca del origen, del más conveniente al menos. */
-  buscar(origen: Coordenada, opciones: { excluir: string[]; limite: number }): Promise<string[]>;
+  /**
+   * Los choferes con posición vigente más cercanos al origen, del más cercano al más lejano, hasta
+   * `limite`. `completo`: el servicio devolvió tantos como se le pidieron, así que puede haber más
+   * (se calcula con su respuesta original, antes de excluir o filtrar a nadie). Falla con su propio
+   * error (503) si el servicio no responde.
+   */
+  buscar(origen: Coordenada, opciones: { limite: number }): Promise<{ candidatos: string[]; completo: boolean }>;
+}
+
+/**
+ * Quién puede recibir una oferta (variante G). Lo decide dispatch en su base: location solo sabe de
+ * posiciones.
+ */
+export interface ElegibilidadChoferes {
+  /**
+   * La zona operativa que cubre el punto, o null si no hay ninguna. Las zonas no se superponen; en un
+   * borde compartido, la de menor id.
+   */
+  zonaDelOrigen(origen: Coordenada): Promise<string | null>;
+  /**
+   * De `ids`, los aptos para una oferta en la zona, en el mismo orden: habilitados, activos,
+   * disponibles, sin viaje activo y de una flota con la zona habilitada.
+   */
+  aptos(ids: readonly string[], zonaId: string): Promise<string[]>;
 }
 
 /**
@@ -125,6 +157,12 @@ export interface MetricasDespacho {
   asignacion(msDesdeSolicitud: number): void;
   /** Ofertas que el barrido marcó como vencidas. */
   ofertasVencidas(cantidad: number): void;
+  /**
+   * Una búsqueda que terminó sin ningún apto: location no devolvió a nadie (`sin_candidatos`), los
+   * devolvió pero el filtro los descartó a todos (`filtrados`), o descartó también los 100 más
+   * cercanos, el tope por consulta (`tope_agotado`).
+   */
+  busquedaSinAptos?(motivo: 'sin_candidatos' | 'filtrados' | 'tope_agotado'): void;
 }
 
 export interface ParametrosDespacho {
@@ -225,6 +263,18 @@ export interface TransaccionFlotas {
    */
   guardarFlota(flota: DatosFlota): Promise<'ok' | 'limite_menor'>;
   obtenerFlota(id: string): Promise<Flota | null>;
+  /**
+   * Crea o cambia una zona. Las escrituras de zonas se serializan (advisory lock): dos zonas no pueden
+   * quedar superpuestas aunque se guarden a la vez. `invalida`: PostGIS no acepta el polígono.
+   */
+  guardarZona(zona: DatosZona): Promise<{ resultado: 'ok' } | { resultado: 'invalida'; motivo: string } | { resultado: 'superpuesta'; con: string }>;
+  /**
+   * Reemplaza las zonas de la flota. Bloquea la flota (dos reemplazos se serializan). Quitar una zona
+   * espera a las aceptaciones en curso que la usan (FOR SHARE). `zona_no_existe` si alguna no existe.
+   */
+  reemplazarZonasDeFlota(flotaId: string, zonas: readonly string[]): Promise<'ok' | 'flota_no_existe' | 'zona_no_existe'>;
+  obtenerZona(id: string): Promise<DatosZona | null>;
+  zonasDeFlota(flotaId: string): Promise<string[]>;
 }
 
 export interface RepositorioFlotas {
@@ -233,6 +283,16 @@ export interface RepositorioFlotas {
   obtenerFlota(id: string): Promise<Flota | null>;
   obtenerChofer(id: string): Promise<ChoferFlota | null>;
   listarChoferes(flotaId: string, pagina: Pagina): Promise<ChoferFlota[]>;
+  listarZonas(): Promise<DatosZona[]>;
+  zonasDeFlota(flotaId: string): Promise<string[]>;
+}
+
+/** Un polígono simple en lng/lat: un anillo exterior cerrado (el primer punto se repite al final). */
+export interface DatosZona {
+  id: string;
+  nombre: string;
+  /** Anillo exterior como pares [lng, lat], igual que GeoJSON. */
+  anillo: [number, number][];
 }
 
 /**

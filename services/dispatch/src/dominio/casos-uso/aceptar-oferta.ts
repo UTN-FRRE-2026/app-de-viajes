@@ -1,5 +1,5 @@
 import type { DatosSolicitud } from '../entidades/index.js';
-import { ChoferConViajeActivo, OfertaNoEncontrada, SolicitudNoEncontrada } from '../errores/index.js';
+import { ChoferConViajeActivo, ChoferNoApto, OfertaNoEncontrada, SolicitudNoEncontrada } from '../errores/index.js';
 import type { DependenciasDespacho } from './dependencias.js';
 
 export interface Entrada {
@@ -13,9 +13,17 @@ export interface Entrada {
  *
  * 1. Lock de la solicitud (FOR UPDATE): las aceptaciones de una misma solicitud se ejecutan
  *    de a una. La segunda ve ASIGNADO y recibe 409.
- * 2. Reserva del chofer contra una restricción única: si el mismo chofer acepta dos solicitudes
+ * 2. Revalidación del chofer (variante G): habilitado, activo, disponible y de una flota con la zona
+ *    del viaje habilitada. Toma FOR SHARE de la fila del chofer y de la habilitación de la zona en su
+ *    flota: desactivarlo, deshabilitarlo o quitarle la zona a la flota esperan a que esta aceptación
+ *    termine; y si ganaron ellos, esta los ve y responde 409 CHOFER_NO_APTO.
+ * 3. Reserva del chofer contra una restricción única: si el mismo chofer acepta dos solicitudes
  *    distintas a la vez (dos locks distintos, no se esperan), la base deja pasar solo una.
- * Orden fijo: siempre solicitud → chofer. El chofer no es un lock de fila, así que no hay ciclo posible.
+ * Orden fijo: solicitud → chofer → zona de la flota. Nadie los toma al revés (desactivar toma
+ * chofer → flota; quitar una zona, flota → zona de la flota), así que no hay ciclo posible.
+ *
+ * La flota del chofer se guarda en la solicitud en esta misma transacción: el viaje queda atribuido a
+ * la flota que tenía al aceptar.
  */
 export function aceptarOferta(deps: DependenciasDespacho) {
   return async ({ ofertaId, choferId }: Entrada): Promise<DatosSolicitud> => {
@@ -39,6 +47,13 @@ export function aceptarOferta(deps: DependenciasDespacho) {
       // no "oferta vencida" (que también sería cierto, porque su aceptación canceló esta oferta).
       solicitud.asignar(choferId);
       oferta.aceptar(ahora);
+
+      // Una solicitud de antes de las zonas: se resuelve ahora, con las mismas reglas que una nueva.
+      const zonaId = solicitud.zonaId ?? (await tx.zonaDelOrigen(solicitud.origen));
+      const apto = zonaId ? await tx.choferAptoParaAceptar(choferId, zonaId) : null;
+      if (!zonaId || !apto) throw new ChoferNoApto();
+      solicitud.fijarZona(zonaId);
+      solicitud.fijarFlota(apto.flotaId);
 
       if (!(await tx.reservarChofer(choferId, solicitud.id))) throw new ChoferConViajeActivo();
 

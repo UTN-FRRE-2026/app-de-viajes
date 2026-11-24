@@ -42,8 +42,8 @@ Cada integrante es **dueño** de un problema central y de los módulos que lo ro
 - [ ] ADR 0002 (Postgres + Prisma) y 0003 (JWT y autorización por recurso).
 
 **Fase B**
-- [ ] Zonas (PostGIS), zonas habilitadas por flota y filtro en dispatch de los candidatos que devuelve location, por flota y zona (con Ivan).
-- [ ] Aislamiento por `fleetId` en el caso de uso (404 a otra flota, con test) y reporte por flota. Hecho: el aislamiento, y los activos del reporte (el cupo, en el panel). Falta: viajes y facturación del reporte, que necesitan guardar la flota en el viaje ([docs/flotas.md](flotas.md#lo-que-sigue-pr-2-de-flotas)).
+- [x] Zonas (PostGIS), zonas habilitadas por flota y filtro en dispatch de los candidatos que devuelve location, por flota y zona, con lotes crecientes y la revalidación al aceptar ([docs/flotas.md](flotas.md#zonas-operativas-pr-2)).
+- [ ] Aislamiento por `fleetId` en el caso de uso (404 a otra flota, con test) y reporte por flota. Hecho: el aislamiento, los activos del reporte (el cupo, en el panel) y `fleet_id` guardado en cada viaje al aceptar. Falta: la consulta de viajes y facturación del reporte ([docs/flotas.md](flotas.md#lo-que-sigue)).
 - [ ] En `platform`, para los tres servicios: helmet, CORS restringido, rate limit genérico con 429 y encabezados, validación de encabezados y log por pedido.
 - [ ] Tests del bloque 5 que faltan: `constructor.prototype` y claves anidadas, inyección SQL en la búsqueda, rate limit en solicitud y ubicación, acceso a recursos ajenos en cada módulo.
 - [ ] Frontend: proyecto base (Vite, router, stores, cliente HTTP, componente de errores), login y pantallas de admin de flota. Hecho: la base y el login ([docs/web.md](web.md#el-frontend-appsweb)), y el panel del admin de flota ([docs/web.md](web.md#el-panel-de-la-flota-flota)): cupo, lista, alta, activar y desactivar.

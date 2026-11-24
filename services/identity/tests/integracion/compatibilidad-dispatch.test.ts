@@ -17,6 +17,19 @@ import { AUDIENCE, clave, CONTRASENA, datosRegistro, ISSUER, levantarIdentity, t
 // lo único que comparten es el contrato del token.
 const CARPETA_DISPATCH = fileURLToPath(new URL('../../../dispatch', import.meta.url));
 const cuerpo = { origen: { lat: -34.6, lng: -58.4 }, destino: { lat: -34.5, lng: -58.4 } };
+/** Un rectángulo (GeoJSON, [lng, lat]) que contiene el origen de `cuerpo`. */
+const AREA_DEL_ORIGEN = {
+  type: 'Polygon',
+  coordinates: [
+    [
+      [-58.5, -34.7],
+      [-58.3, -34.7],
+      [-58.3, -34.5],
+      [-58.5, -34.5],
+      [-58.5, -34.7],
+    ],
+  ],
+};
 
 let d: Identity;
 let dispatch: ChildProcess;
@@ -91,6 +104,16 @@ beforeAll(async () => {
   });
   dispatch.stderr?.on('data', (parte: Buffer) => (salidaDispatch += parte.toString()));
   await esperarDispatch(urlDispatch);
+
+  // dispatch solo crea viajes con el origen dentro de una zona operativa (si no, 422
+  // ORIGEN_FUERA_DE_ZONA). El admin del seed define una que cubre el origen de `cuerpo`, por la API real.
+  await sembrarUsuarios(d.prisma, new HasherArgon2(), CONTRASENA);
+  const zona = await request(urlDispatch)
+    .put(`/admin/zonas/${randomUUID()}`)
+    .set('Authorization', `Bearer ${await tokenDe('admin@viajes.test')}`)
+    .set('Idempotency-Key', randomUUID())
+    .send({ nombre: 'Zona de prueba', area: AREA_DEL_ORIGEN });
+  expect(zona.status, JSON.stringify(zona.body)).toBe(200);
 });
 
 afterAll(async () => {
@@ -102,7 +125,8 @@ describe('dispatch real acepta los tokens de identity', () => {
   it('un pasajero logueado pide un viaje a su nombre → 201', async () => {
     const token = await tokenDe('ana@viajes.test');
     const res = await pedirViaje(token);
-    expect(res.status).toBe(201);
+    // Con el cuerpo en el mensaje: si dispatch rechaza, se ve el código (por ejemplo, ORIGEN_FUERA_DE_ZONA).
+    expect(res.status, JSON.stringify(res.body)).toBe(201);
     const { id } = await d.prisma.usuario.findUniqueOrThrow({ where: { email: 'ana@viajes.test' } });
     expect(res.body.pasajeroId).toBe(id);
   });

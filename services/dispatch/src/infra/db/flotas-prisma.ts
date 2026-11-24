@@ -1,6 +1,6 @@
 import { idempotenciaPendiente, idempotenciaRegistrada, registrarIdempotenciaEnTransaccion } from '@viajes/platform';
 import { ChoferFlota, type DatosFlota, type Flota } from '../../dominio/flotas/index.js';
-import type { Pagina, RepositorioFlotas, TransaccionFlotas } from '../../dominio/puertos/index.js';
+import type { DatosZona, Pagina, RepositorioFlotas, TransaccionFlotas } from '../../dominio/puertos/index.js';
 import { Prisma, type PrismaClient } from './generated/client.js';
 
 interface FilaChofer {
@@ -41,7 +41,32 @@ export interface OpcionesFlotasPrisma {
    * flota. Una demora acá superpone de verdad las activaciones simultáneas.
    */
   trasBloquearChofer?: () => Promise<void>;
+  /**
+   * Solo para tests: corre dentro de la transacción que reemplaza las zonas de una flota, después de
+   * quitar las que ya no van (con sus filas bloqueadas) y antes de confirmar.
+   */
+  trasQuitarZonas?: () => Promise<void>;
 }
+
+interface FilaZona {
+  id: string;
+  name: string;
+  area: string;
+}
+
+/** GeoJSON de PostGIS → el anillo exterior como pares [lng, lat]. */
+const aZona = (f: FilaZona): DatosZona => ({
+  id: f.id,
+  nombre: f.name,
+  anillo: (JSON.parse(f.area) as { coordinates: [number, number][][] }).coordinates[0]!,
+});
+
+/** El polígono, de GeoJSON a geometry con SRID 4326 (lng/lat). */
+const geometria = (anillo: [number, number][]) =>
+  Prisma.sql`ST_SetSRID(ST_GeomFromGeoJSON(${JSON.stringify({ type: 'Polygon', coordinates: [anillo] })}), 4326)`;
+
+/** Todas las escrituras de zonas se serializan con este advisory lock (por transacción). */
+const LOCK_ZONAS = 'dispatch:zones';
 
 /**
  * Las garantías de la carrera G viven en este archivo, en SQL:
@@ -117,6 +142,62 @@ function transaccion(tx: Prisma.TransactionClient, opciones: OpcionesFlotasPrism
         SELECT id, name, max_active, active_count FROM fleets WHERE id = ${id}::uuid`;
       return fila ? aFlota(fila) : null;
     },
+
+    async guardarZona({ id, nombre, anillo }) {
+      // Un CHECK no puede mirar otras filas: la superposición se controla acá, con las escrituras de
+      // zonas en fila (advisory lock hasta el final de la transacción). Dos PUT simultáneos no pueden
+      // dejar dos zonas superpuestas: el segundo ve la primera ya guardada.
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${LOCK_ZONAS}))`;
+      const g = geometria(anillo);
+      const [validez] = await tx.$queryRaw<{ valida: boolean; motivo: string }[]>`
+        SELECT ST_IsValid(${g}) AS valida, ST_IsValidReason(${g}) AS motivo`;
+      if (!validez?.valida) return { resultado: 'invalida', motivo: validez?.motivo ?? 'desconocido' };
+      // Se superponen si comparten interior: tocarse en el borde está permitido.
+      const [otra] = await tx.$queryRaw<{ name: string }[]>`
+        SELECT name FROM zones
+        WHERE id <> ${id}::uuid AND ST_Intersects(area, ${g}) AND NOT ST_Touches(area, ${g})
+        ORDER BY id
+        LIMIT 1`;
+      if (otra) return { resultado: 'superpuesta', con: otra.name };
+      await tx.$executeRaw`
+        INSERT INTO zones (id, name, area) VALUES (${id}::uuid, ${nombre}, ${g})
+        ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, area = EXCLUDED.area, updated_at = now()`;
+      return { resultado: 'ok' };
+    },
+
+    async reemplazarZonasDeFlota(flotaId, zonas) {
+      // FOR NO KEY UPDATE y no FOR UPDATE: dos reemplazos de la misma flota se serializan, pero las
+      // claves foráneas hacia la flota (fleet_id de una solicitud que se acepta) no esperan.
+      const [flota] = await tx.$queryRaw<{ id: string }[]>`
+        SELECT id FROM fleets WHERE id = ${flotaId}::uuid FOR NO KEY UPDATE`;
+      if (!flota) return 'flota_no_existe';
+      const ids = [...new Set(zonas)];
+      const [existentes] = await tx.$queryRaw<{ n: number }[]>`
+        SELECT count(*)::int AS n FROM zones WHERE id = ANY(${ids}::uuid[])`;
+      if ((existentes?.n ?? 0) !== ids.length) return 'zona_no_existe';
+      // Quitar una zona choca con el FOR SHARE de una aceptación en curso que la usa: espera a que
+      // termine. Una aceptación que llega después ya no encuentra la fila.
+      await tx.$executeRaw`
+        DELETE FROM fleet_zones WHERE fleet_id = ${flotaId}::uuid AND NOT (zone_id = ANY(${ids}::uuid[]))`;
+      await opciones.trasQuitarZonas?.();
+      await tx.$executeRaw`
+        INSERT INTO fleet_zones (fleet_id, zone_id)
+        SELECT ${flotaId}::uuid, z FROM unnest(${ids}::uuid[]) AS z
+        ON CONFLICT DO NOTHING`;
+      return 'ok';
+    },
+
+    async obtenerZona(id) {
+      const [fila] = await tx.$queryRaw<FilaZona[]>`
+        SELECT id, name, ST_AsGeoJSON(area) AS area FROM zones WHERE id = ${id}::uuid`;
+      return fila ? aZona(fila) : null;
+    },
+
+    async zonasDeFlota(flotaId) {
+      const filas = await tx.$queryRaw<{ zone_id: string }[]>`
+        SELECT zone_id FROM fleet_zones WHERE fleet_id = ${flotaId}::uuid ORDER BY zone_id`;
+      return filas.map((f) => f.zone_id);
+    },
   };
 }
 
@@ -156,6 +237,18 @@ export class RepositorioFlotasPrisma implements RepositorioFlotas {
   async obtenerChofer(id: string) {
     const [fila] = await this.prisma.$queryRaw<FilaChofer[]>`SELECT ${COLUMNAS_CHOFER} FROM drivers WHERE id = ${id}::uuid`;
     return fila ? aChofer(fila) : null;
+  }
+
+  async listarZonas() {
+    const filas = await this.prisma.$queryRaw<FilaZona[]>`
+      SELECT id, name, ST_AsGeoJSON(area) AS area FROM zones ORDER BY name, id`;
+    return filas.map(aZona);
+  }
+
+  async zonasDeFlota(flotaId: string) {
+    const filas = await this.prisma.$queryRaw<{ zone_id: string }[]>`
+      SELECT zone_id FROM fleet_zones WHERE fleet_id = ${flotaId}::uuid ORDER BY zone_id`;
+    return filas.map((f) => f.zone_id);
   }
 
   async listarChoferes(flotaId: string, { limite, desde }: Pagina) {

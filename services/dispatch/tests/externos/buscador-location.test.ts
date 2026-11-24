@@ -73,9 +73,9 @@ async function esperar503(promesa: Promise<unknown>) {
 }
 
 describe('buscador contra location: el pedido', () => {
-  it('manda el token de servicio, el origen, el radio y un lote de al menos 10', async () => {
+  it('manda el token de servicio, el origen, el radio y exactamente el limite pedido', async () => {
     manejar = locationCon([]);
-    await buscador().buscar(ORIGEN, { excluir: [], limite: 3 });
+    await buscador().buscar(ORIGEN, { limite: 10 });
 
     expect(pedidos).toHaveLength(1);
     const [p] = pedidos;
@@ -89,31 +89,30 @@ describe('buscador contra location: el pedido', () => {
     });
   });
 
-  it('con excluidos pide limite + excluidos, sin pasarse del tope del contrato (100)', async () => {
+  it('los lotes (10, 20… 100) los decide el dominio: el adaptador pide lo que le piden', async () => {
     manejar = locationCon([]);
-    await buscador().buscar(ORIGEN, { excluir: Array.from({ length: 12 }, randomUUID), limite: 3 });
-    await buscador().buscar(ORIGEN, { excluir: Array.from({ length: 150 }, randomUUID), limite: 3 });
-    expect(pedidos.map((p) => p.url.searchParams.get('limite'))).toEqual(['15', '100']);
+    await buscador().buscar(ORIGEN, { limite: 40 });
+    await buscador().buscar(ORIGEN, { limite: 100 });
+    expect(pedidos.map((p) => p.url.searchParams.get('limite'))).toEqual(['40', '100']);
   });
 });
 
 describe('buscador contra location: la respuesta', () => {
-  it('devuelve los ids en el orden de location (del más cercano al más lejano), cortados en limite', async () => {
-    const choferes = Array.from({ length: 6 }, randomUUID);
+  it('devuelve los ids en el orden de location (del más cercano al más lejano); lote lleno → completo', async () => {
+    const choferes = Array.from({ length: 3 }, randomUUID);
     manejar = locationCon(choferes);
-    expect(await buscador().buscar(ORIGEN, { excluir: [], limite: 3 })).toEqual(choferes.slice(0, 3));
+    expect(await buscador().buscar(ORIGEN, { limite: 3 })).toEqual({ candidatos: choferes, completo: true });
   });
 
-  it('saca a los ya ofrecidos y completa con los que siguen', async () => {
-    const choferes = Array.from({ length: 6 }, randomUUID);
+  it('menos que el limite → incompleto: no hay más choferes vigentes en el radio', async () => {
+    const choferes = Array.from({ length: 2 }, randomUUID);
     manejar = locationCon(choferes);
-    const res = await buscador().buscar(ORIGEN, { excluir: [choferes[0]!, choferes[2]!], limite: 3 });
-    expect(res).toEqual([choferes[1], choferes[3], choferes[4]]);
+    expect(await buscador().buscar(ORIGEN, { limite: 10 })).toEqual({ candidatos: choferes, completo: false });
   });
 
-  it('nadie cerca → lista vacía, no un error', async () => {
+  it('nadie cerca → lista vacía e incompleta, no un error', async () => {
     manejar = locationCon([]);
-    expect(await buscador().buscar(ORIGEN, { excluir: [], limite: 3 })).toEqual([]);
+    expect(await buscador().buscar(ORIGEN, { limite: 3 })).toEqual({ candidatos: [], completo: false });
   });
 });
 
@@ -121,7 +120,7 @@ describe('buscador contra location: falla cerrado con 503', () => {
   it('location no contesta dentro del timeout', async () => {
     manejar = () => {}; // nunca responde
     const inicio = Date.now();
-    await esperar503(buscador({ timeoutMs: 150 }).buscar(ORIGEN, { excluir: [], limite: 3 }));
+    await esperar503(buscador({ timeoutMs: 150 }).buscar(ORIGEN, { limite: 3 }));
     expect(Date.now() - inicio).toBeLessThan(1000);
   });
 
@@ -130,7 +129,7 @@ describe('buscador contra location: falla cerrado con 503', () => {
       res.writeHead(200, { 'content-type': 'application/json' });
       res.write('{"candidatos":[');
     };
-    await esperar503(buscador({ timeoutMs: 150 }).buscar(ORIGEN, { excluir: [], limite: 3 }));
+    await esperar503(buscador({ timeoutMs: 150 }).buscar(ORIGEN, { limite: 3 }));
   });
 
   it('location no está levantado (conexión rechazada)', async () => {
@@ -139,17 +138,17 @@ describe('buscador contra location: falla cerrado con 503', () => {
     await new Promise<void>((r) => libre.listen(0, '127.0.0.1', () => r()));
     const { port } = libre.address() as AddressInfo;
     await new Promise<void>((r) => libre.close(() => r()));
-    await esperar503(buscador({ url: `http://127.0.0.1:${port}` }).buscar(ORIGEN, { excluir: [], limite: 3 }));
+    await esperar503(buscador({ url: `http://127.0.0.1:${port}` }).buscar(ORIGEN, { limite: 3 }));
   });
 
   it.each([500, 503, 401, 400])('location responde %i', async (estado) => {
     manejar = (_req, res) => json(res, estado, { error: { code: 'X', message: 'detalle interno de location' } });
-    await esperar503(buscador().buscar(ORIGEN, { excluir: [], limite: 3 }));
+    await esperar503(buscador().buscar(ORIGEN, { limite: 3 }));
   });
 
   it('la respuesta no es JSON', async () => {
     manejar = (_req, res) => res.writeHead(200, { 'content-type': 'text/html' }).end('<html>proxy</html>');
-    await esperar503(buscador().buscar(ORIGEN, { excluir: [], limite: 3 }));
+    await esperar503(buscador().buscar(ORIGEN, { limite: 3 }));
   });
 
   it.each([
@@ -158,6 +157,6 @@ describe('buscador contra location: falla cerrado con 503', () => {
     ['un campo de más', { candidatos: [{ ...candidato(randomUUID(), 10), flota: 'x' }] }],
   ])('la respuesta no cumple el contrato: %s', async (_caso, cuerpo) => {
     manejar = (_req, res) => json(res, 200, cuerpo);
-    await esperar503(buscador().buscar(ORIGEN, { excluir: [], limite: 3 }));
+    await esperar503(buscador().buscar(ORIGEN, { limite: 3 }));
   });
 });
