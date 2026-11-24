@@ -89,6 +89,8 @@ describe('tarifa desde la configuración', () => {
         'MAPAS_VELOCIDAD_KMH',
         'MAPAS_TIMEOUT_MS',
         'MAPAS_LATENCIA_SIMULADA_MS',
+        'OFERTAS_SIMULTANEAS',
+        'OFERTA_TTL_SEGUNDOS',
       ].map((v) => [v, '']),
     );
     expect(EsquemaConfig.parse({ ...base, ...vacias })).toMatchObject({
@@ -101,6 +103,8 @@ describe('tarifa desde la configuración', () => {
       MAPAS_VELOCIDAD_KMH: 25,
       MAPAS_TIMEOUT_MS: 1000,
       MAPAS_LATENCIA_SIMULADA_MS: 0,
+      OFERTAS_SIMULTANEAS: 3,
+      OFERTA_TTL_SEGUNDOS: 15,
     });
   });
 

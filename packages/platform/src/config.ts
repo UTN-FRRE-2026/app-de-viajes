@@ -19,6 +19,14 @@ export const proxyConfiable = z.preprocess(
 );
 
 /**
+ * Compose pasa una variable que no está en el .env como texto vacío (`${VAR:-}`), y `z.coerce.number()`
+ * convertiría "" (y también "  ", porque Number(" ") es 0) en 0: un `.default()` no se aplica. Vacío o
+ * solo espacios cuenta como ausente y se usa el valor por defecto. Un "0" escrito a propósito sigue valiendo 0.
+ */
+export const vacioComoAusente = <T extends z.ZodType>(esquema: T) =>
+  z.preprocess((v) => (typeof v === 'string' && v.trim() === '' ? undefined : v), esquema);
+
+/**
  * Valida el entorno al arrancar. Si falta o está mal una variable, el proceso
  * termina con código 1 y nombra la variable: mejor no arrancar que arrancar roto.
  */

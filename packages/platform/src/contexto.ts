@@ -15,6 +15,7 @@ export function requestIdActual(): string | undefined {
 /** Toma el x-request-id que puso el gateway (o genera uno) y lo deja disponible en todo el pedido. */
 export function middlewareRequestId(): RequestHandler {
   return (req, res, next) => {
+    // nosemgrep: ajinabraham.njsscan.dos.regex_dos.regex_dos -- la regex de abajo es una sola clase acotada a 100 caracteres: lineal, sin retroceso.
     const recibido = req.header('x-request-id');
     const requestId = recibido && /^[\w-]{1,100}$/.test(recibido) ? recibido : randomUUID();
     res.setHeader('x-request-id', requestId);

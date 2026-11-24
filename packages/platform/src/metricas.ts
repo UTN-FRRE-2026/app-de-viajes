@@ -171,6 +171,7 @@ export function rutaMetricas(metricas: Metricas, token: string): Router {
   r.get(
     '/metrics',
     (req, _res, next) => {
+      // nosemgrep: ajinabraham.njsscan.dos.regex_dos.regex_dos -- la regex de abajo es un prefijo fijo y una clase acotada a 256: lineal, sin retroceso.
       const encabezado = req.header('authorization') ?? '';
       const recibido = /^Bearer ([^\s]{1,256})$/.exec(encabezado)?.[1];
       if (!recibido || !timingSafeEqual(huella(recibido), esperado)) {

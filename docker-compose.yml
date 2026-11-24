@@ -50,6 +50,10 @@ services:
       IDENTITY_JWT_CLAVE_PRIVADA_B64: ${IDENTITY_JWT_CLAVE_PRIVADA_B64:-}
       # Secreto de /interno/usuarios/:id (lo usa dispatch). Con :-: si falta, identity no arranca y lo dice.
       IDENTITY_TOKEN_SERVICIO: ${IDENTITY_TOKEN_SERVICIO:-}
+      # Límite de intentos de login. Vacías: los valores por defecto de identity. El e2e sube el de la IP
+      # (cuenta también los login correctos, y los flujos entran muchas veces desde la misma).
+      IDENTITY_LOGIN_MAX_POR_EMAIL: ${IDENTITY_LOGIN_MAX_POR_EMAIL:-}
+      IDENTITY_LOGIN_MAX_POR_IP: ${IDENTITY_LOGIN_MAX_POR_IP:-}
     ports:
       - "3001:3001"
     networks:
@@ -119,6 +123,10 @@ services:
       LOCATION_TIMEOUT_MS: ${LOCATION_TIMEOUT_MS:-1000}
       DISPATCH_RADIO_BUSQUEDA_METROS: ${DISPATCH_RADIO_BUSQUEDA_METROS:-5000}
       DISPATCH_CANDIDATOS_DEMO: ${DISPATCH_CANDIDATOS_DEMO:-}
+      # Ofertas: cuántas a la vez y cuánto duran. Vacías: los valores por defecto de dispatch (3 y 15 s).
+      # El e2e usa 1 y 6 s, para probar que una oferta vencida pasa al siguiente chofer.
+      OFERTAS_SIMULTANEAS: ${OFERTAS_SIMULTANEAS:-}
+      OFERTA_TTL_SEGUNDOS: ${OFERTA_TTL_SEGUNDOS:-}
       # Flotas: el alta de un chofer verifica la cuenta en identity (red interna; /interno/* no se publica).
       IDENTITY_URL: http://identity:3001
       IDENTITY_TOKEN_SERVICIO: ${IDENTITY_TOKEN_SERVICIO:-}

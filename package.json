@@ -10,7 +10,8 @@
     "packages/contracts",
     "packages/platform",
     "services/*",
-    "apps/*"
+    "apps/*",
+    "e2e"
   ],
   "scripts": {
     "setup": "node scripts/setup.mjs",
@@ -19,6 +20,8 @@
     "infra:up": "docker compose up -d postgres redis",
     "web:probar": "node scripts/probar-web.mjs",
     "demo:flotas": "node scripts/demo-flotas.mjs",
+    "e2e:levantar": "npm run levantar -w @viajes/e2e",
+    "e2e": "npm run probar -w @viajes/e2e",
     "lint": "eslint .",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm test --workspaces --if-present",

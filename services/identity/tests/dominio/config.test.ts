@@ -60,6 +60,11 @@ describe('configuración', () => {
     expect(variablesConError({ ...base, [variable]: valor })).toEqual([variable]);
   });
 
+  it('los límites de login vacíos (Compose los pasa así si no están en el .env) usan el valor por defecto, nunca 0', () => {
+    const c = EsquemaConfig.parse({ ...base, IDENTITY_LOGIN_MAX_POR_EMAIL: '', IDENTITY_LOGIN_MAX_POR_IP: ' ' });
+    expect(c).toMatchObject({ IDENTITY_LOGIN_MAX_POR_EMAIL: 5, IDENTITY_LOGIN_MAX_POR_IP: 30 });
+  });
+
   it('con postgres exige su propia base y Redis', () => {
     expect(variablesConError({ ...base, IDENTITY_PERSISTENCIA: 'postgres' })).toEqual(['IDENTITY_DATABASE_URL', 'REDIS_URL']);
   });
