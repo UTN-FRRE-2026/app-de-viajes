@@ -241,10 +241,10 @@ El ADR 0006 registra la decisión con sus alternativas reales: monolito modular 
 | **6.5** Tarifa | ✅ | Cálculo, estimación, configuración por el admin, tarifa final con por qué difiere, y cobro (3.4) |
 | **6.5** Oferta con vencimiento | ✅ | Barrido cada 2 s, TTL de 15 s |
 | **6.5** Tiempo real | ✅ | SSE con los eventos del viaje, reconexión con `Last-Event-ID` y las posiciones en vivo: la del chofer para su pasajero, y la del pasajero para su chofer (3.5) |
-| **6.6** Simulador de 500 choferes y mediciones | 🟡 | Hecho: 500 choferes con k6 contra location, en un entorno de carga aislado (`carga/`). Falta medir de punta a punta con dispatch: el tiempo hasta la asignación, con su hipótesis escrita antes |
+| **6.6** Simulador de 500 choferes y mediciones | ✅ | 500 choferes con k6 contra location, en un entorno de carga aislado (`carga/`). De punta a punta con dispatch (24/11): viajes en paralelo con el filtro real, ingenua frente a optimizada, y rampa de estrés, con las hipótesis commiteadas antes y 3 corridas por escenario (`docs/mediciones.md`) |
 | **6.7 G** Flotas y zonas | 🟡 | Hecho: flotas, choferes con vehículo, habilitación, disponibilidad, límite de activos con la carrera G (test de 50 contra 10) y aislamiento entre flotas (3.3, `docs/flotas.md`), el panel `/flota` (cupo, alta, activar y desactivar), zonas en PostGIS, filtro de candidatos por flota y zona con lotes crecientes, y la revalidación al aceptar con la flota guardada en el viaje (PR 2). Falta: los viajes y la facturación del reporte |
 | **7.1** Seis ADR o más | ✅ | Hay seis: 0001, 0004, 0005, 0006, 0007 (SSE) y 0010 (idempotencia). Faltan 0002, 0003, 0008, 0009, 0011 y 0012 |
-| **7.2** `docs/mediciones.md` | 🟡 | Cubre la tarea pesada. Falta **la carrera principal** y el tiempo hasta la asignación |
+| **7.2** `docs/mediciones.md` | ✅ | Cubre la tarea pesada, la carrera principal (6.3), y las solicitudes bajo carga y estrés con el tiempo hasta la asignación |
 | **7.3** Historial de Git | 🟡 | Los tres tienen commits y cada PR pasa por revisión de otro. El PR #1 se mergeó sin revisión |
 | **2.5** README, `modelo.md`, `api.md`, `ataque.md` | 🟡 | Hay README. Faltan `modelo.md`, `api.md` y `ataque.md` |
 | **8** Ataque cruzado | ⬜ | Entorno publicado y congelado, usuarios de prueba, bitácora |
@@ -304,7 +304,7 @@ La cátedra no pidió una herramienta en particular. Se usa **Semgrep**: corre d
 
 En `carga/`, corriendo con la imagen `grafana/k6`:
 - `choferes.js`: el **simulador propio** de 6.6. 500 usuarios virtuales, un ping cada 2 s, cinco minutos o más.
-- `solicitudes.js`: carga sobre la solicitud de viaje con choferes que aceptan; mide p50, p95 y p99, pedidos por segundo y **tiempo hasta la asignación**.
+- `solicitudes.js`: carga sobre la solicitud de viaje con choferes que aceptan; mide p50, p95 y p99, pedidos por segundo y **tiempo hasta la asignación**. Es Node y no k6, porque pasajeros y choferes se enteran por SSE.
 - `estres.js`: rampa hasta encontrar dónde se degrada.
 - `carrera.js`: aceptaciones simultáneas, para el informe de la carrera principal.
 
@@ -336,7 +336,7 @@ Es lo que pide el Control 3: carrera principal con su test (ya está) y tarea pe
 - [x] `npm run setup`, `dev`, `start` para los tres servicios; secuencia probada en un clon limpio, en Linux y en Windows (Ivan).
 - [x] Contrato de `GET /interno/candidatos` en `contracts` y adaptador HTTP con timeout en dispatch (Ivan, Maxi).
 - [x] location en sus dos versiones, con adaptador en memoria primero (Agos #7, Maxi #8).
-- [ ] `carga/choferes.js`, `carga/solicitudes.js`, `/metrics` con el lag y **primera medición** en `docs/mediciones.md` (Maxi). Hecho: `carga/ubicaciones.js`, la primera medición y `/metrics` en los tres servicios desde `platform`, con el tiempo hasta la asignación en dispatch. Hecho como **prueba piloto** (22/11): `carga/solicitudes.js`, una solicitud real de punta a punta bajo la carga de ubicaciones (`docs/mediciones.md`). Falta la medición completa para el informe, con solicitudes en paralelo y el filtro de candidatos por disponibilidad, flota y zona.
+- [x] `carga/choferes.js`, `carga/solicitudes.js`, `/metrics` con el lag y **primera medición** en `docs/mediciones.md` (Maxi). Hecho: `carga/ubicaciones.js`, la primera medición y `/metrics` en los tres servicios desde `platform`, con el tiempo hasta la asignación en dispatch. Hecho (24/11): `carga/solicitudes.js` con 20 pasajeros y 50 choferes en paralelo, con el filtro real de flotas y zonas, 3 corridas por estrategia y el lag por ventana (`event_loop_lag_seconds`) (`docs/mediciones.md`). El simulador de 500 choferes es `carga/ubicaciones.js`.
 - [x] flotas en dispatch: choferes, vehículos, flotas y la carrera G con su test (Agos, PR 1 de flotas).
 - [ ] ADR 0001, 0002, 0003, 0005 y 0006; 0004 con el formato corregido. Hechos: 0001, 0004, 0005 y 0006. Faltan 0002 y 0003 (Agos).
 
@@ -361,7 +361,7 @@ Al cerrar esta fase el sistema tiene que poder congelarse para el ataque cruzado
 
 - [ ] Playwright y job `e2e` (Agos, Ivan).
 - [ ] Job `sast` y corrección de lo que encuentre (Ivan).
-- [ ] Grafana Cloud y dashboards; `estres.js` y `carrera.js` (Maxi).
+- [ ] Grafana Cloud y dashboards; `estres.js` y `carrera.js` (Maxi). Hecho: `carga/carrera.js` (22/11, una corrida de validación) y `carga/estres.js` con 3 corridas (24/11): se degrada en 16 viajes/s por la espera del commit en el disco mecánico de esta máquina; sin esa espera, sostiene 16 y se satura en 32, por la CPU de dispatch. Falta repetirlo con Docker en un SSD, y Grafana Cloud.
 - [ ] Mediciones finales, tres corridas por escenario, con conclusión (Maxi).
 - [ ] ADR restantes: 0007 SSE, 0008 búsqueda geográfica, 0009 límite por flota, 0010 idempotencia, 0011 vencimiento de ofertas, 0012 inventario de carreras. Hechos: 0007 y 0010.
 - [ ] Autoevaluación de ProgIV 10.6 completa, clon limpio en otra máquina y tag `entrega-final` (Ivan).

@@ -1,0 +1,88 @@
+{
+  "calentamiento_s": 30,
+  "etapa_s": 60,
+  "transicion_s": 15,
+  "etapas": [
+    {
+      "etapa": 1,
+      "tasa": 8,
+      "previstos_etapa": 480,
+      "previstos_ventana_estable": 360,
+      "iniciados_ventana_estable": 361,
+      "omitidos_por_k6_etapa": 0,
+      "creados": 361,
+      "asignados": 361,
+      "sin_choferes": 0,
+      "sin_resolver": 0,
+      "ubicacion_503": 0,
+      "errores": 0,
+      "viajes_por_s": 8.02,
+      "crear_ms": {
+        "p50": 20.850058,
+        "p95": 82.077293,
+        "p99": 341.02925659999727,
+        "max": 788.338584
+      },
+      "hasta_asignacion_ms": {
+        "p50": 127,
+        "p95": 262,
+        "p99": 751.9999999999945,
+        "max": 1034
+      }
+    },
+    {
+      "etapa": 2,
+      "tasa": 16,
+      "previstos_etapa": 960,
+      "previstos_ventana_estable": 720,
+      "iniciados_ventana_estable": 721,
+      "omitidos_por_k6_etapa": 0,
+      "creados": 721,
+      "asignados": 721,
+      "sin_choferes": 0,
+      "sin_resolver": 0,
+      "ubicacion_503": 0,
+      "errores": 0,
+      "viajes_por_s": 16.02,
+      "crear_ms": {
+        "p50": 43.143102,
+        "p95": 178.570643,
+        "p99": 282.48736619999994,
+        "max": 370.498733
+      },
+      "hasta_asignacion_ms": {
+        "p50": 171,
+        "p95": 415,
+        "p99": 531,
+        "max": 617
+      }
+    },
+    {
+      "etapa": 3,
+      "tasa": 32,
+      "previstos_etapa": 1920,
+      "previstos_ventana_estable": 1440,
+      "iniciados_ventana_estable": 860,
+      "omitidos_por_k6_etapa": 711,
+      "creados": 860,
+      "asignados": 0,
+      "sin_choferes": 0,
+      "sin_resolver": 860,
+      "ubicacion_503": 0,
+      "errores": 0,
+      "viajes_por_s": 19.11,
+      "crear_ms": {
+        "p50": 3858.045132,
+        "p95": 4376.5539947,
+        "p99": 4551.17193736,
+        "max": 4588.932536
+      },
+      "hasta_asignacion_ms": {
+        "p50": 0,
+        "p95": 0,
+        "p99": 0,
+        "max": 0
+      }
+    }
+  ]
+}

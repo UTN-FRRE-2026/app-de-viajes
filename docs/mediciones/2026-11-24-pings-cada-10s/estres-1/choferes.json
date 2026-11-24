@@ -1,0 +1,21 @@
+{
+  "choferes": 310,
+  "pings_enviados": 13020,
+  "pings_ok": 13020,
+  "pings_fallidos": 0,
+  "ofertas_recibidas": 8649,
+  "ofertas_a_no_aptos": 0,
+  "ofertas_ignoradas_ocupado": 390,
+  "ofertas_en_espera_probadas": 1293,
+  "aceptadas_200": 1876,
+  "aceptadas_por_no_aptos": 0,
+  "rechazos_409_esperados": {
+    "SOLICITUD_NO_DISPONIBLE": 4862,
+    "OFERTA_VENCIDA": 39
+  },
+  "aceptar_errores": {},
+  "reintentos": 6,
+  "liberados_por_evento": 1861,
+  "liberados_por_consulta": 0,
+  "sse_reconexiones": 0
+}

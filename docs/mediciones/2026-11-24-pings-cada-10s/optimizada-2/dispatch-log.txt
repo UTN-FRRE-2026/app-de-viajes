@@ -1,0 +1,18 @@
+﻿{"level":30,"time":1795504181540,"pid":1,"hostname":"2e3725b33793","name":"dispatch","puerto":3005,"persistencia":"postgres","buscador":"location","msg":"dispatch escuchando"}
+{"level":30,"time":1795504181574,"pid":1,"hostname":"2e3725b33793","name":"dispatch","version":"v1","configuradaPor":"semilla","msg":"tarifa vigente"}
+{"level":30,"time":1795504241516,"pid":1,"hostname":"2e3725b33793","name":"dispatch","cantidad":1,"msg":"barrido: ofertas vencidas procesadas"}
+{"level":30,"time":1795504263487,"pid":1,"hostname":"2e3725b33793","name":"dispatch","cantidad":1,"msg":"barrido: ofertas vencidas procesadas"}
+{"level":30,"time":1795504267552,"pid":1,"hostname":"2e3725b33793","name":"dispatch","cantidad":2,"msg":"barrido: ofertas vencidas procesadas"}
+{"level":30,"time":1795504269482,"pid":1,"hostname":"2e3725b33793","name":"dispatch","cantidad":1,"msg":"barrido: ofertas vencidas procesadas"}
+{"level":30,"time":1795504299505,"pid":1,"hostname":"2e3725b33793","name":"dispatch","cantidad":1,"msg":"barrido: ofertas vencidas procesadas"}
+{"level":30,"time":1795504305477,"pid":1,"hostname":"2e3725b33793","name":"dispatch","cantidad":1,"msg":"barrido: ofertas vencidas procesadas"}
+{"level":30,"time":1795504315500,"pid":1,"hostname":"2e3725b33793","name":"dispatch","cantidad":1,"msg":"barrido: ofertas vencidas procesadas"}
+{"level":30,"time":1795504327553,"pid":1,"hostname":"2e3725b33793","name":"dispatch","cantidad":1,"msg":"barrido: ofertas vencidas procesadas"}
+{"level":30,"time":1795504423490,"pid":1,"hostname":"2e3725b33793","name":"dispatch","cantidad":1,"msg":"barrido: ofertas vencidas procesadas"}
+{"level":30,"time":1795504433474,"pid":1,"hostname":"2e3725b33793","name":"dispatch","cantidad":1,"msg":"barrido: ofertas vencidas procesadas"}
+{"level":30,"time":1795504449637,"pid":1,"hostname":"2e3725b33793","name":"dispatch","cantidad":1,"msg":"barrido: ofertas vencidas procesadas"}
+{"level":30,"time":1795504485480,"pid":1,"hostname":"2e3725b33793","name":"dispatch","cantidad":1,"msg":"barrido: ofertas vencidas procesadas"}
+{"level":30,"time":1795504521502,"pid":1,"hostname":"2e3725b33793","name":"dispatch","cantidad":1,"msg":"barrido: ofertas vencidas procesadas"}
+{"level":30,"time":1795504532082,"pid":1,"hostname":"2e3725b33793","name":"dispatch","senal":"SIGTERM","msg":"apagado: dejo de aceptar conexiones y drenando pedidos"}
+{"level":30,"time":1795504532082,"pid":1,"hostname":"2e3725b33793","name":"dispatch","msg":"apagado: pedidos drenados, cerrando recursos"}
+{"level":30,"time":1795504532085,"pid":1,"hostname":"2e3725b33793","name":"dispatch","msg":"apagado: listo"}

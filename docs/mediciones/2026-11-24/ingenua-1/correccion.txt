@@ -1,0 +1,20 @@
+﻿SELECT json_build_object(
+  'viajes_creados', (SELECT count(*) FROM ride_requests),
+  'viajes_activos', (SELECT count(*) FROM ride_requests WHERE status IN ('BUSCANDO', 'ASIGNADO', 'EN_CAMINO', 'EN_CURSO')),
+  'asignaciones_activas', (SELECT count(*) FROM driver_active_assignment),
+  'ofertas', (SELECT count(*) FROM offers),
+  'ofertas_a_no_aptos', (SELECT count(*) FROM offers WHERE driver_id IN (SELECT ('00000000-0000-4000-8000-b0000000' || lpad(to_hex(i), 4, '0'))::uuid FROM generate_series(301, 310) AS i)),
+  'viajes_de_no_aptos', (SELECT count(*) FROM ride_requests WHERE driver_id IN (SELECT ('00000000-0000-4000-8000-b0000000' || lpad(to_hex(i), 4, '0'))::uuid FROM generate_series(301, 310) AS i)),
+  'viajes_fuera_de_cordoba', (SELECT count(*) FROM ride_requests WHERE zone_id IS DISTINCT FROM '00000000-0000-4000-8000-0000000ca5c0'),
+  'asignados_sin_flota', (SELECT count(*) FROM ride_requests WHERE driver_id IS NOT NULL AND fleet_id IS NULL)
+)
+{
+    "viajes_creados":  0,
+    "viajes_activos":  0,
+    "asignaciones_activas":  0,
+    "ofertas":  0,
+    "ofertas_a_no_aptos":  0,
+    "viajes_de_no_aptos":  0,
+    "viajes_fuera_de_cordoba":  0,
+    "asignados_sin_flota":  0
+}

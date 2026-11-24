@@ -1,0 +1,169 @@
+{
+  "calentamiento_s": 30,
+  "etapa_s": 60,
+  "transicion_s": 15,
+  "etapas": [
+    {
+      "etapa": 1,
+      "tasa": 1,
+      "previstos_etapa": 60,
+      "previstos_ventana_estable": 45,
+      "iniciados_ventana_estable": 45,
+      "omitidos_por_k6_etapa": 0,
+      "creados": 45,
+      "asignados": 45,
+      "sin_choferes": 0,
+      "sin_resolver": 0,
+      "ubicacion_503": 0,
+      "errores": 0,
+      "viajes_por_s": 1,
+      "crear_ms": {
+        "p50": 70.47443,
+        "p95": 181.0700087999998,
+        "p99": 292.7208464000003,
+        "max": 350.170388
+      },
+      "hasta_asignacion_ms": {
+        "p50": 266,
+        "p95": 387,
+        "p99": 492.64000000000016,
+        "max": 523
+      }
+    },
+    {
+      "etapa": 2,
+      "tasa": 2,
+      "previstos_etapa": 120,
+      "previstos_ventana_estable": 90,
+      "iniciados_ventana_estable": 91,
+      "omitidos_por_k6_etapa": 0,
+      "creados": 91,
+      "asignados": 91,
+      "sin_choferes": 0,
+      "sin_resolver": 0,
+      "ubicacion_503": 0,
+      "errores": 0,
+      "viajes_por_s": 2.02,
+      "crear_ms": {
+        "p50": 74.312128,
+        "p95": 195.7041645,
+        "p99": 255.52583169999977,
+        "max": 289.396843
+      },
+      "hasta_asignacion_ms": {
+        "p50": 281,
+        "p95": 394,
+        "p99": 516.1999999999997,
+        "max": 563
+      }
+    },
+    {
+      "etapa": 3,
+      "tasa": 4,
+      "previstos_etapa": 240,
+      "previstos_ventana_estable": 180,
+      "iniciados_ventana_estable": 180,
+      "omitidos_por_k6_etapa": 0,
+      "creados": 180,
+      "asignados": 180,
+      "sin_choferes": 0,
+      "sin_resolver": 0,
+      "ubicacion_503": 0,
+      "errores": 0,
+      "viajes_por_s": 4,
+      "crear_ms": {
+        "p50": 62.809431000000004,
+        "p95": 129.87198314999944,
+        "p99": 227.54904449000009,
+        "max": 256.583894
+      },
+      "hasta_asignacion_ms": {
+        "p50": 255,
+        "p95": 302.09999999999997,
+        "p99": 362.8900000000001,
+        "max": 437
+      }
+    },
+    {
+      "etapa": 4,
+      "tasa": 8,
+      "previstos_etapa": 480,
+      "previstos_ventana_estable": 360,
+      "iniciados_ventana_estable": 361,
+      "omitidos_por_k6_etapa": 0,
+      "creados": 361,
+      "asignados": 361,
+      "sin_choferes": 0,
+      "sin_resolver": 0,
+      "ubicacion_503": 0,
+      "errores": 0,
+      "viajes_por_s": 8.02,
+      "crear_ms": {
+        "p50": 63.558645,
+        "p95": 144.029625,
+        "p99": 226.43041519999971,
+        "max": 320.295078
+      },
+      "hasta_asignacion_ms": {
+        "p50": 255,
+        "p95": 355,
+        "p99": 432.19999999999993,
+        "max": 583
+      }
+    },
+    {
+      "etapa": 5,
+      "tasa": 16,
+      "previstos_etapa": 960,
+      "previstos_ventana_estable": 720,
+      "iniciados_ventana_estable": 580,
+      "omitidos_por_k6_etapa": 140,
+      "creados": 580,
+      "asignados": 485,
+      "sin_choferes": 0,
+      "sin_resolver": 95,
+      "ubicacion_503": 0,
+      "errores": 0,
+      "viajes_por_s": 12.89,
+      "crear_ms": {
+        "p50": 1934.4414345,
+        "p95": 8074.251155399998,
+        "p99": 8598.53404025,
+        "max": 10359.402296
+      },
+      "hasta_asignacion_ms": {
+        "p50": 3260,
+        "p95": 8985.599999999999,
+        "p99": 10368.999999999996,
+        "max": 14947
+      }
+    },
+    {
+      "etapa": 6,
+      "tasa": 32,
+      "previstos_etapa": 1920,
+      "previstos_ventana_estable": 1440,
+      "iniciados_ventana_estable": 929,
+      "omitidos_por_k6_etapa": 646,
+      "creados": 929,
+      "asignados": 398,
+      "sin_choferes": 0,
+      "sin_resolver": 531,
+      "ubicacion_503": 0,
+      "errores": 0,
+      "viajes_por_s": 20.64,
+      "crear_ms": {
+        "p50": 3458.081468,
+        "p95": 3867.9072992,
+        "p99": 4057.98961816,
+        "max": 4206.090085
+      },
+      "hasta_asignacion_ms": {
+        "p50": 9255.5,
+        "p95": 10420.1,
+        "p99": 10617.27,
+        "max": 10700
+      }
+    }
+  ]
+}

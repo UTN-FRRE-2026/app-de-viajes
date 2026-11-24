@@ -1,0 +1,145 @@
+# HELP event_loop_lag_ms Lag del event loop desde el arranque (monitorEventLoopDelay, sin los 10 ms de resolución).
+# TYPE event_loop_lag_ms gauge
+event_loop_lag_ms{quantile="0.5",servicio="location"} 0.12531099999999995
+event_loop_lag_ms{quantile="0.99",servicio="location"} 20.867455
+
+# HELP event_loop_lag_max_ms Lag máximo del event loop desde el arranque.
+# TYPE event_loop_lag_max_ms gauge
+event_loop_lag_max_ms{servicio="location"} 92.039551
+
+# HELP event_loop_lag_mean_ms Lag promedio del event loop desde el arranque.
+# TYPE event_loop_lag_mean_ms gauge
+event_loop_lag_mean_ms{servicio="location"} 0.7588571694997572
+
+# HELP process_resident_memory_bytes Memoria residente del proceso (RSS).
+# TYPE process_resident_memory_bytes gauge
+process_resident_memory_bytes{servicio="location"} 129802240
+
+# HELP nodejs_heap_used_bytes Heap de V8 en uso.
+# TYPE nodejs_heap_used_bytes gauge
+nodejs_heap_used_bytes{servicio="location"} 45695440
+
+# HELP event_loop_lag_seconds Atraso de un temporizador programado cada 100 ms: lag del event loop, por muestra. La diferencia entre dos fotos da el lag de esa ventana.
+# TYPE event_loop_lag_seconds histogram
+event_loop_lag_seconds_bucket{le="0.001",servicio="location"} 792
+event_loop_lag_seconds_bucket{le="0.002",servicio="location"} 829
+event_loop_lag_seconds_bucket{le="0.005",servicio="location"} 857
+event_loop_lag_seconds_bucket{le="0.01",servicio="location"} 868
+event_loop_lag_seconds_bucket{le="0.02",servicio="location"} 870
+event_loop_lag_seconds_bucket{le="0.05",servicio="location"} 873
+event_loop_lag_seconds_bucket{le="0.1",servicio="location"} 878
+event_loop_lag_seconds_bucket{le="0.2",servicio="location"} 878
+event_loop_lag_seconds_bucket{le="0.5",servicio="location"} 878
+event_loop_lag_seconds_bucket{le="1",servicio="location"} 878
+event_loop_lag_seconds_bucket{le="2",servicio="location"} 878
+event_loop_lag_seconds_bucket{le="+Inf",servicio="location"} 878
+event_loop_lag_seconds_sum{servicio="location"} 0.900733476999945
+event_loop_lag_seconds_count{servicio="location"} 878
+
+# HELP http_request_duration_seconds Duración de los pedidos HTTP, desde que entran hasta que se termina de enviar la respuesta.
+# TYPE http_request_duration_seconds histogram
+http_request_duration_seconds_bucket{le="0.005",servicio="location",metodo="GET",ruta="/health",estado="200"} 109
+http_request_duration_seconds_bucket{le="0.01",servicio="location",metodo="GET",ruta="/health",estado="200"} 109
+http_request_duration_seconds_bucket{le="0.025",servicio="location",metodo="GET",ruta="/health",estado="200"} 109
+http_request_duration_seconds_bucket{le="0.05",servicio="location",metodo="GET",ruta="/health",estado="200"} 109
+http_request_duration_seconds_bucket{le="0.1",servicio="location",metodo="GET",ruta="/health",estado="200"} 109
+http_request_duration_seconds_bucket{le="0.25",servicio="location",metodo="GET",ruta="/health",estado="200"} 109
+http_request_duration_seconds_bucket{le="0.5",servicio="location",metodo="GET",ruta="/health",estado="200"} 109
+http_request_duration_seconds_bucket{le="1",servicio="location",metodo="GET",ruta="/health",estado="200"} 109
+http_request_duration_seconds_bucket{le="2.5",servicio="location",metodo="GET",ruta="/health",estado="200"} 109
+http_request_duration_seconds_bucket{le="5",servicio="location",metodo="GET",ruta="/health",estado="200"} 109
+http_request_duration_seconds_bucket{le="10",servicio="location",metodo="GET",ruta="/health",estado="200"} 109
+http_request_duration_seconds_bucket{le="+Inf",servicio="location",metodo="GET",ruta="/health",estado="200"} 109
+http_request_duration_seconds_sum{servicio="location",metodo="GET",ruta="/health",estado="200"} 0.051846150000000014
+http_request_duration_seconds_count{servicio="location",metodo="GET",ruta="/health",estado="200"} 109
+http_request_duration_seconds_bucket{le="0.005",servicio="location",metodo="GET",ruta="/ready",estado="200"} 0
+http_request_duration_seconds_bucket{le="0.01",servicio="location",metodo="GET",ruta="/ready",estado="200"} 0
+http_request_duration_seconds_bucket{le="0.025",servicio="location",metodo="GET",ruta="/ready",estado="200"} 0
+http_request_duration_seconds_bucket{le="0.05",servicio="location",metodo="GET",ruta="/ready",estado="200"} 0
+http_request_duration_seconds_bucket{le="0.1",servicio="location",metodo="GET",ruta="/ready",estado="200"} 0
+http_request_duration_seconds_bucket{le="0.25",servicio="location",metodo="GET",ruta="/ready",estado="200"} 1
+http_request_duration_seconds_bucket{le="0.5",servicio="location",metodo="GET",ruta="/ready",estado="200"} 1
+http_request_duration_seconds_bucket{le="1",servicio="location",metodo="GET",ruta="/ready",estado="200"} 1
+http_request_duration_seconds_bucket{le="2.5",servicio="location",metodo="GET",ruta="/ready",estado="200"} 1
+http_request_duration_seconds_bucket{le="5",servicio="location",metodo="GET",ruta="/ready",estado="200"} 1
+http_request_duration_seconds_bucket{le="10",servicio="location",metodo="GET",ruta="/ready",estado="200"} 1
+http_request_duration_seconds_bucket{le="+Inf",servicio="location",metodo="GET",ruta="/ready",estado="200"} 1
+http_request_duration_seconds_sum{servicio="location",metodo="GET",ruta="/ready",estado="200"} 0.160822618
+http_request_duration_seconds_count{servicio="location",metodo="GET",ruta="/ready",estado="200"} 1
+http_request_duration_seconds_bucket{le="0.005",servicio="location",metodo="POST",ruta="/ubicaciones",estado="204"} 18418
+http_request_duration_seconds_bucket{le="0.01",servicio="location",metodo="POST",ruta="/ubicaciones",estado="204"} 19857
+http_request_duration_seconds_bucket{le="0.025",servicio="location",metodo="POST",ruta="/ubicaciones",estado="204"} 21404
+http_request_duration_seconds_bucket{le="0.05",servicio="location",metodo="POST",ruta="/ubicaciones",estado="204"} 21663
+http_request_duration_seconds_bucket{le="0.1",servicio="location",metodo="POST",ruta="/ubicaciones",estado="204"} 21827
+http_request_duration_seconds_bucket{le="0.25",servicio="location",metodo="POST",ruta="/ubicaciones",estado="204"} 21927
+http_request_duration_seconds_bucket{le="0.5",servicio="location",metodo="POST",ruta="/ubicaciones",estado="204"} 21927
+http_request_duration_seconds_bucket{le="1",servicio="location",metodo="POST",ruta="/ubicaciones",estado="204"} 21927
+http_request_duration_seconds_bucket{le="2.5",servicio="location",metodo="POST",ruta="/ubicaciones",estado="204"} 21927
+http_request_duration_seconds_bucket{le="5",servicio="location",metodo="POST",ruta="/ubicaciones",estado="204"} 21927
+http_request_duration_seconds_bucket{le="10",servicio="location",metodo="POST",ruta="/ubicaciones",estado="204"} 21927
+http_request_duration_seconds_bucket{le="+Inf",servicio="location",metodo="POST",ruta="/ubicaciones",estado="204"} 21927
+http_request_duration_seconds_sum{servicio="location",metodo="POST",ruta="/ubicaciones",estado="204"} 99.93793920199988
+http_request_duration_seconds_count{servicio="location",metodo="POST",ruta="/ubicaciones",estado="204"} 21927
+http_request_duration_seconds_bucket{le="0.005",servicio="location",metodo="GET",ruta="/interno/candidatos",estado="200"} 904
+http_request_duration_seconds_bucket{le="0.01",servicio="location",metodo="GET",ruta="/interno/candidatos",estado="200"} 1007
+http_request_duration_seconds_bucket{le="0.025",servicio="location",metodo="GET",ruta="/interno/candidatos",estado="200"} 1090
+http_request_duration_seconds_bucket{le="0.05",servicio="location",metodo="GET",ruta="/interno/candidatos",estado="200"} 1097
+http_request_duration_seconds_bucket{le="0.1",servicio="location",metodo="GET",ruta="/interno/candidatos",estado="200"} 1105
+http_request_duration_seconds_bucket{le="0.25",servicio="location",metodo="GET",ruta="/interno/candidatos",estado="200"} 1108
+http_request_duration_seconds_bucket{le="0.5",servicio="location",metodo="GET",ruta="/interno/candidatos",estado="200"} 1108
+http_request_duration_seconds_bucket{le="1",servicio="location",metodo="GET",ruta="/interno/candidatos",estado="200"} 1108
+http_request_duration_seconds_bucket{le="2.5",servicio="location",metodo="GET",ruta="/interno/candidatos",estado="200"} 1108
+http_request_duration_seconds_bucket{le="5",servicio="location",metodo="GET",ruta="/interno/candidatos",estado="200"} 1108
+http_request_duration_seconds_bucket{le="10",servicio="location",metodo="GET",ruta="/interno/candidatos",estado="200"} 1108
+http_request_duration_seconds_bucket{le="+Inf",servicio="location",metodo="GET",ruta="/interno/candidatos",estado="200"} 1108
+http_request_duration_seconds_sum{servicio="location",metodo="GET",ruta="/interno/candidatos",estado="200"} 5.567527772000001
+http_request_duration_seconds_count{servicio="location",metodo="GET",ruta="/interno/candidatos",estado="200"} 1108
+http_request_duration_seconds_bucket{le="0.005",servicio="location",metodo="GET",ruta="/metrics",estado="200"} 3
+http_request_duration_seconds_bucket{le="0.01",servicio="location",metodo="GET",ruta="/metrics",estado="200"} 3
+http_request_duration_seconds_bucket{le="0.025",servicio="location",metodo="GET",ruta="/metrics",estado="200"} 3
+http_request_duration_seconds_bucket{le="0.05",servicio="location",metodo="GET",ruta="/metrics",estado="200"} 3
+http_request_duration_seconds_bucket{le="0.1",servicio="location",metodo="GET",ruta="/metrics",estado="200"} 3
+http_request_duration_seconds_bucket{le="0.25",servicio="location",metodo="GET",ruta="/metrics",estado="200"} 3
+http_request_duration_seconds_bucket{le="0.5",servicio="location",metodo="GET",ruta="/metrics",estado="200"} 3
+http_request_duration_seconds_bucket{le="1",servicio="location",metodo="GET",ruta="/metrics",estado="200"} 3
+http_request_duration_seconds_bucket{le="2.5",servicio="location",metodo="GET",ruta="/metrics",estado="200"} 3
+http_request_duration_seconds_bucket{le="5",servicio="location",metodo="GET",ruta="/metrics",estado="200"} 3
+http_request_duration_seconds_bucket{le="10",servicio="location",metodo="GET",ruta="/metrics",estado="200"} 3
+http_request_duration_seconds_bucket{le="+Inf",servicio="location",metodo="GET",ruta="/metrics",estado="200"} 3
+http_request_duration_seconds_sum{servicio="location",metodo="GET",ruta="/metrics",estado="200"} 0.010255535
+http_request_duration_seconds_count{servicio="location",metodo="GET",ruta="/metrics",estado="200"} 3
+
+# HELP location_posiciones_publicadas_total Publicaciones de la posición en vivo, por quién la informa y por resultado.
+# TYPE location_posiciones_publicadas_total counter
+location_posiciones_publicadas_total{de="chofer",resultado="publicada",servicio="location"} 21927
+location_posiciones_publicadas_total{de="chofer",resultado="atrasada",servicio="location"} 0
+location_posiciones_publicadas_total{de="chofer",resultado="vencida",servicio="location"} 0
+location_posiciones_publicadas_total{de="chofer",resultado="error",servicio="location"} 0
+location_posiciones_publicadas_total{de="pasajero",resultado="publicada",servicio="location"} 0
+location_posiciones_publicadas_total{de="pasajero",resultado="atrasada",servicio="location"} 0
+location_posiciones_publicadas_total{de="pasajero",resultado="vencida",servicio="location"} 0
+location_posiciones_publicadas_total{de="pasajero",resultado="error",servicio="location"} 0
+
+# HELP location_estrategia Estrategia de 6.6 con la que corre el proceso (siempre 1).
+# TYPE location_estrategia gauge
+location_estrategia{estrategia="optimizada",servicio="location"} 1
+
+# HELP location_historial_en_cola Pings en el stream del historial, todavía sin escribir en Postgres.
+# TYPE location_historial_en_cola gauge
+location_historial_en_cola{servicio="location"} 49
+
+# HELP location_historial_pendientes Pings leídos por el consumidor y todavía sin confirmar.
+# TYPE location_historial_pendientes gauge
+location_historial_pendientes{servicio="location"} 32
+
+# HELP location_historial_descartados_total Pings descartados del historial por cola llena.
+# TYPE location_historial_descartados_total gauge
+location_historial_descartados_total{servicio="location"} 0
+
+# HELP location_historial_ocupacion Ocupación de la cola del historial (0 a 1).
+# TYPE location_historial_ocupacion gauge
+location_historial_ocupacion{servicio="location"} 0.000098
+
+# HELP location_historial_max_cola Tope de la cola del historial.
+# TYPE location_historial_max_cola gauge
+location_historial_max_cola{servicio="location"} 500000

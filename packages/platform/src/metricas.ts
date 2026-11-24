@@ -20,6 +20,8 @@ export const tokenMetricas = z
 export { Counter, Gauge, Histogram, type Registry } from '@prometheus-io/client';
 
 const RESOLUCION_MS = 10;
+/** Cada cuánto se toma una muestra del lag para el histograma por ventana. */
+const MUESTRA_LAG_MS = 100;
 
 /**
  * monitorEventLoopDelay registra cuánto tardó en dispararse su timer, que se programa cada
@@ -43,7 +45,8 @@ export interface Metricas {
 /**
  * Métricas comunes de un servicio, en un Registry propio (nunca el global: los tests arman varios
  * servicios en el mismo proceso). Todas las series llevan la etiqueta `servicio`.
- * - Lag del event loop desde el arranque (el proceso se reinicia antes de cada medición).
+ * - Lag del event loop desde el arranque (el proceso se reinicia antes de cada medición), y por
+ *   ventana: el histograma `event_loop_lag_seconds`, que se resta entre dos fotos.
  * - Memoria: RSS y heap usado.
  * - Duración de los pedidos HTTP por método, ruta (el patrón, no la URL) y estado.
  */
@@ -97,6 +100,23 @@ export function crearMetricas({ servicio }: { servicio: string }): Metricas {
     },
   });
 
+  // Lag por ventana: un temporizador cada MUESTRA_LAG_MS mide cuánto se atrasó y lo anota en un
+  // histograma. Como los contadores de un histograma son acumulados, la diferencia entre dos fotos de
+  // /metrics da el lag de esa ventana (la medición, o un escalón de una rampa), sin el arranque.
+  const lagVentana = new Histogram({
+    name: 'event_loop_lag_seconds',
+    help: `Atraso de un temporizador programado cada ${MUESTRA_LAG_MS} ms: lag del event loop, por muestra. La diferencia entre dos fotos da el lag de esa ventana.`,
+    buckets: [0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2],
+    registers: [registro],
+  });
+  let esperado = performance.now() + MUESTRA_LAG_MS;
+  const muestreo = setInterval(() => {
+    const ahora = performance.now();
+    lagVentana.observe(Math.max(0, ahora - esperado) / 1000);
+    esperado = ahora + MUESTRA_LAG_MS;
+  }, MUESTRA_LAG_MS);
+  muestreo.unref();
+
   const duracionHttp = new Histogram({
     name: 'http_request_duration_seconds',
     help: 'Duración de los pedidos HTTP, desde que entran hasta que se termina de enviar la respuesta.',
@@ -105,7 +125,15 @@ export function crearMetricas({ servicio }: { servicio: string }): Metricas {
     registers: [registro],
   });
 
-  return { servicio, registro, duracionHttp, detener: () => lag.disable() };
+  return {
+    servicio,
+    registro,
+    duracionHttp,
+    detener: () => {
+      lag.disable();
+      clearInterval(muestreo);
+    },
+  };
 }
 
 /**

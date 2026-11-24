@@ -1,0 +1,4 @@
+﻿{"level":30,"time":1795508727804,"pid":1,"hostname":"1fa87b876913","name":"location","puerto":3004,"estrategia":"optimizada","msg":"location escuchando"}
+{"level":30,"time":1795508864569,"pid":1,"hostname":"1fa87b876913","name":"location","senal":"SIGTERM","msg":"apagado: dejo de aceptar conexiones y drenando pedidos"}
+{"level":30,"time":1795508864570,"pid":1,"hostname":"1fa87b876913","name":"location","msg":"apagado: pedidos drenados, cerrando recursos"}
+{"level":30,"time":1795508864813,"pid":1,"hostname":"1fa87b876913","name":"location","msg":"apagado: listo"}

@@ -1,6 +1,6 @@
 # Informe de mediciones
 
-Cubre la tarea pesada de 6.6 (location: recepción masiva de ubicaciones y búsqueda de candidatos). La condición de carrera principal (6.3) y el tiempo hasta la asignación se agregan cuando dispatch use location (PR de integración).
+Cubre la tarea pesada de 6.6 (location: recepción masiva de ubicaciones y búsqueda de candidatos), la condición de carrera principal (6.3) y las solicitudes de viaje de punta a punta bajo carga y estrés, con el tiempo hasta la asignación ([más abajo](#solicitudes-de-viaje-bajo-carga-y-estrés-66-k6)).
 
 ## 6.6 — Ubicaciones: versión ingenua frente a optimizada
 
@@ -151,11 +151,11 @@ La máquina era la misma y no se lanzó otra carga a propósito. Pero es un Wind
 **Limitaciones de esta medición:**
 - **Es local:** k6 corre en la misma máquina que el sistema, y el disco es el virtual de Docker Desktop. En un servidor con un disco más rápido, la ingenua rendiría más, aunque el commit por ping seguiría siendo su límite.
 - **El lag y la memoria no excluyen el calentamiento,** porque se miden desde que arranca location.
-- **No mide dispatch** (para eso está la [prueba piloto](#prueba-piloto-una-solicitud-real-bajo-la-carga-de-ubicaciones) de abajo): falta la latencia de la solicitud de viaje y el tiempo hasta la asignación que pide 6.6. Se agregan cuando dispatch use location (PR de Iván).
+- **No mide dispatch** (para eso está la [prueba piloto](#prueba-piloto-una-solicitud-real-bajo-la-carga-de-ubicaciones) de abajo): falta la latencia de la solicitud de viaje y el tiempo hasta la asignación que pide 6.6. Se midieron el 24/11: ver [Solicitudes de viaje bajo carga y estrés](#solicitudes-de-viaje-bajo-carga-y-estrés-66-k6).
 
 ## Prueba piloto: una solicitud real bajo la carga de ubicaciones
 
-**22/11, una corrida corta** con `medir.ps1 -Estrategia optimizada -Medicion 60 -Calentamiento 10 -Solicitudes` (ver [carga/README.md](../carga/README.md#solicitud-real-prueba-piloto)). Es una **prueba piloto de latencia bajo carga**: muestra que el flujo real funciona de punta a punta mientras location absorbe 250 pings/s. No es todavía la medición del informe.
+**22/11, una corrida corta** con `medir.ps1 -Estrategia optimizada -Medicion 60 -Calentamiento 10 -Solicitudes` (el script de entonces; hoy es el escenario A, ver [carga/README.md](../carga/README.md#viajes-en-paralelo-escenario-a)). Es una **prueba piloto de latencia bajo carga**: muestra que el flujo real funciona de punta a punta mientras location absorbe 250 pings/s. No es todavía la medición del informe.
 
 | | Resultado |
 |---|---|
@@ -190,3 +190,261 @@ La máquina era la misma y no se lanzó otra carga a propósito. Pero es un Wind
 | Lote | Las 50 aceptaciones salieron en un solo `http.batch`: 890 ms en total contra 28,8 s de suma de duraciones, así que corrieron superpuestas |
 
 **Límite:** el test fuerza la superposición con una demora dentro de la transacción, y acá no. El resultado no depende de eso: con o sin superposición tiene que ser 1×200 y 49×409.
+
+## Solicitudes de viaje bajo carga y estrés (6.6, k6)
+
+### Hipótesis y umbrales
+
+Escritas el 24/11/2026, **antes** de cualquier corrida de estos escenarios (incluidas las pruebas cortas), y commiteadas antes de correr. Los números del piloto del 22/11 no cuentan: eran un solo viaje por vez y sin el filtro de flotas y zonas.
+
+**Qué cambió desde el piloto:**
+- dispatch filtra los candidatos por flota, zona y disponibilidad, con lotes crecientes (PR #36);
+- los viajes van en paralelo, con pasajeros y choferes distintos;
+- hay competencia: cada viaje se ofrece a 3 choferes, y los que pierden reciben 409.
+
+**Corrección del 24/11, antes de la segunda tanda.** La primera versión de estas hipótesis decía que los choferes de prueba informaban su posición cada 10 s (unos 5 y 31 pings/s extra). El plan aprobado decía cada 2 s, que es también la cadencia de los 500 choferes de k6 y el mínimo entre envíos de la pantalla del chofer. Además, cada chofer esperaba la respuesta antes de esperar los 10 s, y todos arrancaban dentro del mismo segundo, así que los pings salían en ráfagas. La primera tanda se hizo así, y por eso se repitió (ver [Resultados](#resultados-1)). **Los umbrales y las hipótesis no cambian:** solo la cadencia de los choferes de prueba.
+
+**Dato que condiciona HS2:** dispatch corta la búsqueda en location a **1 s** (`LOCATION_TIMEOUT_MS`), y el 19/11 la búsqueda de la ingenua dio 4,6 s de p95 con esta misma carga.
+
+#### Escenario A: solicitudes bajo la carga de 6.6 (ingenua frente a optimizada)
+
+**La carga** es la de 6.6, igual que el 19/11: 250 pings/s de los 500 choferes de k6 (el **fondo**), 20 búsquedas/s y `/health`. Además corren:
+- **20 pasajeros en paralelo,** en lazo cerrado:
+  1. crean el viaje;
+  2. esperan `TripAssigned` o `NoDriversFound` en su SSE, hasta 20 s;
+  3. lo dejan asignado 1 s;
+  4. cancelan;
+  5. esperan 1 s y repiten.
+- **50 choferes de prueba en Córdoba:**
+  - 40 aptos y 10 **no aptos**: 4 inactivos, 3 no disponibles y 3 de una flota que no opera en Córdoba;
+  - aceptan enseguida la primera oferta mientras están libres;
+  - informan su posición **cada 2 s**, a tasa fija y con las fases repartidas en el intervalo, como los choferes de k6. Son unos **25 pings/s extra**, que se cuentan aparte del fondo (ver la corrección de abajo).
+
+**El método:** 30 s de calentamiento y 300 s de medición. **Tres corridas por estrategia, alternadas.**
+
+| # | Hipótesis | Número |
+|---|---|---|
+| HS1 | La optimizada asigna rápido aun con el fondo de 250 pings/s | Tiempo hasta la asignación en el cliente (del `POST` a `TripAssigned`): p95 **≤ 1 s**, p99 **≤ 2 s**. `POST /solicitudes`: p95 **≤ 300 ms**. Errores (5xx, red y 4xx inesperados) **< 1 %** |
+| HS2 | La ingenua no llega: su búsqueda pasa el timeout de 1 s, y la solicitud **falla cerrado** | **Más del 50 %** de los `POST /solicitudes` con 503 `UBICACION_NO_DISPONIBLE`. Las que entran tardan más de 1 s. Ninguna queda a medias |
+| HS3 | El filtro y la competencia no rompen la corrección | 0 ofertas y 0 asignaciones a los no aptos. Cada viaje asignado tiene un solo chofer. Al final, 0 viajes activos. Todo viaje creado tiene la zona Córdoba, y todo viaje asignado tiene `fleet_id` |
+| HS4 | dispatch no traba su event loop | Lag de la ventana de medición: p99 **< 20 ms** en las dos estrategias. CPU de dispatch: promedio **< 60 %** de 1 CPU |
+
+#### Escenario B: rampa de estrés, por escalones (`carga/estres.js`)
+
+**La carga:**
+- **El fondo:** los mismos 250 pings/s y 20 búsquedas/s de 6.6 (`ubicaciones.js`), en **un k6 aparte**, así sus usuarios virtuales no se mezclan con los de los pasajeros.
+- **Los pasajeros:** k6 crea viajes en modelo abierto, con un escalón por tasa.
+  - Las tasas son **1, 2, 4, 8, 16 y 32 viajes/s**, durante 60 s cada una, después de 30 s de calentamiento a 1 viaje/s.
+  - Cada usuario virtual es un pasajero distinto: nunca tiene dos viajes activos.
+  - Si un viaje no se resuelve en 10 s, se consulta su estado y se cancela si sigue activo, antes de volver a usar ese pasajero.
+- **Los choferes de prueba:** 300 aptos y los 10 no aptos, que aceptan enseguida e informan su posición **cada 2 s**. Son unos **155 pings/s extra**, que se cuentan aparte del fondo (ver la corrección de abajo).
+- **Location:** optimizada.
+
+**La ventana estable de cada escalón:** se descartan los primeros 15 s (la transición) y se mide en los **45 s restantes**. Por escalón se guardan los viajes previstos, los iniciados y los omitidos por k6.
+
+**Una etapa está degradada** si, en su ventana estable, pasa cualquiera de estas cosas:
+- `POST /solicitudes` con p95 **> 500 ms**;
+- tiempo hasta la asignación con p95 **> 2 s**;
+- errores (5xx, red o 4xx inesperados) **> 1 %**;
+- viajes omitidos por k6 **> 1 %** de los previstos;
+- viajes sin resolver en 10 s, o `NoDriversFound`, **> 1 %**. Hay choferes de sobra, así que indican que la búsqueda o la asignación fallan.
+
+**«Empieza a degradarse»** es la primera etapa degradada. Un umbral incumplido **no corta la corrida**: es justo lo que busca el estrés. La evidencia se guarda igual.
+
+**Tres corridas.**
+
+| # | Hipótesis |
+|---|---|
+| HE1 | Sostiene **hasta 8 viajes/s** sin degradarse |
+| HE2 | La degradación empieza en **16 o 32 viajes/s**, y la limita **dispatch**: 1 CPU, un pool de 10 conexiones, unas 8 transacciones por viaje y el relay del outbox cada 100 ms. No la limita location, que en la optimizada tiene margen |
+| HE3 | Antes de la primera etapa degradada, el lag p99 de dispatch en cada ventana queda **< 50 ms**. En la etapa degradada, o sube el lag, o la CPU de dispatch se acerca al 100 % |
+
+**Lo que se informa en los dos escenarios:**
+- p50, p95 y p99 en el cliente;
+- solicitudes por segundo;
+- el tiempo hasta la asignación, en el cliente y en el servidor (por cubeta);
+- el lag de dispatch de la ventana (histograma nuevo `event_loop_lag_seconds`, por cubeta);
+- la memoria (RSS) de dispatch y de location;
+- la CPU por contenedor;
+- los 409 esperados por la competencia, los viajes sin resolver y los errores, por separado.
+
+### Resultados
+
+**La tanda que cuenta:** el 24/11/2026, de 05:28 a 06:37 (hora local), sobre la rama `feat/carga-solicitudes-estres`, en el commit `4dae036`. Las hipótesis ya estaban commiteadas (`1f46053`), con la corrección de la cadencia de los choferes de prueba. Las corridas fueron, en este orden:
+- **escenario A:** ingenua 1, optimizada 1, ingenua 2, optimizada 2, ingenua 3 y optimizada 3, alternadas;
+- **escenario B:** estrés 1, 2 y 3.
+
+No se reemplazó ninguna corrida de esta tanda. Las 9 terminaron completas, con 0 viajes activos al final.
+
+**El entorno** es el de 6.6 (ver [Entorno](#entorno)), con estos cambios:
+- **dispatch de carga:** 1 CPU, 512 MB y `DB_POOL_MAX=10`, en el mismo Postgres, Redis y JWKS;
+- el Compose de desarrollo, apagado;
+- Docker Desktop 29.7.2 y k6 `grafana/k6:1.8.2`;
+- **el disco de Docker:** los datos de Docker Desktop (y con ellos el volumen de Postgres) están en `F:\Docker\DockerData`, y F: es un **disco mecánico** (Seagate ST2000DM008, 2 TB). Se descubrió en esta revisión: ver [El disco de Docker](#el-disco-de-docker-pausas-de-15-a-25-s-con-la-cpu-libre).
+
+```powershell
+node carga/preparar.mjs
+powershell -NoProfile -ExecutionPolicy Bypass -File carga/medir.ps1 -Estrategia ingenua -Corrida 1 -Fecha 2026-11-24 -Solicitudes
+powershell -NoProfile -ExecutionPolicy Bypass -File carga/medir.ps1 -Estrategia optimizada -Corrida 1 -Fecha 2026-11-24 -Solicitudes
+powershell -NoProfile -ExecutionPolicy Bypass -File carga/estres.ps1 -Corrida 1 -Fecha 2026-11-24
+node carga/resumir.mjs docs/mediciones/2026-11-24
+```
+
+**La evidencia** está en [`mediciones/2026-11-24/`](mediciones/2026-11-24/), sin credenciales:
+- las tablas completas de `resumir.mjs`, en [`tablas.md`](mediciones/2026-11-24/tablas.md);
+- los checkpoints de Postgres de toda la tanda, en [`postgres-checkpoints.txt`](mediciones/2026-11-24/postgres-checkpoints.txt);
+- la sonda del disco, en [`sonda-commit/`](mediciones/2026-11-24/sonda-commit/);
+- la carrera de 6.3, repetida con los datos nuevos, en [`carrera-1/`](mediciones/2026-11-24/carrera-1/).
+
+#### Antes de esta tanda: lo que se descartó y por qué
+
+**1. La primera tanda (03:40 a 05:05) no cuenta.** Su evidencia quedó en [`mediciones/2026-11-24-pings-cada-10s/`](mediciones/2026-11-24-pings-cada-10s/). Los choferes de prueba informaban su posición **cada 10 s, no cada 2 s** como decía el plan, y por eso aportaron 5 y 27,6 pings/s en vez de 25 y 155:
+- **escenario A:** 50 choferes activos, entre 1.700 y 1.750 pings enviados por corrida, todos aceptados (204). 50 / 10 s = **5 pings/s**. Con la ingenua bajaba a 3,6/s, porque cada chofer esperaba la respuesta (unos 4 s) antes de esperar los 10 s;
+- **escenario B:** 310 choferes activos, 13.020 pings enviados por corrida, todos aceptados. Son 31/s de promedio, pero **todos arrancaban en el mismo segundo**, así que los pings salían en ráfagas de 310: en cada ventana de 45 s entraban 4 ráfagas, y 4 × 310 / 45 = **27,6/s**.
+
+Location recibía unos 255 pings/s en A y unos 281 en B, en vez de 275 y 405: la carga sobre location estaba subestimada, justo lo que hace falta para decir dónde se satura el sistema. Se corrigió el script (un ping cada 2 s, a tasa fija y con las fases repartidas en el intervalo) y se repitieron los dos escenarios. En la prueba corta posterior ([`2026-11-24-prueba-corta-2/`](mediciones/2026-11-24-prueba-corta-2/)): 50 de 50 choferes activos con 25 pings/s enviados y aceptados en A, y 310 de 310 con 154,5/s en B.
+
+**2. En la primera tanda, `ingenua-2` se reemplazó tras observar una pausa del disco.** El checkpoint de Postgres de las 06:54 UTC tardó 665 s, de los que **329 s fueron de `fsync`**. location se quedó sin CPU y k6 vio el 80 % de los pings con timeout de 60 s. Se corrió `ingenua-4` en su lugar, y la evidencia de la descartada quedó en [`descartada-ingenua-2/`](mediciones/2026-11-24-pings-cada-10s/descartada-ingenua-2/). Igual sirvió para HS2: 503 a los 1.007 ms en los 2.920 intentos, sin ningún viaje creado.
+
+**3. En la primera tanda, `estres-1` terminó con 15 viajes activos.** Eran iteraciones que k6 cortó al cerrar el escalón de 32 viajes/s: k6 espera 15 s (`gracefulStop`), y un viaje tardaba 4 s en crearse y hasta 10 s en resolverse antes de cancelar. Los 15 quedaron `ASIGNADO` con su asignación activa (15 = 15), sin viajes con dos choferes ni asignaciones sueltas. **El último escalón ahora espera 40 s**, y en esta tanda las 3 corridas de estrés terminaron con **0 viajes activos**.
+
+**4. `carrera.ps1` se volvió a correr después del cambio en los datos de carga** (los tokens de 400 pasajeros y 310 choferes, y los no aptos de `flotas.sql`). **Pasa:** 1 × 200 y 49 × 409 `SOLICITUD_NO_DISPONIBLE`, una sola asignación activa (la del ganador), y al cancelar quedan libres el ganador y el pasajero.
+
+#### El disco de Docker: pausas de 15 a 25 s con la CPU libre
+
+En 5 de las 9 corridas hay tramos de 15 a 25 s en que **dispatch y Postgres bajan a 0-6 % de CPU mientras location sigue normal (45-55 %)**, y los pedidos de dispatch esperan. No es saturación: nadie está ocupado.
+
+| Corrida | Cuándo (hora local) | Carga en ese momento | Efecto |
+|---|---|---|---|
+| `optimizada-2` | 05:56:24 | unos 8 viajes/s | 6 viajes de más de 2 s (menos de 1 s de pausa) |
+| `optimizada-3` | 06:10:42 a 06:11:04 | unos 8 viajes/s | 58 viajes de 2 a 5 s, 1 sin resolver y 1 «Unable to start a transaction» |
+| `estres-1` | 06:18:08 a 06:18:29 | escalón de 16 viajes/s | — (el escalón se degrada igual, ver abajo) |
+| `estres-2` | 06:25:19 a 06:26:23 | escalón de 8 viajes/s, y el comienzo del de 16 | el escalón de 8 se degrada; 3 «Unable to start a transaction» |
+| `estres-3` | 06:35:11 a 06:35:25 | escalón de 16 viajes/s | 2 «Unable to start a transaction» |
+
+**La causa es el disco, medida directamente.** Con todo quieto (sin k6, sin dispatch ni location), una sonda hizo un `INSERT` con su `COMMIT` cada 200 ms en el mismo Postgres, durante 5 min ([`sonda-commit/`](mediciones/2026-11-24/sonda-commit/)):
+
+| Commits | p50 | p95 | p99 | Máx. | De más de 1 s |
+|---|---|---|---|---|---|
+| 700 | 65 ms | 1.173 ms | 2.594 ms | 4.380 ms | 52, casi todos entre las 09:43:54 y las 09:46:36 UTC |
+
+En un SSD, un commit tarda menos de 5 ms. Cada viaje de dispatch hace unas 8 transacciones, y todas esperan el `fsync` del WAL. Cuando el disco se atrasa, las 10 conexiones del pool quedan esperando su commit con los locks tomados, el resto de los pedidos espera una conexión (hasta 10 s, `maxWait`), y Postgres no tiene nada que calcular. location responde el ping sin esperar a Postgres (el historial se escribe en segundo plano, con una cola), por eso sigue.
+
+**Por qué no se reemplazaron esas corridas:** las pausas no son un hecho aislado, como el checkpoint de 329 s de la primera tanda, sino una propiedad del disco durante toda la tanda. Repetir una corrida solo las movería de lugar, y quedarse con las que no tuvieron pausas sesgaría los resultados. Se informan como están, y se separa su efecto con una prueba corta:
+
+**Prueba corta con commit asíncrono** ([`2026-11-24-commit-asincrono/`](mediciones/2026-11-24-commit-asincrono/), no cuenta para el informe). Es el mismo estrés, con los escalones de 8, 16 y 32 viajes/s y una sola corrida, pero con `synchronous_commit = off` en el Postgres de carga: los commits ya no esperan el `fsync` del disco. Se volvió a `on` al terminar.
+
+| Tasa (viajes/s) | Intentos / asignados (por s) | `POST` p95 (ms) | Asignación p95 (ms) | Omitidos por k6 | Sin resolver | CPU dispatch / Postgres / location (%) | Lag dispatch p99 | ¿Degradada? |
+|---|---|---|---|---|---|---|---|---|
+| 8 | 8,02 / 8,02 | 82 | 262 | 0 de 480 | 0 | 42 / 22 / 95 | ≤ 5 ms | no |
+| 16 | 16,02 / 16,02 | 179 | 415 | 0 de 960 | 0 | 83 / 37 / 100 | ≤ 100 ms | **no** |
+| 32 | 19,11 / 0 | 4.377 | — | 711 de 1.920 | 860 | 98 / 33 / 98 | ≤ 100 ms | sí |
+
+Sin esperar al disco, **16 viajes/s pasa todos los criterios**, y la degradación empieza recién en 32, con dispatch al 98 % de CPU. Con el disco mecánico, en cambio, 16 viajes/s se degradó en las 3 corridas con dispatch al 47-51 %. Además, location sube a 95-100 % de CPU en esta prueba: ya no espera al disco para escribir el historial, y llega a su propio límite de 1 CPU.
+
+#### Escenario A: viajes en paralelo bajo la carga de 6.6
+
+**Intentos, creados y asignados** se separan: un **intento** es cada `POST /solicitudes`; **creado**, el que respondió 201; **asignado**, el que llegó a `TripAssigned`. Son 20 pasajeros en **lazo cerrado**, así que cuanto más tarda cada viaje, menos intentos por segundo hay: en la ingenua cada intento termina en 1 s, con un 503, y en la optimizada pasa por la asignación, 1 s asignado y la cancelación.
+
+**Cómo leer los números:**
+- **cliente:** percentiles exactos;
+- **servidor:** el borde superior de la cubeta;
+- **lag:** el de la ventana de medición, con el histograma nuevo.
+
+**Mediana de las 3 corridas por estrategia:**
+
+| Estrategia | Intentos/s | Creados/s | Asignados/s | `POST /solicitudes` p50 / p95 / p99 (ms) | Hasta la asignación p50 / p95 / p99 (ms) | 503 ubicación (% de los intentos) | Lag dispatch p99 | CPU dispatch prom. | RSS dispatch / location |
+|---|---|---|---|---|---|---|---|---|---|
+| ingenua | 9,93 | **0** | **0** | 1.007 / 1.012 / 1.026 | — (ninguno asignado) | **100 %** | ≤ 2 ms | 13 % | 123 / 171 MB |
+| optimizada | 7,86 | 7,86 | 7,86 | **87 / 249 / 530** | **277 / 581 / 1.835** | 0 % | ≤ 5 ms | 42 % | 138 / 123 MB |
+
+Los 9,93/s de la ingenua son **intentos**: los 2.920 de cada corrida respondieron 503 `UBICACION_NO_DISPONIBLE`, y no se creó ni se asignó ningún viaje.
+
+**Por corrida:**
+
+| Corrida | Intentos / creados / asignados (por s) | `POST` p50 / p95 / p99 (ms) | Asignación, cliente p50 / p95 / p99 (ms) | Asignación, servidor p50 / p95 / p99 | 503 / sin resolver / errores | Lag dispatch p99 | CPU dispatch prom. / máx |
+|---|---|---|---|---|---|---|---|
+| ingenua-1 | 9,93 / 0 / 0 | 1.008 / 1.012 / 1.027 | — | — | 2.920 / 0 / 0 | ≤ 2 ms | 13 / 40 % |
+| ingenua-2 | 9,93 / 0 / 0 | 1.007 / 1.012 / 1.026 | — | — | 2.920 / 0 / 0 | ≤ 2 ms | 14 / 40 % |
+| ingenua-3 | 9,93 / 0 / 0 | 1.007 / 1.011 / 1.022 | — | — | 2.920 / 0 / 0 | ≤ 2 ms | 12 / 37 % |
+| optimizada-1 | 8,01 / 8,01 / 8,01 | 87 / 232 / 437 | 285 / 515 / 1.118 | ≤ 0,25 / ≤ 0,5 / ≤ 1 s | 0 / 0 / 0 | ≤ 5 ms | 46 / 81 % |
+| optimizada-2 | 7,86 / 7,86 / 7,86 | 87 / 249 / 530 | 277 / 581 / 1.835 | ≤ 0,25 / ≤ 0,5 / ≤ 1 s | 0 / 0 / 0 | ≤ 5 ms | 42 / 72 % |
+| optimizada-3 | 7,15 / 7,15 / 7,15 | 80 / 274 / **2.553** | 253 / 630 / **4.428** | ≤ 0,25 / ≤ 1 / ≤ 5 s | 0 / 1 / 0 | ≤ 5 ms | 37 / 68 % |
+
+**De dónde sale la cola,** por los viajes de más de 2 s:
+- **por el TTL de la oferta:** 11, 13 y 13 viajes (0,5 % de cada corrida), todos entre 13 y 19 s. Cada viaje se ofrece a 3 choferes; si los 3 ya tomaron otro viaje, la oferta queda pendiente hasta que vence a los 15 s y se ofrece de nuevo;
+- **por el disco:** 6 en `optimizada-2` y 58 en `optimizada-3`, todos dentro de las pausas de la tabla anterior.
+
+**Los pings a location, en la ventana de los viajes.** Los choferes de prueba cuentan lo que enviaron y lo que location les aceptó (204), del lado del cliente. location cuenta todos los `POST /ubicaciones` que aceptó, por `/metrics`; el fondo de k6 es la diferencia.
+
+| Corrida | Choferes de prueba activos | Enviados / aceptados por location (por s) | location aceptó (por s) | Fondo de k6 aceptado (por s) | Fallidos |
+|---|---|---|---|---|---|
+| ingenua-1 | 50 de 50 | 25 / 25,1 | 142,5 | 117,3 | 0 |
+| ingenua-2 | 50 de 50 | 25 / 22,5 | 116,8 | 94,3 | 0 |
+| ingenua-3 | 50 de 50 | 25 / 22,4 | 114,4 | 92,1 | 0 |
+| optimizada-1 | 50 de 50 | 25 / 25 | 275,1 | 250,1 | 0 |
+| optimizada-2 | 50 de 50 | 25 / 25 | 275 | 250 | 0 |
+| optimizada-3 | 50 de 50 | 25 / 25 | 259,2 | 234,2 | 0 |
+
+- **En la optimizada,** location aceptó los 275 pings/s previstos: 250 del fondo y 25 de los choferes de prueba.
+- **En la ingenua, location no llega:** acepta entre 114 y 143 pings/s en total. De los choferes de prueba, 22,4 a 25,1/s; el resto queda en vuelo al cerrar la ventana (la ingenua tarda unos 5 s por ping). Del fondo, 92 a 117/s: k6 omite entre 43.000 y 51.000 pings por corrida, como el 19/11. **Lo que se satura en la ingenua es location**, no dispatch (13 % de CPU).
+- **En `optimizada-3`, el fondo da 234/s** porque la ventana de los viajes duró 317 s en vez de 295: los últimos viajes, atrasados por la pausa del disco, terminaron después de que k6 dejó de enviar. Los 75.000 pings de k6 de la medición se aceptaron todos.
+- **Las ubicaciones de 6.6, en estas mismas corridas** ([`tablas.md`](mediciones/2026-11-24/tablas.md)): pings p95 de 5.814 ms en la ingenua y 8,7 ms en la optimizada; búsquedas p95 de 5.765 y 8,3 ms.
+
+**Competencia y corrección.** Las 6 corridas dieron 0 en: ofertas a no aptos (por SSE y en la base), viajes de no aptos, viajes fuera de Córdoba, asignados sin flota y viajes activos al final.
+
+| Corrida | Iteraciones | Ofertas recibidas | Aceptadas (200) | 409 esperados (`SOLICITUD_NO_DISPONIBLE`) | Errores al aceptar |
+|---|---|---|---|---|---|
+| optimizada-1 | 2.364 | 7.125 | 2.364 | 3.802 | 0 |
+| optimizada-2 | 2.329 | 7.026 | 2.329 | 3.732 | 0 |
+| optimizada-3 | 2.271 | 6.870 | 2.270 | 3.608 | 0 |
+
+En `optimizada-3`, el viaje sin resolver venció la espera de 20 s en la pausa del disco; el pasajero consultó su estado y lo canceló.
+
+#### Escenario B: estrés por escalones
+
+Ventana estable de cada escalón (45 s). Cada celda es **corrida 1 / corrida 2 / corrida 3**. «Intentos/s» son los `POST /solicitudes` iniciados en la ventana; creados y asignados por segundo están en [`tablas.md`](mediciones/2026-11-24/tablas.md).
+
+| Tasa (viajes/s) | Intentos/s | Asignados/s | `POST` p95 (ms) | Asignación p95, cliente (ms) | Omitidos por k6 (de los previstos en la etapa) | Sin resolver | CPU dispatch / Postgres / location (%) | Lag dispatch p99 | ¿Degradada? |
+|---|---|---|---|---|---|---|---|---|---|
+| 1 | 1 / 1,02 / 1 | 1 / 1,02 / 1 | 122 / 103 / 181 | 363 / 331 / 387 | 0 / 0 / 0 (de 60) | 0 / 0 / 0 | 8-12 · 6-8 · 59-62 | ≤ 2 ms | no / no / no |
+| 2 | 2,02 / 2,02 / 2,02 | 2,02 / 2,02 / 2,02 | 141 / 214 / 196 | 433 / 362 / 394 | 0 / 0 / 0 (de 120) | 0 / 0 / 0 | 13-15 · 8-9 · 62-68 | ≤ 2 ms | no / no / no |
+| 4 | 4,02 / 4,02 / 4 | 4,03 / 4,02 / 4 | 128 / 178 / 130 | 333 / 351 / 302 | 0 / 0 / 0 (de 240) | 0 / 0 / 0 | 24-31 · 10-12 · 59-63 | ≤ 2 ms | no / no / no |
+| 8 | 8,02 / **5,96** / 8,02 | 8,02 / **5,04** / 8,02 | 164 / **13.883** / 144 | 378 / **9.226** / 355 | 0 / **93** / 0 (de 480) | 0 / **41** / 0 | 35-39 · 11-18 · 59-67 | ≤ 2 / ≤ 10 / ≤ 2 ms | no / **sí** / no |
+| 16 | 13,31 / 11 / 12,89 | 10,67 / 8,09 / 10,76 | **18.113 / 9.280 / 8.074** | 561 / **8.871 / 8.986** | **122 / 320 / 140** (de 960) | **110 / 131 / 95** | 47-51 · 15-17 · 59-65 | ≤ 10 / ≤ 100 / ≤ 100 ms | **sí / sí / sí** |
+| 32 | 19,31 / 20,36 / 20,64 | **0** / 8,58 / 8,87 | **5.421 / 3.927 / 3.868** | — / **10.514 / 10.420** | **764 / 670 / 646** (de 1.920) | **869 / 530 / 531** | 70-96 · 21-28 · 67-75 | ≤ 100 ms | **sí / sí / sí** |
+
+- **Sin `NoDriversFound` ni errores** en ninguna ventana estable. Hubo 9 respuestas 503 de ubicación en el escalón de 16 viajes/s de `estres-1` (de 599 intentos).
+- **Los pings a location,** en todos los escalones de las 3 corridas: **310 choferes de prueba activos, 154,8 a 155,9 pings/s enviados y aceptados**; location recibió y aceptó **404,8 a 406/s**, de los que 250 son del fondo. No cambian con la tasa de viajes.
+- **La memoria (RSS):** dispatch sube de 129-133 MB en 1 viaje/s a 165-166 MB en 32; location queda entre 122 y 175 MB.
+- **Las primeras etapas degradadas:** **16 viajes/s** en las corridas 1 y 3, y **8 viajes/s** en la 2. El escalón de 8 de la corrida 2 coincide con la pausa del disco de 06:25:19 a 06:26:23.
+- **El techo de 19 a 21 intentos/s en 32 viajes/s lo pone k6, no el sistema:** cada escalón tiene `min(250, tasa × 8)` usuarios virtuales, así que con 32 viajes/s hay 250. Si cada iteración tarda más de unos 8 s (crear, esperar hasta 10 s y cancelar), por la ley de Little no alcanzan, y k6 omite el resto. Ese techo mide cuánto tarda un viaje, no cuántos acepta dispatch.
+- **En 32 viajes/s de la corrida 1 no se asignó ninguno dentro de la ventana:** los 869 iniciados quedaron sin resolver en 10 s y se cancelaron.
+
+**Corrección:** en las 3 corridas, 0 viajes activos al final, 0 ofertas y 0 viajes para los no aptos, 0 fuera de Córdoba y 0 asignados sin flota.
+
+#### Conclusión de cada hipótesis
+
+| # | Resultado | Por qué |
+|---|---|---|
+| HS1 | **Se cumple, salvo el p99 de una corrida** | Mediana de la optimizada: `POST` p95 **249 ms** (≤ 300), asignación p95 **581 ms** (≤ 1 s) y p99 **1.835 ms** (≤ 2 s). 0 errores en las 3 corridas. Por corrida, `optimizada-1` y `optimizada-2` cumplen todo; `optimizada-3` no cumple el p99 (4.428 ms) por los 58 viajes de la pausa del disco |
+| HS2 | **Se cumple** | En las 3 corridas, el **100 %** de los intentos respondió 503 `UBICACION_NO_DISPONIBLE`, en **1.007 ms** de mediana (el timeout de 1 s). 9,93 intentos/s, **0 creados y 0 asignados**, ninguno activo: falla cerrado. Lo que se satura es location: acepta 114 a 143 pings/s de los 275 previstos |
+| HS3 | **Se cumple** | 0 ofertas y 0 viajes a no aptos, 0 fuera de Córdoba y 0 asignados sin flota en las 9 corridas. Competencia: **entre 3.608 y 3.802 409 `SOLICITUD_NO_DISPONIBLE` por corrida**, ningún error al aceptar y cada viaje con una sola aceptación. **0 viajes activos al final en las 9 corridas.** La carrera de 6.3 también pasa con los datos nuevos |
+| HS4 | **Se cumple** | Lag de dispatch en la ventana: p99 **≤ 5 ms** (cubeta) en la optimizada y **≤ 2 ms** en la ingenua, < 20 ms. CPU de dispatch: **42 %** de promedio en la optimizada y 13 % en la ingenua, < 60 % |
+| HE1 | **Se cumple en 2 de 3 corridas** | Las corridas 1 y 3 sostienen 8 viajes/s, con `POST` p95 de 164 y 144 ms y asignación p95 de 378 y 355 ms. La corrida 2 se degrada en 8 viajes/s durante una pausa del disco, con la CPU de dispatch y de Postgres en 0-6 % |
+| HE2 | **Se cumple el escalón, no del todo la causa** | La degradación empieza en **16 viajes/s** en las corridas 1 y 3 (y en 8 en la 2, por el disco), y en 32 se degradan las 3. **La causa en 16 viajes/s no es la CPU de dispatch** (47-51 %) ni location (59-65 %, pings estables): es la espera del commit en el disco mecánico, que agota el pool de 10 conexiones. Con commit asíncrono, 16 viajes/s pasa y la degradación empieza en 32, con dispatch al 98 % de CPU: ahí sí el límite es dispatch, como decía la hipótesis, aunque location también llega a su CPU |
+| HE3 | **Se cumple en parte** | Antes de la primera etapa degradada, el lag p99 de dispatch es **≤ 2 ms** en las 3 corridas (< 50 ms). En las etapas degradadas sube a **≤ 10 ms y ≤ 100 ms**, y la CPU de dispatch llega a **93-96 %** en 32 viajes/s de las corridas 2 y 3. En 16 viajes/s la CPU promedio es de 47-51 %: la degradación empieza antes de que dispatch se quede sin CPU |
+
+**Qué se puede concluir:**
+- **La optimizada habilita la asignación bajo la carga de 6.6, y la ingenua no:** con la ingenua, todos los intentos fallan cerrado a 1 s y no se crea ningún viaje. Con la optimizada, el 95 % de los viajes se asigna en menos de 0,6 s.
+- **En esta máquina, el primer límite de dispatch es el disco, y el segundo su CPU:** con el volumen de Postgres en el disco mecánico, sostiene unos 8 viajes/s y se degrada en 16. Sin esperar al disco, sostiene 16 y se satura en 32, con dispatch y location cerca del 100 % de su CPU. Para pasar de ahí harían falta más CPU o réplicas de dispatch (y de location), y un pool que acompañe a Postgres. **Antes de sacar un número de capacidad para el informe, el escenario B tendría que repetirse con Docker en un SSD.**
+- **El p99 de la asignación lo marcan el TTL de la oferta y el disco,** no la búsqueda. Una oferta a un chofer ocupado espera 15 s. Bajarlo cambiaría el producto (el chofer tiene menos tiempo para aceptar), así que se informa como está.
+
+**Limitaciones:**
+- **Es local:** k6, los servicios y Postgres comparten la máquina, y **el volumen de Postgres está en un disco mecánico**. Los commits de dispatch esperan ese disco (p95 de 1,2 s sin carga), y eso pone pausas de 15 a 25 s en corridas al azar. Con Docker en un SSD habría que repetir el escenario B.
+- **Los choferes de prueba no tienen tiempo de reacción:** aceptan enseguida. Se mide el sistema, no a las personas.
+- **Resolución:**
+  - en el estrés, el tiempo hasta la asignación en el cliente tiene una resolución de ±100 ms, por la consulta cada 100 ms;
+  - el servidor y el lag se informan por cubeta, así que «≤ 100 ms» significa entre 50 y 100 ms.
+- **El techo de intentos del estrés lo pone k6** (250 usuarios virtuales en 32 viajes/s), no el sistema.
+- **Tres corridas por escenario** alcanzan para ver la tendencia, pero no para dar intervalos de confianza.

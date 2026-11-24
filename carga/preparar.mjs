@@ -2,7 +2,10 @@
 //   carga.env    contraseña del Postgres de carga y token de servicio de carga
 //   jwks.json    clave pública de carga (la sirve el contenedor jwks)
 //   tokens.json  500 access tokens de chofer firmados con la clave privada de carga
-//   tokens-solicitudes.json  un pasajero y un chofer para la solicitud real (carga/solicitudes.js)
+//   tokens-solicitudes.json  un pasajero y un chofer (carga/carrera.ps1 usa el pasajero)
+//   tokens-viajes.json       600 pasajeros y 310 choferes de prueba para los viajes en paralelo
+//                            (carga/solicitudes.js y carga/estres.js); los choferes, con su tipo según
+//                            carga/flotas.sql: 300 aptos y 10 no aptos
 // Nunca usa la clave de identity ni el .env del proyecto, y nunca imprime secretos ni tokens.
 // Si las credenciales existen y los tokens vencen en más de 2 h, las conserva.
 import { execFileSync } from 'node:child_process';
@@ -25,7 +28,7 @@ try {
 }
 
 const vigentes = () => {
-  if (!['carga.env', 'jwks.json', 'tokens.json', 'tokens-solicitudes.json'].every((n) => existsSync(ruta(n)))) return false;
+  if (!['carga.env', 'jwks.json', 'tokens.json', 'tokens-solicitudes.json', 'tokens-viajes.json'].every((n) => existsSync(ruta(n)))) return false;
   const [primero] = JSON.parse(readFileSync(ruta('tokens.json'), 'utf8'));
   const exp = JSON.parse(Buffer.from(primero.split('.')[1], 'base64url').toString()).exp;
   return exp * 1000 - Date.now() > 2 * 3600 * 1000;
@@ -78,4 +81,23 @@ writeFileSync(
   ruta('tokens-solicitudes.json'),
   JSON.stringify({ pasajeroId, pasajero: await firmar(pasajeroId, 'pasajero'), choferId, chofer: await firmar(choferId, 'chofer') }),
 );
-console.log(`Credenciales de carga generadas en carga/.secretos/: ${tokens.length} tokens de chofer (vencen en ${VIDA_TOKENS_S / 3600} h).`);
+// Viajes en paralelo: pasajeros a0000000XXXX y choferes b0000000XXXX (hex). Los tipos de chofer son los
+// de carga/flotas.sql: 1 a 300 aptos; 301-304 inactivos, 305-307 no disponibles, 308-310 de una flota
+// que no opera en Córdoba. Los no aptos informan posición y escuchan su SSE: nunca deberían recibir ofertas.
+const PASAJEROS_VIAJES = 600;
+const CHOFERES_VIAJES = 310;
+const tipoChofer = (i) => (i <= 300 ? 'apto' : i <= 304 ? 'inactivo' : i <= 307 ? 'no_disponible' : 'otra_zona');
+const hex = (i) => i.toString(16).padStart(4, '0');
+const pasajerosViajes = [];
+for (let i = 1; i <= PASAJEROS_VIAJES; i++) {
+  const id = `00000000-0000-4000-8000-a0000000${hex(i)}`;
+  pasajerosViajes.push({ id, token: await firmar(id, 'pasajero') });
+}
+const choferesViajes = [];
+for (let i = 1; i <= CHOFERES_VIAJES; i++) {
+  const id = `00000000-0000-4000-8000-b0000000${hex(i)}`;
+  choferesViajes.push({ id, tipo: tipoChofer(i), token: await firmar(id, 'chofer') });
+}
+writeFileSync(ruta('tokens-viajes.json'), JSON.stringify({ pasajeros: pasajerosViajes, choferes: choferesViajes }));
+
+console.log(`Credenciales de carga generadas en carga/.secretos/: ${tokens.length} tokens de chofer, ${PASAJEROS_VIAJES} pasajeros y ${CHOFERES_VIAJES} choferes de prueba (vencen en ${VIDA_TOKENS_S / 3600} h).`);

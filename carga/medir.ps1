@@ -7,15 +7,19 @@
 # de escribirse y conteo de filas. Deja todo en docs/mediciones/<fecha>/<estrategia>-<corrida>/.
 #
 # Con -Solicitudes, además levanta dispatch de carga y corre carga/solicitudes.js en paralelo con k6:
-# una solicitud real de punta a punta (crear, oferta por SSE, aceptar, cancelar) durante la fase de
-# medición. Es una prueba piloto de latencia bajo carga (ver carga/README.md, «Solicitud real»).
+# viajes de punta a punta (crear, oferta por SSE, aceptar, cancelar) con -Pasajeros pasajeros en
+# paralelo y -ChoferesAptos choferes aptos más 10 no aptos, durante la fase de medición, con el filtro
+# real de flotas y zonas. Al final comprueba la corrección en dispatch_carga (escenario A de
+# docs/mediciones.md).
 param(
   [Parameter(Mandatory = $true)][ValidateSet('ingenua', 'optimizada')][string]$Estrategia,
   [int]$Corrida = 1,
   [int]$Medicion = 300,
   [int]$Calentamiento = 30,
   [string]$Fecha = (Get-Date -Format 'yyyy-MM-dd'),
-  [switch]$Solicitudes
+  [switch]$Solicitudes,
+  [int]$Pasajeros = 20,
+  [int]$ChoferesAptos = 40
 )
 
 # 'Continue' y no 'Stop': en PowerShell 5.1, con 'Stop', cualquier línea que un programa externo
@@ -151,15 +155,17 @@ $muestreo = Start-Job -ArgumentList $stats, $contenedores -ScriptBlock {
 }
 
 $flujo = $null
+$correccion = $null
 if ($Solicitudes) {
   # Arranca antes que k6 y espera sus pings: las solicitudes corren solo en la fase de medición.
-  Paso "solicitud real (carga/solicitudes.js) en paralelo, durante la medición"
-  $flujo = Start-Job -ArgumentList $carga, $secretos, $salida, $Calentamiento, $Medicion, $env:CARGA_TOKEN_SERVICIO -ScriptBlock {
-    param($carga, $secretos, $salida, $calentamiento, $medicion, $token)
+  Paso "viajes en paralelo (carga/solicitudes.js: $Pasajeros pasajeros, $ChoferesAptos choferes aptos y 10 no aptos), durante la medición"
+  $flujo = Start-Job -ArgumentList $carga, $secretos, $salida, $Calentamiento, $Medicion, $env:CARGA_TOKEN_SERVICIO, $Pasajeros, $ChoferesAptos -ScriptBlock {
+    param($carga, $secretos, $salida, $calentamiento, $medicion, $token, $pasajeros, $choferesAptos)
     $env:METRICAS_TOKEN = $token
     docker run --rm --network viajes-carga_default `
       -v "${carga}:/scripts:ro" -v "${secretos}:/secretos:ro" -v "${salida}:/resultados" `
       -e METRICAS_TOKEN -e "CALENTAMIENTO_S=$calentamiento" -e "MEDICION_S=$medicion" `
+      -e "PASAJEROS=$pasajeros" -e "CHOFERES_APTOS=$choferesAptos" `
       node:22-alpine node /scripts/solicitudes.js 2>&1
     "codigo=$LASTEXITCODE"
   }
@@ -191,6 +197,26 @@ if ($flujo) {
     exit 1
   }
   $resumenSolicitudes = (Get-Content -LiteralPath $archivoFlujo -Raw | ConvertFrom-Json).resumen
+
+  # Corrección bajo carga (HS3), en dispatch_carga: nada activo, nada para los no aptos (choferes de prueba
+  # 301 a 310), todo en la zona Córdoba y todo lo asignado con su flota.
+  Paso "corrección en dispatch_carga"
+  $noAptos = "SELECT ('00000000-0000-4000-8000-b0000000' || lpad(to_hex(i), 4, '0'))::uuid FROM generate_series(301, 310) AS i"
+  $consulta = @"
+SELECT json_build_object(
+  'viajes_creados', (SELECT count(*) FROM ride_requests),
+  'viajes_activos', (SELECT count(*) FROM ride_requests WHERE status IN ('BUSCANDO', 'ASIGNADO', 'EN_CAMINO', 'EN_CURSO')),
+  'asignaciones_activas', (SELECT count(*) FROM driver_active_assignment),
+  'ofertas', (SELECT count(*) FROM offers),
+  'ofertas_a_no_aptos', (SELECT count(*) FROM offers WHERE driver_id IN ($noAptos)),
+  'viajes_de_no_aptos', (SELECT count(*) FROM ride_requests WHERE driver_id IN ($noAptos)),
+  'viajes_fuera_de_cordoba', (SELECT count(*) FROM ride_requests WHERE zone_id IS DISTINCT FROM '00000000-0000-4000-8000-0000000ca5c0'),
+  'asignados_sin_flota', (SELECT count(*) FROM ride_requests WHERE driver_id IS NOT NULL AND fleet_id IS NULL)
+)
+"@
+  $correccion = (docker exec viajes-carga-postgres-1 psql -U carga -d dispatch_carga -Atc $consulta) | ConvertFrom-Json
+  "$consulta`n$($correccion | ConvertTo-Json)" | Set-Content -LiteralPath (Join-Path $salida 'correccion.txt') -Encoding UTF8
+  $correccion.PSObject.Properties | ForEach-Object { Write-Output "  $($_.Name): $($_.Value)" }
 }
 
 Paso "foto de /metrics"
@@ -236,6 +262,7 @@ function Contar([string]$m) { $x = $resumen.metrics.$m; if ($x) { [int]$x.values
   historial_drenaje_ms  = $drenajeMs
   codigo_k6         = $codigoK6
   solicitudes       = $resumenSolicitudes
+  correccion        = $correccion
   commit            = (git rev-parse --short HEAD)
 } | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $salida 'conteos.json') -Encoding UTF8
 

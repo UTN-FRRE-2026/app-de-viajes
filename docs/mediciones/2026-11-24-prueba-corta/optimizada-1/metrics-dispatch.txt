@@ -1,0 +1,195 @@
+# HELP event_loop_lag_ms Lag del event loop desde el arranque (monitorEventLoopDelay, sin los 10 ms de resolución).
+# TYPE event_loop_lag_ms gauge
+event_loop_lag_ms{quantile="0.5",servicio="dispatch"} 0.11711900000000064
+event_loop_lag_ms{quantile="0.99",servicio="dispatch"} 23.751039
+
+# HELP event_loop_lag_max_ms Lag máximo del event loop desde el arranque.
+# TYPE event_loop_lag_max_ms gauge
+event_loop_lag_max_ms{servicio="dispatch"} 78.342527
+
+# HELP event_loop_lag_mean_ms Lag promedio del event loop desde el arranque.
+# TYPE event_loop_lag_mean_ms gauge
+event_loop_lag_mean_ms{servicio="dispatch"} 0.7707825019186494
+
+# HELP process_resident_memory_bytes Memoria residente del proceso (RSS).
+# TYPE process_resident_memory_bytes gauge
+process_resident_memory_bytes{servicio="dispatch"} 134332416
+
+# HELP nodejs_heap_used_bytes Heap de V8 en uso.
+# TYPE nodejs_heap_used_bytes gauge
+nodejs_heap_used_bytes{servicio="dispatch"} 44504952
+
+# HELP event_loop_lag_seconds Atraso de un temporizador programado cada 100 ms: lag del event loop, por muestra. La diferencia entre dos fotos da el lag de esa ventana.
+# TYPE event_loop_lag_seconds histogram
+event_loop_lag_seconds_bucket{le="0.001",servicio="dispatch"} 387
+event_loop_lag_seconds_bucket{le="0.002",servicio="dispatch"} 399
+event_loop_lag_seconds_bucket{le="0.005",servicio="dispatch"} 412
+event_loop_lag_seconds_bucket{le="0.01",servicio="dispatch"} 415
+event_loop_lag_seconds_bucket{le="0.02",servicio="dispatch"} 416
+event_loop_lag_seconds_bucket{le="0.05",servicio="dispatch"} 416
+event_loop_lag_seconds_bucket{le="0.1",servicio="dispatch"} 419
+event_loop_lag_seconds_bucket{le="0.2",servicio="dispatch"} 419
+event_loop_lag_seconds_bucket{le="0.5",servicio="dispatch"} 419
+event_loop_lag_seconds_bucket{le="1",servicio="dispatch"} 419
+event_loop_lag_seconds_bucket{le="2",servicio="dispatch"} 419
+event_loop_lag_seconds_bucket{le="+Inf",servicio="dispatch"} 419
+event_loop_lag_seconds_sum{servicio="dispatch"} 0.4162759760000154
+event_loop_lag_seconds_count{servicio="dispatch"} 419
+
+# HELP http_request_duration_seconds Duración de los pedidos HTTP, desde que entran hasta que se termina de enviar la respuesta.
+# TYPE http_request_duration_seconds histogram
+http_request_duration_seconds_bucket{le="0.005",servicio="dispatch",metodo="GET",ruta="/health",estado="200"} 3
+http_request_duration_seconds_bucket{le="0.01",servicio="dispatch",metodo="GET",ruta="/health",estado="200"} 3
+http_request_duration_seconds_bucket{le="0.025",servicio="dispatch",metodo="GET",ruta="/health",estado="200"} 3
+http_request_duration_seconds_bucket{le="0.05",servicio="dispatch",metodo="GET",ruta="/health",estado="200"} 4
+http_request_duration_seconds_bucket{le="0.1",servicio="dispatch",metodo="GET",ruta="/health",estado="200"} 4
+http_request_duration_seconds_bucket{le="0.25",servicio="dispatch",metodo="GET",ruta="/health",estado="200"} 4
+http_request_duration_seconds_bucket{le="0.5",servicio="dispatch",metodo="GET",ruta="/health",estado="200"} 4
+http_request_duration_seconds_bucket{le="1",servicio="dispatch",metodo="GET",ruta="/health",estado="200"} 4
+http_request_duration_seconds_bucket{le="2.5",servicio="dispatch",metodo="GET",ruta="/health",estado="200"} 4
+http_request_duration_seconds_bucket{le="5",servicio="dispatch",metodo="GET",ruta="/health",estado="200"} 4
+http_request_duration_seconds_bucket{le="10",servicio="dispatch",metodo="GET",ruta="/health",estado="200"} 4
+http_request_duration_seconds_bucket{le="+Inf",servicio="dispatch",metodo="GET",ruta="/health",estado="200"} 4
+http_request_duration_seconds_sum{servicio="dispatch",metodo="GET",ruta="/health",estado="200"} 0.031081236
+http_request_duration_seconds_count{servicio="dispatch",metodo="GET",ruta="/health",estado="200"} 4
+http_request_duration_seconds_bucket{le="0.005",servicio="dispatch",metodo="GET",ruta="/ready",estado="200"} 1
+http_request_duration_seconds_bucket{le="0.01",servicio="dispatch",metodo="GET",ruta="/ready",estado="200"} 1
+http_request_duration_seconds_bucket{le="0.025",servicio="dispatch",metodo="GET",ruta="/ready",estado="200"} 1
+http_request_duration_seconds_bucket{le="0.05",servicio="dispatch",metodo="GET",ruta="/ready",estado="200"} 1
+http_request_duration_seconds_bucket{le="0.1",servicio="dispatch",metodo="GET",ruta="/ready",estado="200"} 1
+http_request_duration_seconds_bucket{le="0.25",servicio="dispatch",metodo="GET",ruta="/ready",estado="200"} 1
+http_request_duration_seconds_bucket{le="0.5",servicio="dispatch",metodo="GET",ruta="/ready",estado="200"} 1
+http_request_duration_seconds_bucket{le="1",servicio="dispatch",metodo="GET",ruta="/ready",estado="200"} 1
+http_request_duration_seconds_bucket{le="2.5",servicio="dispatch",metodo="GET",ruta="/ready",estado="200"} 1
+http_request_duration_seconds_bucket{le="5",servicio="dispatch",metodo="GET",ruta="/ready",estado="200"} 1
+http_request_duration_seconds_bucket{le="10",servicio="dispatch",metodo="GET",ruta="/ready",estado="200"} 1
+http_request_duration_seconds_bucket{le="+Inf",servicio="dispatch",metodo="GET",ruta="/ready",estado="200"} 1
+http_request_duration_seconds_sum{servicio="dispatch",metodo="GET",ruta="/ready",estado="200"} 0.003918906
+http_request_duration_seconds_count{servicio="dispatch",metodo="GET",ruta="/ready",estado="200"} 1
+http_request_duration_seconds_bucket{le="0.005",servicio="dispatch",metodo="GET",ruta="/metrics",estado="200"} 1
+http_request_duration_seconds_bucket{le="0.01",servicio="dispatch",metodo="GET",ruta="/metrics",estado="200"} 1
+http_request_duration_seconds_bucket{le="0.025",servicio="dispatch",metodo="GET",ruta="/metrics",estado="200"} 1
+http_request_duration_seconds_bucket{le="0.05",servicio="dispatch",metodo="GET",ruta="/metrics",estado="200"} 1
+http_request_duration_seconds_bucket{le="0.1",servicio="dispatch",metodo="GET",ruta="/metrics",estado="200"} 1
+http_request_duration_seconds_bucket{le="0.25",servicio="dispatch",metodo="GET",ruta="/metrics",estado="200"} 1
+http_request_duration_seconds_bucket{le="0.5",servicio="dispatch",metodo="GET",ruta="/metrics",estado="200"} 1
+http_request_duration_seconds_bucket{le="1",servicio="dispatch",metodo="GET",ruta="/metrics",estado="200"} 1
+http_request_duration_seconds_bucket{le="2.5",servicio="dispatch",metodo="GET",ruta="/metrics",estado="200"} 1
+http_request_duration_seconds_bucket{le="5",servicio="dispatch",metodo="GET",ruta="/metrics",estado="200"} 1
+http_request_duration_seconds_bucket{le="10",servicio="dispatch",metodo="GET",ruta="/metrics",estado="200"} 1
+http_request_duration_seconds_bucket{le="+Inf",servicio="dispatch",metodo="GET",ruta="/metrics",estado="200"} 1
+http_request_duration_seconds_sum{servicio="dispatch",metodo="GET",ruta="/metrics",estado="200"} 0.00396841
+http_request_duration_seconds_count{servicio="dispatch",metodo="GET",ruta="/metrics",estado="200"} 1
+http_request_duration_seconds_bucket{le="0.005",servicio="dispatch",metodo="POST",ruta="/solicitudes",estado="201"} 0
+http_request_duration_seconds_bucket{le="0.01",servicio="dispatch",metodo="POST",ruta="/solicitudes",estado="201"} 0
+http_request_duration_seconds_bucket{le="0.025",servicio="dispatch",metodo="POST",ruta="/solicitudes",estado="201"} 0
+http_request_duration_seconds_bucket{le="0.05",servicio="dispatch",metodo="POST",ruta="/solicitudes",estado="201"} 0
+http_request_duration_seconds_bucket{le="0.1",servicio="dispatch",metodo="POST",ruta="/solicitudes",estado="201"} 65
+http_request_duration_seconds_bucket{le="0.25",servicio="dispatch",metodo="POST",ruta="/solicitudes",estado="201"} 140
+http_request_duration_seconds_bucket{le="0.5",servicio="dispatch",metodo="POST",ruta="/solicitudes",estado="201"} 164
+http_request_duration_seconds_bucket{le="1",servicio="dispatch",metodo="POST",ruta="/solicitudes",estado="201"} 165
+http_request_duration_seconds_bucket{le="2.5",servicio="dispatch",metodo="POST",ruta="/solicitudes",estado="201"} 165
+http_request_duration_seconds_bucket{le="5",servicio="dispatch",metodo="POST",ruta="/solicitudes",estado="201"} 165
+http_request_duration_seconds_bucket{le="10",servicio="dispatch",metodo="POST",ruta="/solicitudes",estado="201"} 165
+http_request_duration_seconds_bucket{le="+Inf",servicio="dispatch",metodo="POST",ruta="/solicitudes",estado="201"} 165
+http_request_duration_seconds_sum{servicio="dispatch",metodo="POST",ruta="/solicitudes",estado="201"} 25.603036680999985
+http_request_duration_seconds_count{servicio="dispatch",metodo="POST",ruta="/solicitudes",estado="201"} 165
+http_request_duration_seconds_bucket{le="0.005",servicio="dispatch",metodo="POST",ruta="/ofertas/:id/aceptar",estado="200"} 0
+http_request_duration_seconds_bucket{le="0.01",servicio="dispatch",metodo="POST",ruta="/ofertas/:id/aceptar",estado="200"} 0
+http_request_duration_seconds_bucket{le="0.025",servicio="dispatch",metodo="POST",ruta="/ofertas/:id/aceptar",estado="200"} 0
+http_request_duration_seconds_bucket{le="0.05",servicio="dispatch",metodo="POST",ruta="/ofertas/:id/aceptar",estado="200"} 0
+http_request_duration_seconds_bucket{le="0.1",servicio="dispatch",metodo="POST",ruta="/ofertas/:id/aceptar",estado="200"} 52
+http_request_duration_seconds_bucket{le="0.25",servicio="dispatch",metodo="POST",ruta="/ofertas/:id/aceptar",estado="200"} 152
+http_request_duration_seconds_bucket{le="0.5",servicio="dispatch",metodo="POST",ruta="/ofertas/:id/aceptar",estado="200"} 165
+http_request_duration_seconds_bucket{le="1",servicio="dispatch",metodo="POST",ruta="/ofertas/:id/aceptar",estado="200"} 165
+http_request_duration_seconds_bucket{le="2.5",servicio="dispatch",metodo="POST",ruta="/ofertas/:id/aceptar",estado="200"} 165
+http_request_duration_seconds_bucket{le="5",servicio="dispatch",metodo="POST",ruta="/ofertas/:id/aceptar",estado="200"} 165
+http_request_duration_seconds_bucket{le="10",servicio="dispatch",metodo="POST",ruta="/ofertas/:id/aceptar",estado="200"} 165
+http_request_duration_seconds_bucket{le="+Inf",servicio="dispatch",metodo="POST",ruta="/ofertas/:id/aceptar",estado="200"} 165
+http_request_duration_seconds_sum{servicio="dispatch",metodo="POST",ruta="/ofertas/:id/aceptar",estado="200"} 22.698548949000017
+http_request_duration_seconds_count{servicio="dispatch",metodo="POST",ruta="/ofertas/:id/aceptar",estado="200"} 165
+http_request_duration_seconds_bucket{le="0.005",servicio="dispatch",metodo="POST",ruta="/ofertas/:id/aceptar",estado="409"} 0
+http_request_duration_seconds_bucket{le="0.01",servicio="dispatch",metodo="POST",ruta="/ofertas/:id/aceptar",estado="409"} 1
+http_request_duration_seconds_bucket{le="0.025",servicio="dispatch",metodo="POST",ruta="/ofertas/:id/aceptar",estado="409"} 9
+http_request_duration_seconds_bucket{le="0.05",servicio="dispatch",metodo="POST",ruta="/ofertas/:id/aceptar",estado="409"} 15
+http_request_duration_seconds_bucket{le="0.1",servicio="dispatch",metodo="POST",ruta="/ofertas/:id/aceptar",estado="409"} 92
+http_request_duration_seconds_bucket{le="0.25",servicio="dispatch",metodo="POST",ruta="/ofertas/:id/aceptar",estado="409"} 257
+http_request_duration_seconds_bucket{le="0.5",servicio="dispatch",metodo="POST",ruta="/ofertas/:id/aceptar",estado="409"} 271
+http_request_duration_seconds_bucket{le="1",servicio="dispatch",metodo="POST",ruta="/ofertas/:id/aceptar",estado="409"} 271
+http_request_duration_seconds_bucket{le="2.5",servicio="dispatch",metodo="POST",ruta="/ofertas/:id/aceptar",estado="409"} 271
+http_request_duration_seconds_bucket{le="5",servicio="dispatch",metodo="POST",ruta="/ofertas/:id/aceptar",estado="409"} 271
+http_request_duration_seconds_bucket{le="10",servicio="dispatch",metodo="POST",ruta="/ofertas/:id/aceptar",estado="409"} 271
+http_request_duration_seconds_bucket{le="+Inf",servicio="dispatch",metodo="POST",ruta="/ofertas/:id/aceptar",estado="409"} 271
+http_request_duration_seconds_sum{servicio="dispatch",metodo="POST",ruta="/ofertas/:id/aceptar",estado="409"} 34.514732183
+http_request_duration_seconds_count{servicio="dispatch",metodo="POST",ruta="/ofertas/:id/aceptar",estado="409"} 271
+http_request_duration_seconds_bucket{le="0.005",servicio="dispatch",metodo="GET",ruta="/solicitudes/:id",estado="200"} 221
+http_request_duration_seconds_bucket{le="0.01",servicio="dispatch",metodo="GET",ruta="/solicitudes/:id",estado="200"} 306
+http_request_duration_seconds_bucket{le="0.025",servicio="dispatch",metodo="GET",ruta="/solicitudes/:id",estado="200"} 326
+http_request_duration_seconds_bucket{le="0.05",servicio="dispatch",metodo="GET",ruta="/solicitudes/:id",estado="200"} 329
+http_request_duration_seconds_bucket{le="0.1",servicio="dispatch",metodo="GET",ruta="/solicitudes/:id",estado="200"} 330
+http_request_duration_seconds_bucket{le="0.25",servicio="dispatch",metodo="GET",ruta="/solicitudes/:id",estado="200"} 330
+http_request_duration_seconds_bucket{le="0.5",servicio="dispatch",metodo="GET",ruta="/solicitudes/:id",estado="200"} 330
+http_request_duration_seconds_bucket{le="1",servicio="dispatch",metodo="GET",ruta="/solicitudes/:id",estado="200"} 330
+http_request_duration_seconds_bucket{le="2.5",servicio="dispatch",metodo="GET",ruta="/solicitudes/:id",estado="200"} 330
+http_request_duration_seconds_bucket{le="5",servicio="dispatch",metodo="GET",ruta="/solicitudes/:id",estado="200"} 330
+http_request_duration_seconds_bucket{le="10",servicio="dispatch",metodo="GET",ruta="/solicitudes/:id",estado="200"} 330
+http_request_duration_seconds_bucket{le="+Inf",servicio="dispatch",metodo="GET",ruta="/solicitudes/:id",estado="200"} 330
+http_request_duration_seconds_sum{servicio="dispatch",metodo="GET",ruta="/solicitudes/:id",estado="200"} 1.6866953309999997
+http_request_duration_seconds_count{servicio="dispatch",metodo="GET",ruta="/solicitudes/:id",estado="200"} 330
+http_request_duration_seconds_bucket{le="0.005",servicio="dispatch",metodo="POST",ruta="/solicitudes/:id/cancelar",estado="200"} 0
+http_request_duration_seconds_bucket{le="0.01",servicio="dispatch",metodo="POST",ruta="/solicitudes/:id/cancelar",estado="200"} 0
+http_request_duration_seconds_bucket{le="0.025",servicio="dispatch",metodo="POST",ruta="/solicitudes/:id/cancelar",estado="200"} 0
+http_request_duration_seconds_bucket{le="0.05",servicio="dispatch",metodo="POST",ruta="/solicitudes/:id/cancelar",estado="200"} 7
+http_request_duration_seconds_bucket{le="0.1",servicio="dispatch",metodo="POST",ruta="/solicitudes/:id/cancelar",estado="200"} 122
+http_request_duration_seconds_bucket{le="0.25",servicio="dispatch",metodo="POST",ruta="/solicitudes/:id/cancelar",estado="200"} 153
+http_request_duration_seconds_bucket{le="0.5",servicio="dispatch",metodo="POST",ruta="/solicitudes/:id/cancelar",estado="200"} 165
+http_request_duration_seconds_bucket{le="1",servicio="dispatch",metodo="POST",ruta="/solicitudes/:id/cancelar",estado="200"} 165
+http_request_duration_seconds_bucket{le="2.5",servicio="dispatch",metodo="POST",ruta="/solicitudes/:id/cancelar",estado="200"} 165
+http_request_duration_seconds_bucket{le="5",servicio="dispatch",metodo="POST",ruta="/solicitudes/:id/cancelar",estado="200"} 165
+http_request_duration_seconds_bucket{le="10",servicio="dispatch",metodo="POST",ruta="/solicitudes/:id/cancelar",estado="200"} 165
+http_request_duration_seconds_bucket{le="+Inf",servicio="dispatch",metodo="POST",ruta="/solicitudes/:id/cancelar",estado="200"} 165
+http_request_duration_seconds_sum{servicio="dispatch",metodo="POST",ruta="/solicitudes/:id/cancelar",estado="200"} 16.967974155000004
+http_request_duration_seconds_count{servicio="dispatch",metodo="POST",ruta="/solicitudes/:id/cancelar",estado="200"} 165
+
+# HELP dispatch_tarifas_cache_total Lecturas del caché de tarifas: hit, miss, o error (se usó Postgres).
+# TYPE dispatch_tarifas_cache_total counter
+dispatch_tarifas_cache_total{resultado="hit",servicio="dispatch"} 164
+dispatch_tarifas_cache_total{resultado="miss",servicio="dispatch"} 1
+dispatch_tarifas_cache_total{resultado="error",servicio="dispatch"} 0
+
+# HELP dispatch_solicitudes_total Solicitudes de viaje creadas, según si recibieron ofertas o quedaron SIN_CHOFERES.
+# TYPE dispatch_solicitudes_total counter
+dispatch_solicitudes_total{resultado="con_ofertas",servicio="dispatch"} 165
+dispatch_solicitudes_total{resultado="sin_choferes",servicio="dispatch"} 0
+
+# HELP dispatch_asignaciones_total Asignaciones confirmadas (una por solicitud: la aceptación ganadora).
+# TYPE dispatch_asignaciones_total counter
+dispatch_asignaciones_total{servicio="dispatch"} 165
+
+# HELP dispatch_ofertas_vencidas_total Ofertas que el barrido marcó como vencidas.
+# TYPE dispatch_ofertas_vencidas_total counter
+dispatch_ofertas_vencidas_total{servicio="dispatch"} 9
+
+# HELP dispatch_busquedas_sin_aptos_total Búsquedas de candidatos sin ningún apto: location no devolvió a nadie, el filtro de flotas y zonas descartó a todos, o descartó también los 100 más cercanos (tope_agotado).
+# TYPE dispatch_busquedas_sin_aptos_total counter
+dispatch_busquedas_sin_aptos_total{motivo="sin_candidatos",servicio="dispatch"} 0
+dispatch_busquedas_sin_aptos_total{motivo="filtrados",servicio="dispatch"} 0
+dispatch_busquedas_sin_aptos_total{motivo="tope_agotado",servicio="dispatch"} 0
+
+# HELP dispatch_tiempo_hasta_asignacion_seconds Desde que el pasajero pide el viaje (antes de buscar candidatos) hasta el COMMIT de la aceptación.
+# TYPE dispatch_tiempo_hasta_asignacion_seconds histogram
+dispatch_tiempo_hasta_asignacion_seconds_bucket{le="0.05",servicio="dispatch"} 0
+dispatch_tiempo_hasta_asignacion_seconds_bucket{le="0.1",servicio="dispatch"} 0
+dispatch_tiempo_hasta_asignacion_seconds_bucket{le="0.25",servicio="dispatch"} 54
+dispatch_tiempo_hasta_asignacion_seconds_bucket{le="0.5",servicio="dispatch"} 140
+dispatch_tiempo_hasta_asignacion_seconds_bucket{le="1",servicio="dispatch"} 162
+dispatch_tiempo_hasta_asignacion_seconds_bucket{le="2",servicio="dispatch"} 162
+dispatch_tiempo_hasta_asignacion_seconds_bucket{le="5",servicio="dispatch"} 162
+dispatch_tiempo_hasta_asignacion_seconds_bucket{le="10",servicio="dispatch"} 162
+dispatch_tiempo_hasta_asignacion_seconds_bucket{le="15",servicio="dispatch"} 162
+dispatch_tiempo_hasta_asignacion_seconds_bucket{le="30",servicio="dispatch"} 165
+dispatch_tiempo_hasta_asignacion_seconds_bucket{le="45",servicio="dispatch"} 165
+dispatch_tiempo_hasta_asignacion_seconds_bucket{le="60",servicio="dispatch"} 165
+dispatch_tiempo_hasta_asignacion_seconds_bucket{le="+Inf",servicio="dispatch"} 165
+dispatch_tiempo_hasta_asignacion_seconds_sum{servicio="dispatch"} 104.326
+dispatch_tiempo_hasta_asignacion_seconds_count{servicio="dispatch"} 165

@@ -1,0 +1,142 @@
+﻿{
+    "estrategia":  "optimizada",
+    "corrida":  3,
+    "inicio":  "2026-11-24T04:23:39",
+    "medicion_s":  300,
+    "calentamiento_s":  30,
+    "pings_enviados":  82501,
+    "pings_aceptados":  82501,
+    "pings_fallidos":  0,
+    "pings_omitidos_k6":  0,
+    "historial_filas":  84251,
+    "historial_stream_ids_distintos":  84251,
+    "historial_descartados":  0,
+    "historial_drenaje_ms":  43,
+    "codigo_k6":  0,
+    "solicitudes":  {
+                        "pasajeros":  20,
+                        "choferes":  {
+                                         "aptos":  40,
+                                         "no_aptos":  10
+                                     },
+                        "k6Detectado":  "2026-11-24T07:23:43.982Z",
+                        "ventana":  {
+                                        "inicio":  "2026-11-24T07:24:16.018Z",
+                                        "fin":  "2026-11-24T07:29:30.806Z",
+                                        "segundos":  315,
+                                        "calentamiento_s":  30,
+                                        "medicion_s":  300
+                                    },
+                        "iteraciones":  2323,
+                        "solicitudes_por_s":  7.38,
+                        "asignadas":  2323,
+                        "asignadas_por_s":  7.38,
+                        "sin_choferes":  0,
+                        "ubicacion_no_disponible_503":  0,
+                        "timeouts":  0,
+                        "errores":  {
+
+                                    },
+                        "errores_total":  0,
+                        "reintentos_cliente":  0,
+                        "cliente_ms":  {
+                                           "crear":  {
+                                                         "n":  2323,
+                                                         "p50":  88,
+                                                         "p95":  243,
+                                                         "p99":  482,
+                                                         "max":  6734
+                                                     },
+                                           "hasta_asignacion":  {
+                                                                    "n":  2323,
+                                                                    "p50":  291,
+                                                                    "p95":  566,
+                                                                    "p99":  8546,
+                                                                    "max":  20484
+                                                                }
+                                       },
+                        "servidor":  {
+                                         "crear":  {
+                                                       "cuenta":  2323,
+                                                       "p50":  0.1,
+                                                       "p95":  0.25,
+                                                       "p99":  0.5
+                                                   },
+                                         "aceptar":  {
+                                                         "cuenta":  6053,
+                                                         "p50":  0.1,
+                                                         "p95":  0.25,
+                                                         "p99":  0.5
+                                                     },
+                                         "hasta_asignacion_s":  {
+                                                                    "cuenta":  2323,
+                                                                    "p50":  0.25,
+                                                                    "p95":  0.5,
+                                                                    "p99":  10
+                                                                },
+                                         "busquedas_sin_aptos":  {
+                                                                     "sin_candidatos":  0,
+                                                                     "filtrados":  0,
+                                                                     "tope_agotado":  0
+                                                                 },
+                                         "ofertas_vencidas":  51,
+                                         "lag_dispatch_s":  {
+                                                                "cuenta":  3132,
+                                                                "p50":  0.001,
+                                                                "p95":  0.002,
+                                                                "p99":  0.01
+                                                            },
+                                         "lag_location_s":  {
+                                                                "cuenta":  3137,
+                                                                "p50":  0.001,
+                                                                "p95":  0.002,
+                                                                "p99":  0.005
+                                                            },
+                                         "memoria_mb":  {
+                                                            "dispatch":  {
+                                                                             "inicio":  115,
+                                                                             "fin":  122
+                                                                         },
+                                                            "location":  {
+                                                                             "inicio":  119,
+                                                                             "fin":  117
+                                                                         }
+                                                        }
+                                     },
+                        "choferes_prueba":  {
+                                                "choferes":  50,
+                                                "pings_enviados":  1750,
+                                                "pings_ok":  1750,
+                                                "pings_fallidos":  0,
+                                                "ofertas_recibidas":  7020,
+                                                "ofertas_a_no_aptos":  0,
+                                                "ofertas_ignoradas_ocupado":  446,
+                                                "ofertas_en_espera_probadas":  593,
+                                                "aceptadas_200":  2323,
+                                                "aceptadas_por_no_aptos":  0,
+                                                "rechazos_409_esperados":  {
+                                                                               "SOLICITUD_NO_DISPONIBLE":  3730
+                                                                           },
+                                                "aceptar_errores":  {
+
+                                                                    },
+                                                "reintentos":  0,
+                                                "liberados_por_evento":  2323,
+                                                "liberados_por_consulta":  0,
+                                                "sse_reconexiones":  0,
+                                                "pings_en_la_ventana":  1550,
+                                                "pings_por_s_en_la_ventana":  4.9
+                                            }
+                    },
+    "correccion":  {
+                       "viajes_creados":  2323,
+                       "viajes_activos":  0,
+                       "asignaciones_activas":  0,
+                       "ofertas":  7020,
+                       "ofertas_a_no_aptos":  0,
+                       "viajes_de_no_aptos":  0,
+                       "viajes_fuera_de_cordoba":  0,
+                       "asignados_sin_flota":  0
+                   },
+    "commit":  "8da1479"
+}

@@ -1,0 +1,307 @@
+{
+  "calentamiento_s": 30,
+  "etapa_s": 60,
+  "transicion_s": 15,
+  "etapas": [
+    {
+      "etapa": 1,
+      "tasa": 1,
+      "ventana_estable": {
+        "desde": "2026-11-24T07:48:31.544Z",
+        "hasta": "2026-11-24T07:49:16.541Z",
+        "segundos": 44.997
+      },
+      "crear_s": {
+        "cuenta": 46,
+        "p50": 0.1,
+        "p95": 0.25,
+        "p99": 0.25
+      },
+      "aceptar_s": {
+        "cuenta": 134,
+        "p50": 0.1,
+        "p95": 0.25,
+        "p99": 0.5
+      },
+      "hasta_asignacion_s": {
+        "cuenta": 44,
+        "p50": 0.25,
+        "p95": 0.5,
+        "p99": 0.5
+      },
+      "lag_dispatch_s": {
+        "cuenta": 449,
+        "p50": 0.001,
+        "p95": 0.001,
+        "p99": 0.002
+      },
+      "lag_location_s": {
+        "cuenta": 447,
+        "p50": 0.001,
+        "p95": 0.002,
+        "p99": 0.01
+      },
+      "memoria_mb": {
+        "dispatch": 133,
+        "location": 123
+      },
+      "busquedas_sin_aptos": {
+        "sin_candidatos": 0,
+        "filtrados": 0,
+        "tope_agotado": 0
+      },
+      "pings_location_por_s": 277.6,
+      "pings_choferes_prueba_por_s": 27.6
+    },
+    {
+      "etapa": 2,
+      "tasa": 2,
+      "ventana_estable": {
+        "desde": "2026-11-24T07:49:31.540Z",
+        "hasta": "2026-11-24T07:50:16.538Z",
+        "segundos": 44.998
+      },
+      "crear_s": {
+        "cuenta": 91,
+        "p50": 0.1,
+        "p95": 0.25,
+        "p99": 0.5
+      },
+      "aceptar_s": {
+        "cuenta": 270,
+        "p50": 0.1,
+        "p95": 0.25,
+        "p99": 0.25
+      },
+      "hasta_asignacion_s": {
+        "cuenta": 90,
+        "p50": 0.25,
+        "p95": 0.5,
+        "p99": 0.5
+      },
+      "lag_dispatch_s": {
+        "cuenta": 449,
+        "p50": 0.001,
+        "p95": 0.001,
+        "p99": 0.002
+      },
+      "lag_location_s": {
+        "cuenta": 448,
+        "p50": 0.001,
+        "p95": 0.002,
+        "p99": 0.005
+      },
+      "memoria_mb": {
+        "dispatch": 134,
+        "location": 124
+      },
+      "busquedas_sin_aptos": {
+        "sin_candidatos": 0,
+        "filtrados": 0,
+        "tope_agotado": 0
+      },
+      "pings_location_por_s": 277.6,
+      "pings_choferes_prueba_por_s": 27.6
+    },
+    {
+      "etapa": 3,
+      "tasa": 4,
+      "ventana_estable": {
+        "desde": "2026-11-24T07:50:31.539Z",
+        "hasta": "2026-11-24T07:51:16.538Z",
+        "segundos": 44.999
+      },
+      "crear_s": {
+        "cuenta": 181,
+        "p50": 0.1,
+        "p95": 0.25,
+        "p99": 0.5
+      },
+      "aceptar_s": {
+        "cuenta": 530,
+        "p50": 0.1,
+        "p95": 0.25,
+        "p99": 0.5
+      },
+      "hasta_asignacion_s": {
+        "cuenta": 180,
+        "p50": 0.25,
+        "p95": 0.5,
+        "p99": 1
+      },
+      "lag_dispatch_s": {
+        "cuenta": 450,
+        "p50": 0.001,
+        "p95": 0.001,
+        "p99": 0.002
+      },
+      "lag_location_s": {
+        "cuenta": 446,
+        "p50": 0.001,
+        "p95": 0.005,
+        "p99": 0.02
+      },
+      "memoria_mb": {
+        "dispatch": 139,
+        "location": 126
+      },
+      "busquedas_sin_aptos": {
+        "sin_candidatos": 0,
+        "filtrados": 0,
+        "tope_agotado": 0
+      },
+      "pings_location_por_s": 277.6,
+      "pings_choferes_prueba_por_s": 27.6
+    },
+    {
+      "etapa": 4,
+      "tasa": 8,
+      "ventana_estable": {
+        "desde": "2026-11-24T07:51:31.538Z",
+        "hasta": "2026-11-24T07:52:16.543Z",
+        "segundos": 45.005
+      },
+      "crear_s": {
+        "cuenta": 252,
+        "p50": 5,
+        "p95": 10,
+        "p99": "+Inf"
+      },
+      "aceptar_s": {
+        "cuenta": 391,
+        "p50": 5,
+        "p95": 5,
+        "p99": 10
+      },
+      "hasta_asignacion_s": {
+        "cuenta": 225,
+        "p50": 10,
+        "p95": 10,
+        "p99": 15
+      },
+      "lag_dispatch_s": {
+        "cuenta": 442,
+        "p50": 0.001,
+        "p95": 0.005,
+        "p99": 0.1
+      },
+      "lag_location_s": {
+        "cuenta": 434,
+        "p50": 0.001,
+        "p95": 0.05,
+        "p99": 0.1
+      },
+      "memoria_mb": {
+        "dispatch": 148,
+        "location": 144
+      },
+      "busquedas_sin_aptos": {
+        "sin_candidatos": 0,
+        "filtrados": 0,
+        "tope_agotado": 0
+      },
+      "pings_location_por_s": 277.6,
+      "pings_choferes_prueba_por_s": 27.6
+    },
+    {
+      "etapa": 5,
+      "tasa": 16,
+      "ventana_estable": {
+        "desde": "2026-11-24T07:52:31.540Z",
+        "hasta": "2026-11-24T07:53:16.539Z",
+        "segundos": 44.999
+      },
+      "crear_s": {
+        "cuenta": 714,
+        "p50": 0.1,
+        "p95": 0.25,
+        "p99": 0.5
+      },
+      "aceptar_s": {
+        "cuenta": 1824,
+        "p50": 0.1,
+        "p95": 0.25,
+        "p99": 0.5
+      },
+      "hasta_asignacion_s": {
+        "cuenta": 712,
+        "p50": 0.25,
+        "p95": 0.5,
+        "p99": 1
+      },
+      "lag_dispatch_s": {
+        "cuenta": 444,
+        "p50": 0.001,
+        "p95": 0.005,
+        "p99": 0.1
+      },
+      "lag_location_s": {
+        "cuenta": 447,
+        "p50": 0.001,
+        "p95": 0.002,
+        "p99": 0.01
+      },
+      "memoria_mb": {
+        "dispatch": 150,
+        "location": 143
+      },
+      "busquedas_sin_aptos": {
+        "sin_candidatos": 0,
+        "filtrados": 0,
+        "tope_agotado": 0
+      },
+      "pings_location_por_s": 278.1,
+      "pings_choferes_prueba_por_s": 28
+    },
+    {
+      "etapa": 6,
+      "tasa": 32,
+      "ventana_estable": {
+        "desde": "2026-11-24T07:53:31.550Z",
+        "hasta": "2026-11-24T07:54:16.549Z",
+        "segundos": 44.999
+      },
+      "crear_s": {
+        "cuenta": 847,
+        "p50": 5,
+        "p95": 10,
+        "p99": 10
+      },
+      "aceptar_s": {
+        "cuenta": 649,
+        "p50": 5,
+        "p95": 5,
+        "p99": 5
+      },
+      "hasta_asignacion_s": {
+        "cuenta": 367,
+        "p50": 10,
+        "p95": 15,
+        "p99": 15
+      },
+      "lag_dispatch_s": {
+        "cuenta": 420,
+        "p50": 0.002,
+        "p95": 0.1,
+        "p99": 0.1
+      },
+      "lag_location_s": {
+        "cuenta": 446,
+        "p50": 0.001,
+        "p95": 0.005,
+        "p99": 0.02
+      },
+      "memoria_mb": {
+        "dispatch": 166,
+        "location": 144
+      },
+      "busquedas_sin_aptos": {
+        "sin_candidatos": 0,
+        "filtrados": 0,
+        "tope_agotado": 0
+      },
+      "pings_location_por_s": 278.7,
+      "pings_choferes_prueba_por_s": 28.6
+    }
+  ]
+}

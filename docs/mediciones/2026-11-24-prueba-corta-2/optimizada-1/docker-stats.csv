@@ -1,0 +1,25 @@
+﻿hora,contenedor,cpu,memoria
+05:21:53,viajes-carga-location-1,0.77%,46.95MiB / 512MiB
+05:21:53,viajes-carga-postgres-1,0.57%,149MiB / 1GiB
+05:21:53,viajes-carga-redis-1,2.66%,6.156MiB / 512MiB
+05:21:53,viajes-carga-dispatch-1,4.66%,56.32MiB / 512MiB
+05:22:00,viajes-carga-location-1,71.60%,65.84MiB / 512MiB
+05:22:00,viajes-carga-postgres-1,2.42%,167MiB / 1GiB
+05:22:00,viajes-carga-redis-1,9.32%,8.668MiB / 512MiB
+05:22:00,viajes-carga-dispatch-1,2.29%,59.05MiB / 512MiB
+05:22:07,viajes-carga-location-1,72.60%,66.78MiB / 512MiB
+05:22:07,viajes-carga-postgres-1,29.90%,179.6MiB / 1GiB
+05:22:07,viajes-carga-redis-1,14.39%,6.168MiB / 512MiB
+05:22:07,viajes-carga-dispatch-1,57.57%,70.08MiB / 512MiB
+05:22:14,viajes-carga-location-1,52.57%,67.89MiB / 512MiB
+05:22:14,viajes-carga-postgres-1,16.01%,179.9MiB / 1GiB
+05:22:14,viajes-carga-redis-1,9.21%,6.355MiB / 512MiB
+05:22:14,viajes-carga-dispatch-1,28.47%,73.72MiB / 512MiB
+05:22:21,viajes-carga-location-1,48.42%,67.7MiB / 512MiB
+05:22:21,viajes-carga-postgres-1,18.43%,180.2MiB / 1GiB
+05:22:21,viajes-carga-redis-1,12.12%,6.43MiB / 512MiB
+05:22:21,viajes-carga-dispatch-1,34.95%,75.12MiB / 512MiB
+05:22:28,viajes-carga-location-1,48.06%,67.98MiB / 512MiB
+05:22:28,viajes-carga-postgres-1,8.13%,180.6MiB / 1GiB
+05:22:28,viajes-carga-redis-1,10.56%,6.195MiB / 512MiB
+05:22:28,viajes-carga-dispatch-1,2.72%,75.94MiB / 512MiB
