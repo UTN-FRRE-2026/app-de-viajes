@@ -22,6 +22,7 @@ export function conDemoraTrasLeer(repo: RepositorioDespacho, ms: number): Reposi
     viajeConChoferDelPasajero: (pasajeroId) => repo.viajeConChoferDelPasajero(pasajeroId),
     viajeConPasajeroDelChofer: (choferId) => repo.viajeConPasajeroDelChofer(choferId),
     ofertasPendientesDelChofer: (choferId, ahora) => repo.ofertasPendientesDelChofer(choferId, ahora),
+    tramosDeViaje: (choferes, desde, hasta) => repo.tramosDeViaje(choferes, desde, hasta),
     reporteFlota: (flotaId, periodo) => repo.reporteFlota(flotaId, periodo),
     enTransaccion: (trabajo) =>
       repo.enTransaccion((tx) =>

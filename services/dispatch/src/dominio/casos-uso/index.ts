@@ -31,6 +31,8 @@ export function crearCasosDeUso(deps: DependenciasDespacho) {
     estimarTarifa: estimarTarifa(deps),
     obtenerTarifa: obtenerTarifa(deps),
     configurarTarifa: configurarTarifa(deps),
+    /** Para la retención del historial de location (ruta interna, con token de servicio). */
+    tramosDeViaje: (choferes: readonly string[], desde: Date, hasta: Date) => deps.repo.tramosDeViaje(choferes, desde, hasta),
   };
 }
 

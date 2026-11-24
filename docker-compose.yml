@@ -91,6 +91,12 @@ services:
       LOCATION_HISTORIAL_RETENCION_HORAS: ${LOCATION_HISTORIAL_RETENCION_HORAS:-}
       LOCATION_HISTORIAL_RETENCION_INTERVALO_MS: ${LOCATION_HISTORIAL_RETENCION_INTERVALO_MS:-}
       LOCATION_HISTORIAL_RETENCION_LOTE: ${LOCATION_HISTORIAL_RETENCION_LOTE:-}
+      # Retención por viaje: vacía, el menor entre 24 h y la retención total. Para saber qué ping fue de un
+      # viaje pregunta a dispatch (red interna; /interno/* no se publica). Sin token, no clasifica.
+      LOCATION_HISTORIAL_SIN_VIAJE_HORAS: ${LOCATION_HISTORIAL_SIN_VIAJE_HORAS:-}
+      DISPATCH_URL: http://dispatch:3005
+      DISPATCH_TOKEN_SERVICIO: ${DISPATCH_TOKEN_SERVICIO:-}
+      DISPATCH_TIMEOUT_MS: ${DISPATCH_TIMEOUT_MS:-}
     ports:
       - "3004:3004"
     networks:
@@ -136,6 +142,9 @@ services:
       IDENTITY_URL: http://identity:3001
       IDENTITY_TOKEN_SERVICIO: ${IDENTITY_TOKEN_SERVICIO:-}
       IDENTITY_TIMEOUT_MS: ${IDENTITY_TIMEOUT_MS:-1000}
+      # Retención por viaje: location consulta POST /interno/tramos-viaje con este token. Vacío: la ruta no
+      # se monta y location conserva los pings sin viaje hasta la retención total.
+      DISPATCH_TOKEN_SERVICIO: ${DISPATCH_TOKEN_SERVICIO:-}
       # Tarifa y mapas (docs/tarifas.md). Con :- y sin valor: si no están en el .env, llegan vacías y
       # dispatch usa sus valores por defecto, que se definen en un solo lugar (src/config).
       TARIFA_BAJADA_CENTAVOS: ${TARIFA_BAJADA_CENTAVOS:-}

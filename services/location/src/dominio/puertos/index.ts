@@ -24,6 +24,21 @@ export interface RepositorioUbicaciones {
  * solo si el ping no es más viejo que la última posición publicada de ese chofer: devuelve
  * `atrasada` si lo descartó por eso. Lo que no se escucha, se pierde: no es un historial.
  */
+/** Un viaje de un chofer, según dispatch: `fin` null si sigue activo. */
+export interface TramoDeViaje {
+  choferId: string;
+  inicio: Date;
+  fin: Date | null;
+}
+
+/**
+ * Los viajes que conoce dispatch, para la retención del historial. Falla (lanza) si dispatch no
+ * contesta o la respuesta no cumple el contrato: quien llama conserva los pings.
+ */
+export interface TramosDeViaje {
+  tramos(choferes: readonly string[], desde: Date, hasta: Date): Promise<TramoDeViaje[]>;
+}
+
 export interface PublicadorPosiciones {
   publicar(ping: Ping): Promise<'publicada' | 'atrasada'>;
   /** Lo mismo en el canal del pasajero (`posicion-pasajero:`), con su propia marca de orden. */

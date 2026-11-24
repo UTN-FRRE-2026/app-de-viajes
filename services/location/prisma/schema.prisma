@@ -24,6 +24,9 @@ model Ping {
   // Solo la versión optimizada: id de la entrada del stream de Redis. Único, para que reescribir un
   // lote después de una caída no duplique filas. Nulo en las filas de la versión ingenua.
   streamId     String?  @unique @map("stream_id")
+  // Retención por viaje: NULL = sin clasificar; true = de un viaje (30 días). Los sin viaje se borran a
+  // las 24 h. El índice parcial (recorded_at, id) WHERE en_viaje IS NULL está en la migración 20261126000000.
+  enViaje      Boolean? @map("en_viaje")
 
   // La búsqueda toma la última posición de cada chofer (DISTINCT ON).
   @@index([choferId, registradoEn(sort: Desc)])

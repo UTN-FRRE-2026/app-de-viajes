@@ -90,6 +90,13 @@ export interface RepositorioDespacho {
    */
   ofertasPendientesDelChofer(choferId: string, ahora: Date): Promise<OfertaConSolicitud[]>;
   /**
+   * Los tramos de viaje de esos choferes que se superponen con [desde, hasta], para la retención del
+   * historial de location. Inicio: cuando se creó la oferta que el chofer aceptó (o la solicitud, si no
+   * hay oferta). Fin: el último cambio del viaje si ya terminó (en un estado final no cambia más); null
+   * si sigue activo.
+   */
+  tramosDeViaje(choferes: readonly string[], desde: Date, hasta: Date): Promise<TramoDeViaje[]>;
+  /**
    * Reporte de la flota: los viajes COMPLETADA con `fleet_id` = `flotaId` (la flota guardada al aceptar,
    * no la actual del chofer) e inicio en [inicio, fin), y sus cobros por estado. Los viajes sin flota
    * (NULL) no entran. Un viaje completado sin cobro cuenta como viaje y no suma en ningún estado.
@@ -112,6 +119,12 @@ export interface CobrosDeUnEstado {
 export interface DatosReporteFlota {
   viajesCompletados: number;
   cobros: { aprobados: CobrosDeUnEstado; pendientes: CobrosDeUnEstado; rechazados: CobrosDeUnEstado };
+}
+
+export interface TramoDeViaje {
+  choferId: string;
+  inicio: Date;
+  fin: Date | null;
 }
 
 export interface OfertaConSolicitud {

@@ -13,11 +13,12 @@ import type { Express } from 'express';
 import type { Redis } from 'ioredis';
 import type { Config } from './config/index.js';
 import { crearCasosDeUso, type CasosDeUso } from './dominio/casos-uso/index.js';
-import type { PublicadorPosiciones, RepositorioUbicaciones } from './dominio/puertos/index.js';
+import type { PublicadorPosiciones, RepositorioUbicaciones, TramosDeViaje } from './dominio/puertos/index.js';
 import { crearPrisma } from './infra/db/cliente.js';
 import type { PrismaClient } from './infra/db/generated/client.js';
 import { RepositorioUbicacionesIngenuo } from './infra/db/repositorio-ingenuo.js';
-import { purgarHistorial } from './infra/db/retencion.js';
+import { clasificarHistorial, purgarHistorial } from './infra/db/retencion.js';
+import { TramosDeViajeDispatch } from './infra/externos/tramos-dispatch.js';
 import { chequeosBase, conTiempoLimite } from './infra/db/salud.js';
 import { relojSistema } from './infra/externos/sistema.js';
 import { registrarMetricaPublicacion, registrarMetricasLocation } from './infra/http/metricas.js';
@@ -44,6 +45,8 @@ export interface Reemplazos {
   reloj?: Reloj;
   /** Solo optimizada: para simular caídas de Postgres en el historial. */
   escritorHistorial?: EscritorHistorial;
+  /** Los viajes de dispatch para la retención por viaje: uno propio, o `null` para no clasificar. */
+  tramos?: TramosDeViaje | null;
   /** Posición en vivo: un publicador propio, o `null` para desactivarla. */
   publicador?: PublicadorPosiciones | null;
 }
@@ -79,6 +82,14 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
   let cerrar = async () => {};
 
   // Retención del historial: la misma tabla `pings` en las dos estrategias con Postgres.
+  // Retención por viaje: los pings sin viaje duran menos. Hace falta preguntarle a dispatch; sin URL o
+  // sin token no se clasifica y todos duran la retención total (falla cerrado: nunca se borra de más).
+  const tramos: TramosDeViaje | null =
+    reemplazos.tramos !== undefined
+      ? reemplazos.tramos
+      : config.DISPATCH_URL && config.DISPATCH_TOKEN_SERVICIO
+        ? new TramosDeViajeDispatch({ urlBase: config.DISPATCH_URL, tokenServicio: config.DISPATCH_TOKEN_SERVICIO, timeoutMs: config.DISPATCH_TIMEOUT_MS })
+        : null;
   let detenerRetencion = async () => {};
   const iniciarRetencion = (prisma: PrismaClient) => {
     const purgar = purgarHistorial(prisma, {
@@ -86,7 +97,25 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
       reloj,
       lote: config.LOCATION_HISTORIAL_RETENCION_LOTE,
     });
-    detenerRetencion = iniciarBarrido(purgar, config.LOCATION_HISTORIAL_RETENCION_INTERVALO_MS, logger, 'historial de ubicaciones vencido');
+    const intervalo = config.LOCATION_HISTORIAL_RETENCION_INTERVALO_MS;
+    const detenerPurga = iniciarBarrido(purgar, intervalo, logger, 'historial de ubicaciones vencido');
+    let detenerClasificacion = async () => {};
+    if (tramos) {
+      const clasificar = clasificarHistorial(prisma, {
+        sinViajeMs: config.LOCATION_HISTORIAL_SIN_VIAJE_HORAS * 3_600_000,
+        reloj,
+        tramos,
+        lote: config.LOCATION_HISTORIAL_RETENCION_LOTE,
+        alFallar: (err) =>
+          logger.warn({ err: err instanceof Error ? err.message : String(err) }, 'retención: dispatch no respondió; los pings sin clasificar se conservan'),
+      });
+      detenerClasificacion = iniciarBarrido(clasificar, intervalo, logger, 'pings sin viaje vencidos');
+    } else {
+      logger.info('retención: sin DISPATCH_URL o DISPATCH_TOKEN_SERVICIO, los pings sin viaje se conservan hasta la retención total');
+    }
+    detenerRetencion = async () => {
+      await Promise.all([detenerPurga(), detenerClasificacion()]);
+    };
   };
 
   if (reemplazos.repo) {

@@ -57,6 +57,9 @@ export const EsquemaConfig = z
     // es de chofer. Mismo secreto y mismo nombre que en identity: el .env es compartido.
     IDENTITY_URL: z.string().url(),
     IDENTITY_TOKEN_SERVICIO: z.string().min(32, 'tiene que tener al menos 32 caracteres').max(256),
+    // Secreto compartido con location para POST /interno/tramos-viaje (retención del historial). Vacía o
+    // ausente: la ruta no se monta y location no borra pings por falta de viaje (falla cerrado).
+    DISPATCH_TOKEN_SERVICIO: vacioComoAusente(z.string().min(32, 'tiene que tener al menos 32 caracteres').max(256).optional()),
     IDENTITY_TIMEOUT_MS: z.coerce.number().int().min(50).max(10_000).default(1000),
     // Bearer de GET /metrics (Alloy). El mismo en los tres servicios: el .env es compartido.
     METRICAS_TOKEN: tokenMetricas,

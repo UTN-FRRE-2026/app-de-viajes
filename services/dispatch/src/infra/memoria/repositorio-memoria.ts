@@ -16,6 +16,7 @@ import type {
   Pagina,
   PeriodoReporte,
   RepositorioDespacho,
+  TramoDeViaje,
   TransaccionDespacho,
 } from '../../dominio/puertos/index.js';
 
@@ -70,6 +71,9 @@ export class RepositorioDespachoMemoria implements RepositorioDespacho {
   /** solicitudId → el updated_at de Postgres, como contador para que no haya empates. */
   private readonly cobrosActualizados = new Map<string, number>();
   private relojCobros = 0;
+
+  /** solicitudId → cuándo se confirmó su último cambio, como el updated_at de Postgres. */
+  private readonly actualizadas = new Map<string, Date>();
 
   private readonly locks = new Map<string, Mutex>();
   private readonly choferesReservados = new Set<string>();
@@ -182,6 +186,19 @@ export class RepositorioDespachoMemoria implements RepositorioDespacho {
     return { viajesCompletados, cobros };
   }
 
+  async tramosDeViaje(choferes: readonly string[], desde: Date, hasta: Date) {
+    // Como en Postgres, salvo el inicio: las ofertas en memoria no guardan cuándo se crearon, así que
+    // el tramo empieza con la solicitud (más temprano: conserva de más, nunca de menos).
+    const buscados = new Set(choferes);
+    const tramos: TramoDeViaje[] = [];
+    for (const s of this.solicitudes.values()) {
+      if (!s.choferId || !buscados.has(s.choferId)) continue;
+      const fin = CON_CHOFER.has(s.estado) ? null : (this.actualizadas.get(s.id) ?? s.creadaEn);
+      if (s.creadaEn <= hasta && (fin === null || fin >= desde)) tramos.push({ choferId: s.choferId, inicio: s.creadaEn, fin });
+    }
+    return tramos;
+  }
+
   async enTransaccion<T>(trabajo: (tx: TransaccionDespacho) => Promise<T>): Promise<T> {
     const soltar: Array<() => void> = [];
     const tomados = new Set<string>();
@@ -267,7 +284,10 @@ export class RepositorioDespachoMemoria implements RepositorioDespacho {
         if (liberadas.has(solicitudId)) this.asignaciones.delete(choferId);
       }
       for (const [choferId, solicitudId] of reservas) this.asignaciones.set(choferId, solicitudId);
-      for (const [id, d] of solicitudes) this.solicitudes.set(id, d);
+      for (const [id, d] of solicitudes) {
+        this.solicitudes.set(id, d);
+        this.actualizadas.set(id, new Date());
+      }
       for (const [id, d] of ofertas) this.ofertas.set(id, d);
       this.eventos.push(...eventos);
       for (const [id, d] of cobros) {

@@ -35,7 +35,38 @@ export interface OpcionesClienteInterno {
  *   `ErrorServicioInterno`. Qué hacer con él (503, reintentar en el barrido) lo decide quien llama.
  */
 export function crearClienteInterno({ servicio, urlBase, timeoutMs, encabezados = {} }: OpcionesClienteInterno) {
+  /** Hace el pedido con timeout, exige 2xx y valida el cuerpo con el esquema. Común a GET y POST. */
+  async function pedirJson<T extends z.ZodType>(url: URL, init: RequestInit, esquema: T): Promise<z.infer<T>> {
+    const senal = AbortSignal.timeout(timeoutMs);
+    let cuerpo: unknown;
+    try {
+      const res = await fetch(url, {
+        ...init,
+        headers: { accept: 'application/json', ...encabezados, ...(init.headers as Record<string, string> | undefined) },
+        signal: senal,
+      });
+      if (!res.ok) {
+        // Se descarta el cuerpo para liberar la conexión; no se loguea (puede traer datos del otro servicio).
+        await res.body?.cancel().catch(() => {});
+        throw new ErrorServicioInterno(servicio, 'estado', `respondió ${res.status}`, res.status);
+      }
+      cuerpo = await res.json();
+    } catch (err) {
+      if (err instanceof ErrorServicioInterno) throw err;
+      if (senal.aborted) throw new ErrorServicioInterno(servicio, 'timeout', `sin respuesta en ${timeoutMs} ms`);
+      if (err instanceof SyntaxError) throw new ErrorServicioInterno(servicio, 'respuesta', 'el cuerpo no es JSON');
+      throw new ErrorServicioInterno(servicio, 'red', err instanceof Error ? err.message : 'error de red');
+    }
+
+    const resultado = esquema.safeParse(cuerpo);
+    if (!resultado.success) {
+      throw new ErrorServicioInterno(servicio, 'respuesta', 'la respuesta no cumple el contrato');
+    }
+    return resultado.data;
+  }
+
   return {
+    /** GET con la query como parámetros de la URL. La firma no cambia: la usan dispatch → location e identity. */
     async getJson<T extends z.ZodType>(
       ruta: string,
       query: Record<string, string | number>,
@@ -43,29 +74,19 @@ export function crearClienteInterno({ servicio, urlBase, timeoutMs, encabezados 
     ): Promise<z.infer<T>> {
       const url = new URL(ruta, urlBase);
       for (const [clave, valor] of Object.entries(query)) url.searchParams.set(clave, String(valor));
+      return pedirJson(url, { method: 'GET' }, esquema);
+    },
 
-      const senal = AbortSignal.timeout(timeoutMs);
-      let cuerpo: unknown;
-      try {
-        const res = await fetch(url, { headers: { accept: 'application/json', ...encabezados }, signal: senal });
-        if (!res.ok) {
-          // Se descarta el cuerpo para liberar la conexión; no se loguea (puede traer datos del otro servicio).
-          await res.body?.cancel().catch(() => {});
-          throw new ErrorServicioInterno(servicio, 'estado', `respondió ${res.status}`, res.status);
-        }
-        cuerpo = await res.json();
-      } catch (err) {
-        if (err instanceof ErrorServicioInterno) throw err;
-        if (senal.aborted) throw new ErrorServicioInterno(servicio, 'timeout', `sin respuesta en ${timeoutMs} ms`);
-        if (err instanceof SyntaxError) throw new ErrorServicioInterno(servicio, 'respuesta', 'el cuerpo no es JSON');
-        throw new ErrorServicioInterno(servicio, 'red', err instanceof Error ? err.message : 'error de red');
-      }
-
-      const resultado = esquema.safeParse(cuerpo);
-      if (!resultado.success) {
-        throw new ErrorServicioInterno(servicio, 'respuesta', 'la respuesta no cumple el contrato');
-      }
-      return resultado.data;
+    /**
+     * POST con un cuerpo JSON, para consultas que no entran en una URL (por ejemplo, una lista de ids).
+     * Mismas garantías que `getJson`: timeout, 2xx y respuesta validada.
+     */
+    async postJson<T extends z.ZodType>(ruta: string, cuerpo: unknown, esquema: T): Promise<z.infer<T>> {
+      return pedirJson(
+        new URL(ruta, urlBase),
+        { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(cuerpo) },
+        esquema,
+      );
     },
   };
 }
