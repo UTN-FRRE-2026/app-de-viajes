@@ -88,3 +88,42 @@ export type ZonaRespuesta = z.infer<typeof ZonaRespuesta>;
 
 export const ZonasDeFlotaRespuesta = z.strictObject({ flotaId: z.uuid(), zonas: z.array(z.uuid()) });
 export type ZonasDeFlotaRespuesta = z.infer<typeof ZonasDeFlotaRespuesta>;
+
+// --- Reporte de viajes y facturación (docs/flotas.md#el-reporte-de-la-flota) ---
+
+/** Tope del período del reporte: acota la consulta, no es una regla del negocio. */
+export const REPORTE_DIAS_MAX = 366;
+const DIA_MS = 86_400_000;
+
+/** Un instante ISO 8601 con zona horaria (`Z` o `-03:00`): sin zona, el período sería ambiguo. */
+const Instante = z.iso.datetime({ offset: true });
+
+/**
+ * `GET /flota/reporte`: el período es [inicio, fin), sobre el inicio de cada viaje. La flota sale del
+ * token: una clave `fleetId` (o cualquier otra no declarada) da 400.
+ */
+export const ReporteFlotaQuery = z
+  .strictObject({ inicio: Instante, fin: Instante })
+  .refine(({ inicio, fin }) => Date.parse(inicio) < Date.parse(fin), { message: 'inicio tiene que ser anterior a fin', path: ['fin'] })
+  .refine(({ inicio, fin }) => Date.parse(fin) - Date.parse(inicio) <= REPORTE_DIAS_MAX * DIA_MS, {
+    message: `el período no puede pasar de ${REPORTE_DIAS_MAX} días`,
+    path: ['fin'],
+  });
+export type ReporteFlotaQuery = z.infer<typeof ReporteFlotaQuery>;
+
+const CobrosDeUnEstado = z.strictObject({ cantidad: z.number().int().min(0), centavos: z.number().int().min(0) });
+
+/**
+ * Los viajes COMPLETADA de la flota con inicio en el período. `facturadoCentavos` suma solo los cobros
+ * APROBADO de esos viajes; los pendientes y los rechazados se informan aparte y no se suman.
+ */
+export const ReporteFlotaRespuesta = z.strictObject({
+  flotaId: z.uuid(),
+  inicio: Instante,
+  fin: Instante,
+  moneda: z.literal('ARS'),
+  viajesCompletados: z.number().int().min(0),
+  facturadoCentavos: z.number().int().min(0),
+  cobros: z.strictObject({ aprobados: CobrosDeUnEstado, pendientes: CobrosDeUnEstado, rechazados: CobrosDeUnEstado }),
+});
+export type ReporteFlotaRespuesta = z.infer<typeof ReporteFlotaRespuesta>;

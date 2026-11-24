@@ -6,17 +6,23 @@ import {
   aplicarFlota,
   aplicarLecturaChofer,
   aplicarPagina,
+  aplicarReporte,
   LISTA_INICIAL,
   limiteRecarga,
   normalizarAlta,
   objetivoAlta,
   PAGINA,
+  pedirReporte,
+  REPORTE_INICIAL,
   vehiculoCoincide,
   type Chofer,
   type DatosAlta,
   type EstadoLista,
   type Flota,
   type PaginaChoferes,
+  type Periodo,
+  type Reporte,
+  type EstadoReporte,
 } from './logica';
 
 export type Accion = 'activar' | 'desactivar';
@@ -54,6 +60,8 @@ interface StoreFlota extends EstadoLista {
   /** Por chofer: mientras hay una, los botones de esa fila no se ofrecen. */
   operaciones: Record<string, Operacion>;
   alta: Alta | null;
+  /** El reporte de viajes y facturación del período elegido. */
+  reporte: EstadoReporte;
   reiniciar(): void;
   /** Relee el cupo y la lista (las filas ya cargadas). Al abrir, con «Actualizar» y al volver a la pestaña. */
   refrescar(): Promise<void>;
@@ -69,6 +77,8 @@ interface StoreFlota extends EstadoLista {
   /** Abandona un alta incierta: cierra su clave y libera el formulario. */
   descartarAlta(): void;
   cerrarAlta(): void;
+  /** Consulta el reporte de ese período. Solo se aplica la respuesta de la última consulta. */
+  consultarReporte(periodo: Periodo): Promise<void>;
 }
 
 // Fuera del estado: no hace falta redibujar por ellos.
@@ -80,6 +90,8 @@ let cupoEnVuelo = false;
 let cupoPendiente = false;
 /** Inicio de la última primera página aplicada: una recarga más vieja que llega tarde no la pisa. */
 let primeraPaginaAplicada = 0;
+/** La marca de cada consulta del reporte: un contador propio, aparte del de las mutaciones. */
+let marcaReporte = 0;
 const claves = new ClavesDeOperacion();
 
 const sin = <T>(r: Record<string, T>, k: string) => {
@@ -96,6 +108,7 @@ const INICIAL = {
   errorMas: null,
   operaciones: {},
   alta: null,
+  reporte: REPORTE_INICIAL,
 };
 
 export const useFlota = create<StoreFlota>()((set, get) => {
@@ -229,7 +242,22 @@ export const useFlota = create<StoreFlota>()((set, get) => {
       const lista = leerPagina(0, limiteRecarga(get().choferes.length)).catch((err: unknown) => {
         if (g === generacion) set({ errorLista: err });
       });
-      await Promise.all([get().releerCupo(), lista]);
+      const periodo = get().reporte.periodo;
+      await Promise.all([get().releerCupo(), lista, periodo ? get().consultarReporte(periodo) : null]);
+    },
+
+    async consultarReporte(periodo) {
+      const g = generacion;
+      const marca = ++marcaReporte;
+      set((e) => ({ reporte: pedirReporte(e.reporte, periodo, marca) }));
+      const query = new URLSearchParams({ inicio: periodo.inicio, fin: periodo.fin });
+      let resultado: { datos: Reporte } | { error: unknown };
+      try {
+        resultado = { datos: await pedir<Reporte>('GET', `/viajes/flota/reporte?${query.toString()}`) };
+      } catch (err) {
+        resultado = { error: err };
+      }
+      if (g === generacion) set((e) => ({ reporte: aplicarReporte(e.reporte, resultado, marca) }));
     },
 
     async releerCupo() {

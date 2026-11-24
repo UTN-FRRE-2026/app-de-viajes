@@ -81,12 +81,28 @@ Lo mismo con «Voy en camino», «Inició el viaje» y «Finalizar»: una clave 
 
 ## El panel de la flota (`/flota`)
 
-Para el `admin_flota` (`src/roles/flota/`, con la misma división que el chofer: `Panel.tsx`, `store.ts` y `logica.ts`). La flota es **la del token**: la pantalla nunca la manda y la API responde 404 a cualquier chofer de otra flota. Usa las rutas de [docs/flotas.md](flotas.md#rutas), sin cambios de API.
+Para el `admin_flota` (`src/roles/flota/`, con la misma división que el chofer: `Panel.tsx`, `store.ts` y `logica.ts`). La flota es **la del token**: la pantalla nunca la manda y la API responde 404 a cualquier chofer de otra flota. Usa las rutas de [docs/flotas.md](flotas.md#rutas).
 
 - **El cupo:** «Activos 3 de 5», de `GET /flota`. Con la flota llena, un aviso fijo: «La flota llegó a su límite de 5 choferes activos. Para activar a otro, desactivá uno: así se libera un cupo». El mismo texto aparece en la fila si un «Activar» recibe 409 `LIMITE_FLOTA_ALCANZADO`. El botón no se deshabilita por el contador local: puede estar viejo, y el que decide es el servidor.
 - **La lista:** `GET /flota/choferes` responde `{ choferes, siguiente }`. Muestra 10 por página, con «Ver más» mientras `siguiente` no sea null. «Actualizar» y volver a la pestaña releen el cupo y las filas ya cargadas, en un solo pedido de hasta 50. No hay eventos de flotas: así se ve una habilitación nueva o la disponibilidad que cambió el chofer.
 - **La habilitación es del admin de la plataforma.** Un chofer sin habilitar dice «Pendiente de habilitación por el admin de la plataforma», y su «Activar» queda deshabilitado. El panel no habilita.
 - **El alta:** el código del chofer (su UUID) y el vehículo. identity no permite buscar cuentas por email, así que el chofer ve su código en `/chofer` mientras no está en una flota, con un botón para copiarlo. Los errores tienen su texto: `CUENTA_NO_ES_CHOFER`, `CHOFER_YA_REGISTRADO`, `PATENTE_YA_REGISTRADA` y `IDENTITY_NO_DISPONIBLE`.
+
+**Viajes y facturación** (`GET /flota/reporte`, reglas en [docs/flotas.md](flotas.md#el-reporte-de-la-flota)):
+- dos fechas, «desde» y «hasta», las dos incluidas. Al abrir, el mes en curso;
+- se mandan como la medianoche local del «desde» y la del día siguiente al «hasta»;
+- un rango al revés o de más de 366 días se avisa sin pedir nada.
+
+Qué se muestra:
+- «Facturado», en grande: solo los cobros aprobados;
+- los viajes completados;
+- en una nota, los pendientes de cobro y los rechazados, con su monto;
+- sin viajes: «No hay viajes completados en ese período».
+
+**Cada consulta lleva su propia marca** (un contador del reporte, aparte del de las mutaciones):
+- solo se aplica la respuesta, o el error, de la última pedida. Si se eligen dos períodos seguidos, la respuesta del primero no pisa al segundo, aunque llegue después;
+- con otro período, los números del anterior se dejan de mostrar mientras carga;
+- «Actualizar» y volver a la pestaña releen también el reporte del período elegido.
 
 **Operaciones con resultado incierto** (red, 5xx o `CLAVE_IDEMPOTENCIA_EN_CURSO`). Cada operación tiene su clave en `ClavesDeOperacion`:
 - `activar:<id>` y `desactivar:<id>`;

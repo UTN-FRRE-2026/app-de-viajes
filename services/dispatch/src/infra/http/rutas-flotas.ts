@@ -5,8 +5,10 @@ import {
   GuardarZonaBody,
   ListadoChoferesQuery,
   ParamsId,
+  ReporteFlotaQuery,
   SinBody,
   ZonasDeFlotaBody,
+  type ReporteFlotaRespuesta,
   type ZonaRespuesta,
   type ZonasDeFlotaRespuesta,
 } from '@viajes/contracts';
@@ -109,6 +111,13 @@ export function montarRutasFlotas(
 
   r.get('/flota', requerirRol('admin_flota'), async (req, res) => {
     res.set('Cache-Control', 'no-store').json(await casos.flotaPropia(usuarioDe(req)));
+  });
+
+  // Viajes y facturación de la flota del token en un período [inicio, fin).
+  r.get('/flota/reporte', requerirRol('admin_flota'), validar({ query: ReporteFlotaQuery }), async (req, res) => {
+    const { inicio, fin } = req.query as unknown as ReporteFlotaQuery;
+    const reporte: ReporteFlotaRespuesta = await casos.reporte(usuarioDe(req), { inicio: new Date(inicio), fin: new Date(fin) });
+    res.set('Cache-Control', 'no-store').json(reporte);
   });
 
   r.get('/flota/choferes', requerirRol('admin_flota'), validar({ query: ListadoChoferesQuery }), async (req, res) => {

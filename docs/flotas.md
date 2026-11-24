@@ -1,6 +1,6 @@
 # Flotas (variante G)
 
-> **Estado:** PR 1 y PR 2 de flotas, y el panel `/flota` de la web ([docs/web.md](web.md#el-panel-de-la-flota-flota)). Hecho: flotas con límite de choferes activos, alta de choferes con su vehículo, habilitación, activación con la **carrera G**, disponibilidad, aislamiento entre flotas, **zonas operativas en PostGIS**, **filtro de candidatos por flota y zona** y **revalidación al aceptar** (con la flota guardada en el viaje). **Falta:** el reporte de viajes y facturación por flota.
+> **Estado:** PR 1 y PR 2 de flotas, y el panel `/flota` de la web ([docs/web.md](web.md#el-panel-de-la-flota-flota)). Hecho: flotas con límite de choferes activos, alta de choferes con su vehículo, habilitación, activación con la **carrera G**, disponibilidad, aislamiento entre flotas, **zonas operativas en PostGIS**, **filtro de candidatos por flota y zona** y **revalidación al aceptar** (con la flota guardada en el viaje), y el **reporte de viajes y facturación** por flota ([abajo](#el-reporte-de-la-flota)).
 
 Vive dentro de dispatch ([PLAN.md](../PLAN.md) §3.3): comparte la base y, en el PR siguiente, la transacción con la asignación de viajes.
 
@@ -181,6 +181,36 @@ Nadie los toma al revés, así que no hay ciclo.
 - **en el barrido:** se resuelve la zona y se guarda. Fuera de toda zona, no hay candidatos y queda `SIN_CHOFERES`;
 - **los viajes históricos,** ya terminados, no se tocan: no se sabe qué flota tenía el chofer entonces.
 
+## El reporte de la flota
+
+`GET /flota/reporte?inicio&fin`, para el `admin_flota`, siempre sobre la flota de su token. Lo muestra el panel `/flota` ([docs/web.md](web.md#el-panel-de-la-flota-flota)).
+
+**Qué viajes cuentan:**
+- los `COMPLETADA` con `ride_requests.fleet_id` igual al `fleetId` del token: la flota guardada al aceptar, no la actual del chofer (un cambio de flota futuro no reescribe la historia);
+- los que tienen `fleet_id` NULL (los de antes de las zonas) **no entran**;
+- los demás estados (en curso, cancelados) no cuentan.
+
+**El período:**
+- `[inicio, fin)`, instantes ISO 8601 con zona horaria, comparados contra `started_at`, el inicio del viaje;
+- `inicio < fin` y como mucho 366 días. Si no, o con una fecha sin zona o una clave extra en la query (por ejemplo `fleetId`), da 400;
+- la web manda la medianoche local del «desde» y la del día siguiente al «hasta», así las dos fechas quedan incluidas.
+
+**La facturación:**
+- `facturadoCentavos` es la suma de los cobros **`APROBADO`** de esos mismos viajes;
+- se agrupa por el período del viaje, no por la fecha del cobro: un cobro que se aprueba después aparece en el período de su viaje al releer;
+- los **pendientes** y los **rechazados** se informan aparte (`cobros.pendientes` y `cobros.rechazados`, con cantidad y monto) y no se suman;
+- un viaje completado sin cobro (sin tarifa) cuenta como viaje y suma cero.
+
+**Los montos:**
+- en Postgres, `SUM(bigint)` es `numeric`: los totales se leen como texto y pasan a `number` solo si son un entero seguro;
+- si no lo son, el pedido falla con 500. Nunca se devuelve un monto redondeado (`infra/db/importes.ts`).
+
+**Cómo responde:**
+- un período sin viajes da 200 con todo en cero;
+- sin `fleetId` en el token, 403 `FLOTA_NO_ASIGNADA`, y con una flota que dispatch no conoce, 404.
+
+**La consulta:** una sola lectura (`LEFT JOIN payments`, con `COUNT` y `SUM … FILTER` por estado), sobre el índice `(fleet_id, status, started_at)` de la migración `20261128000000_reporte_flota`.
+
 ## Datos de demo y de carga
 
 - **Demo** (`npm run demo:flotas`, contra el Compose): crea por la API las zonas «CABA» y «Norte».
@@ -203,6 +233,7 @@ Nadie los toma al revés, así que no hay ciclo.
 | `POST /admin/choferes/:id/habilitar` y `/deshabilitar` | `admin` | Deshabilitar libera el cupo si estaba activo |
 | `GET /flota` | `admin_flota` | Su flota: nombre, límite y activos |
 | `GET /flota/choferes?limite&desde` | `admin_flota` | Los choferes de su flota, con `siguiente` para paginar |
+| `GET /flota/reporte?inicio&fin` | `admin_flota` | Viajes completados y facturación de su flota en `[inicio, fin)` ([el reporte](#el-reporte-de-la-flota)). Contrato: `ReporteFlotaRespuesta` |
 | `POST /flota/choferes` `{choferId, vehiculo:{patente, marca, modelo}}` | `admin_flota` | Alta en su flota (201) |
 | `GET /flota/choferes/:id` | `admin_flota` | 404 si es de otra flota |
 | `POST /flota/choferes/:id/activar` y `/desactivar` | `admin_flota` | Ocupa o libera el cupo |
@@ -228,6 +259,16 @@ Todas las escrituras llevan `Idempotency-Key`. Los demás roles reciben 403 `ROL
   - los `CHECK` de la base.
 - **Seguridad** (`tests/seguridad/flotas.test.ts`): 401 y 403 en cada ruta, `admin_flota` sin flota, y la validación de los cuerpos.
 - **Dominio** (`tests/dominio/flotas.test.ts`): las reglas de `ChoferFlota` y el alcance en cada caso de uso.
+- **El reporte:**
+  - **contra Postgres** (`tests/integracion/reporte-flota.test.ts`):
+    - dos flotas que no ven los viajes ni los cobros de la otra;
+    - cobros aprobados, pendientes y rechazados: solo suman los aprobados;
+    - un viaje completado sin cobro;
+    - un período vacío y los bordes `[inicio, fin)`;
+    - quedan fuera los viajes sin flota y los que no están completados;
+    - un total grande exacto y uno que pasa 2^53, que da 500;
+  - **la validación de la query**, en `tests/seguridad/flotas.test.ts`;
+  - **en memoria y la conversión de los totales**, en `tests/dominio/reporte-flota.test.ts`.
 - **El adaptador de identity** (`tests/externos/directorio-identity.test.ts`): cada forma de fallar da 503.
 - **De punta a punta:** en identity, `tests/integracion/compatibilidad-dispatch.test.ts` levanta el dispatch real y verifica el alta contra el identity real.
 - **La ruta interna de identity** (`tests/seguridad/interno.test.ts`).
@@ -248,14 +289,9 @@ Todas las escrituras llevan `Idempotency-Key`. Los demás roles reciben 403 `ROL
 
 ## Lo que sigue
 
-- **El reporte por flota:** choferes activos, viajes y facturación.
-  - **Los activos ya están:** el cupo de `GET /flota`, que mantiene la carrera G.
-  - **La base ya está desde este PR:** `ride_requests.fleet_id` se guarda al aceptar, en la misma transacción, desde la fila del chofer bloqueada.
-    - Contar por la flota *actual* del chofer, con un JOIN a `drivers`, no sería confiable: un cambio de flota o una baja futuros reescribirían la historia.
-    - Los viajes de antes de este PR quedan con `fleet_id` NULL y no se cuentan.
-  - **Falta:**
-    - un índice `(fleet_id, status, started_at)` para consultar por un período acotado;
-    - la consulta;
-    - decidir si la facturación sale de la tarifa final de los `COMPLETADO` o de los cobros aprobados.
+- **Más detalle en el reporte**, si hace falta:
+  - el desglose por chofer;
+  - exportarlo;
+  - facturar por la fecha de aprobación del cobro.
 - **Las zonas en la web:** el panel del admin de la plataforma.
 - **Borrar zonas:** hoy no se borran. Las solicitudes y las flotas las referencian.

@@ -1,6 +1,7 @@
-import type { ChoferFlotaRespuesta, FlotaRespuesta, Vehiculo } from '@viajes/contracts';
+import type { ChoferFlotaRespuesta, FlotaRespuesta, ReporteFlotaRespuesta, Vehiculo } from '@viajes/contracts';
 import { ErrorApi } from '../../api/errores';
 import { textoDeError } from '../../componentes/MensajeError';
+import { pesos } from '../../viaje/viaje';
 
 /**
  * Lógica pura del panel de la flota (sin React ni fetch), para poder testearla.
@@ -168,3 +169,98 @@ export function vehiculoCoincide(c: Chofer, d: DatosAlta): boolean {
 }
 
 export const textoVehiculo = (v: Vehiculo) => `${v.marca} ${v.modelo} (${v.patente})`;
+
+// --- Reporte de viajes y facturación (`GET /flota/reporte`) ---
+
+export type Reporte = ReporteFlotaRespuesta;
+
+/** El período que se manda a la API: [inicio, fin), instantes ISO. */
+export interface Periodo {
+  inicio: string;
+  fin: string;
+}
+
+/** El mismo tope que `REPORTE_DIAS_MAX` de contracts (sin traer zod al bundle). */
+export const REPORTE_DIAS_MAX = 366;
+
+const FECHA = /^(\d{4})-(\d{2})-(\d{2})$/;
+const dosDigitos = (n: number) => String(n).padStart(2, '0');
+
+/** `YYYY-MM-DD` de una fecha, en la hora local (la de `<input type="date">`). */
+export const fechaLocal = (d: Date) => `${d.getFullYear()}-${dosDigitos(d.getMonth() + 1)}-${dosDigitos(d.getDate())}`;
+
+/** El mes en curso, del 1 a hoy: lo que muestra el reporte al abrir el panel. */
+export function mesEnCurso(hoy: Date): { desde: string; hasta: string } {
+  return { desde: fechaLocal(new Date(hoy.getFullYear(), hoy.getMonth(), 1)), hasta: fechaLocal(hoy) };
+}
+
+/** Una fecha `YYYY-MM-DD` válida → sus partes; null si no existe (31/02) o está mal formada. */
+function partes(texto: string): [number, number, number] | null {
+  const m = FECHA.exec(texto);
+  if (!m) return null;
+  const [a, mes, dia] = [Number(m[1]), Number(m[2]), Number(m[3])];
+  const d = new Date(a, mes - 1, dia);
+  return d.getFullYear() === a && d.getMonth() === mes - 1 && d.getDate() === dia ? [a, mes, dia] : null;
+}
+
+/**
+ * Dos fechas locales, las dos incluidas → el período de la API: `inicio` es la medianoche local de
+ * `desde` y `fin`, la del día siguiente a `hasta` (excluida). Así «del 1 al 30» incluye todo el 30.
+ */
+export function periodoDeFechas(desde: string, hasta: string): { periodo: Periodo } | { error: string } {
+  const d = partes(desde);
+  const h = partes(hasta);
+  if (!d || !h) return { error: 'Elegí las dos fechas.' };
+  const dias = (Date.UTC(h[0], h[1] - 1, h[2]) - Date.UTC(d[0], d[1] - 1, d[2])) / 86_400_000 + 1;
+  if (dias < 1) return { error: 'La fecha «desde» tiene que ser anterior o igual a «hasta».' };
+  if (dias > REPORTE_DIAS_MAX) return { error: `El período puede tener como mucho ${REPORTE_DIAS_MAX} días.` };
+  const inicio = new Date(d[0], d[1] - 1, d[2]);
+  const fin = new Date(h[0], h[1] - 1, h[2] + 1);
+  return { periodo: { inicio: inicio.toISOString(), fin: fin.toISOString() } };
+}
+
+/**
+ * El reporte en pantalla. Cada consulta lleva su propia marca (un contador del reporte): solo se
+ * aplica la respuesta, o el error, de la última pedida. Si se consultan dos períodos seguidos, la
+ * respuesta del primero, aunque llegue después, no pisa al último elegido.
+ */
+export interface EstadoReporte {
+  /** La marca de la última consulta pedida; 0 si todavía no se pidió ninguna. */
+  pedido: number;
+  periodo: Periodo | null;
+  /** El reporte de `periodo`; null mientras se carga uno de otro período. */
+  datos: Reporte | null;
+  cargando: boolean;
+  error: unknown;
+}
+
+export const REPORTE_INICIAL: EstadoReporte = { pedido: 0, periodo: null, datos: null, cargando: false, error: null };
+
+const mismoPeriodo = (a: Periodo | null, b: Periodo) => a !== null && a.inicio === b.inicio && a.fin === b.fin;
+
+/** Empieza una consulta. Con otro período, los números del anterior se dejan de mostrar. */
+export function pedirReporte(e: EstadoReporte, periodo: Periodo, marca: number): EstadoReporte {
+  return { pedido: marca, periodo, datos: mismoPeriodo(e.periodo, periodo) ? e.datos : null, cargando: true, error: null };
+}
+
+/** La respuesta (o el error) de la consulta `marca`: se descarta si no es la última pedida. */
+export function aplicarReporte(e: EstadoReporte, resultado: { datos: Reporte } | { error: unknown }, marca: number): EstadoReporte {
+  if (marca !== e.pedido) return e;
+  return 'datos' in resultado
+    ? { ...e, datos: resultado.datos, cargando: false, error: null }
+    : { ...e, cargando: false, error: resultado.error };
+}
+
+const plural = (n: number, uno: string, varios: string) => `${n} ${n === 1 ? uno : varios}`;
+
+export const textoFacturado = (r: Reporte) => pesos(r.facturadoCentavos);
+export const textoViajes = (r: Reporte) => plural(r.viajesCompletados, 'viaje completado', 'viajes completados');
+
+/** Lo que no se factura: los cobros pendientes y los rechazados, con su monto. */
+export function textoSinFacturar(r: Reporte): string {
+  const { pendientes, rechazados } = r.cobros;
+  return (
+    `Pendientes de cobro: ${pendientes.cantidad} (${pesos(pendientes.centavos)}) · ` +
+    `Rechazados: ${rechazados.cantidad} (${pesos(rechazados.centavos)}). Solo se factura lo aprobado.`
+  );
+}

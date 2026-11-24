@@ -23,6 +23,8 @@ beforeEach(async () => {
   [choferId] = (await preparar.choferes(flotaId, 1)) as [string];
 });
 
+const PERIODO = 'inicio=2026-11-01T00:00:00-03:00&fin=2026-12-01T00:00:00-03:00';
+
 type Ruta = { metodo: 'get' | 'post' | 'put'; ruta: () => string; cuerpo?: () => object; roles: Rol[] };
 
 const RUTAS: Ruta[] = [
@@ -31,6 +33,7 @@ const RUTAS: Ruta[] = [
   { metodo: 'post', ruta: () => `/admin/choferes/${choferId}/deshabilitar`, cuerpo: () => ({}), roles: ['admin'] },
   { metodo: 'get', ruta: () => '/flota', roles: ['admin_flota'] },
   { metodo: 'get', ruta: () => '/flota/choferes', roles: ['admin_flota'] },
+  { metodo: 'get', ruta: () => `/flota/reporte?${PERIODO}`, roles: ['admin_flota'] },
   { metodo: 'get', ruta: () => `/flota/choferes/${choferId}`, roles: ['admin_flota'] },
   {
     metodo: 'post',
@@ -110,6 +113,29 @@ describe('validación', () => {
     for (const cuerpo of [{ disponible: 'si' }, { disponible: true, choferId: randomUUID() }, {}]) {
       expect((await request(d.url).put('/chofer/disponibilidad').set(clave()).set(auth).send(cuerpo)).status).toBe(400);
     }
+  });
+
+  it.each([
+    ['sin fin', 'inicio=2026-11-01T00:00:00Z'],
+    ['sin inicio', 'fin=2026-11-01T00:00:00Z'],
+    ['inicio igual a fin', 'inicio=2026-11-01T00:00:00Z&fin=2026-11-01T00:00:00Z'],
+    ['inicio después de fin', 'inicio=2026-11-02T00:00:00Z&fin=2026-11-01T00:00:00Z'],
+    ['más de 366 días', 'inicio=2025-01-01T00:00:00Z&fin=2026-01-02T00:00:01Z'],
+    ['una fecha sin zona horaria', 'inicio=2026-11-01T00:00:00&fin=2026-12-01T00:00:00Z'],
+    ['una fecha sola', 'inicio=2026-11-01&fin=2026-12-01'],
+    ['la flota en la query', `${PERIODO}&fleetId=${randomUUID()}`],
+    ['una clave extra', `${PERIODO}&estado=COMPLETADA`],
+  ])('GET /flota/reporte rechaza %s con 400', async (_caso, query) => {
+    const res = await request(d.url).get(`/flota/reporte?${query}`).set(await d.authFlota(randomUUID(), flotaId));
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDACION');
+  });
+
+  it('GET /flota/reporte acepta 366 días justos', async () => {
+    const res = await request(d.url)
+      .get('/flota/reporte?inicio=2024-01-01T00:00:00Z&fin=2025-01-01T00:00:00Z')
+      .set(await d.authFlota(randomUUID(), flotaId));
+    expect(res.status).toBe(200);
   });
 
   it('las escrituras de /flota exigen Idempotency-Key', async () => {

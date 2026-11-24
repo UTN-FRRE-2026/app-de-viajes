@@ -36,7 +36,7 @@ describe('zonas y elegibilidad en memoria', () => {
   it('superpuesta → 409, inválida → 422; el filtro exige habilitado, activo, disponible, sin viaje y la zona', async () => {
     const flotas = new RepositorioFlotasMemoria();
     const directorio = new DirectorioFalso();
-    const casos = crearCasosDeFlotas({ repoFlotas: flotas, directorio });
+    const casos = crearCasosDeFlotas({ repoFlotas: flotas, directorio, viajes: new RepositorioDespachoMemoria() });
     await casos.guardarZona(NORTE);
     await expect(casos.guardarZona({ id: 'c', nombre: 'Centro', anillo: rect(-58.45, -34.58, -58.35, -34.52) })).rejects.toMatchObject({
       codigo: 'ZONAS_SUPERPUESTAS',
