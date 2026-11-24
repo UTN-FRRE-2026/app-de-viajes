@@ -25,7 +25,7 @@ import { clasificarHistorial, purgarHistorial } from './infra/db/retencion.js';
 import { TramosDeViajeDispatch } from './infra/externos/tramos-dispatch.js';
 import { chequeosBase, conTiempoLimite } from './infra/db/salud.js';
 import { relojSistema } from './infra/externos/sistema.js';
-import { registrarMetricaPublicacion, registrarMetricasLocation } from './infra/http/metricas.js';
+import { registrarMetricaPings, registrarMetricaPublicacion, registrarMetricasLocation } from './infra/http/metricas.js';
 import { rutasUbicacion } from './infra/http/rutas.js';
 import { RepositorioUbicacionesMemoria } from './infra/memoria/repositorio-memoria.js';
 import { clavesUbicacion } from './infra/redis/claves.js';
@@ -227,6 +227,7 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
       verificador,
       config.LOCATION_TOKEN_SERVICIO,
       limitarTasa({ contador: contadorTasa, nombre: 'ubicaciones', maximo: config.LIMITE_UBICACIONES_POR_MINUTO, ventanaMs: 60_000, logger }),
+      registrarMetricaPings(metricas, config.UBICACION_ESTRATEGIA),
     ),
     chequeos,
     metricas: { metricas, token: config.METRICAS_TOKEN },

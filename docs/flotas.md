@@ -1,6 +1,6 @@
 # Flotas (variante G)
 
-> **Estado:** PR 1 y PR 2 de flotas, y el panel `/flota` de la web ([docs/web.md](web.md#el-panel-de-la-flota-flota)). Hecho: flotas con límite de choferes activos, alta de choferes con su vehículo, habilitación, activación con la **carrera G**, disponibilidad, aislamiento entre flotas, **zonas operativas en PostGIS**, **filtro de candidatos por flota y zona** y **revalidación al aceptar** (con la flota guardada en el viaje), y el **reporte de viajes y facturación** por flota ([abajo](#el-reporte-de-la-flota)).
+> **Estado:** PR 1 y PR 2 de flotas, y el panel `/flota` de la web ([docs/web.md](web.md#el-panel-de-la-flota-flota)). Hecho: flotas con límite de choferes activos, alta de choferes con su vehículo, habilitación, activación con la **carrera G**, disponibilidad, aislamiento entre flotas, **zonas operativas en PostGIS**, **filtro de candidatos por flota y zona** y **revalidación al aceptar** (con la flota guardada en el viaje), el **caché de zonas en Redis** ([abajo](#el-caché-de-zonas-redis)), y el **reporte de viajes y facturación** por flota ([abajo](#el-reporte-de-la-flota)).
 
 Vive dentro de dispatch ([PLAN.md](../PLAN.md) §3.3): comparte la base y, en el PR siguiente, la transacción con la asignación de viajes.
 
@@ -181,6 +181,37 @@ Nadie los toma al revés, así que no hay ciclo.
 - **en el barrido:** se resuelve la zona y se guarda. Fuera de toda zona, no hay candidatos y queda `SIN_CHOFERES`;
 - **los viajes históricos,** ya terminados, no se tocan: no se sabe qué flota tenía el chofer entonces.
 
+## El caché de zonas (Redis)
+
+Cada solicitud pregunta en qué zona está el origen (`ST_Covers` en PostGIS) y, en cada lote de candidatos, qué flotas operan en esa zona. Las zonas casi no cambian, así que eso sale de Redis (`infra/zonas/`):
+
+**Qué se cachea:** el **mapa de zonas**: todas las zonas con su polígono y las flotas que tienen cada una habilitada. Sale de una sola consulta a Postgres (`ElegibilidadPrisma.mapaDeZonas`), así que es una foto coherente.
+
+**Para qué se usa** (`ElegibilidadConCache`), solo en la búsqueda previa a la oferta:
+- **la zona del origen** se calcula en JavaScript con los polígonos del mapa (rayo horizontal), sin PostGIS;
+  - si el punto está a menos de `1e-7` grados (unos 11 mm) de algún lado de alguna zona, decide PostGIS: ahí está la regla del borde (`ST_Covers` y la zona de menor id), y JavaScript y PostGIS podrían no coincidir por redondeo (`ST_AsGeoJSON` devuelve 9 decimales). Lejos de los bordes dan lo mismo;
+- **el filtro de candidatos** toma del mapa las flotas de la zona (`d.fleet_id = ANY($flotas)` en vez del `JOIN fleet_zones`). Una zona sin flotas no consulta la base;
+  - el estado de cada chofer (habilitado, activo, disponible, sin viaje) **no se cachea**: cambia todo el tiempo y se lee de Postgres, como antes.
+
+**Lo que no usa el caché:** la **aceptación**. Revalida al chofer y la zona de su flota con Postgres, con `FOR SHARE`, dentro de su transacción ([arriba](#aceptar-revalidación-y-la-carrera-con-la-flota)). Un mapa viejo puede hacer que se le ofrezca un viaje a un chofer cuya flota ya perdió la zona, y la aceptación lo rechaza (409 `CHOFER_NO_APTO`); nunca hace que se asigne. Tampoco lo usa la transacción de la aceptación para resolver la zona de una solicitud sin zona.
+
+**Claves** (en el Redis de dispatch):
+- `dispatch:zonas:generacion`: un token al azar, sin TTL;
+- `dispatch:zonas:mapa:<generacion>`: el mapa en JSON, con TTL `ZONAS_CACHE_TTL_SEGUNDOS` (60 s por defecto; `0` desactiva el caché).
+
+**La invalidación, por generación:**
+1. `PUT /admin/zonas/:id` y `PUT /admin/flotas/:id/zonas`, **después del COMMIT** y antes de responder, ponen una generación nueva (`zonasCambiadas`). Lo guardado con la anterior deja de leerse, y el pedido siguiente es un MISS que lee Postgres.
+2. Quien lee, lee primero la generación, después Postgres, y guarda lo que leyó con la generación que leyó. Por eso un MISS lento que guarda una foto vieja la guarda con una generación que ya nadie lee: no pisa la nueva.
+3. Si la invalidación falla (Redis no responde), el cambio se guarda igual (200) y se avisa en el log. El mapa viejo se usa como mucho el TTL: esa es la red de seguridad, y la aceptación sigue protegida.
+
+**Si Redis falla o tarda** más de 200 ms, se usan las consultas de siempre en Postgres: el caché nunca es un punto de falla ni un 503. Lo que vuelve de Redis se valida: una entrada rota cuenta como MISS.
+
+**Métrica:** `dispatch_zonas_cache_total{resultado}`, con `hit`, `miss` y `error`, como la de tarifas.
+
+**Zonas cambiadas por SQL** (`carga/flotas.sql`, los tests): no pasan por los casos de uso, así que no invalidan. `carga/limpiar.ps1` borra las claves `dispatch:*` antes de aplicar `flotas.sql`; si no, hay que borrar `dispatch:zonas:generacion` o esperar el TTL.
+
+**En memoria** (`DISPATCH_PERSISTENCIA=memoria`) no hay caché: la elegibilidad en memoria ya no consulta a nadie. `cacheZonasMemoria` existe para los tests.
+
 ## El reporte de la flota
 
 `GET /flota/reporte?inicio&fin`, para el `admin_flota`, siempre sobre la flota de su token. Lo muestra el panel `/flota` ([docs/web.md](web.md#el-panel-de-la-flota-flota)).
@@ -285,6 +316,10 @@ Todas las escrituras llevan `Idempotency-Key`. Los demás roles reciben 403 `ROL
   - `completo` con la respuesta original;
   - la revalidación al aceptar y las solicitudes sin zona;
   - la versión en memoria.
+- **El caché de zonas:**
+  - **contra PostGIS y Redis** (`tests/integracion/zonas-cache.test.ts`): MISS y después HIT; una entrada rota; crear o mover una zona y quitarle o devolverle la zona a una flota, que el pedido siguiente ya ve; sin la invalidación, el caché queda viejo; Redis que falla (y uno de verdad que no responde), con todo desde Postgres; y la aceptación que no lo usa: con el caché viejo, al chofer le llega la oferta, pero aceptar da 409 `CHOFER_NO_APTO`;
+  - **dominio** (`tests/dominio/zonas-cache.test.ts`): la geometría (adentro, afuera, cerca del borde, huecos), HIT, MISS y error, la generación vieja que no se lee, y el aviso de los casos de flotas solo si el cambio confirmó;
+  - comprobado que los tests de invalidación fallan si `zonasCambiadas` no invalida.
 - **Comprobado que fallan** sin el `FOR SHARE` del chofer, sin el de la zona de la flota, sin el advisory lock de las zonas, y con `completo` calculado después de excluir.
 
 ## Lo que sigue

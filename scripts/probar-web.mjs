@@ -1,14 +1,17 @@
 // Prueba el contenedor web (nginx) de punta a punta, contra el Compose levantado:
 //
 //   docker compose up -d --build
-//   node scripts/probar-web.mjs [url]        (por defecto http://localhost:<WEB_PUERTO o 8080>)
+//   node scripts/probar-web.mjs [url] [archivo .env]   (por defecto http://localhost:<WEB_PUERTO o 8080> y .env)
+//
+// Contra el entorno publicado: node scripts/probar-web.mjs https://<dominio> deploy/.env.produccion
 //
 // Revisa la página y su CSP, que la API llegue a los tres servicios, que lo interno no se publique y
 // que el SSE pase sin buffer. Para el SSE entra como el pasajero del seed (`npm run setup` lo carga),
 // con IDENTITY_SEED_CONTRASENA del .env. Termina con código 1 si algo falla.
 import { leerEnv } from './lib/entorno.mjs';
 
-const env = { ...leerEnv(), ...process.env };
+// El .env de donde sale la contraseña del seed: el de desarrollo, o el del entorno publicado.
+const env = { ...leerEnv(process.argv[3]), ...process.env };
 const BASE = (process.argv[2] ?? `http://localhost:${env.WEB_PUERTO || 8080}`).replace(/\/$/, '');
 const CSP =
   "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https://tile.openstreetmap.org; connect-src 'self'; " +

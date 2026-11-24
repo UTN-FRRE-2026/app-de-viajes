@@ -88,7 +88,7 @@ Toda respuesta que pasó por el contador trae `RateLimit-Limit`, `RateLimit-Rema
 - **Sirve cualquier refresh de la sesión**, aunque ya se haya usado o vencido. Con uno viejo, `/refresh` ya revocaría todo por reuso, así que esto no habilita ningún ataque nuevo.
 - **No pide el access token.** Así funciona aunque ya haya vencido, que es lo normal en quien vuelve a la app después de un rato.
 - **Logout y refresh al mismo tiempo.** El logout usa la misma revocación que la detección de reuso, con el lock por familia. Si una renovación de esa sesión está en curso, el logout la espera y revoca también el token que esa renovación acaba de crear: la renovación responde `200`, pero su refresh ya no sirve. Lo cubre un test de concurrencia.
-- **El access token ya emitido no se invalida.** Sigue valiendo hasta su `exp`, que depende de `JWT_TTL_SEGUNDOS` (15 minutos por defecto). dispatch lo verifica solo con la firma y el vencimiento, usando el JWKS, sin consultar a identity. Al cerrar sesión, el cliente tiene que descartarlo.
+- **El access token ya emitido no se invalida.** Sigue valiendo hasta su `exp`, que depende de `JWT_TTL_SEGUNDOS` (15 minutos por defecto). dispatch y location lo verifican solo con la firma y el vencimiento, usando el JWKS, sin consultar a identity. Al cerrar sesión, el cliente tiene que descartarlo.
   - Es una decisión: el plan v2 descarta la denylist de `jti`, y ninguna consigna exige invalidarlo al instante.
   - Si hiciera falta, habría que cambiar los servicios consumidores, no solo identity: una denylist en Redis consultada por `autenticar` en `platform` (fallando cerrado si Redis no responde) o una consulta a identity en cada pedido. La alternativa sin código es bajar `JWT_TTL_SEGUNDOS`.
 - Sin límite de intentos, igual que `/refresh`: con 256 bits no hay nada que adivinar.
@@ -384,6 +384,6 @@ Queda fuera:
 - Rotación de claves: el JWKS publica una sola clave.
 - Rehash de contraseñas si se suben los parámetros de argon2.
 - Eventos de identity (no existe la mensajería en `platform`).
-- OpenAPI y ADR 3 (JWT).
+- OpenAPI (la referencia de la API está en [api.md](api.md)). La decisión del JWT está en el [ADR 0003](adr/0003-jwt-autorizacion-recurso.md).
 
 `docker-compose.yml` ya define el servicio `identity`, pero el contenedor no aplica migraciones: igual que en dispatch, hay que correrlas desde el host.

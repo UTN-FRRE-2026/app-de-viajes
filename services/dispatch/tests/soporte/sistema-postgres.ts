@@ -1,5 +1,6 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 import type { AddressInfo } from 'node:net';
+import type { Reloj } from '@viajes/kernel';
 import type { Server } from 'node:http';
 import {
   almacenIdempotenciaSql,
@@ -18,6 +19,7 @@ import { RepositorioFlotasPrisma, type OpcionesFlotasPrisma } from '../../src/in
 import { RepositorioTarifasPrisma, type OpcionesTarifasPrisma } from '../../src/infra/db/tarifas-prisma.js';
 import { cacheTarifasRedis, type CacheTarifas } from '../../src/infra/tarifas/proveedor-tarifas.js';
 import { ElegibilidadPrisma } from '../../src/infra/db/zonas-prisma.js';
+import { cacheZonasRedis, type CacheZonas } from '../../src/infra/zonas/cache-zonas.js';
 import { BuscadorDeTest, prepararZonaDeTest } from './aptos.js';
 import { BusEventosRedis } from '../../src/infra/tiempo-real/bus-redis.js';
 import { HistorialEventosPrisma, relayOutboxPrisma } from '../../src/infra/tiempo-real/outbox-prisma.js';
@@ -79,13 +81,22 @@ export async function levantarDispatch({
   demoraTrasLeerMs = 0,
   idempotencia = (reales) => reales,
   tarifas = {},
+  zonas,
   flotas = {},
   despacho = {},
   extra = {},
+  reloj,
 }: {
   demoraTrasLeerMs?: number;
+  /** El reloj de los casos de uso. Por defecto, el del sistema (por ejemplo, `relojPorContexto`). */
+  reloj?: Reloj;
   idempotencia?: (reales: Idempotencia) => Idempotencia;
   tarifas?: OpcionesTarifasTest;
+  /**
+   * Con el caché de zonas en Redis (un prefijo propio). Sin esta opción no hay caché de zonas: los tests
+   * cambian zonas por SQL, y eso no lo invalida. `cache` recibe el real y puede devolver otro.
+   */
+  zonas?: { cache?: (real: CacheZonas) => CacheZonas | null };
   /** Flotas en Postgres; por ejemplo, una demora con el chofer bloqueado para superponer activaciones. */
   flotas?: OpcionesFlotasPrisma;
   /** Despacho en Postgres; por ejemplo, una demora en la aceptación con el chofer ya revalidado. */
@@ -114,9 +125,12 @@ export async function levantarDispatch({
   const cacheReal = cacheTarifasRedis(redis, { prefijo: prefijoCache, ttlSegundos: 60, timeoutMs: 200 });
   const repoFlotas = new RepositorioFlotasPrisma(prisma, flotas);
   const directorio = new DirectorioFalso();
+  const prefijoCacheZonas = `dispatch-test:zonas:${randomUUID()}:`;
+  const cacheZonasReal = cacheZonasRedis(redis, { prefijo: prefijoCacheZonas, ttlSegundos: 60, timeoutMs: 200 });
   const config = configTest({ ...tarifas.config, ...extra });
   const sistema = componer(config, logger, {
     verificador: tokens.verificador,
+    ...(reloj ? { reloj } : {}),
     buscador,
     elegibilidad: new ElegibilidadPrisma(prisma),
     repo: demoraTrasLeerMs
@@ -128,6 +142,7 @@ export async function levantarDispatch({
     }),
     repoTarifas,
     cacheTarifas: tarifas.cache ? tarifas.cache(cacheReal) : cacheReal,
+    cacheZonas: zonas ? (zonas.cache ? zonas.cache(cacheZonasReal) : cacheZonasReal) : null,
     pagos,
     repoFlotas,
     directorio,
@@ -158,6 +173,7 @@ export async function levantarDispatch({
     app: sistema.app,
     repoTarifas,
     prefijoCache,
+    prefijoCacheZonas,
     ...tokens,
     async limpiar() {
       await prisma.$executeRawUnsafe('TRUNCATE outbox, driver_active_assignment, offers, payments, ride_requests, idempotency_keys');

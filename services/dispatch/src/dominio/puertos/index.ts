@@ -180,6 +180,12 @@ export interface ElegibilidadChoferes {
    * disponibles, sin viaje activo y de una flota con la zona habilitada.
    */
   aptos(ids: readonly string[], zonaId: string): Promise<string[]>;
+  /**
+   * Aviso de que cambiaron las zonas o las de una flota, después del COMMIT, para el caché de zonas:
+   * el próximo pedido ya ve el cambio. No lanza. La aceptación no depende de esto: revalida con
+   * Postgres en su transacción.
+   */
+  zonasCambiadas?(): Promise<void>;
 }
 
 /**

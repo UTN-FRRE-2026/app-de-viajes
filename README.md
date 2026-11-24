@@ -75,6 +75,7 @@ Detalle de los límites, la comunicación, el despliegue y la observabilidad: [d
 | **pino** | 10.4 | Logs JSON, con el `requestId` de cada pedido |
 | **@prometheus-io/client** | 0.16 | `GET /metrics` en los tres servicios: lag del event loop, memoria, duración por ruta y métricas de negocio |
 | **nginx** (`nginx-unprivileged`) | 1.27 | Contenedor `web`: frontend, reverse proxy, CSP de la página, SSE sin buffer |
+| **Caddy** | 2.10.2 | Solo en el entorno publicado (`deploy/`): HTTPS con certificado automático de Let's Encrypt y HSTS, delante de nginx ([docs/despliegue.md](docs/despliegue.md)) |
 | **React** | 19.3 | Frontend (`apps/web`) |
 | **Vite** | 8.3 | Build y servidor de desarrollo del frontend |
 | **Zustand** | 5.1 | Estado del frontend: sesión y un store por pantalla |
@@ -83,6 +84,7 @@ Detalle de los límites, la comunicación, el despliegue y la observabilidad: [d
 | **Vitest** + **supertest** | 4.1 / 7.3 | Tests de dominio, integración, concurrencia y seguridad, contra Postgres y Redis reales |
 | **Playwright** | 1.64 | Cinco flujos end to end contra el sistema en Docker Compose (`e2e/`) |
 | **k6** (`grafana/k6`) | 1.8.2 | Simulador de 500 choferes, solicitudes bajo carga, estrés y la carrera de 6.3 (`carga/`) |
+| **Grafana Alloy** (`grafana/alloy`) | 1.21.3 | Perfil opcional `obs` del Compose: lee `/metrics` y los logs JSON de los tres servicios y los manda a Grafana Cloud, con tres dashboards en `observabilidad/` ([docs/observabilidad.md](docs/observabilidad.md)) |
 | **ESLint** + `typescript-eslint` | 10 / 8.72 | Lint, incluida la regla que impide que el dominio importe infraestructura |
 | **tsx** | 4.23 | `npm run dev`: los servicios con recarga, sobre el código fuente |
 | **Docker** + **Docker Compose** | — | Una imagen por servicio (`Dockerfile` genérico con `SERVICE`) y otra para `web`; el sistema entero con un `docker compose up` |
@@ -126,6 +128,10 @@ npm run dev           # identity (3001), location (3004) y dispatch (3005) en un
 - **Un solo servicio**, con el `.env` cargado y su puerto fijo: `npm run local -- identity` (o `location`, `dispatch`; solo en PowerShell). Más detalles en [docs/identity.md](docs/identity.md) y [docs/location.md](docs/location.md).
 
 `DISPATCH_LOG_SQL=1` muestra cada query en el log, incluido el `SELECT ... FOR UPDATE`.
+
+`npm run demo:apagado` muestra el apagado ordenado: SIGTERM a dispatch con un pedido lento en curso; el pedido termina con 200, una conexión nueva se rechaza y el proceso sale con 0 (en WSL o Linux; no necesita nada levantado).
+
+**Entorno publicado** (el del ataque cruzado): `node deploy/desplegar.mjs <dominio>` en una máquina con Docker y Node 22. Solo publica Caddy (HTTPS) en 80 y 443, con secretos propios y location en la versión optimizada. Ver [docs/despliegue.md](docs/despliegue.md).
 
 **Métricas:** los tres servicios publican `GET /metrics` en formato de Prometheus, con `Authorization: Bearer <METRICAS_TOKEN>` (del `.env`). Incluye el lag del event loop, la memoria y la duración por ruta; dispatch suma solicitudes, asignaciones, ofertas vencidas y el tiempo hasta la asignación. `/metrics` no se publica por nginx: se lee en el puerto de cada servicio.
 
@@ -258,6 +264,7 @@ docs/                documentación, ADR y mediciones
 - [docs/modelo.md](docs/modelo.md): el modelo de datos y la máquina de estados del viaje.
 - [docs/api.md](docs/api.md): la API completa, con los errores de cada ruta.
 - [docs/demo.md](docs/demo.md): el guion de la demo, paso a paso. La colección de pedidos: [docs/demo.http](docs/demo.http).
+- [docs/despliegue.md](docs/despliegue.md): el entorno publicado para el ataque cruzado (Caddy con HTTPS, secretos, `deploy/desplegar.mjs`) y cómo congelarlo.
 
 **Por servicio y módulo**
 - [docs/identity.md](docs/identity.md): contrato de identity, token, contraseñas, límite de login, usuarios de prueba y prueba manual.
@@ -270,15 +277,20 @@ docs/                documentación, ADR y mediciones
 
 **Calidad y mediciones**
 - [docs/ci.md](docs/ci.md): los jobs del CI, Playwright y Semgrep.
+- [docs/observabilidad.md](docs/observabilidad.md): qué miden las métricas y los logs, Grafana Alloy (perfil `obs`), las credenciales de Grafana Cloud, los tres dashboards y qué mirar durante k6.
 - [docs/mediciones.md](docs/mediciones.md): informe de mediciones (6.6, 6.3 y solicitudes bajo carga y estrés), con las corridas en [docs/mediciones/](docs/mediciones). Cómo reproducirlas: [carga/README.md](carga/README.md).
 - [docs/ataque.md](docs/ataque.md): guía y bitácora del ataque cruzado. Los scripts de carreras e idempotencia, en [ataque/](ataque/README.md).
 
 **Decisiones de arquitectura** ([docs/adr](docs/adr))
 - [0001](docs/adr/0001-typescript-esm.md): TypeScript estricto con módulos ES.
+- [0002](docs/adr/0002-postgres-prisma.md): PostgreSQL con PostGIS, una base por servicio, y Prisma con SQL a mano donde no llega.
+- [0003](docs/adr/0003-jwt-autorizacion-recurso.md): JWT RS256 verificado por JWKS, y la autorización por recurso en el caso de uso.
 - [0004](docs/adr/0004-asignacion-unica.md): asignación única con `FOR UPDATE` y restricción única del chofer.
 - [0005](docs/adr/0005-tarea-pesada.md): la tarea pesada, con Redis GEO e historial en cola.
 - [0006](docs/adr/0006-tres-microservicios.md): tres microservicios.
 - [0007](docs/adr/0007-tiempo-real-sse.md): tiempo real con SSE, outbox y Redis Pub/Sub.
+- [0008](docs/adr/0008-busqueda-geografica.md): búsqueda de candidatos con Redis GEO y el filtro por flota y zona en dispatch.
+- [0009](docs/adr/0009-limite-flota.md): límite de choferes activos por flota con `UPDATE` condicional y `CHECK`.
 - [0010](docs/adr/0010-idempotencia.md): `Idempotency-Key` obligatoria.
 - [0011](docs/adr/0011-vencimiento-ofertas.md): vencimiento de ofertas con el reloj del servidor y barrido periódico.
 - [0012](docs/adr/0012-inventario-carreras.md): inventario de carreras y qué garantiza cada invariante.

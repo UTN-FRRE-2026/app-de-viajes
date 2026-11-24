@@ -228,6 +228,11 @@ export interface OpcionesDespachoPrisma {
    * al chofer o quitarle la zona a la flota.
    */
   trasValidarChofer?: () => Promise<void>;
+  /**
+   * Cuánto dura el reclamo de un cobro por el barrido si nadie lo suelta (la instancia murió). Tiene que
+   * superar lo que tarda un barrido entero: hasta 20 cobros, cada uno con el timeout del proveedor.
+   */
+  reclamoCobroMs?: number;
 }
 
 function transaccion(tx: Prisma.TransactionClient, opciones: OpcionesDespachoPrisma = {}): TransaccionDespacho {
@@ -399,6 +404,10 @@ export class RepositorioDespachoPrisma implements RepositorioDespacho {
     private readonly opciones: OpcionesDespachoPrisma = {},
   ) {}
 
+  private get reclamoCobroMs() {
+    return this.opciones.reclamoCobroMs ?? 120_000;
+  }
+
   async enTransaccion<T>(trabajo: (tx: TransaccionDespacho) => Promise<T>): Promise<T> {
     // Si el pedido HTTP trae Idempotency-Key, el registro va en esta misma transacción.
     const idempotencia = idempotenciaPendiente();
@@ -463,13 +472,28 @@ export class RepositorioDespachoPrisma implements RepositorioDespacho {
     // Por el último intento, no por la creación: cada fallo actualiza updated_at y manda el cobro al
     // final de la cola. Si no, los mismos `limite` cobros que fallan se elegirían en cada barrido y los
     // más nuevos no se intentarían nunca.
-    const filas = await this.prisma.cobro.findMany({
-      where: { estado: 'PENDIENTE' },
-      orderBy: [{ actualizadoEn: 'asc' }, { id: 'asc' }],
-      select: { solicitudId: true },
-      take: limite,
-    });
-    return filas.map((f) => f.solicitudId);
+    //
+    // Además los **reclama**: con más de una instancia, dos barridos no eligen el mismo cobro ni llaman
+    // dos veces al proveedor. SKIP LOCKED salta los que otro barrido está reclamando en ese momento, y
+    // `claimed_until` los que ya reclamó y está procesando. El reclamo se suelta al fallar
+    // (registrarFalloCobro); si la instancia muere a mitad de camino, vence solo.
+    const filas = await this.prisma.$queryRaw<{ solicitud_id: string; actualizado: Date; id: string }[]>`
+      UPDATE payments p
+      SET claimed_until = now() + ${this.reclamoCobroMs}::float8 * interval '1 millisecond'
+      FROM (
+        SELECT id
+        FROM payments
+        WHERE status = 'PENDIENTE' AND (claimed_until IS NULL OR claimed_until < now())
+        ORDER BY updated_at, id
+        LIMIT ${limite}::int
+        FOR UPDATE SKIP LOCKED
+      ) elegidos
+      WHERE p.id = elegidos.id
+      RETURNING p.request_id AS solicitud_id, p.updated_at AS actualizado, p.id`;
+    // RETURNING no garantiza el orden: se reordena igual que la elección.
+    return filas
+      .sort((a, b) => a.actualizado.getTime() - b.actualizado.getTime() || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
+      .map((f) => f.solicitud_id);
   }
 
   async viajeConChoferDelPasajero(pasajeroId: string) {
@@ -561,7 +585,8 @@ export class RepositorioDespachoPrisma implements RepositorioDespacho {
     // Solo si sigue pendiente: un fallo que llega tarde no toca un cobro ya resuelto.
     await this.prisma.cobro.updateMany({
       where: { id: cobroId, estado: 'PENDIENTE' },
-      data: { intentosFallidos: { increment: 1 }, ultimoError: motivo.slice(0, 500), actualizadoEn: new Date() },
+      // Suelta el reclamo del barrido: el próximo lo reintenta (al final de la cola, por updated_at).
+      data: { intentosFallidos: { increment: 1 }, ultimoError: motivo.slice(0, 500), actualizadoEn: new Date(), reclamadoHasta: null },
     });
   }
 }

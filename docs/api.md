@@ -76,7 +76,7 @@ El encabezado se revisa después del rol y de validar el cuerpo: un pedido recha
 - **Solicitudes y ubicaciones fallan abierto:** si el contador no responde, el pedido pasa y queda un aviso en el log. Protegen la capacidad, no un secreto.
 - Los límites de solicitudes y ubicaciones son de ventana fija de 60 s, y con `0` se desactivan (el entorno de carga). Las dos rutas de location comparten el mismo contador por usuario.
 - En `POST /solicitudes` el límite corre **después** de la `Idempotency-Key`: un reintento con la misma clave recibe la respuesta guardada sin gastar cupo, y un 429 no queda guardado con la clave. Detalle en [docs/seguridad.md](seguridad.md#límite-de-tasa).
-- El de los streams SSE se cuenta en cada instancia de dispatch.
+- El de los streams SSE se cuenta entre todas las instancias de dispatch (Redis), y falla abierto: si Redis no responde, queda el límite de cada instancia.
 
 ## identity (`/api/identity`)
 

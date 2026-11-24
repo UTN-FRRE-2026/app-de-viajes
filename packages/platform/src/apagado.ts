@@ -33,10 +33,14 @@ export function registrarApagadoOrdenado({ servidor, logger, alEmpezar = [], alC
     limite.unref();
 
     for (const cortar of alEmpezar) cortar();
+    // Una conexión keep-alive que estaba atendiendo un pedido queda ociosa al responder, y `close` la
+    // esperaría hasta su timeout: se cierran las ociosas cada 100 ms mientras se drena.
+    const barrerOciosas = setInterval(() => servidor.closeIdleConnections(), 100);
     await new Promise<void>((resolver) => {
       servidor.close(() => resolver());
       servidor.closeIdleConnections();
     });
+    clearInterval(barrerOciosas);
     logger.info('apagado: pedidos drenados, cerrando recursos');
     for (const cerrar of alCerrar) await cerrar();
     logger.info('apagado: listo');

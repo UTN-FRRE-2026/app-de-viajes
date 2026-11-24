@@ -29,6 +29,9 @@ export const EsquemaConfig = z
     // Cuánto se guarda cada respuesta para los reintentos (como mínimo), y cada cuánto se borra lo vencido.
     IDEMPOTENCIA_RETENCION_HORAS: z.coerce.number().int().min(1).max(720).default(24),
     IDEMPOTENCIA_PURGA_INTERVALO_MS: z.coerce.number().int().min(1000).max(3_600_000).default(60_000),
+    // Eventos ya publicados del outbox: se conservan para reponer lo perdido al reconectar el SSE
+    // (Last-Event-ID). Pasado esto, se borran (en la misma pasada que la purga de idempotencia).
+    OUTBOX_RETENCION_HORAS: vacioComoAusente(z.coerce.number().int().min(1).max(720).default(24)),
     JWKS_URL: z.string().url(),
     JWT_ISSUER: z.string().min(1),
     JWT_AUDIENCE: z.string().min(1),
@@ -83,6 +86,9 @@ export const EsquemaConfig = z
     // Caché en Redis de los parámetros de cada versión de tarifa. Las versiones no cambian: el TTL
     // solo limpia las que dejaron de usarse.
     TARIFAS_CACHE_TTL_SEGUNDOS: vacioComoAusente(z.coerce.number().int().min(60).max(86_400).default(3600)),
+    // Caché en Redis de las zonas (polígonos y flotas de cada una). Se invalida al editarlas; el TTL es
+    // la red de seguridad si la invalidación falla o si se cambian por SQL. 0 lo desactiva.
+    ZONAS_CACHE_TTL_SEGUNDOS: vacioComoAusente(z.coerce.number().int().min(0).max(3600).default(60)),
     // Demora artificial del simulado, solo para demostrar el timeout. 0 en uso normal.
     MAPAS_LATENCIA_SIMULADA_MS: vacioComoAusente(z.coerce.number().int().min(0).max(30_000).default(0)),
     // Pagos simulado. Si no contesta en PAGOS_TIMEOUT_MS, el cobro queda PENDIENTE (falla cerrado) y

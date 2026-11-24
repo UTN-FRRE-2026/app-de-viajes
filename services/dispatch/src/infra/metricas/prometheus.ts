@@ -2,16 +2,24 @@ import { Counter, Histogram, type Metricas } from '@viajes/platform';
 import type { MetricasDespacho } from '../../dominio/puertos/index.js';
 import type { ResultadoCache } from '../tarifas/proveedor-tarifas.js';
 
-/** Caché de tarifas: HIT, MISS y errores (cuando Redis falla y se lee Postgres). */
-export function contadorCacheTarifas({ registro }: Metricas): (resultado: ResultadoCache) => void {
-  const lecturas = new Counter({
-    name: 'dispatch_tarifas_cache_total',
-    help: 'Lecturas del caché de tarifas: hit, miss, o error (se usó Postgres).',
-    labelNames: ['resultado'] as const,
-    registers: [registro],
-  });
+function contadorCache({ registro }: Metricas, name: string, help: string): (resultado: ResultadoCache) => void {
+  const lecturas = new Counter({ name, help, labelNames: ['resultado'] as const, registers: [registro] });
   for (const r of ['hit', 'miss', 'error'] as const) lecturas.inc({ resultado: r }, 0);
   return (resultado) => lecturas.inc({ resultado });
+}
+
+/** Caché de tarifas: HIT, MISS y errores (cuando Redis falla y se lee Postgres). */
+export function contadorCacheTarifas(metricas: Metricas): (resultado: ResultadoCache) => void {
+  return contadorCache(metricas, 'dispatch_tarifas_cache_total', 'Lecturas del caché de tarifas: hit, miss, o error (se usó Postgres).');
+}
+
+/** Caché de zonas: HIT, MISS y errores (cuando Redis falla y se lee Postgres). */
+export function contadorCacheZonas(metricas: Metricas): (resultado: ResultadoCache) => void {
+  return contadorCache(
+    metricas,
+    'dispatch_zonas_cache_total',
+    'Lecturas del caché de zonas (polígonos y flotas de cada zona): hit, miss, o error (se usó Postgres).',
+  );
 }
 
 /** Métricas de negocio de dispatch, en el mismo Registry que las comunes de `platform`. */

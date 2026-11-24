@@ -1,0 +1,122 @@
+// Grafana Alloy del perfil `obs` (docker-compose.yml): lee /metrics de los tres servicios y los logs JSON
+// de sus contenedores, y los manda a Grafana Cloud. Detalle: docs/observabilidad.md.
+//
+// Todo lo variable llega por el entorno del contenedor, que arma el Compose desde el .env:
+// - GRAFANA_CLOUD_*: credenciales y URL de Grafana Cloud. Nunca van en este archivo.
+// - OBS_METRICAS_TOKEN: el Bearer de /metrics (por defecto, el METRICAS_TOKEN de los servicios).
+// - OBS_IDENTITY, OBS_LOCATION, OBS_DISPATCH: host:puerto de cada servicio en la red interna.
+// - OBS_ENTORNO: etiqueta `entorno` de las métricas (desarrollo, carga).
+// - OBS_INTERVALO: cada cuánto se lee /metrics.
+
+// --- Métricas ---
+
+prometheus.scrape "servicios" {
+	job_name = "app-viajes"
+	targets  = [
+		{"__address__" = sys.env("OBS_IDENTITY"), "entorno" = sys.env("OBS_ENTORNO")},
+		{"__address__" = sys.env("OBS_LOCATION"), "entorno" = sys.env("OBS_ENTORNO")},
+		{"__address__" = sys.env("OBS_DISPATCH"), "entorno" = sys.env("OBS_ENTORNO")},
+	]
+	metrics_path    = "/metrics"
+	scrape_interval = sys.env("OBS_INTERVALO")
+	scrape_timeout  = "5s"
+	// /metrics exige `Authorization: Bearer <token>` (packages/platform/src/metricas.ts).
+	bearer_token = sys.env("OBS_METRICAS_TOKEN")
+	forward_to   = [prometheus.remote_write.grafana_cloud.receiver]
+}
+
+prometheus.remote_write "grafana_cloud" {
+	endpoint {
+		url = sys.env("GRAFANA_CLOUD_PROM_URL")
+
+		basic_auth {
+			username = sys.env("GRAFANA_CLOUD_PROM_USUARIO")
+			password = sys.env("GRAFANA_CLOUD_TOKEN")
+		}
+	}
+}
+
+// --- Logs ---
+
+// Los contenedores, por el socket de Docker (montado de solo lectura). Funciona igual en Docker Desktop
+// (Windows, macOS) y en Linux: no depende de dónde guarda Docker los archivos de log.
+discovery.docker "contenedores" {
+	host             = "unix:///var/run/docker.sock"
+	refresh_interval = "15s"
+}
+
+// Solo los tres servicios (logs JSON de pino), de cualquier proyecto de Compose: el de desarrollo
+// (app-viajes) o el de carga (viajes-carga). Ni nginx, ni Postgres, ni Redis.
+discovery.relabel "servicios" {
+	targets = discovery.docker.contenedores.targets
+
+	rule {
+		source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+		regex         = "identity|location|dispatch"
+		action        = "keep"
+	}
+
+	rule {
+		source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+		target_label  = "servicio"
+	}
+
+	rule {
+		source_labels = ["__meta_docker_container_label_com_docker_compose_project"]
+		target_label  = "proyecto"
+	}
+
+	rule {
+		source_labels = ["__meta_docker_container_name"]
+		regex         = "/(.*)"
+		target_label  = "contenedor"
+	}
+}
+
+loki.source.docker "servicios" {
+	host       = "unix:///var/run/docker.sock"
+	targets    = discovery.relabel.servicios.output
+	forward_to = [loki.process.pino.receiver]
+}
+
+// Una línea de pino: {"level":30,"time":1795511526954,...,"msg":"..."}. El nivel pasa a etiqueta con su
+// nombre (Grafana colorea por `level`) y la hora del log es la de pino. El resto (requestId, ruta, estado)
+// queda en la línea: se filtra con `| json` en la consulta, sin crear una serie por pedido.
+loki.process "pino" {
+	stage.json {
+		expressions = {
+			level = "level",
+			hora  = "time",
+		}
+	}
+
+	stage.template {
+		source   = "level"
+		template = "{{ if eq .Value \"60\" }}fatal{{ else if eq .Value \"50\" }}error{{ else if eq .Value \"40\" }}warn{{ else if eq .Value \"30\" }}info{{ else if eq .Value \"20\" }}debug{{ else if eq .Value \"10\" }}trace{{ else }}{{ .Value }}{{ end }}"
+	}
+
+	stage.labels {
+		values = {
+			level = "",
+		}
+	}
+
+	stage.timestamp {
+		source            = "hora"
+		format            = "UnixMs"
+		action_on_failure = "skip"
+	}
+
+	forward_to = [loki.write.grafana_cloud.receiver]
+}
+
+loki.write "grafana_cloud" {
+	endpoint {
+		url = sys.env("GRAFANA_CLOUD_LOKI_URL")
+
+		basic_auth {
+			username = sys.env("GRAFANA_CLOUD_LOKI_USUARIO")
+			password = sys.env("GRAFANA_CLOUD_TOKEN")
+		}
+	}
+}

@@ -18,6 +18,8 @@ const detenerPurga = iniciarBarrido(
   logger,
   'claves de idempotencia vencidas borradas',
 );
+// Los eventos ya publicados del outbox, pasada OUTBOX_RETENCION_HORAS: si no, la tabla crece con cada evento.
+const detenerPurgaOutbox = iniciarBarrido(sistema.purgarOutbox, config.IDEMPOTENCIA_PURGA_INTERVALO_MS, logger, 'eventos del outbox vencidos borrados');
 
 const servidor = sistema.app.listen(config.PUERTO, () => {
   logger.info({ puerto: config.PUERTO, persistencia: config.DISPATCH_PERSISTENCIA, buscador: config.DISPATCH_BUSCADOR }, 'dispatch escuchando');
@@ -37,5 +39,5 @@ registrarApagadoOrdenado({
   timeoutMs: config.APAGADO_TIMEOUT_MS,
   // Los streams SSE no terminan solos: se cortan al empezar, y el cliente se reconecta a otra instancia.
   alEmpezar: [() => sistema.streams.cerrarTodos()],
-  alCerrar: [detenerBarrido, detenerCobros, detenerRelay, detenerPurga, sistema.cerrar],
+  alCerrar: [detenerBarrido, detenerCobros, detenerRelay, detenerPurga, detenerPurgaOutbox, sistema.cerrar],
 });

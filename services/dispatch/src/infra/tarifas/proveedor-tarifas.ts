@@ -22,7 +22,8 @@ const soloParametros = (t: ParametrosTarifa): ParametrosTarifa => ({
   maxMetros: t.maxMetros,
 });
 
-function conTiempoLimite<T>(promesa: Promise<T>, ms: number): Promise<T> {
+/** Corta una operación del caché que tarda: la usan también las zonas (`infra/zonas/cache-zonas.ts`). */
+export function conTiempoLimite<T>(promesa: Promise<T>, ms: number): Promise<T> {
   let timer: NodeJS.Timeout | undefined;
   const vencido = new Promise<never>((_, rechazar) => {
     timer = setTimeout(() => rechazar(new Error(`caché sin respuesta en ${ms} ms`)), ms);

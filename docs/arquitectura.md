@@ -185,9 +185,9 @@ Otros entornos del mismo repo:
 **Métricas** de `/metrics`:
 - en los tres: `http_request_duration_seconds` (por ruta), `event_loop_lag_seconds` y `event_loop_lag_ms`, `process_resident_memory_bytes` y `nodejs_heap_used_bytes`;
 - en dispatch: `dispatch_solicitudes_total`, `dispatch_asignaciones_total`, `dispatch_ofertas_vencidas_total`, `dispatch_busquedas_sin_aptos_total`, `dispatch_tiempo_hasta_asignacion_seconds` y `dispatch_tarifas_cache_total`;
-- en location: `location_estrategia`, `location_historial_descartados_total` y `location_posiciones_publicadas_total`, entre otras.
+- en location: `location_pings_total` (pings por segundo), `location_estrategia`, `location_historial_descartados_total` y `location_posiciones_publicadas_total`, entre otras.
 
-Las mediciones de k6 leen estas métricas al empezar y al terminar cada ventana ([carga/README.md](../carga/README.md)). El envío a Grafana Cloud con Alloy y los dashboards están planificados (PLAN 5.6) y todavía no están en el repo.
+Las mediciones de k6 leen estas métricas al empezar y al terminar cada ventana ([carga/README.md](../carga/README.md)). Grafana Alloy, en el perfil opcional `obs` del Compose, manda las métricas y los logs a Grafana Cloud, donde están los tres dashboards de `observabilidad/dashboards/` ([docs/observabilidad.md](observabilidad.md)).
 
 ## Monorepo no es monolito
 
