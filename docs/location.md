@@ -253,14 +253,14 @@ dispatch llama a `GET /interno/candidatos` desde el adaptador `BuscadorCandidato
    - El barrido **no** marca `SIN_CHOFERES`: registra el error y reintenta en la pasada siguiente. Mientras tanto, la oferta vencida no se puede aceptar, porque el vencimiento se decide con el reloj.
    - Un 4xx de location es un error de programación en dispatch (token o contrato mal configurado): se loguea como `error`, no como `warn`, y también da 503.
    - location **no** está en el `/ready` de dispatch: con location caído, el login, las consultas y las aceptaciones siguen andando.
-4. **`excluir`:** lo resuelve dispatch. Pide `limite + excluidos` (mínimo 10, máximo 100) y saca a los ya ofrecidos. Con solo ese filtro, un lote completo siempre deja `limite` aptos, así que alcanza con un pedido.
+4. **`excluir` y el filtro de flotas y zonas:** los resuelve dispatch, con lotes crecientes (ver abajo). El adaptador pide exactamente el `limite` que le piden y dice si el lote vino completo.
 5. **Para demos sin location**, `DISPATCH_BUSCADOR=fijo` vuelve a la lista de `DISPATCH_CANDIDATOS_DEMO`.
 
 Tests: `services/dispatch/tests/externos/buscador-location.test.ts` (contra un location falso: pedido, orden, excluidos y cada forma de fallar) y `tests/integracion/location.test.ts` (dispatch completo con Postgres: 201 con ofertas, 503 sin viaje creado, `/ready` y el barrido).
 
-### Pendiente para cuando dispatch filtre por flota y zona: lotes crecientes
+### Lotes crecientes (hecho, PR 2 de flotas)
 
-Cuando entre el filtro de Agos (disponibilidad, viaje activo, flota y zona), puede pasar que los N más cercanos no sirvan aunque haya choferes aptos un poco más lejos. Con un solo lote, dispatch marcaría `SIN_CHOFERES` de más. La propuesta, sin cambiar el contrato:
+Con el filtro de flotas y zonas ([docs/flotas.md](flotas.md#el-filtro-de-candidatos)), puede pasar que los N más cercanos no sirvan aunque haya choferes aptos un poco más lejos. Con un solo lote, dispatch marcaría `SIN_CHOFERES` de más. Así quedó, sin cambiar el contrato (`dominio/casos-uso/buscar-aptos.ts`):
 
 1. Pedir `limite = necesarios + excluidos`, con un mínimo de 10.
 2. Filtrar en dispatch: excluidos, no disponibles, con viaje activo, de otra flota o zona.
@@ -268,9 +268,14 @@ Cuando entre el filtro de Agos (disponibilidad, viaje activo, flota y zona), pue
 4. Si no alcanzan y location devolvió el lote **completo** (tantos como `limite`), puede haber más: pedir de nuevo con el doble de `limite`, hasta el máximo de 100.
 5. Si location devolvió **menos** que `limite`, no hay más vigentes en el radio: se ofrece a los que quedaron y, si no queda ninguno, `SIN_CHOFERES`.
 
-Son como máximo 5 pedidos (10, 20, 40, 80 y 100). Si el filtro de flota y zona se vuelve el cuello de botella, la mejora sería mandarle a location la zona del origen: eso sí cambia el contrato.
+Son como máximo 5 pedidos (10, 20, 40, 80 y 100).
+- **`completo`** se calcula con la respuesta original de location, antes de excluir o filtrar.
+- **Las llamadas** van fuera de la transacción.
+- **Si falla un pedido,** el error de location (503) sube tal cual: no se convierte en `SIN_CHOFERES`.
 
-### Pendiente: el tope por consulta y qué pasa si se agota
+Si el filtro de flota y zona se vuelve el cuello de botella, la mejora sería mandarle a location la zona del origen: eso sí cambia el contrato.
+
+### El tope por consulta y qué pasa si se agota (decidido, PR 2 de flotas)
 
 **El tope.** location devuelve como máximo **100 candidatos por consulta** (`LIMITE_CANDIDATOS_MAX` en `packages/contracts/src/location.ts`) y busca en un radio máximo de 50 km.
 
@@ -280,20 +285,18 @@ Son como máximo 5 pedidos (10, 20, 40, 80 y 100). Si el filtro de flota y zona 
 
 **El caso borde.** Con el filtro de flota y zona, dispatch podría pedir los 100 más cercanos y descartarlos **a todos**. Puede haber choferes aptos más lejos, pero location no puede devolverlos sin cambiar el contrato.
 
-**Qué hace dispatch hoy:** `ofrecerACandidatos` recibe una lista vacía y pasa la solicitud a `SIN_CHOFERES` en ese mismo momento.
-
-**Propuesta, la más simple:** mantener ese comportamiento también en este caso.
+**Qué hace dispatch:** quedó la opción más simple, `SIN_CHOFERES` en ese mismo momento, como cuando location no devuelve a nadie.
 
 - Que 100 choferes vigentes y cercanos sean todos no aptos indica un problema de datos o de configuración de flotas y zonas, no un faltante de choferes. Insistir no lo arregla.
-- dispatch lo registra en el log con un motivo propio (`tope_agotado`, distinto de «location no devolvió nadie»), con la cantidad descartada por cada filtro.
+- dispatch lo cuenta con un motivo propio en `dispatch_busquedas_sin_aptos_total{motivo}`: `tope_agotado`, distinto de `sin_candidatos` (location no devolvió a nadie) y de `filtrados` (el filtro descartó a todos los de un lote incompleto).
 - El pasajero recibe la misma respuesta que con `SIN_CHOFERES` y puede volver a pedir.
 
-**Alternativas:**
+**Alternativas descartadas por ahora:**
 
 - **Seguir buscando:** dejar la solicitud en `BUSCANDO` y que el barrido reintente hasta un plazo, por ejemplo 60 s desde la creación. Cambia el dominio de dispatch, porque hoy una tanda vacía termina la búsqueda.
 - **Filtrar en location:** mandar la zona del origen o la flota en la consulta. Cambia el contrato y le hace saber a location de flotas, que hoy no conoce.
 
-Se decide junto con el filtro de flota y zona (Agos e Iván).
+Se pueden retomar si la medición muestra que el tope se agota en la práctica.
 
 ## Levantarlo desde PowerShell
 

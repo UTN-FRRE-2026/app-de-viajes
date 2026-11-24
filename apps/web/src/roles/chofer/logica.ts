@@ -213,6 +213,8 @@ export function textoRechazoAceptacion(err: unknown): string | null {
       return 'Ya tenés un viaje activo.';
     case 'OFERTA_NO_ENCONTRADA':
       return 'La oferta ya no existe.';
+    case 'CHOFER_NO_APTO':
+      return 'Ya no podés tomar este viaje: tu flota te desactivó o dejó de operar en esa zona, o no estás disponible.';
     default:
       return null;
   }

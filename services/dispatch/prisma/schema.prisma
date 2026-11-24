@@ -33,6 +33,9 @@ model SolicitudViaje {
   finalSegundos     Int?      @map("final_duration_s")
   motivosDiferencia String[]  @default([]) @map("fare_difference_reasons")
   iniciadoEn        DateTime? @map("started_at") @db.Timestamptz(3)
+  // La zona del origen (al crear) y la flota del chofer (al aceptar). Migración 20261127000000_zonas.
+  zonaId            String?   @map("zone_id") @db.Uuid
+  flotaId           String?   @map("fleet_id") @db.Uuid
   version           Int       @default(0)
   creadaEn          DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
   actualizadaEn     DateTime  @default(now()) @map("updated_at") @db.Timestamptz(3)
@@ -194,4 +197,27 @@ model ChoferFlota {
 
   @@index([flotaId])
   @@map("drivers")
+}
+
+// Zonas operativas en PostGIS (migración 20261127000000_zonas: el índice GIST y el CHECK de validez
+// están ahí). `area` se lee y se escribe con SQL en infra/db/zonas-prisma.ts.
+model Zona {
+  id            String                                 @id @db.Uuid
+  nombre        String                                 @map("name")
+  area          Unsupported("geometry(Polygon, 4326)")
+  creadaEn      DateTime                               @default(now()) @map("created_at") @db.Timestamptz(3)
+  actualizadaEn DateTime                               @default(now()) @map("updated_at") @db.Timestamptz(3)
+  flotas        FlotaZona[]
+
+  @@map("zones")
+}
+
+model FlotaZona {
+  flotaId String @map("fleet_id") @db.Uuid
+  zonaId  String @map("zone_id") @db.Uuid
+  zona    Zona   @relation(fields: [zonaId], references: [id])
+
+  @@id([flotaId, zonaId])
+  @@index([zonaId])
+  @@map("fleet_zones")
 }

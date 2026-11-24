@@ -53,7 +53,7 @@ if ($LASTEXITCODE -ne 0) { Write-Error 'limpiar.ps1: no se pudieron borrar las c
 # en el MISMO Redis de carga, ya verificado arriba por sus etiquetas.
 $hayDispatch = (docker exec $postgres psql -U carga -d $Base -Atc "SELECT 1 FROM pg_database WHERE datname = 'dispatch_carga'") -eq '1'
 if ($hayDispatch) {
-  docker exec $postgres psql -U carga -d dispatch_carga -v ON_ERROR_STOP=1 -qc "DO `$`$ BEGIN IF to_regclass('public.ride_requests') IS NOT NULL THEN TRUNCATE outbox, driver_active_assignment, offers, payments, ride_requests, idempotency_keys, drivers, fleets; END IF; END `$`$;"
+  docker exec $postgres psql -U carga -d dispatch_carga -v ON_ERROR_STOP=1 -qc "DO `$`$ BEGIN IF to_regclass('public.ride_requests') IS NOT NULL THEN TRUNCATE outbox, driver_active_assignment, offers, payments, ride_requests, idempotency_keys, drivers, fleet_zones, zones, fleets; END IF; END `$`$;"
   if ($LASTEXITCODE -ne 0) { Write-Error 'limpiar.ps1: no se pudo vaciar dispatch_carga.'; exit 1 }
   docker exec $redis sh -c "redis-cli --scan --pattern 'dispatch:*' | xargs -r redis-cli del" | Out-Null
   if ($LASTEXITCODE -ne 0) { Write-Error 'limpiar.ps1: no se pudieron borrar las claves de dispatch de carga.'; exit 1 }

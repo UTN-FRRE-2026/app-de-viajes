@@ -5,7 +5,8 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { componer, type Sistema } from '../../src/composicion.js';
 import { crearPrisma } from '../../src/infra/db/cliente.js';
 import { RepositorioDespachoPrisma } from '../../src/infra/db/repositorio-prisma.js';
-import { BuscadorCandidatosFijo } from '../../src/infra/externos/buscador-fijo.js';
+import { ElegibilidadPrisma } from '../../src/infra/db/zonas-prisma.js';
+import { BuscadorDeTest, prepararZonaDeTest } from '../soporte/aptos.js';
 import { RelojFalso } from '../soporte/memoria.js';
 import { URL_BD_TEST } from '../soporte/preparar-bd.js';
 import { clave, CON_METRICAS, configTest, DESTINO, ORIGEN } from '../soporte/sistema-postgres.js';
@@ -13,7 +14,7 @@ import { crearEmisorTokens } from '../soporte/tokens.js';
 
 const prisma = crearPrisma(URL_BD_TEST, 5);
 const repo = new RepositorioDespachoPrisma(prisma);
-const buscador = new BuscadorCandidatosFijo([]);
+const buscador = new BuscadorDeTest(prisma);
 let reloj: RelojFalso;
 let sistema: Sistema;
 let auth: Awaited<ReturnType<typeof crearEmisorTokens>>['auth'];
@@ -22,11 +23,13 @@ beforeAll(async () => {
   const tokens = await crearEmisorTokens();
   auth = tokens.auth;
   reloj = new RelojFalso();
+  await prepararZonaDeTest(prisma);
   sistema = componer(configTest(), crearLogger('dispatch-test', 'silent'), {
     verificador: tokens.verificador,
     buscador,
     reloj,
     repo,
+    elegibilidad: new ElegibilidadPrisma(prisma),
   });
 });
 afterAll(async () => {

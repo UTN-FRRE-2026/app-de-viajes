@@ -31,11 +31,24 @@ function prepararEnv() {
   console.log(`  .env tenía variables de menos; se agregaron con los valores de .env.example: ${agregadas.join(', ')}`);
 }
 
-function psql(sql) {
-  return correr('docker', ['compose', 'exec', '-T', 'postgres', 'psql', '-U', 'postgres', '-v', 'ON_ERROR_STOP=1', '-tA'], {
+function psql(sql, base = 'postgres') {
+  return correr('docker', ['compose', 'exec', '-T', 'postgres', 'psql', '-U', 'postgres', '-d', base, '-v', 'ON_ERROR_STOP=1', '-tA'], {
     entrada: sql,
     silencioso: true,
   });
+}
+
+/** Las bases que usan PostGIS (las zonas de dispatch): la de desarrollo y la de test. */
+const BASES_POSTGIS = ['dispatch', 'dispatch_test'];
+
+/**
+ * PostGIS en las bases de dispatch. Crear la extensión necesita superusuario y dispatch_svc no lo es:
+ * se instala acá como postgres (el init lo hace en un volumen nuevo). IF NOT EXISTS: si ya está, no
+ * cambia nada; la migración de zonas solo la usa.
+ */
+function instalarPostgis() {
+  for (const base of BASES_POSTGIS) psql('CREATE EXTENSION IF NOT EXISTS postgis;', base);
+  console.log(`  PostGIS en ${BASES_POSTGIS.join(' y ')}`);
 }
 
 /**
@@ -79,6 +92,7 @@ try {
     }
     correr('docker', ['compose', 'up', '-d', '--wait', 'postgres', 'redis'], { env });
     crearBasesQueFalten();
+    instalarPostgis();
   }
 
   paso(4, 'Cliente de Prisma de cada servicio');

@@ -6,6 +6,9 @@ import {
   LimiteFlotaAlcanzado,
   LimiteMenorQueActivos,
   PatenteYaRegistrada,
+  ZonaInvalida,
+  ZonaNoEncontrada,
+  ZonasSuperpuestas,
 } from '../errores/index.js';
 import {
   ChoferFlota,
@@ -17,7 +20,7 @@ import {
   type Flota,
   type Vehiculo,
 } from '../flotas/index.js';
-import type { DirectorioUsuarios, Pagina, RepositorioFlotas, TransaccionFlotas } from '../puertos/index.js';
+import type { DatosZona, DirectorioUsuarios, Pagina, RepositorioFlotas, TransaccionFlotas } from '../puertos/index.js';
 
 export interface DependenciasFlotas {
   repoFlotas: RepositorioFlotas;
@@ -97,6 +100,36 @@ export function crearCasosDeFlotas({ repoFlotas, directorio }: DependenciasFlota
         if (resultado === 'chofer_existe') throw new ChoferYaRegistrado();
         if (resultado === 'patente_existe') throw new PatenteYaRegistrada();
         return chofer.aDatos();
+      });
+    },
+
+    /**
+     * Admin de la plataforma: crea o cambia una zona operativa. Las zonas no se superponen (409); un
+     * polígono que PostGIS no acepta da 422. Cambiar el polígono no mueve las solicitudes ya creadas:
+     * cada una guardó su zona al crearse.
+     */
+    async guardarZona(zona: DatosZona): Promise<DatosZona> {
+      return repoFlotas.enTransaccion(async (tx) => {
+        const r = await tx.guardarZona(zona);
+        if (r.resultado === 'invalida') throw new ZonaInvalida(r.motivo);
+        if (r.resultado === 'superpuesta') throw new ZonasSuperpuestas(r.con);
+        return (await tx.obtenerZona(zona.id)) as DatosZona;
+      });
+    },
+
+    listarZonas: () => repoFlotas.listarZonas(),
+
+    /**
+     * Admin de la plataforma: las zonas donde opera la flota (reemplaza las anteriores). Quitar una zona
+     * espera a las aceptaciones en curso que la usan; desde que confirma, sus choferes no reciben ni
+     * pueden aceptar ofertas de esa zona.
+     */
+    async zonasDeFlota(flotaId: string, zonas: readonly string[]): Promise<{ flotaId: string; zonas: string[] }> {
+      return repoFlotas.enTransaccion(async (tx) => {
+        const r = await tx.reemplazarZonasDeFlota(flotaId, zonas);
+        if (r === 'flota_no_existe') throw new FlotaNoEncontrada();
+        if (r === 'zona_no_existe') throw new ZonaNoEncontrada();
+        return { flotaId, zonas: await tx.zonasDeFlota(flotaId) };
       });
     },
 

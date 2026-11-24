@@ -2,13 +2,21 @@ import {
   AltaChoferBody,
   DisponibilidadBody,
   GuardarFlotaBody,
+  GuardarZonaBody,
   ListadoChoferesQuery,
   ParamsId,
   SinBody,
+  ZonasDeFlotaBody,
+  type ZonaRespuesta,
+  type ZonasDeFlotaRespuesta,
 } from '@viajes/contracts';
 import { requerirRol, usuarioDe, validar, type crearIdempotencia } from '@viajes/platform';
 import type { Request, RequestHandler, Router } from 'express';
 import type { CasosDeFlotas } from '../../dominio/casos-uso/flotas.js';
+import type { DatosZona } from '../../dominio/puertos/index.js';
+
+/** La zona en el formato de la API: un Polygon de GeoJSON con el anillo exterior. */
+const aZonaRespuesta = (z: DatosZona): ZonaRespuesta => ({ id: z.id, nombre: z.nombre, area: { type: 'Polygon', coordinates: [z.anillo] } });
 
 /**
  * Rutas de flotas (variante G, docs/flotas.md). Se montan en el router de dispatch, después de
@@ -50,6 +58,35 @@ export function montarRutasFlotas(
     async (req, res) => {
       const { nombre, maxActivos } = req.body as GuardarFlotaBody;
       res.json(await casos.guardarFlota({ id: params(req), nombre, maxActivos }));
+    },
+  );
+
+  // Zonas operativas (PostGIS): las define el admin de la plataforma y las habilita por flota. Dos
+  // zonas no se superponen (409); el polígono lo valida PostGIS (422).
+  r.put(
+    '/admin/zonas/:id',
+    requerirRol('admin'),
+    validar({ params: ParamsId, body: GuardarZonaBody }),
+    idempotente(),
+    async (req, res) => {
+      const { nombre, area } = req.body as GuardarZonaBody;
+      const zona = await casos.guardarZona({ id: params(req), nombre, anillo: area.coordinates[0] as [number, number][] });
+      res.json(aZonaRespuesta(zona));
+    },
+  );
+
+  r.get('/admin/zonas', requerirRol('admin'), async (_req, res) => {
+    res.set('Cache-Control', 'no-store').json({ zonas: (await casos.listarZonas()).map(aZonaRespuesta) });
+  });
+
+  r.put(
+    '/admin/flotas/:id/zonas',
+    requerirRol('admin'),
+    validar({ params: ParamsId, body: ZonasDeFlotaBody }),
+    idempotente(),
+    async (req, res) => {
+      const respuesta: ZonasDeFlotaRespuesta = await casos.zonasDeFlota(params(req), (req.body as ZonasDeFlotaBody).zonas);
+      res.json(respuesta);
     },
   );
 

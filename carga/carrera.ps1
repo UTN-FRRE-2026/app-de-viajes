@@ -146,6 +146,11 @@ docker @compose stop location dispatch 2>$null | Out-Null
 & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $carga 'limpiar.ps1')
 if ($LASTEXITCODE -ne 0) { exit 1 }
 
+# Flotas y zonas de carga (carga/flotas.sql): sin esto, el filtro de candidatos de dispatch descarta a
+# todos los choferes de carga. Va después de limpiar.ps1, que vacía dispatch_carga.
+Get-Content -LiteralPath (Join-Path $carga 'flotas.sql') -Raw | docker exec -i viajes-carga-postgres-1 psql -U carga -d dispatch_carga -v ON_ERROR_STOP=1 -q | Out-Null
+if ($LASTEXITCODE -ne 0) { Fallar 'no se pudieron cargar las flotas y zonas de carga' }
+
 Paso "location (optimizada) y dispatch (50 ofertas por solicitud)"
 docker @compose up -d --build --force-recreate --wait location | Out-Null
 if ($LASTEXITCODE -ne 0) { Fallar 'location de carga no quedó healthy' }

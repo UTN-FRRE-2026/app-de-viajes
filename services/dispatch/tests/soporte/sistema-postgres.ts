@@ -13,11 +13,12 @@ import { Redis } from 'ioredis';
 import { componer } from '../../src/composicion.js';
 import { EsquemaConfig } from '../../src/config/index.js';
 import { crearPrisma } from '../../src/infra/db/cliente.js';
-import { RepositorioDespachoPrisma } from '../../src/infra/db/repositorio-prisma.js';
+import { RepositorioDespachoPrisma, type OpcionesDespachoPrisma } from '../../src/infra/db/repositorio-prisma.js';
 import { RepositorioFlotasPrisma, type OpcionesFlotasPrisma } from '../../src/infra/db/flotas-prisma.js';
 import { RepositorioTarifasPrisma, type OpcionesTarifasPrisma } from '../../src/infra/db/tarifas-prisma.js';
 import { cacheTarifasRedis, type CacheTarifas } from '../../src/infra/tarifas/proveedor-tarifas.js';
-import { BuscadorCandidatosFijo } from '../../src/infra/externos/buscador-fijo.js';
+import { ElegibilidadPrisma } from '../../src/infra/db/zonas-prisma.js';
+import { BuscadorDeTest, prepararZonaDeTest } from './aptos.js';
 import { BusEventosRedis } from '../../src/infra/tiempo-real/bus-redis.js';
 import { HistorialEventosPrisma, relayOutboxPrisma } from '../../src/infra/tiempo-real/outbox-prisma.js';
 import { PosicionesRedis } from '../../src/infra/tiempo-real/posiciones-redis.js';
@@ -79,6 +80,7 @@ export async function levantarDispatch({
   idempotencia = (reales) => reales,
   tarifas = {},
   flotas = {},
+  despacho = {},
   extra = {},
 }: {
   demoraTrasLeerMs?: number;
@@ -86,13 +88,19 @@ export async function levantarDispatch({
   tarifas?: OpcionesTarifasTest;
   /** Flotas en Postgres; por ejemplo, una demora con el chofer bloqueado para superponer activaciones. */
   flotas?: OpcionesFlotasPrisma;
+  /** Despacho en Postgres; por ejemplo, una demora en la aceptación con el chofer ya revalidado. */
+  despacho?: OpcionesDespachoPrisma;
   /** Otras variables de entorno de dispatch (por ejemplo, PAGOS_TIMEOUT_MS). */
   extra?: Record<string, string>;
 } = {}) {
   const tokens = await crearEmisorTokens();
   const prisma = crearPrisma(URL_BD_TEST, 20);
+  // La zona de test, aunque un archivo anterior (los de zonas) la haya borrado: sin ella, todo origen
+  // queda fuera de zona (422).
+  await prepararZonaDeTest(prisma);
   const redis = new Redis(URL_REDIS_TEST, { maxRetriesPerRequest: 1 });
-  const buscador = new BuscadorCandidatosFijo([]);
+  // Los choferes que devuelve se dan de alta como aptos en la flota y la zona de test.
+  const buscador = new BuscadorDeTest(prisma);
   const pagos = new PagosFalso();
   const logger = crearLogger('dispatch-test', 'silent');
   // Un prefijo por dispatch levantado: dos dispatch del mismo test no se mezclan los eventos.
@@ -110,9 +118,10 @@ export async function levantarDispatch({
   const sistema = componer(config, logger, {
     verificador: tokens.verificador,
     buscador,
+    elegibilidad: new ElegibilidadPrisma(prisma),
     repo: demoraTrasLeerMs
-      ? conDemoraTrasLeer(new RepositorioDespachoPrisma(prisma), demoraTrasLeerMs)
-      : new RepositorioDespachoPrisma(prisma),
+      ? conDemoraTrasLeer(new RepositorioDespachoPrisma(prisma, despacho), demoraTrasLeerMs)
+      : new RepositorioDespachoPrisma(prisma, despacho),
     idempotencia: idempotencia({
       almacen: almacenIdempotenciaSql(prisma),
       cerrojo: cerrojoRedis(redis, 'dispatch:idempotencia:'),
@@ -153,8 +162,15 @@ export async function levantarDispatch({
     async limpiar() {
       await prisma.$executeRawUnsafe('TRUNCATE outbox, driver_active_assignment, offers, payments, ride_requests, idempotency_keys');
     },
+    /** Borra flotas, choferes y zonas (y, por las claves foráneas, los viajes). Deja la zona de test. */
     async limpiarFlotas() {
-      await prisma.$executeRawUnsafe('TRUNCATE drivers, fleets, idempotency_keys');
+      await prisma.$executeRawUnsafe('TRUNCATE drivers, fleet_zones, zones, fleets, idempotency_keys CASCADE');
+      await prepararZonaDeTest(prisma);
+    },
+    /** Sin la zona de test: para los tests de zonas, que arman las suyas (no pueden superponerse). */
+    async sinZonaDeTest() {
+      buscador.aptosAutomaticos = false;
+      await prisma.$executeRawUnsafe('TRUNCATE drivers, fleet_zones, zones, fleets, idempotency_keys CASCADE');
     },
     /** Deja la base sin tarifa (la próxima lectura vuelve a sembrar) y borra el caché de este dispatch. */
     async limpiarTarifas() {

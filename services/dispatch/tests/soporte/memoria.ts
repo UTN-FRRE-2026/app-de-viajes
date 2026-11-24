@@ -1,7 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import type { Reloj } from '@viajes/kernel';
 import { crearCasosDeUso } from '../../src/dominio/casos-uso/index.js';
-import type { MetricasDespacho } from '../../src/dominio/puertos/index.js';
+import type { Coordenada } from '../../src/dominio/entidades/index.js';
+import type { ElegibilidadChoferes, MetricasDespacho } from '../../src/dominio/puertos/index.js';
 import { BuscadorCandidatosFijo } from '../../src/infra/externos/buscador-fijo.js';
 import { RepositorioDespachoMemoria } from '../../src/infra/memoria/repositorio-memoria.js';
 import { RepositorioTarifasMemoria } from '../../src/infra/memoria/tarifas-memoria.js';
@@ -43,10 +44,43 @@ export class MetricasEnMemoria implements MetricasDespacho {
   ofertasVencidas(cantidad: number) {
     this.vencidas.push(cantidad);
   }
+  readonly sinAptos: string[] = [];
+  busquedaSinAptos(motivo: string) {
+    this.sinAptos.push(motivo);
+  }
+}
+
+export const ZONA_TEST = 'zona-de-test';
+export const FLOTA_TEST = 'flota-de-test';
+
+/**
+ * Elegibilidad para los tests de dominio que no son de flotas ni de zonas: todo origen está en una
+ * zona y todo chofer es apto, como antes del filtro. Se puede ajustar por test: `fueraDeZona` (ningún
+ * origen tiene zona), `noAptos` (choferes que el filtro descarta) y `noAptosAlAceptar` (los que la
+ * revalidación de la aceptación rechaza). `consultas` anota cada lote que se filtró.
+ */
+export class ElegibilidadDeTest implements ElegibilidadChoferes {
+  fueraDeZona = false;
+  readonly noAptos = new Set<string>();
+  readonly noAptosAlAceptar = new Set<string>();
+  readonly consultas: string[][] = [];
+
+  async zonaDelOrigen(_origen: Coordenada) {
+    return this.fueraDeZona ? null : ZONA_TEST;
+  }
+  async aptos(ids: readonly string[], _zonaId: string) {
+    this.consultas.push([...ids]);
+    return ids.filter((id) => !this.noAptos.has(id));
+  }
+  async choferAptoParaAceptar(choferId: string, _zonaId: string) {
+    return this.noAptos.has(choferId) || this.noAptosAlAceptar.has(choferId) ? null : { flotaId: FLOTA_TEST };
+  }
 }
 
 export function sistemaEnMemoria(choferes: string[] = [], ofertasSimultaneas = 3) {
   const repo = new RepositorioDespachoMemoria();
+  const elegibilidad = new ElegibilidadDeTest();
+  repo.elegibilidad = elegibilidad;
   const buscador = new BuscadorCandidatosFijo(choferes);
   const reloj = new RelojFalso();
   const metricas = new MetricasEnMemoria();
@@ -56,6 +90,7 @@ export function sistemaEnMemoria(choferes: string[] = [], ofertasSimultaneas = 3
   const casos = crearCasosDeUso({
     repo,
     buscador,
+    elegibilidad,
     reloj,
     ids: { nuevo: () => randomUUID() },
     parametros: { ofertasSimultaneas, ttlOfertaMs: TTL_MS },
@@ -68,7 +103,7 @@ export function sistemaEnMemoria(choferes: string[] = [], ofertasSimultaneas = 3
   });
   const ofertasDe = (solicitudId: string) =>
     [...repo.ofertas.values()].filter((o) => o.solicitudId === solicitudId);
-  return { repo, buscador, reloj, casos, ofertasDe, metricas, mapas, pagos, tarifas };
+  return { repo, buscador, elegibilidad, reloj, casos, ofertasDe, metricas, mapas, pagos, tarifas };
 }
 
 export const ORIGEN = { lat: -34.6037, lng: -58.3816 };

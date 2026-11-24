@@ -1,5 +1,6 @@
 import { ChoferFlota, type DatosChoferFlota, type DatosFlota, type Flota } from '../../dominio/flotas/index.js';
-import type { Pagina, RepositorioFlotas, TransaccionFlotas } from '../../dominio/puertos/index.js';
+import type { DatosZona, Pagina, RepositorioFlotas, TransaccionFlotas } from '../../dominio/puertos/index.js';
+import { motivoInvalida, seSuperponen } from './zonas-memoria.js';
 
 /**
  * Flotas en memoria: para `DISPATCH_PERSISTENCIA=memoria` y los tests de dominio.
@@ -13,6 +14,9 @@ import type { Pagina, RepositorioFlotas, TransaccionFlotas } from '../../dominio
 export class RepositorioFlotasMemoria implements RepositorioFlotas {
   readonly flotas = new Map<string, Flota>();
   readonly choferes = new Map<string, DatosChoferFlota>();
+  /** Zonas operativas y las de cada flota (flotaId → zonas). Se escriben al confirmar, como lo demás. */
+  readonly zonas = new Map<string, DatosZona>();
+  readonly zonasPorFlota = new Map<string, Set<string>>();
   private cola: Promise<void> = Promise.resolve();
 
   async enTransaccion<T>(trabajo: (tx: TransaccionFlotas) => Promise<T>): Promise<T> {
@@ -24,7 +28,9 @@ export class RepositorioFlotasMemoria implements RepositorioFlotas {
     try {
       const flotas = new Map([...this.flotas].map(([id, f]) => [id, { ...f }]));
       const choferes = new Map([...this.choferes].map(([id, c]) => [id, { ...c, vehiculo: { ...c.vehiculo } }]));
-      const resultado = await trabajo(this.transaccion(flotas, choferes));
+      const zonas = new Map(this.zonas);
+      const zonasPorFlota = new Map([...this.zonasPorFlota].map(([id, s]) => [id, new Set(s)]));
+      const resultado = await trabajo(this.transaccion(flotas, choferes, zonas, zonasPorFlota));
       for (const f of flotas.values()) {
         if (f.activos < 0 || f.activos > f.maxActivos) throw new Error('fleets_cupo_check');
       }
@@ -35,13 +41,22 @@ export class RepositorioFlotasMemoria implements RepositorioFlotas {
       for (const [id, f] of flotas) this.flotas.set(id, f);
       this.choferes.clear();
       for (const [id, c] of choferes) this.choferes.set(id, c);
+      this.zonas.clear();
+      for (const [id, z] of zonas) this.zonas.set(id, z);
+      this.zonasPorFlota.clear();
+      for (const [id, s] of zonasPorFlota) this.zonasPorFlota.set(id, s);
       return resultado;
     } finally {
       soltar();
     }
   }
 
-  private transaccion(flotas: Map<string, Flota>, choferes: Map<string, DatosChoferFlota>): TransaccionFlotas {
+  private transaccion(
+    flotas: Map<string, Flota>,
+    choferes: Map<string, DatosChoferFlota>,
+    zonas: Map<string, DatosZona>,
+    zonasPorFlota: Map<string, Set<string>>,
+  ): TransaccionFlotas {
     return {
       async obtenerChoferParaActualizar(id) {
         const c = choferes.get(id);
@@ -77,7 +92,38 @@ export class RepositorioFlotasMemoria implements RepositorioFlotas {
         const f = flotas.get(id);
         return f ? { ...f } : null;
       },
+      async guardarZona(zona) {
+        const motivo = motivoInvalida(zona.anillo);
+        if (motivo) return { resultado: 'invalida', motivo };
+        const otra = [...zonas.values()]
+          .filter((z) => z.id !== zona.id)
+          .sort((a, b) => (a.id < b.id ? -1 : 1))
+          .find((z) => seSuperponen(z.anillo, zona.anillo));
+        if (otra) return { resultado: 'superpuesta', con: otra.nombre };
+        zonas.set(zona.id, { ...zona, anillo: zona.anillo.map((p) => [...p] as [number, number]) });
+        return { resultado: 'ok' };
+      },
+      async reemplazarZonasDeFlota(flotaId, ids) {
+        if (!flotas.has(flotaId)) return 'flota_no_existe';
+        if (ids.some((id) => !zonas.has(id))) return 'zona_no_existe';
+        zonasPorFlota.set(flotaId, new Set(ids));
+        return 'ok';
+      },
+      async obtenerZona(id) {
+        return zonas.get(id) ?? null;
+      },
+      async zonasDeFlota(flotaId) {
+        return [...(zonasPorFlota.get(flotaId) ?? [])].sort();
+      },
     };
+  }
+
+  async listarZonas() {
+    return [...this.zonas.values()].sort((a, b) => a.nombre.localeCompare(b.nombre) || (a.id < b.id ? -1 : 1));
+  }
+
+  async zonasDeFlota(flotaId: string) {
+    return [...(this.zonasPorFlota.get(flotaId) ?? [])].sort();
   }
 
   async obtenerFlota(id: string) {

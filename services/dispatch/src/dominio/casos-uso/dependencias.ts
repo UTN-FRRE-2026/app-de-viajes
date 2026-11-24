@@ -1,6 +1,7 @@
 import type { GeneradorId, Reloj } from '@viajes/kernel';
 import type {
   BuscadorCandidatos,
+  ElegibilidadChoferes,
   MetricasDespacho,
   ParametrosDespacho,
   ProcesadorPagos,
@@ -12,6 +13,8 @@ import type { DependenciasTarifasAdmin } from './tarifas-admin.js';
 export interface DependenciasDespacho extends DependenciasTarifas, DependenciasTarifasAdmin {
   repo: RepositorioDespacho;
   buscador: BuscadorCandidatos;
+  /** Zona del origen y filtro de candidatos (flotas y zonas, en la base de dispatch). */
+  elegibilidad: ElegibilidadChoferes;
   reloj: Reloj;
   ids: GeneradorId;
   parametros: ParametrosDespacho;

@@ -7,6 +7,8 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { componer, type Sistema } from '../../src/composicion.js';
 import { crearPrisma } from '../../src/infra/db/cliente.js';
 import { RepositorioDespachoPrisma } from '../../src/infra/db/repositorio-prisma.js';
+import { ElegibilidadPrisma } from '../../src/infra/db/zonas-prisma.js';
+import { prepararZonaDeTest, registrarAptos } from '../soporte/aptos.js';
 import { URL_BD_TEST } from '../soporte/preparar-bd.js';
 import { clave, DESTINO, ORIGEN, configTest } from '../soporte/sistema-postgres.js';
 import { crearEmisorTokens } from '../soporte/tokens.js';
@@ -47,9 +49,11 @@ beforeAll(async () => {
     LOCATION_TIMEOUT_MS: '200',
     OFERTAS_SIMULTANEAS: '2',
   });
+  await prepararZonaDeTest(prisma);
   sistema = componer(config, crearLogger('dispatch-test', 'silent'), {
     verificador: tokens.verificador,
     repo: new RepositorioDespachoPrisma(prisma),
+    elegibilidad: new ElegibilidadPrisma(prisma),
   });
 });
 afterAll(async () => {
@@ -63,13 +67,19 @@ beforeEach(async () => {
   await prisma.$executeRawUnsafe('TRUNCATE outbox, driver_active_assignment, offers, payments, ride_requests');
 });
 
+/** Lo que devuelve location, con esos choferes dados de alta como aptos (flota y zona de test). */
+const conChoferes = async (choferes: string[]) => {
+  await registrarAptos(prisma, choferes);
+  return { choferes };
+};
+
 const pedirViaje = async (pasajero = randomUUID()) =>
   request(sistema.app).post('/solicitudes').set(clave()).set(await auth(pasajero, 'pasajero')).send({ origen: ORIGEN, destino: DESTINO });
 
 describe('dispatch con location', () => {
   it('ofrece el viaje a los choferes más cercanos que devuelve location', async () => {
     const choferes = [randomUUID(), randomUUID(), randomUUID()];
-    modo = { choferes };
+    modo = await conChoferes(choferes);
     const res = await pedirViaje();
     expect(res.status).toBe(201);
     const ofertas = await prisma.oferta.findMany({ where: { solicitudId: res.body.id } });
@@ -104,7 +114,7 @@ describe('dispatch con location', () => {
 
   it('el barrido con location caído no marca SIN_CHOFERES: reintenta en la pasada siguiente', async () => {
     const [c1, c2] = [randomUUID(), randomUUID()];
-    modo = { choferes: [c1, c2] };
+    modo = await conChoferes([c1, c2]);
     const creada = await pedirViaje();
     await prisma.oferta.updateMany({ where: { solicitudId: creada.body.id }, data: { venceEn: new Date(Date.now() - 1000) } });
 
@@ -114,7 +124,7 @@ describe('dispatch con location', () => {
 
     // Vuelve location: la pasada siguiente vence las ofertas y le ofrece al chofer nuevo.
     const c3 = randomUUID();
-    modo = { choferes: [c1, c2, c3] };
+    modo = await conChoferes([c1, c2, c3]);
     expect(await sistema.casos.vencerOfertas()).toBe(1);
     const pendientes = await prisma.oferta.findMany({ where: { solicitudId: creada.body.id, estado: 'PENDIENTE' } });
     expect(pendientes.map((o) => o.choferId)).toEqual([c3]);

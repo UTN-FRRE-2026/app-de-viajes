@@ -8,6 +8,7 @@ import {
   type DatosOferta,
   type RegistroSolicitud,
 } from '../../dominio/entidades/index.js';
+import type { Coordenada } from '../../dominio/entidades/index.js';
 import type {
   EventoDispatch,
   FiltroSolicitudes,
@@ -45,7 +46,18 @@ const CON_CHOFER = new Set(ESTADOS_CON_CHOFER);
  * Diferencia con Postgres: acá el segundo que choca con una reserva pendiente falla enseguida,
  * en Postgres espera a ver si el primero confirma o hace rollback.
  */
+/** Lo que la aceptación revalida dentro de la transacción (en Postgres, con FOR SHARE). */
+export interface ElegibilidadEnTransaccion {
+  zonaDelOrigen(origen: Coordenada): Promise<string | null>;
+  choferAptoParaAceptar(choferId: string, zonaId: string): Promise<{ flotaId: string } | null>;
+}
+
 export class RepositorioDespachoMemoria implements RepositorioDespacho {
+  /**
+   * Quién es apto al aceptar. La composición le pone `ElegibilidadMemoria` (las flotas en memoria);
+   * sin esto, nadie es apto.
+   */
+  elegibilidad: ElegibilidadEnTransaccion | null = null;
   readonly solicitudes = new Map<string, RegistroSolicitud>();
   readonly ofertas = new Map<string, DatosOferta>();
   /** choferId → solicitudId */
@@ -207,6 +219,8 @@ export class RepositorioDespachoMemoria implements RepositorioDespacho {
       liberarChofer: async (solicitudId) => {
         liberadas.add(solicitudId);
       },
+      choferAptoParaAceptar: async (choferId, zonaId) => (await this.elegibilidad?.choferAptoParaAceptar(choferId, zonaId)) ?? null,
+      zonaDelOrigen: async (origen) => (await this.elegibilidad?.zonaDelOrigen(origen)) ?? null,
       registrarEvento: async (e) => {
         eventos.push(e);
       },

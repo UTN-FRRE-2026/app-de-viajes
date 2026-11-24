@@ -20,6 +20,7 @@ Mide las dos estrategias de location (6.6) con 500 choferes que mandan su ubicac
 | `solicitudes.js` | Solicitud real de punta a punta (Node, por el SSE) durante la medición: ver [Solicitud real](#solicitud-real-prueba-piloto) |
 | `carrera.js`, `carrera.ps1` | La carrera de la asignación única (6.3) con k6: ver [Carrera de la asignación única](#carrera-de-la-asignación-única-63) |
 | `limpiar.ps1` | Vacía `pings` y las claves `carga:location:*`. **Se niega a correr** si algo no es del entorno de carga |
+| `flotas.sql` | La flota y las zonas de carga, con los 500 choferes de k6 y el de `solicitudes.js` aptos: sin esto, el filtro de flotas y zonas de dispatch los descarta. Lo aplican `carrera.ps1` y `medir.ps1 -Solicitudes` después de `limpiar.ps1` |
 | `medir.ps1` | Una corrida completa: deja todo en `docs/mediciones/<fecha>/<estrategia>-<corrida>/` |
 | `resumir.mjs` | Arma las tablas del informe con las corridas de una fecha |
 

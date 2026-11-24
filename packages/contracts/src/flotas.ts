@@ -52,3 +52,39 @@ export const ChoferFlotaRespuesta = z.strictObject({
   disponible: z.boolean(),
 });
 export type ChoferFlotaRespuesta = z.infer<typeof ChoferFlotaRespuesta>;
+
+// --- Zonas operativas (PR 2 de flotas) ---
+
+/** Un punto GeoJSON: [lng, lat], en ese orden. */
+const PosicionGeo = z.tuple([z.number().min(-180).max(180), z.number().min(-90).max(90)]);
+
+/** Tope de vértices de una zona: acota el trabajo de PostGIS por pedido, no es una regla del negocio. */
+export const VERTICES_ZONA_MAX = 1000;
+
+/**
+ * Un `Polygon` de GeoJSON con solo el anillo exterior (sin huecos), cerrado: el primer punto se repite
+ * al final. Que no se cruce consigo mismo lo decide PostGIS (`ST_IsValid`): 422 `ZONA_INVALIDA`.
+ */
+export const PoligonoZona = z.strictObject({
+  type: z.literal('Polygon'),
+  coordinates: z
+    .tuple([z.array(PosicionGeo).min(4).max(VERTICES_ZONA_MAX)])
+    .refine(([anillo]) => anillo[0]![0] === anillo.at(-1)![0] && anillo[0]![1] === anillo.at(-1)![1], {
+      message: 'el anillo tiene que estar cerrado: el primer punto se repite al final',
+    }),
+});
+export type PoligonoZona = z.infer<typeof PoligonoZona>;
+
+/** `PUT /admin/zonas/:id`: crea o cambia una zona. */
+export const GuardarZonaBody = z.strictObject({ nombre: Texto(80), area: PoligonoZona });
+export type GuardarZonaBody = z.infer<typeof GuardarZonaBody>;
+
+/** `PUT /admin/flotas/:id/zonas`: las zonas donde opera la flota (reemplaza las anteriores). */
+export const ZonasDeFlotaBody = z.strictObject({ zonas: z.array(z.uuid()).max(100) });
+export type ZonasDeFlotaBody = z.infer<typeof ZonasDeFlotaBody>;
+
+export const ZonaRespuesta = z.strictObject({ id: z.uuid(), nombre: z.string(), area: PoligonoZona });
+export type ZonaRespuesta = z.infer<typeof ZonaRespuesta>;
+
+export const ZonasDeFlotaRespuesta = z.strictObject({ flotaId: z.uuid(), zonas: z.array(z.uuid()) });
+export type ZonasDeFlotaRespuesta = z.infer<typeof ZonasDeFlotaRespuesta>;

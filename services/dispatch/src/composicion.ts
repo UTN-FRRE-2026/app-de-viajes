@@ -22,6 +22,7 @@ import { crearCasosDeFlotas, type CasosDeFlotas } from './dominio/casos-uso/flot
 import { crearCasosDeUso, type CasosDeUso } from './dominio/casos-uso/index.js';
 import type {
   BuscadorCandidatos,
+  ElegibilidadChoferes,
   DirectorioUsuarios,
   ProcesadorPagos,
   ProveedorTarifas,
@@ -47,6 +48,8 @@ import { rutasDespacho } from './infra/http/rutas.js';
 import { metricasDespachoPrometheus } from './infra/metricas/prometheus.js';
 import { RepositorioDespachoMemoria } from './infra/memoria/repositorio-memoria.js';
 import { RepositorioFlotasMemoria } from './infra/memoria/flotas-memoria.js';
+import { ElegibilidadMemoria } from './infra/memoria/zonas-memoria.js';
+import { ElegibilidadPrisma } from './infra/db/zonas-prisma.js';
 import { RepositorioTarifasPrisma } from './infra/db/tarifas-prisma.js';
 import { RepositorioTarifasMemoria } from './infra/memoria/tarifas-memoria.js';
 import { contadorCacheTarifas } from './infra/metricas/prometheus.js';
@@ -83,6 +86,11 @@ export interface Reemplazos {
   repoFlotas?: RepositorioFlotas;
   /** Las cuentas de identity (el alta de choferes): en los tests, uno falso. */
   directorio?: DirectorioUsuarios;
+  /**
+   * Zona del origen y filtro de candidatos. Obligatorio si se reemplaza el repo por uno de Postgres;
+   * con el repo y las flotas en memoria se arma solo.
+   */
+  elegibilidad?: ElegibilidadChoferes;
 }
 
 /** El tiempo real: el bus en vivo, el historial para reponer, el relay del outbox y las posiciones de location. */
@@ -153,6 +161,7 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
   let repoFlotas: RepositorioFlotas = reemplazos.repoFlotas ?? new RepositorioFlotasMemoria();
 
   let tiempoReal: TiempoReal | undefined = reemplazos.eventos;
+  let elegibilidad: ElegibilidadChoferes | undefined = reemplazos.elegibilidad;
   // En memoria no hace falta: el almacén vive lo que vive el proceso.
   let purgarIdempotencia = async () => 0;
 
@@ -164,6 +173,7 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
     const prisma = crearPrisma(config.DATABASE_URL as string, config.DB_POOL_MAX);
     const redis = crearRedis(config.REDIS_URL as string, logger);
     repo = new RepositorioDespachoPrisma(prisma);
+    elegibilidad ??= new ElegibilidadPrisma(prisma);
     idempotencia = reemplazos.idempotencia ?? {
       almacen: almacenIdempotenciaSql(prisma),
       cerrojo: cerrojoRedis(redis, 'dispatch:idempotencia:'),
@@ -192,6 +202,15 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
       await prisma.$disconnect();
     };
   }
+
+  // En memoria, la elegibilidad sale de las flotas y las asignaciones en memoria; la aceptación la
+  // consulta dentro de su transacción, como el FOR SHARE de Postgres.
+  if (!elegibilidad && repo instanceof RepositorioDespachoMemoria && repoFlotas instanceof RepositorioFlotasMemoria) {
+    const enMemoria = new ElegibilidadMemoria(repoFlotas, repo);
+    repo.elegibilidad ??= enMemoria;
+    elegibilidad = enMemoria;
+  }
+  if (!elegibilidad) throw new Error('componer: falta la elegibilidad (zonas y filtro de candidatos) para este repositorio');
 
   const eventos = tiempoReal ?? tiempoRealEnMemoria(repo);
   const streams = new StreamsEventos({
@@ -251,6 +270,7 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
   const casos = crearCasosDeUso({
     repo,
     buscador: reemplazos.buscador ?? crearBuscador(config, logger),
+    elegibilidad,
     reloj: reemplazos.reloj ?? relojSistema,
     ids: idsAleatorios,
     parametros: {

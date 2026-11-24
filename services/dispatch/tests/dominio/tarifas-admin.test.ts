@@ -9,7 +9,7 @@ import { RepositorioTarifasMemoria } from '../../src/infra/memoria/tarifas-memor
 import { ProveedorTarifasVersionadas, type CacheTarifas, type ResultadoCache } from '../../src/infra/tarifas/proveedor-tarifas.js';
 import { MapasFalso } from '../soporte/mapas-falso.js';
 import { PagosFalso } from '../soporte/pagos-falso.js';
-import { DESTINO, ORIGEN, RelojFalso, VALORES_PRUEBA } from '../soporte/memoria.js';
+import { DESTINO, ElegibilidadDeTest, ORIGEN, RelojFalso, VALORES_PRUEBA } from '../soporte/memoria.js';
 
 const ADMIN = randomUUID();
 const OTROS = { bajadaCentavos: 300_000, centavosPorKm: 60_000, centavosPorMinuto: 0, minimoCentavos: 400_000, maxMetros: 80_000 };
@@ -52,6 +52,7 @@ function sistema() {
   const casos = crearCasosDeUso({
     repo: new RepositorioDespachoMemoria(),
     buscador: new BuscadorCandidatosFijo([]),
+    elegibilidad: new ElegibilidadDeTest(),
     reloj: new RelojFalso(),
     ids: { nuevo: () => randomUUID() },
     parametros: { ofertasSimultaneas: 3, ttlOfertaMs: 15_000 },
