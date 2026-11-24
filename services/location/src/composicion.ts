@@ -3,6 +3,7 @@ import type { Reloj } from '@viajes/kernel';
 import {
   crearApp,
   crearMetricas,
+  iniciarBarrido,
   verificadorJwks,
   type ChequeoListo,
   type Logger,
@@ -14,7 +15,9 @@ import type { Config } from './config/index.js';
 import { crearCasosDeUso, type CasosDeUso } from './dominio/casos-uso/index.js';
 import type { PublicadorPosiciones, RepositorioUbicaciones } from './dominio/puertos/index.js';
 import { crearPrisma } from './infra/db/cliente.js';
+import type { PrismaClient } from './infra/db/generated/client.js';
 import { RepositorioUbicacionesIngenuo } from './infra/db/repositorio-ingenuo.js';
+import { purgarHistorial } from './infra/db/retencion.js';
 import { chequeosBase, conTiempoLimite } from './infra/db/salud.js';
 import { relojSistema } from './infra/externos/sistema.js';
 import { registrarMetricaPublicacion, registrarMetricasLocation } from './infra/http/metricas.js';
@@ -53,7 +56,7 @@ export interface Sistema {
   historial?: ConsumidorHistorial;
   /** El publicador de posiciones en vivo, si se armó con Redis (los tests esperan a que esté listo). */
   publicador?: PublicadorPosicionesRedis;
-  /** Arranca lo que corre en segundo plano (consumidor del historial y purga). */
+  /** Arranca lo que corre en segundo plano (consumidor del historial, purga y retención del historial). */
   iniciar: () => void;
   /** Detiene lo de segundo plano (vaciando el historial pendiente) y cierra las conexiones. */
   cerrar: () => Promise<void>;
@@ -75,6 +78,17 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
   let iniciar = () => {};
   let cerrar = async () => {};
 
+  // Retención del historial: la misma tabla `pings` en las dos estrategias con Postgres.
+  let detenerRetencion = async () => {};
+  const iniciarRetencion = (prisma: PrismaClient) => {
+    const purgar = purgarHistorial(prisma, {
+      retencionMs: config.LOCATION_HISTORIAL_RETENCION_HORAS * 3_600_000,
+      reloj,
+      lote: config.LOCATION_HISTORIAL_RETENCION_LOTE,
+    });
+    detenerRetencion = iniciarBarrido(purgar, config.LOCATION_HISTORIAL_RETENCION_INTERVALO_MS, logger, 'historial de ubicaciones vencido');
+  };
+
   if (reemplazos.repo) {
     repo = reemplazos.repo;
   } else if (config.UBICACION_ESTRATEGIA === 'memoria') {
@@ -83,7 +97,11 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
     const prisma = crearPrisma(config.LOCATION_DATABASE_URL as string, config.DB_POOL_MAX);
     repo = new RepositorioUbicacionesIngenuo(prisma);
     chequeos = chequeosBase(prisma, carpetaMigraciones);
-    cerrar = () => prisma.$disconnect();
+    iniciar = () => iniciarRetencion(prisma);
+    cerrar = async () => {
+      await detenerRetencion();
+      await prisma.$disconnect();
+    };
   } else {
     // Optimizada: posiciones en Redis; Postgres solo para el historial, escrito en lotes.
     const prisma = crearPrisma(config.LOCATION_DATABASE_URL as string, config.DB_POOL_MAX);
@@ -113,6 +131,7 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
     const consumidor = historial;
     iniciar = () => {
       consumidor.iniciar();
+      iniciarRetencion(prisma);
       // nosemgrep: ajinabraham.njsscan.eval.eval_node.eval_nodejs -- setInterval con una función, no con un texto: no evalúa nada.
       purga = setInterval(() => {
         geo
@@ -124,6 +143,7 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
     cerrar = async () => {
       clearInterval(purga);
       await consumidor.detener();
+      await detenerRetencion();
       bloqueante.disconnect();
       redis.disconnect();
       await prisma.$disconnect();

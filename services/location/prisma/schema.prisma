@@ -27,5 +27,7 @@ model Ping {
 
   // La búsqueda toma la última posición de cada chofer (DISTINCT ON).
   @@index([choferId, registradoEn(sort: Desc)])
+  // La retención borra los vencidos en lotes, por (recorded_at, id) (migración 20261125000000).
+  @@index([registradoEn, id])
   @@map("pings")
 }

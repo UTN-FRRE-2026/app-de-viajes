@@ -25,6 +25,21 @@ describe('configuración', () => {
     });
   });
 
+  it('retención del historial: 720 h, cada 5 min y lotes de 5000 por defecto; como mínimo 1 h', () => {
+    expect(EsquemaConfig.parse(base)).toMatchObject({
+      LOCATION_HISTORIAL_RETENCION_HORAS: 720,
+      LOCATION_HISTORIAL_RETENCION_INTERVALO_MS: 300_000,
+      LOCATION_HISTORIAL_RETENCION_LOTE: 5000,
+    });
+    expect(EsquemaConfig.parse({ ...base, LOCATION_HISTORIAL_RETENCION_HORAS: '24' }).LOCATION_HISTORIAL_RETENCION_HORAS).toBe(24);
+    // Menos de 1 h podría alcanzar a una posición vigente (la vigencia llega a 600 s).
+    for (const horas of ['0', '-1', '0.5', '8761']) {
+      expect(variablesConError({ ...base, LOCATION_HISTORIAL_RETENCION_HORAS: horas }), horas).toEqual(['LOCATION_HISTORIAL_RETENCION_HORAS']);
+    }
+    expect(variablesConError({ ...base, LOCATION_HISTORIAL_RETENCION_LOTE: '0' })).toEqual(['LOCATION_HISTORIAL_RETENCION_LOTE']);
+    expect(variablesConError({ ...base, LOCATION_HISTORIAL_RETENCION_INTERVALO_MS: '10' })).toEqual(['LOCATION_HISTORIAL_RETENCION_INTERVALO_MS']);
+  });
+
   it('sin token de servicio nombra la variable', () => {
     expect(variablesConError({ ...base, LOCATION_TOKEN_SERVICIO: undefined })).toEqual(['LOCATION_TOKEN_SERVICIO']);
   });

@@ -68,7 +68,7 @@ Cada integrante es **dueño** de un problema central y de los módulos que lo ro
 - [x] ADR 0005 (tarea pesada).
 
 **Fase B**
-- [ ] Publicación de cada posición en el canal de Redis del chofer; política de retención. Hecho: la publicación de la del chofer y la del pasajero ([docs/location.md](location.md#posición-en-vivo)). Falta: la retención.
+- [ ] Publicación de cada posición en el canal de Redis del chofer; política de retención. Hecho: la publicación de la del chofer y la del pasajero ([docs/location.md](location.md#posición-en-vivo)), y la retención del historial, con un plazo de 30 días para todo ([docs/location.md](location.md#retención-del-historial)). Falta: el plazo de 24 h para los pings sin viaje.
 - [x] tarifas en dispatch: una función en centavos enteros para estimación y tarifa final, con los tests de borde. Estimación por `GET /tarifas/estimacion` ([docs/tarifas.md](tarifas.md)).
 - [x] Configuración de tarifas por el admin: versionada en Postgres, con Idempotency-Key y caché en Redis con invalidación. **La tomó Agostina** (PR 2 de tarifas).
 - [x] Cobro simulado idempotente que falla cerrado, con la tarifa final y por qué difiere de la estimación. **Lo hizo Ivan** (PR 3 de tarifas, [docs/tarifas.md](tarifas.md)).

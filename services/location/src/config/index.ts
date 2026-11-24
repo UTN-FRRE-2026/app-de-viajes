@@ -33,6 +33,13 @@ export const EsquemaConfig = z
     LOCATION_HISTORIAL_MAX: z.coerce.number().int().min(1).default(500_000),
     LOCATION_HISTORIAL_RECLAMO_MS: z.coerce.number().int().min(1000).default(30_000),
     LOCATION_PURGA_INTERVALO_MS: z.coerce.number().int().min(1000).default(10_000),
+    // Retención del historial (`pings`, las dos estrategias). El mínimo, 1 h, siempre supera la vigencia
+    // máxima (600 s): la búsqueda nunca pierde una posición vigente. 720 h = 30 días.
+    LOCATION_HISTORIAL_RETENCION_HORAS: z.coerce.number().int().min(1).max(8760).default(720),
+    // Cada pasada borra hasta 20 lotes: 20 × 5000 cada 5 min son 333 pings/s, por encima de los 250/s
+    // que escriben 500 choferes.
+    LOCATION_HISTORIAL_RETENCION_INTERVALO_MS: z.coerce.number().int().min(1000).default(300_000),
+    LOCATION_HISTORIAL_RETENCION_LOTE: z.coerce.number().int().min(1).max(50_000).default(5000),
     APAGADO_TIMEOUT_MS: z.coerce.number().int().positive().default(10_000),
   })
   .refine((c) => c.UBICACION_ESTRATEGIA === 'memoria' || c.LOCATION_DATABASE_URL, {
