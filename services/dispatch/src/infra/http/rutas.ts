@@ -22,7 +22,7 @@ import {
   type Rol,
   type VerificadorToken,
 } from '@viajes/platform';
-import { Router } from 'express';
+import { Router, type RequestHandler } from 'express';
 import type { CasosDeFlotas } from '../../dominio/casos-uso/flotas.js';
 import type { CasosDeUso } from '../../dominio/casos-uso/index.js';
 import type { QuienCancela } from '../../dominio/entidades/index.js';
@@ -50,6 +50,8 @@ export function rutasDespacho(
   casosFlotas: CasosDeFlotas,
   /** Token de servicio de location para /interno/*. Sin él, la ruta interna no se monta. */
   tokenInterno?: string,
+  /** Límite de tasa de la solicitud de viaje, por pasajero (`limitarTasa`). Sin él, no hay límite. */
+  limitarSolicitudes: RequestHandler = (_req, _res, next) => next(),
 ): Router {
   const r = Router();
 
@@ -71,7 +73,11 @@ export function rutasDespacho(
   // Tiempo real (SSE): los eventos de los viajes propios. El usuario sale del token.
   r.get('/eventos', requerirRol('pasajero', 'chofer'), streams.manejador());
 
-  r.post('/solicitudes', requerirRol('pasajero'), validar({ body: CrearSolicitudBody }), idempotente(201), async (req, res) => {
+  // El límite va después de `idempotente`: cuenta solo los pedidos que pueden crear un viaje. Un
+  // reintento con la misma Idempotency-Key recibe la respuesta guardada y un duplicado en vuelo el 409,
+  // sin gastar cupo (la demo de deduplicación manda 20 iguales). El 429 no se guarda (solo se guarda lo
+  // que salió bien), así que reintentar con la misma clave después del Retry-After funciona.
+  r.post('/solicitudes', requerirRol('pasajero'), validar({ body: CrearSolicitudBody }), idempotente(201), limitarSolicitudes, async (req, res) => {
     const { origen, destino } = req.body as CrearSolicitudBody;
     const solicitud = await casos.crearSolicitud({ pasajeroId: usuarioDe(req).id, origen, destino });
     res.status(201).json(solicitud);

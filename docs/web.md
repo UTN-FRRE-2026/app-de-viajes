@@ -242,6 +242,6 @@ El test automático de la IP está en identity (`tests/seguridad/limite-login.te
 
 ## Pendiente
 
-- **Playwright:** la página carga sin violaciones de CSP en la consola (PLAN, Fase B).
 - **TLS y HSTS** en el entorno publicado.
-- **Límite de tasa** en solicitudes y ubicaciones (PLAN, B5): en los servicios, que ya ven la IP del cliente.
+
+Hechos: la comprobación en Playwright de que ninguna página tiene violaciones de la CSP ([docs/ci.md](ci.md)), el límite de tasa en solicitudes y ubicaciones, y el 413 de nginx con el formato de error de los servicios ([docs/seguridad.md](seguridad.md)).

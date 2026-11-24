@@ -60,6 +60,17 @@ for (const ruta of internas) {
   revisar(`${ruta} → 404`, res.status === 404 && cuerpo?.error?.code === 'RUTA_NO_ENCONTRADA', String(res.status));
 }
 
+// Un cuerpo de más de 32 kB lo corta nginx: con el formato de error de los servicios, no su página HTML.
+{
+  const res = await fetch(`${BASE}/api/identity/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ relleno: 'x'.repeat(40_000) }),
+  });
+  const cuerpo = await res.json().catch(() => null);
+  revisar('cuerpo de 40 kB → 413 en JSON', res.status === 413 && cuerpo?.error?.code === 'CUERPO_DEMASIADO_GRANDE', String(res.status));
+}
+
 // --- SSE sin buffer ----------------------------------------------------------------------------
 if (!env.IDENTITY_SEED_CONTRASENA) {
   revisar('SSE: falta IDENTITY_SEED_CONTRASENA en el .env', false);

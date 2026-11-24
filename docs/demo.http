@@ -1,0 +1,586 @@
+# Colección de la demo (enunciado 6.8), contra nginx. El guion está en docs/demo.md.
+#
+# Formato: REST Client de VS Code (extensión humao.rest-client). Cada pedido va separado por ###;
+# «Send Request» arriba de cada uno. Los pedidos con `# @name` guardan su respuesta, y los de abajo
+# la usan con {{nombre.response.body.$.campo}}: ejecutalos de arriba hacia abajo.
+# En el cliente HTTP de JetBrains, los {{x.response...}} no se resuelven: copiá los valores a mano.
+#
+# Antes de empezar:
+#   npm run setup                  (usuarios de prueba)
+#   docker compose up -d --build   (el sistema, con nginx en http://localhost:8080)
+#   npm run demo:flotas            (zonas CABA y Norte, flotas, chofer del seed habilitado y activo)
+#
+# Rutas, cuerpos y errores: services/*/src/infra/http/*.ts y packages/contracts/src.
+# Todo POST o PUT con efecto lleva Idempotency-Key (16 a 128 letras, números, - o _); sin ella, 400.
+
+@base = http://localhost:8080/api
+# IDENTITY_SEED_CONTRASENA del .env (este es el valor de .env.example).
+@contrasena = solo-desarrollo-viajes-2026
+
+@pasajeroId = 00000000-0000-4000-8000-000000000001
+@choferId = 00000000-0000-4000-8000-000000000002
+@flotaDemo = 00000000-0000-4000-8000-0000000000f1
+
+# Lugares de la demo (apps/web/src/roles/pasajero/lugares.ts), dentro de la zona CABA.
+@obeliscoLat = -34.6037
+@obeliscoLng = -58.3816
+@planetarioLat = -34.5696
+@planetarioLng = -58.4116
+
+# La clave de la solicitud de la sección 4. CAMBIALA en cada corrida de la demo: una clave ya usada
+# repite la respuesta guardada (durante 24 h), aunque sea de un viaje viejo.
+@claveSolicitud = demo-solicitud-2026-11-24-a
+
+@tokenPasajero = {{loginPasajero.response.body.$.token}}
+@tokenChofer = {{loginChofer.response.body.$.token}}
+@tokenOperador = {{loginOperador.response.body.$.token}}
+@tokenAdmin = {{loginAdmin.response.body.$.token}}
+@tokenFlota = {{loginFlota.response.body.$.token}}
+@tokenFlota2 = {{loginFlota2.response.body.$.token}}
+
+
+######################################################################################################
+# 1. Login de cada rol. Respuesta: { token, tipo, expiraEnSegundos, refreshToken, refreshExpiraEnSegundos, usuario }
+######################################################################################################
+
+# @name loginPasajero
+POST {{base}}/identity/login
+Content-Type: application/json
+
+{ "email": "pasajero@viajes.test", "contrasena": "{{contrasena}}" }
+
+###
+# @name loginChofer
+POST {{base}}/identity/login
+Content-Type: application/json
+
+{ "email": "chofer@viajes.test", "contrasena": "{{contrasena}}" }
+
+###
+# @name loginOperador
+POST {{base}}/identity/login
+Content-Type: application/json
+
+{ "email": "operador@viajes.test", "contrasena": "{{contrasena}}" }
+
+###
+# @name loginAdmin
+POST {{base}}/identity/login
+Content-Type: application/json
+
+{ "email": "admin@viajes.test", "contrasena": "{{contrasena}}" }
+
+###
+# El token del admin_flota lleva el fleetId de su flota (usuario.fleetId).
+# @name loginFlota
+POST {{base}}/identity/login
+Content-Type: application/json
+
+{ "email": "admin.flota@viajes.test", "contrasena": "{{contrasena}}" }
+
+###
+# @name loginFlota2
+POST {{base}}/identity/login
+Content-Type: application/json
+
+{ "email": "admin.flota2@viajes.test", "contrasena": "{{contrasena}}" }
+
+
+######################################################################################################
+# 2. El chofer se pone disponible e informa su ubicación
+#    La búsqueda solo ve posiciones de los últimos 30 s (UBICACION_VIGENCIA_SEGUNDOS):
+#    mandá la ubicación justo antes de solicitar (sección 4).
+######################################################################################################
+
+# 200: su registro en la flota, con disponible: true. Sin npm run demo:flotas, el chofer no está en una
+# flota (404 CHOFER_NO_ENCONTRADO) o no está activo (409 CHOFER_NO_ACTIVO).
+PUT {{base}}/viajes/chofer/disponibilidad
+Authorization: Bearer {{tokenChofer}}
+Idempotency-Key: {{$guid}}
+Content-Type: application/json
+
+{ "disponible": true }
+
+###
+# 204. A unos 50 m del Obelisco. El chofer sale del token, nunca del cuerpo.
+POST {{base}}/ubicacion/ubicaciones
+Authorization: Bearer {{tokenChofer}}
+Content-Type: application/json
+
+{ "lat": -34.6040, "lng": -58.3820 }
+
+
+######################################################################################################
+# 3. El pasajero estima la tarifa (GET, sin efecto: sin Idempotency-Key)
+######################################################################################################
+
+# 200: tarifaCentavos, distanciaMetros, duracionSegundos, desglose y tarifaVersion.
+GET {{base}}/viajes/tarifas/estimacion?origenLat={{obeliscoLat}}&origenLng={{obeliscoLng}}&destinoLat={{planetarioLat}}&destinoLng={{planetarioLng}}
+Authorization: Bearer {{tokenPasajero}}
+
+
+######################################################################################################
+# 4. El pasajero solicita, con Idempotency-Key, y la repite
+######################################################################################################
+
+# 201: la solicitud, BUSCANDO y con la tarifa estimada (o SIN_CHOFERES si no hay choferes aptos).
+# 409 SOLICITUD_ACTIVA_EXISTENTE si el pasajero ya tiene un viaje activo (ver la sección 8).
+# 422 ORIGEN_FUERA_DE_ZONA si no corriste npm run demo:flotas.
+# @name solicitar
+POST {{base}}/viajes/solicitudes
+Authorization: Bearer {{tokenPasajero}}
+Idempotency-Key: {{claveSolicitud}}
+Content-Type: application/json
+
+{
+  "origen": { "lat": {{obeliscoLat}}, "lng": {{obeliscoLng}} },
+  "destino": { "lat": {{planetarioLat}}, "lng": {{planetarioLng}} }
+}
+
+###
+# La MISMA clave y el mismo cuerpo: el mismo 201, byte a byte, con el encabezado Idempotent-Replayed: true.
+# No se crea otra solicitud (si se creara, daría 409 SOLICITUD_ACTIVA_EXISTENTE).
+POST {{base}}/viajes/solicitudes
+Authorization: Bearer {{tokenPasajero}}
+Idempotency-Key: {{claveSolicitud}}
+Content-Type: application/json
+
+{
+  "origen": { "lat": {{obeliscoLat}}, "lng": {{obeliscoLng}} },
+  "destino": { "lat": {{planetarioLat}}, "lng": {{planetarioLng}} }
+}
+
+###
+# La misma clave con OTRO cuerpo: 422 CLAVE_IDEMPOTENCIA_REUTILIZADA.
+POST {{base}}/viajes/solicitudes
+Authorization: Bearer {{tokenPasajero}}
+Idempotency-Key: {{claveSolicitud}}
+Content-Type: application/json
+
+{
+  "origen": { "lat": {{obeliscoLat}}, "lng": {{obeliscoLng}} },
+  "destino": { "lat": -34.6083, "lng": -58.3712 }
+}
+
+###
+# Sin Idempotency-Key: 400 CLAVE_IDEMPOTENCIA_INVALIDA.
+POST {{base}}/viajes/solicitudes
+Authorization: Bearer {{tokenPasajero}}
+Content-Type: application/json
+
+{
+  "origen": { "lat": {{obeliscoLat}}, "lng": {{obeliscoLng}} },
+  "destino": { "lat": {{planetarioLat}}, "lng": {{planetarioLng}} }
+}
+
+
+######################################################################################################
+# 5. El chofer ve la oferta y la acepta, y el viaje avanza
+#    La oferta dura OFERTA_TTL_SEGUNDOS (15 s por defecto): aceptala enseguida. Para la demo por API
+#    conviene subirlo en el .env (por ejemplo, 60) y recrear dispatch: docker compose up -d dispatch.
+######################################################################################################
+
+# 200: { ahora, registro, viaje, ofertas }. La oferta pendiente está en ofertas[0].
+# @name estadoChofer
+GET {{base}}/viajes/chofer/estado
+Authorization: Bearer {{tokenChofer}}
+
+###
+# 200: la solicitud ASIGNADO, con el chofer del token. Si pasaron los 15 s: 409 OFERTA_VENCIDA, o
+# SOLICITUD_NO_DISPONIBLE si el barrido ya la dejó SIN_CHOFERES. Con ofertas vacío, la variable no se resuelve.
+# Otro chofer que acepte la misma solicitud recibe 409 SOLICITUD_NO_DISPONIBLE (asignación única, 6.3).
+POST {{base}}/viajes/ofertas/{{estadoChofer.response.body.$.ofertas[0].ofertaId}}/aceptar
+Authorization: Bearer {{tokenChofer}}
+Idempotency-Key: {{$guid}}
+Content-Type: application/json
+
+{}
+
+###
+# El pasajero lee su viaje. Cualquier otro pasajero recibe 404 (sección 9).
+GET {{base}}/viajes/solicitudes/{{solicitar.response.body.$.id}}
+Authorization: Bearer {{tokenPasajero}}
+
+###
+# 204. El pasajero comparte su posición; la recibe solo el chofer de su viaje activo, por SSE.
+POST {{base}}/ubicacion/ubicaciones/pasajero
+Authorization: Bearer {{tokenPasajero}}
+Content-Type: application/json
+
+{ "lat": {{obeliscoLat}}, "lng": {{obeliscoLng}} }
+
+###
+# 200: EN_CAMINO. Solo el chofer asignado: otro chofer recibe 404.
+POST {{base}}/viajes/solicitudes/{{solicitar.response.body.$.id}}/en-camino
+Authorization: Bearer {{tokenChofer}}
+Idempotency-Key: {{$guid}}
+Content-Type: application/json
+
+{}
+
+###
+# 200: EN_CURSO. Repetirlo con otra clave da 409 TRANSICION_INVALIDA.
+POST {{base}}/viajes/solicitudes/{{solicitar.response.body.$.id}}/iniciar
+Authorization: Bearer {{tokenChofer}}
+Idempotency-Key: {{$guid}}
+Content-Type: application/json
+
+{}
+
+###
+# 200: COMPLETADA, con tarifa.finalCentavos y motivosDiferencia. Libera al chofer y deja el cobro PENDIENTE.
+POST {{base}}/viajes/solicitudes/{{solicitar.response.body.$.id}}/finalizar
+Authorization: Bearer {{tokenChofer}}
+Idempotency-Key: {{$guid}}
+Content-Type: application/json
+
+{}
+
+
+######################################################################################################
+# 6. Cobro e historial
+######################################################################################################
+
+# 200: el cobro. El barrido lo cobra solo en unos 2 s; esto lo procesa al instante o lo devuelve como
+# está si ya se resolvió (APROBADO o RECHAZADO). Nunca cobra dos veces. El chofer: 403.
+POST {{base}}/viajes/solicitudes/{{solicitar.response.body.$.id}}/cobrar
+Authorization: Bearer {{tokenPasajero}}
+Idempotency-Key: {{$guid}}
+Content-Type: application/json
+
+{}
+
+###
+# 200: el viaje con su cobro.
+GET {{base}}/viajes/solicitudes/{{solicitar.response.body.$.id}}
+Authorization: Bearer {{tokenPasajero}}
+
+###
+# 200: { viajes, siguiente }, del más nuevo al más viejo. El usuario sale del token.
+GET {{base}}/viajes/historial?limite=5
+Authorization: Bearer {{tokenPasajero}}
+
+###
+GET {{base}}/viajes/historial?limite=5
+Authorization: Bearer {{tokenChofer}}
+
+
+######################################################################################################
+# 7. Panel del operador: búsqueda y cancelación con motivo
+######################################################################################################
+
+# 200: los viajes activos (sin estado).
+GET {{base}}/viajes/panel/viajes
+Authorization: Bearer {{tokenOperador}}
+
+###
+# Por estado y con búsqueda: q busca, sin distinguir mayúsculas, en el id del viaje, del pasajero y
+# del chofer, y en el motivo de cancelación.
+GET {{base}}/viajes/panel/viajes?estado=COMPLETADA&q=000000000001&limite=10
+Authorization: Bearer {{tokenOperador}}
+
+###
+# Inyección SQL en la búsqueda: ' OR 1=1 -- se busca como texto. 200 con la lista vacía.
+GET {{base}}/viajes/panel/viajes?q=%27%20OR%201%3D1%20--
+Authorization: Bearer {{tokenOperador}}
+
+###
+# Un viaje para cancelar: el chofer vuelve a informar su ubicación...
+POST {{base}}/ubicacion/ubicaciones
+Authorization: Bearer {{tokenChofer}}
+Content-Type: application/json
+
+{ "lat": -34.6040, "lng": -58.3820 }
+
+###
+# ...y el pasajero pide otro (201).
+# @name solicitar2
+POST {{base}}/viajes/solicitudes
+Authorization: Bearer {{tokenPasajero}}
+Idempotency-Key: {{$guid}}
+Content-Type: application/json
+
+{
+  "origen": { "lat": {{obeliscoLat}}, "lng": {{obeliscoLng}} },
+  "destino": { "lat": -34.6083, "lng": -58.3712 }
+}
+
+###
+# El chofer la acepta (dentro de los 15 s de la oferta), así queda ASIGNADO y no vence.
+# @name estadoChofer2
+GET {{base}}/viajes/chofer/estado
+Authorization: Bearer {{tokenChofer}}
+
+###
+POST {{base}}/viajes/ofertas/{{estadoChofer2.response.body.$.ofertas[0].ofertaId}}/aceptar
+Authorization: Bearer {{tokenChofer}}
+Idempotency-Key: {{$guid}}
+Content-Type: application/json
+
+{}
+
+###
+# El operador sin motivo: 422 MOTIVO_REQUERIDO.
+POST {{base}}/viajes/solicitudes/{{solicitar2.response.body.$.id}}/cancelar
+Authorization: Bearer {{tokenOperador}}
+Idempotency-Key: {{$guid}}
+Content-Type: application/json
+
+{}
+
+###
+# Con motivo (3 a 200 caracteres): 200, CANCELADO_OPERADOR. Libera al chofer en la misma transacción,
+# y pasajero y chofer reciben RideCancelled.
+POST {{base}}/viajes/solicitudes/{{solicitar2.response.body.$.id}}/cancelar
+Authorization: Bearer {{tokenOperador}}
+Idempotency-Key: {{$guid}}
+Content-Type: application/json
+
+{ "motivo": "Demo: el pasajero llamó para cancelar" }
+
+###
+# La búsqueda también encuentra el motivo.
+GET {{base}}/viajes/panel/viajes?estado=CANCELADO_OPERADOR&q=llam%C3%B3
+Authorization: Bearer {{tokenOperador}}
+
+
+######################################################################################################
+# 8. Flota (variante G): activar hasta el límite, aislamiento y reporte
+######################################################################################################
+
+# 200: { id, nombre, maxActivos, activos }. Después de demo:flotas, la Flota Demo tiene 1 activo
+# (el chofer del seed) de 5.
+GET {{base}}/viajes/flota
+Authorization: Bearer {{tokenFlota}}
+
+###
+# 200: { choferes, siguiente }.
+GET {{base}}/viajes/flota/choferes?limite=10
+Authorization: Bearer {{tokenFlota}}
+
+###
+# El admin baja el límite de la Flota Demo a los activos que tiene (1). Si tiene más activos,
+# 409 LIMITE_MENOR_QUE_ACTIVOS: poné acá el número de «activos» de GET /flota.
+PUT {{base}}/viajes/admin/flotas/{{flotaDemo}}
+Authorization: Bearer {{tokenAdmin}}
+Idempotency-Key: {{$guid}}
+Content-Type: application/json
+
+{ "nombre": "Flota Demo", "maxActivos": 1 }
+
+###
+# Un chofer nuevo por el registro público (solo pasajero o chofer): 201.
+# @name registroChofer
+POST {{base}}/identity/registro
+Idempotency-Key: {{$guid}}
+Content-Type: application/json
+
+{
+  "email": "demo-chofer-{{$randomInt 100000 999999}}@viajes.test",
+  "contrasena": "{{contrasena}}",
+  "nombre": "Chofer de la demo",
+  "rol": "chofer"
+}
+
+###
+# Alta en la flota del token (201), deshabilitado e inactivo. dispatch verifica la cuenta en identity.
+# 409 PATENTE_YA_REGISTRADA si la patente al azar ya existe: volvé a mandarlo.
+POST {{base}}/viajes/flota/choferes
+Authorization: Bearer {{tokenFlota}}
+Idempotency-Key: {{$guid}}
+Content-Type: application/json
+
+{
+  "choferId": "{{registroChofer.response.body.$.id}}",
+  "vehiculo": { "patente": "AD{{$randomInt 100 999}}KM", "marca": "Fiat", "modelo": "Cronos" }
+}
+
+###
+# La habilitación es del admin de la plataforma: 200.
+POST {{base}}/viajes/admin/choferes/{{registroChofer.response.body.$.id}}/habilitar
+Authorization: Bearer {{tokenAdmin}}
+Idempotency-Key: {{$guid}}
+Content-Type: application/json
+
+{}
+
+###
+# La flota está llena: 409 LIMITE_FLOTA_ALCANZADO, y el chofer queda inactivo (carrera G).
+POST {{base}}/viajes/flota/choferes/{{registroChofer.response.body.$.id}}/activar
+Authorization: Bearer {{tokenFlota}}
+Idempotency-Key: {{$guid}}
+Content-Type: application/json
+
+{}
+
+###
+# El admin vuelve a poner el límite en 5.
+PUT {{base}}/viajes/admin/flotas/{{flotaDemo}}
+Authorization: Bearer {{tokenAdmin}}
+Idempotency-Key: {{$guid}}
+Content-Type: application/json
+
+{ "nombre": "Flota Demo", "maxActivos": 5 }
+
+###
+# Ahora entra: 200, activo: true. GET /flota muestra 2 de 5.
+POST {{base}}/viajes/flota/choferes/{{registroChofer.response.body.$.id}}/activar
+Authorization: Bearer {{tokenFlota}}
+Idempotency-Key: {{$guid}}
+Content-Type: application/json
+
+{}
+
+###
+# Lo desactiva y libera el cupo (200), así la próxima corrida empieza igual.
+POST {{base}}/viajes/flota/choferes/{{registroChofer.response.body.$.id}}/desactivar
+Authorization: Bearer {{tokenFlota}}
+Idempotency-Key: {{$guid}}
+Content-Type: application/json
+
+{}
+
+###
+# Aislamiento: el admin de la Flota Norte pide un chofer de la Flota Demo. 404 CHOFER_NO_ENCONTRADO,
+# lo mismo que si no existiera.
+GET {{base}}/viajes/flota/choferes/{{choferId}}
+Authorization: Bearer {{tokenFlota2}}
+
+###
+# Reporte de viajes y facturación de la flota del token, en [inicio, fin). Ajustá el período a la
+# fecha de la demo (como mucho 366 días; fechas con zona horaria). Cuenta el viaje de la sección 5.
+GET {{base}}/viajes/flota/reporte?inicio=2026-11-01T00:00:00-03:00&fin=2026-12-01T00:00:00-03:00
+Authorization: Bearer {{tokenFlota}}
+
+###
+# La flota no se elige: un fleetId en la query da 400 VALIDACION.
+GET {{base}}/viajes/flota/reporte?inicio=2026-11-01T00:00:00-03:00&fin=2026-12-01T00:00:00-03:00&fleetId=00000000-0000-4000-8000-0000000000f2
+Authorization: Bearer {{tokenFlota}}
+
+
+######################################################################################################
+# 9. Casos de error
+######################################################################################################
+
+# Ubicación de otro: el cuerpo no acepta choferId (strictObject). 400 VALIDACION.
+POST {{base}}/ubicacion/ubicaciones
+Authorization: Bearer {{tokenChofer}}
+Content-Type: application/json
+
+{ "lat": -34.6040, "lng": -58.3820, "choferId": "00000000-0000-4000-8000-000000000099" }
+
+###
+# Un pasajero no informa ubicación de chofer: 403 ROL_NO_PERMITIDO.
+POST {{base}}/ubicacion/ubicaciones
+Authorization: Bearer {{tokenPasajero}}
+Content-Type: application/json
+
+{ "lat": -34.6040, "lng": -58.3820 }
+
+###
+# Rol vedado: un chofer no pide viajes. 403 ROL_NO_PERMITIDO.
+POST {{base}}/viajes/solicitudes
+Authorization: Bearer {{tokenChofer}}
+Idempotency-Key: {{$guid}}
+Content-Type: application/json
+
+{
+  "origen": { "lat": {{obeliscoLat}}, "lng": {{obeliscoLng}} },
+  "destino": { "lat": {{planetarioLat}}, "lng": {{planetarioLng}} }
+}
+
+###
+# Rol vedado: el operador no abre el stream de eventos (solo pasajero y chofer). 403.
+GET {{base}}/viajes/eventos
+Authorization: Bearer {{tokenOperador}}
+
+###
+# Rol vedado: el pasajero no ve el panel. 403.
+GET {{base}}/viajes/panel/viajes
+Authorization: Bearer {{tokenPasajero}}
+
+###
+# Body inválido: latitud fuera de rango. 400 VALIDACION, con el campo en el mensaje.
+POST {{base}}/viajes/solicitudes
+Authorization: Bearer {{tokenPasajero}}
+Idempotency-Key: {{$guid}}
+Content-Type: application/json
+
+{
+  "origen": { "lat": 200, "lng": {{obeliscoLng}} },
+  "destino": { "lat": {{planetarioLat}}, "lng": {{planetarioLng}} }
+}
+
+###
+# Body inválido: una clave de más (también __proto__). 400 VALIDACION.
+POST {{base}}/viajes/solicitudes
+Authorization: Bearer {{tokenPasajero}}
+Idempotency-Key: {{$guid}}
+Content-Type: application/json
+
+{
+  "origen": { "lat": {{obeliscoLat}}, "lng": {{obeliscoLng}} },
+  "destino": { "lat": {{planetarioLat}}, "lng": {{planetarioLng}} },
+  "__proto__": { "rol": "admin" }
+}
+
+###
+# JSON mal formado: 400 JSON_INVALIDO.
+POST {{base}}/viajes/solicitudes
+Authorization: Bearer {{tokenPasajero}}
+Idempotency-Key: {{$guid}}
+Content-Type: application/json
+
+{ "origen":
+
+###
+# Registrar un admin por el registro público: 400 VALIDACION (solo pasajero o chofer).
+POST {{base}}/identity/registro
+Idempotency-Key: {{$guid}}
+Content-Type: application/json
+
+{ "email": "colado-{{$randomInt 100000 999999}}@viajes.test", "contrasena": "{{contrasena}}", "nombre": "Colado", "rol": "admin" }
+
+###
+# Sin token: 401 NO_AUTENTICADO.
+GET {{base}}/viajes/historial
+
+###
+# El viaje de otro: el admin de flota nunca es parte de un viaje. 404 SOLICITUD_NO_ENCONTRADA,
+# igual que uno que no existe. Lo mismo para cualquier pasajero o chofer ajeno.
+GET {{base}}/viajes/solicitudes/{{solicitar.response.body.$.id}}
+Authorization: Bearer {{tokenFlota}}
+
+###
+# Lo interno no se publica: 404 RUTA_NO_ENCONTRADA desde nginx (también /metrics y /ready).
+GET {{base}}/ubicacion/interno/candidatos?lat=-34.6&lng=-58.38
+
+###
+GET {{base}}/viajes/metrics
+
+
+######################################################################################################
+# 10. location detenido (ver docs/demo.md)
+#     En una terminal: docker compose stop location
+#     (o docker compose pause location: no contesta, y el 503 llega al vencer LOCATION_TIMEOUT_MS, 1 s)
+######################################################################################################
+
+# 503 UBICACION_NO_DISPONIBLE (falla cerrado): no se crea la solicitud.
+POST {{base}}/viajes/solicitudes
+Authorization: Bearer {{tokenPasajero}}
+Idempotency-Key: {{$guid}}
+Content-Type: application/json
+
+{
+  "origen": { "lat": {{obeliscoLat}}, "lng": {{obeliscoLng}} },
+  "destino": { "lat": {{planetarioLat}}, "lng": {{planetarioLng}} }
+}
+
+###
+# El login sigue andando: 200.
+POST {{base}}/identity/login
+Content-Type: application/json
+
+{ "email": "pasajero@viajes.test", "contrasena": "{{contrasena}}" }
+
+# Después: docker compose start location (o docker compose unpause location)

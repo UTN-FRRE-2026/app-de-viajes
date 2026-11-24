@@ -1,0 +1,8 @@
+{
+  "url": "http://localhost:8080/api",
+  "idem": "nueva",
+  "pedidos": [
+    { "metodo": "POST", "ruta": "/viajes/ofertas/OFERTA_ID/aceptar", "cuerpo": {}, "token": "TOKEN_CHOFER" },
+    { "metodo": "POST", "ruta": "/viajes/solicitudes/SOLICITUD_ID/cancelar", "cuerpo": {}, "token": "TOKEN_PASAJERO" }
+  ]
+}

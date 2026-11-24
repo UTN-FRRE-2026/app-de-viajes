@@ -1,0 +1,21 @@
+{
+  "url": "http://localhost:8080/api",
+  "metodo": "PUT",
+  "ruta": "/viajes/admin/tarifas",
+  "cuerpo": {
+    "bajadaCentavos": 150000,
+    "centavosPorKm": 80000,
+    "centavosPorMinuto": 15000,
+    "minimoCentavos": 250000,
+    "maxMetros": 100000
+  },
+  "cuerpo-alt": {
+    "bajadaCentavos": 160000,
+    "centavosPorKm": 80000,
+    "centavosPorMinuto": 15000,
+    "minimoCentavos": 250000,
+    "maxMetros": 100000
+  },
+  "campo-id": "version",
+  "n": 10
+}

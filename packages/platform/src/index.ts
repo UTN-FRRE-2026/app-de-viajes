@@ -14,3 +14,5 @@ export * from './idempotencia.js';
 export * from './idempotencia-sql.js';
 export * from './barrido.js';
 export * from './token-servicio.js';
+export * from './limite-tasa.js';
+export * from './log-pedidos.js';

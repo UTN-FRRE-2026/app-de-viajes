@@ -1,11 +1,15 @@
 import { fileURLToPath } from 'node:url';
 import type { Reloj } from '@viajes/kernel';
 import {
+  contadorTasaMemoria,
+  contadorTasaRedis,
   crearApp,
   crearMetricas,
   iniciarBarrido,
+  limitarTasa,
   verificadorJwks,
   type ChequeoListo,
+  type ContadorTasa,
   type Logger,
   type VerificadorToken,
 } from '@viajes/platform';
@@ -40,6 +44,8 @@ import { RepositorioUbicacionesGeo } from './infra/redis/repositorio-geo.js';
 
 /** Reemplazos para tests: cualquier adaptador se puede inyectar desde afuera. */
 export interface Reemplazos {
+  /** Contador del límite de tasa: uno propio (tests). Por defecto, Redis en la optimizada y memoria en las otras. */
+  contadorTasa?: ContadorTasa;
   verificador?: VerificadorToken;
   repo?: RepositorioUbicaciones;
   reloj?: Reloj;
@@ -80,6 +86,8 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
   let chequeos: ChequeoListo[] = [];
   let iniciar = () => {};
   let cerrar = async () => {};
+  // Un solo proceso de location: en memoria la cuenta es exacta. Con Redis (optimizada), compartida.
+  let contadorTasa: ContadorTasa = reemplazos.contadorTasa ?? contadorTasaMemoria();
 
   // Retención del historial: la misma tabla `pings` en las dos estrategias con Postgres.
   // Retención por viaje: los pings sin viaje duran menos. Hace falta preguntarle a dispatch; sin URL o
@@ -138,6 +146,7 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
     const bloqueante = crearRedisBloqueante(redis, logger);
     const claves = clavesUbicacion(config.LOCATION_REDIS_PREFIJO);
     const geo = new RepositorioUbicacionesGeo(redis, claves, { maxCola: config.LOCATION_HISTORIAL_MAX, logger });
+    contadorTasa = reemplazos.contadorTasa ?? contadorTasaRedis(redis, `${config.LOCATION_REDIS_PREFIJO}tasa:`);
     repo = geo;
     historial = new ConsumidorHistorial(
       redis,
@@ -213,10 +222,16 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
   registrarMetricasLocation(metricas, config.UBICACION_ESTRATEGIA, consumidor ? () => consumidor.estado() : undefined);
   const app = crearApp({
     logger,
-    rutas: rutasUbicacion(casos, verificador, config.LOCATION_TOKEN_SERVICIO),
+    rutas: rutasUbicacion(
+      casos,
+      verificador,
+      config.LOCATION_TOKEN_SERVICIO,
+      limitarTasa({ contador: contadorTasa, nombre: 'ubicaciones', maximo: config.LIMITE_UBICACIONES_POR_MINUTO, ventanaMs: 60_000, logger }),
+    ),
     chequeos,
     metricas: { metricas, token: config.METRICAS_TOKEN },
     confiarEnProxy: config.CONFIAR_EN_PROXY,
+    logPedidos: config.LOG_PEDIDOS,
   });
   const cerrarConexiones = cerrar;
   return {

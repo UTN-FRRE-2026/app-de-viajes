@@ -1,6 +1,7 @@
 import express, { type Express, type Router } from 'express';
 import { middlewareRequestId } from './contexto.js';
 import { middlewareErrores, middlewareNoEncontrado } from './errores.js';
+import { middlewareLogPedidos } from './log-pedidos.js';
 import type { Logger } from './logger.js';
 import { middlewareDuracion, rutaMetricas, type Metricas } from './metricas.js';
 import { rutasSalud, type ChequeoListo } from './salud.js';
@@ -24,16 +25,30 @@ interface OpcionesApp {
    * `req.ip` es la dirección de la conexión y el encabezado se ignora.
    */
   confiarEnProxy?: string[];
+  /** Una línea de log por pedido (`LOG_PEDIDOS`). Por defecto, sí. */
+  logPedidos?: boolean;
 }
 
 /** Arma la app con el mismo orden de middlewares en todos los servicios. */
-export function crearApp({ logger, rutas, chequeos, limiteBody = '16kb', limiteBodyInterno, metricas, confiarEnProxy }: OpcionesApp): Express {
+export function crearApp({
+  logger,
+  rutas,
+  chequeos,
+  limiteBody = '16kb',
+  limiteBodyInterno,
+  metricas,
+  confiarEnProxy,
+  logPedidos = true,
+}: OpcionesApp): Express {
   const app = express();
   app.disable('x-powered-by');
   // Solo las direcciones dadas: Express toma la IP del cliente de la última entrada de X-Forwarded-For
   // que no sea un proxy de confianza.
   app.set('trust proxy', confiarEnProxy && confiarEnProxy.length > 0 ? confiarEnProxy : false);
   app.use(middlewareRequestId());
+  // Después del requestId, para llevarlo en la línea; antes que todo lo demás, así también se loguean
+  // los rechazos tempranos (cuerpo demasiado grande, JSON inválido).
+  if (logPedidos) app.use(middlewareLogPedidos(logger));
   if (metricas) app.use(middlewareDuracion(metricas.metricas));
   app.use(middlewareSeguridad());
   const json = express.json({ limit: limiteBody });

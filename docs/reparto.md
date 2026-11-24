@@ -6,7 +6,7 @@ Cada integrante es **dueño** de un problema central y de los módulos que lo ro
 
 | | Problema central | Módulos y transversales | Rúbrica del Integrador | ADR |
 |---|---|---|---|---|
-| **Ivan** | 6.3 Asignación única | dispatch (viajes), idempotencia, tiempo real (SSE), Compose y nginx, despliegue | CI + SAST; temas «idempotencia», «deduplicación» y «condiciones de carrera» | 0001 ✅, 0004 ✅, 0006 ✅, 0011, 0012 |
+| **Ivan** | 6.3 Asignación única | dispatch (viajes), idempotencia, tiempo real (SSE), Compose y nginx, despliegue | CI + SAST; temas «idempotencia», «deduplicación» y «condiciones de carrera» | 0001 ✅, 0004 ✅, 0006 ✅, 0011 ✅, 0012 ✅ |
 | **Agos** | Variante G: flotas y zonas | identity, flotas (dentro de dispatch), seguridad transversal, base del frontend | Playwright; frontend | 0002, 0003, 0007, 0009 |
 | **Maxi** | 6.6 Tarea pesada | location, tarifas (dentro de dispatch), métricas | k6; Grafana Cloud; temas de margen «Redis: caché» y «datos efímeros» | 0005 ✅, 0008, 0010 |
 
@@ -32,7 +32,7 @@ Cada integrante es **dueño** de un problema central y de los módulos que lo ro
 **Fase C y ataque cruzado**
 - [x] Jobs `e2e` y `sast` en el CI ([docs/ci.md](ci.md)). Semgrep con todos los hallazgos resueltos o justificados.
 - [ ] Ataque a los otros grupos: carreras e idempotencia.
-- [ ] ADR 0011 y 0012; autoevaluación 10.6 y tag `entrega-final`.
+- [ ] ADR 0011 y 0012; autoevaluación 10.6 y tag `entrega-final`. Hechos: [0011](adr/0011-vencimiento-ofertas.md) y [0012](adr/0012-inventario-carreras.md).
 
 ## Agos
 
@@ -44,12 +44,12 @@ Cada integrante es **dueño** de un problema central y de los módulos que lo ro
 **Fase B**
 - [x] Zonas (PostGIS), zonas habilitadas por flota y filtro en dispatch de los candidatos que devuelve location, por flota y zona, con lotes crecientes y la revalidación al aceptar ([docs/flotas.md](flotas.md#zonas-operativas-pr-2)).
 - [x] Aislamiento por `fleetId` en el caso de uso (404 a otra flota, con test) y reporte por flota: los activos (el cupo), y los viajes completados y la facturación por los cobros aprobados, con `fleet_id` guardado en cada viaje al aceptar ([docs/flotas.md](flotas.md#el-reporte-de-la-flota)).
-- [ ] En `platform`, para los tres servicios: helmet, CORS restringido, rate limit genérico con 429 y encabezados, validación de encabezados y log por pedido.
-- [ ] Tests del bloque 5 que faltan: `constructor.prototype` y claves anidadas, inyección SQL en la búsqueda, rate limit en solicitud y ubicación, acceso a recursos ajenos en cada módulo.
+- [x] En `platform`, para los tres servicios: helmet, CORS restringido, rate limit genérico con 429 y encabezados, validación de encabezados y log por pedido. El rate limit y el log por pedido los hizo Ivan; CORS no hace falta (mismo origen) ([docs/seguridad.md](seguridad.md)).
+- [x] Tests del bloque 5 que faltan: `constructor.prototype` y claves anidadas, inyección SQL en la búsqueda, rate limit en solicitud y ubicación, acceso a recursos ajenos en cada módulo. Los que faltaban (prototype pollution anidado y rate limit) los hizo Ivan.
 - [ ] Frontend: proyecto base (Vite, router, stores, cliente HTTP, componente de errores), login y pantallas de admin de flota. Hecho: la base y el login ([docs/web.md](web.md#el-frontend-appsweb)), y el panel del admin de flota ([docs/web.md](web.md#el-panel-de-la-flota-flota)): cupo, lista, alta, activar y desactivar.
 - [x] identity: logout y revocación. Lo hizo Maxi (#5).
 - [x] Tarifas, PR 2: configuración por el admin (`GET` y `PUT /admin/tarifas`), tarifa global versionada con auditoría, semilla desde el entorno y caché en Redis. Lo tomó del reparto de Maxi ([docs/tarifas.md](tarifas.md)).
-- [ ] Tabla de roles y permisos en el README.
+- [x] Tabla de roles y permisos en el README. La hizo Ivan.
 
 **Fase C y ataque cruzado**
 - [x] Playwright: los cinco flujos de la sección 5.3 del plan. Los hizo Ivan, junto con el job `e2e` ([docs/ci.md](ci.md#e2e-playwright-e2e)).

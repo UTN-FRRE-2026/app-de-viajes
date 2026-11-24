@@ -63,6 +63,34 @@ describe('validación (lista blanca)', () => {
     expect(({} as Record<string, unknown>)['admin']).toBeUndefined();
   });
 
+  // JSON.parse deja `__proto__` y `constructor` como claves propias: el esquema estricto las rechaza en
+  // cualquier nivel, y nunca llegan a un merge que contamine Object.prototype.
+  it.each([
+    ['constructor.prototype en la raíz', `{"origen":{"lat":-34.6,"lng":-58.4},"destino":{"lat":-34.5,"lng":-58.4},"constructor":{"prototype":{"admin":true}}}`],
+    ['__proto__ anidado en origen', `{"origen":{"lat":-34.6,"lng":-58.4,"__proto__":{"admin":true}},"destino":{"lat":-34.5,"lng":-58.4}}`],
+    ['constructor.prototype anidado en destino', `{"origen":{"lat":-34.6,"lng":-58.4},"destino":{"lat":-34.5,"lng":-58.4,"constructor":{"prototype":{"admin":true}}}}`],
+  ])('%s → 400 y no contamina Object.prototype', async (_caso, crudo) => {
+    const res = await request(d.url)
+      .post('/solicitudes').set(clave())
+      .set(await d.auth(randomUUID(), 'pasajero'))
+      .set('content-type', 'application/json')
+      .send(crudo);
+    expect(res.status).toBe(400);
+    expect(res.body.error.code).toBe('VALIDACION');
+    expect(({} as Record<string, unknown>)['admin']).toBeUndefined();
+    expect(await d.prisma.solicitudViaje.count()).toBe(0);
+  });
+
+  it('__proto__ en el motivo de una cancelación → 400', async () => {
+    const res = await request(d.url)
+      .post(`/solicitudes/${randomUUID()}/cancelar`).set(clave())
+      .set(await d.auth(randomUUID(), 'operador'))
+      .set('content-type', 'application/json')
+      .send('{"motivo":"x","__proto__":{"estado":"COMPLETADA"}}');
+    expect(res.status).toBe(400);
+    expect(({} as Record<string, unknown>)['estado']).toBeUndefined();
+  });
+
   it('coordenadas fuera de rango → 400', async () => {
     const res = await request(d.url)
       .post('/solicitudes').set(clave())

@@ -72,8 +72,52 @@ describe('POST /ubicaciones', () => {
     expect(({} as Record<string, unknown>)['choferId']).toBeUndefined();
   });
 
+  it.each([
+    ['/ubicaciones', 'chofer', '{"lat":-34.6,"lng":-58.4,"constructor":{"prototype":{"choferId":"otro"}}}'],
+    ['/ubicaciones/pasajero', 'pasajero', '{"lat":-34.6,"lng":-58.4,"__proto__":{"choferId":"otro"}}'],
+    ['/ubicaciones/pasajero', 'pasajero', '{"lat":-34.6,"lng":-58.4,"constructor":{"prototype":{"choferId":"otro"}}}'],
+  ] as const)('%s como %s con %s → 400 y no contamina Object.prototype', async (ruta, rol, crudo) => {
+    const res = await request(d.url).post(ruta).set(await d.auth(randomUUID(), rol)).set('content-type', 'application/json').send(crudo);
+    expect(res.status).toBe(400);
+    expect(({} as Record<string, unknown>)['choferId']).toBeUndefined();
+    expect(await d.prisma.ping.count()).toBe(0);
+  });
+
   it('el token de servicio no sirve para informar una posición → 401', async () => {
     expect((await informar(d.servicio, alNorte(300))).status).toBe(401);
+  });
+});
+
+describe('límite de tasa de los pings', () => {
+  let limitado: Location;
+
+  beforeAll(async () => {
+    limitado = await levantarLocation({}, { LIMITE_UBICACIONES_POR_MINUTO: '3' });
+  });
+  afterAll(async () => {
+    await limitado.cerrar();
+  });
+
+  it('el cuarto ping del minuto → 429 con RateLimit-* y Retry-After, y no se guarda', async () => {
+    const auth = await limitado.auth(randomUUID(), 'chofer');
+    const estados: number[] = [];
+    let ultima: request.Response | undefined;
+    for (let i = 0; i < 4; i++) {
+      ultima = await request(limitado.url).post('/ubicaciones').set(auth).send(alNorte(300 + i));
+      estados.push(ultima.status);
+    }
+    expect(estados).toEqual([204, 204, 204, 429]);
+    expect(ultima?.body.error.code).toBe('DEMASIADOS_PEDIDOS');
+    expect(ultima?.headers['ratelimit-limit']).toBe('3');
+    expect(ultima?.headers['ratelimit-remaining']).toBe('0');
+    expect(ultima?.headers['retry-after']).toBeDefined();
+    expect(await limitado.prisma.ping.count()).toBe(3);
+  });
+
+  it('otro chofer tiene su propia cuenta', async () => {
+    const res = await request(limitado.url).post('/ubicaciones').set(await limitado.auth(randomUUID(), 'chofer')).send(alNorte(300));
+    expect(res.status).toBe(204);
+    expect(res.headers['ratelimit-remaining']).toBe('2');
   });
 });
 

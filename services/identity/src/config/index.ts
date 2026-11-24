@@ -1,5 +1,5 @@
 import { createPrivateKey, type KeyObject } from 'node:crypto';
-import { proxyConfiable, tokenMetricas, vacioComoAusente } from '@viajes/platform';
+import { logPedidos, proxyConfiable, tokenMetricas, vacioComoAusente } from '@viajes/platform';
 import { z } from 'zod';
 
 const BITS_MINIMOS_RSA = 2048;
@@ -26,6 +26,8 @@ export const EsquemaConfig = z
     // Detrás del nginx del Compose: su IP, para tomar la del cliente de X-Forwarded-For. Vacío: no se confía en nadie.
     CONFIAR_EN_PROXY: proxyConfiable,
     NIVEL_LOG: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
+    // Una línea de log por pedido (método, ruta, estado, duración, requestId). `no` solo en el entorno de carga.
+    LOG_PEDIDOS: logPedidos,
     IDENTITY_PERSISTENCIA: z.enum(['postgres', 'memoria']).default('postgres'),
     // No se usa DATABASE_URL: en el .env compartido apunta a la base de dispatch.
     IDENTITY_DATABASE_URL: z.string().url().optional(),

@@ -1,0 +1,19 @@
+{
+  "url": "http://localhost:8080/api",
+  "metodo": "POST",
+  "ruta": "/identity/registro",
+  "cuerpo": {
+    "email": "carrera-{fase}@viajes.test",
+    "contrasena": "contrasena-de-ataque-2026",
+    "nombre": "Carrera",
+    "rol": "pasajero"
+  },
+  "cuerpo-alt": {
+    "email": "carrera-{fase}@viajes.test",
+    "contrasena": "contrasena-de-ataque-2026",
+    "nombre": "Otro nombre",
+    "rol": "pasajero"
+  },
+  "n": 20,
+  "max-exitos": 1
+}
