@@ -22,7 +22,7 @@ test('el pasajero pide, el chofer acepta y lo lleva; el pasajero lo ve en vivo h
   await prepararContexto(ctxChofer);
   const pasajero = await ctxPasajero.newPage();
   const chofer = await ctxChofer.newPage();
-  const csp = [...[pasajero, chofer].map(vigilarCsp)];
+  const csp = [pasajero, chofer].map(vigilarCsp);
 
   // El chofer se pone disponible y empieza a mandar su posición.
   await entrar(chofer, SEED.chofer);

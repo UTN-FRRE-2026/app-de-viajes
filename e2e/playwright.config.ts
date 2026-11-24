@@ -2,7 +2,7 @@ import { defineConfig, devices } from '@playwright/test';
 
 /**
  * Los cinco flujos de PLAN 5.3 contra el sistema en Docker Compose (nginx en 8080), levantado con
- * `npm run e2e:levantar` (ver e2e/README.md).
+ * `npm run e2e:levantar` (ver docs/ci.md).
  *
  * En serie y con un solo worker: los flujos comparten los usuarios del seed, y un pasajero o un chofer
  * tienen como mucho un viaje activo.
