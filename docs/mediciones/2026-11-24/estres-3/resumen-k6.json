@@ -1,0 +1,1373 @@
+{
+  "root_group": {
+    "name": "",
+    "path": "",
+    "id": "d41d8cd98f00b204e9800998ecf8427e",
+    "groups": [],
+    "checks": []
+  },
+  "options": {
+    "noColor": false,
+    "summaryTrendStats": [
+      "avg",
+      "min",
+      "med",
+      "p(90)",
+      "p(95)",
+      "p(99)",
+      "max",
+      "count"
+    ],
+    "summaryTimeUnit": ""
+  },
+  "state": {
+    "isStdOutTTY": false,
+    "isStdErrTTY": false,
+    "testRunDurationMs": 400096.713603
+  },
+  "metrics": {
+    "viajes_503_ubicacion{etapa:6,ventana:estable}": {
+      "type": "counter",
+      "contains": "default",
+      "values": {
+        "count": 0,
+        "rate": 0
+      },
+      "thresholds": {
+        "count>=0": {
+          "ok": true
+        }
+      }
+    },
+    "tiempo_hasta_asignacion{etapa:2,ventana:estable}": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "min": 149,
+        "med": 281,
+        "p(90)": 364,
+        "p(95)": 394,
+        "p(99)": 516.1999999999997,
+        "max": 563,
+        "count": 91,
+        "avg": 264.61538461538464
+      },
+      "thresholds": {
+        "p(95)<2000": {
+          "ok": true
+        }
+      }
+    },
+    "viajes_iniciados": {
+      "type": "counter",
+      "contains": "default",
+      "values": {
+        "count": 3028,
+        "rate": 7.568170137494715
+      }
+    },
+    "viajes_sin_resolver{etapa:3,ventana:estable}": {
+      "values": {
+        "count": 0,
+        "rate": 0
+      },
+      "thresholds": {
+        "count>=0": {
+          "ok": true
+        }
+      },
+      "type": "counter",
+      "contains": "default"
+    },
+    "viajes_errores{etapa:4,ventana:estable}": {
+      "thresholds": {
+        "count>=0": {
+          "ok": true
+        }
+      },
+      "type": "counter",
+      "contains": "default",
+      "values": {
+        "count": 0,
+        "rate": 0
+      }
+    },
+    "http_req_duration{expected_response:true}": {
+      "contains": "time",
+      "values": {
+        "med": 476.0644,
+        "p(90)": 1648.0226490000011,
+        "p(95)": 2815.8587445999965,
+        "p(99)": 3845.8041351000006,
+        "max": 10359.402296,
+        "count": 25015,
+        "avg": 650.8797856329802,
+        "min": 1.361067
+      },
+      "type": "trend"
+    },
+    "viajes_creados{etapa:1,ventana:estable}": {
+      "type": "counter",
+      "contains": "default",
+      "values": {
+        "count": 45,
+        "rate": 0.11247280587426095
+      },
+      "thresholds": {
+        "count>=0": {
+          "ok": true
+        }
+      }
+    },
+    "dropped_iterations{scenario:etapa_6}": {
+      "values": {
+        "count": 646,
+        "rate": 1.6146096132171683
+      },
+      "thresholds": {
+        "count>=0": {
+          "ok": true
+        }
+      },
+      "type": "counter",
+      "contains": "default"
+    },
+    "http_req_sending": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "min": 0.006,
+        "med": 0.030001,
+        "p(90)": 0.048702,
+        "p(95)": 0.057203,
+        "p(99)": 0.096005,
+        "max": 0.906647,
+        "count": 25015,
+        "avg": 0.029030017349590213
+      }
+    },
+    "http_req_duration{nombre:cancelar,etapa:5,ventana:estable}": {
+      "thresholds": {
+        "max>=0": {
+          "ok": true
+        }
+      },
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "min": 33.483071,
+        "med": 879.372378,
+        "p(90)": 1410.4518694,
+        "p(95)": 3222.8326531499997,
+        "p(99)": 5278.5506784601,
+        "max": 7499.074339,
+        "count": 580,
+        "avg": 914.8315128568971
+      }
+    },
+    "viajes_503_ubicacion{etapa:1,ventana:estable}": {
+      "type": "counter",
+      "contains": "default",
+      "values": {
+        "count": 0,
+        "rate": 0
+      },
+      "thresholds": {
+        "count>=0": {
+          "ok": true
+        }
+      }
+    },
+    "dropped_iterations{scenario:etapa_4}": {
+      "type": "counter",
+      "contains": "default",
+      "values": {
+        "count": 0,
+        "rate": 0
+      },
+      "thresholds": {
+        "count>=0": {
+          "ok": true
+        }
+      }
+    },
+    "http_req_duration{nombre:estado,etapa:5,ventana:estable}": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "p(99)": 6947.89887624,
+        "max": 7049.664253,
+        "count": 2837,
+        "avg": 411.6164804857237,
+        "min": 1.57768,
+        "med": 269.072187,
+        "p(90)": 513.2273914,
+        "p(95)": 747.8052737999998
+      },
+      "thresholds": {
+        "max>=0": {
+          "ok": true
+        }
+      }
+    },
+    "viajes_sin_resolver{etapa:4,ventana:estable}": {
+      "thresholds": {
+        "count>=0": {
+          "ok": true
+        }
+      },
+      "type": "counter",
+      "contains": "default",
+      "values": {
+        "count": 0,
+        "rate": 0
+      }
+    },
+    "viajes_sin_choferes{etapa:5,ventana:estable}": {
+      "type": "counter",
+      "contains": "default",
+      "values": {
+        "count": 0,
+        "rate": 0
+      },
+      "thresholds": {
+        "count>=0": {
+          "ok": true
+        }
+      }
+    },
+    "tiempo_hasta_asignacion{etapa:6,ventana:estable}": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "p(95)": 10420.1,
+        "p(99)": 10617.27,
+        "max": 10700,
+        "count": 398,
+        "avg": 9119.326633165829,
+        "min": 6555,
+        "med": 9255.5,
+        "p(90)": 10313
+      },
+      "thresholds": {
+        "p(95)<2000": {
+          "ok": false
+        }
+      }
+    },
+    "viajes_sin_resolver": {
+      "type": "counter",
+      "contains": "default",
+      "values": {
+        "count": 714,
+        "rate": 1.784568519871607
+      }
+    },
+    "http_req_tls_handshaking": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "count": 25015,
+        "avg": 0,
+        "min": 0,
+        "med": 0,
+        "p(90)": 0,
+        "p(95)": 0,
+        "p(99)": 0,
+        "max": 0
+      }
+    },
+    "dropped_iterations{scenario:etapa_5}": {
+      "thresholds": {
+        "count>=0": {
+          "ok": true
+        }
+      },
+      "type": "counter",
+      "contains": "default",
+      "values": {
+        "count": 140,
+        "rate": 0.3499153960532563
+      }
+    },
+    "viajes_sin_resolver{etapa:5,ventana:estable}": {
+      "type": "counter",
+      "contains": "default",
+      "values": {
+        "count": 95,
+        "rate": 0.23744259017899533
+      },
+      "thresholds": {
+        "count>=0": {
+          "ok": true
+        }
+      }
+    },
+    "http_req_receiving": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "p(99)": 0.186609,
+        "max": 5.232563,
+        "count": 25015,
+        "avg": 0.09048535842494486,
+        "min": -1.370238,
+        "med": 0.086505,
+        "p(90)": 0.125307,
+        "p(95)": 0.141807
+      }
+    },
+    "http_req_blocked": {
+      "contains": "time",
+      "values": {
+        "avg": 0.012925234579252355,
+        "min": 0.0016,
+        "med": 0.0045,
+        "p(90)": 0.0075,
+        "p(95)": 0.009901,
+        "p(99)": 0.27918600000000016,
+        "max": 27.516843,
+        "count": 25015
+      },
+      "type": "trend"
+    },
+    "viajes_creados{etapa:3,ventana:estable}": {
+      "type": "counter",
+      "contains": "default",
+      "values": {
+        "count": 180,
+        "rate": 0.4498912234970438
+      },
+      "thresholds": {
+        "count>=0": {
+          "ok": true
+        }
+      }
+    },
+    "viajes_errores{etapa:3,ventana:estable}": {
+      "type": "counter",
+      "contains": "default",
+      "values": {
+        "count": 0,
+        "rate": 0
+      },
+      "thresholds": {
+        "count>=0": {
+          "ok": true
+        }
+      }
+    },
+    "viajes_503_ubicacion": {
+      "type": "counter",
+      "contains": "default",
+      "values": {
+        "count": 0,
+        "rate": 0
+      }
+    },
+    "viajes_creados{etapa:4,ventana:estable}": {
+      "type": "counter",
+      "contains": "default",
+      "values": {
+        "count": 361,
+        "rate": 0.9022818426801823
+      },
+      "thresholds": {
+        "count>=0": {
+          "ok": true
+        }
+      }
+    },
+    "viajes_errores{etapa:6,ventana:estable}": {
+      "type": "counter",
+      "contains": "default",
+      "values": {
+        "count": 0,
+        "rate": 0
+      },
+      "thresholds": {
+        "count>=0": {
+          "ok": true
+        }
+      }
+    },
+    "vus_max": {
+      "values": {
+        "min": 96,
+        "max": 378,
+        "value": 378
+      },
+      "type": "gauge",
+      "contains": "default"
+    },
+    "viajes_iniciados{etapa:1,ventana:estable}": {
+      "type": "counter",
+      "contains": "default",
+      "values": {
+        "count": 45,
+        "rate": 0.11247280587426095
+      },
+      "thresholds": {
+        "count>=0": {
+          "ok": true
+        }
+      }
+    },
+    "data_sent": {
+      "type": "counter",
+      "contains": "data",
+      "values": {
+        "count": 18898562,
+        "rate": 47234.984336192996
+      }
+    },
+    "viajes_503_ubicacion{etapa:5,ventana:estable}": {
+      "type": "counter",
+      "contains": "default",
+      "values": {
+        "count": 0,
+        "rate": 0
+      },
+      "thresholds": {
+        "count>=0": {
+          "ok": true
+        }
+      }
+    },
+    "http_req_duration{nombre:cancelar,etapa:1,ventana:estable}": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "avg": 65.82691257777776,
+        "min": 37.741784,
+        "med": 61.206972,
+        "p(90)": 77.1380074,
+        "p(95)": 79.6529614,
+        "p(99)": 198.89778284000045,
+        "max": 288.459459,
+        "count": 45
+      },
+      "thresholds": {
+        "max>=0": {
+          "ok": true
+        }
+      }
+    },
+    "tiempo_hasta_asignacion{etapa:1,ventana:estable}": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "max": 523,
+        "count": 45,
+        "avg": 256.6,
+        "min": 151,
+        "med": 266,
+        "p(90)": 329,
+        "p(95)": 387,
+        "p(99)": 492.64000000000016
+      },
+      "thresholds": {
+        "p(95)<2000": {
+          "ok": true
+        }
+      }
+    },
+    "http_req_duration{nombre:crear,etapa:6,ventana:estable}": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "p(95)": 3867.9072992,
+        "p(99)": 4057.98961816,
+        "max": 4206.090085,
+        "count": 929,
+        "avg": 3483.3739106383164,
+        "min": 2904.458244,
+        "med": 3458.081468,
+        "p(90)": 3782.2198072
+      },
+      "thresholds": {
+        "p(95)<500": {
+          "ok": false
+        }
+      }
+    },
+    "http_req_duration": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "p(99)": 3845.8041351000006,
+        "max": 10359.402296,
+        "count": 25015,
+        "avg": 650.8797856329802,
+        "min": 1.361067,
+        "med": 476.0644,
+        "p(90)": 1648.0226490000011,
+        "p(95)": 2815.8587445999965
+      }
+    },
+    "viajes_sin_resolver{etapa:1,ventana:estable}": {
+      "type": "counter",
+      "contains": "default",
+      "values": {
+        "count": 0,
+        "rate": 0
+      },
+      "thresholds": {
+        "count>=0": {
+          "ok": true
+        }
+      }
+    },
+    "dropped_iterations{scenario:etapa_2}": {
+      "type": "counter",
+      "contains": "default",
+      "values": {
+        "count": 0,
+        "rate": 0
+      },
+      "thresholds": {
+        "count>=0": {
+          "ok": true
+        }
+      }
+    },
+    "http_req_duration{nombre:cancelar,etapa:3,ventana:estable}": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "max": 262.818696,
+        "count": 180,
+        "avg": 61.14333988888887,
+        "min": 28.918188,
+        "med": 53.8145485,
+        "p(90)": 77.4226971,
+        "p(95)": 100.00465959999968,
+        "p(99)": 237.28177592
+      },
+      "thresholds": {
+        "max>=0": {
+          "ok": true
+        }
+      }
+    },
+    "http_req_failed": {
+      "type": "rate",
+      "contains": "default",
+      "values": {
+        "fails": 25015,
+        "rate": 0,
+        "passes": 0
+      }
+    },
+    "dropped_iterations{scenario:etapa_3}": {
+      "type": "counter",
+      "contains": "default",
+      "values": {
+        "count": 0,
+        "rate": 0
+      },
+      "thresholds": {
+        "count>=0": {
+          "ok": true
+        }
+      }
+    },
+    "vus": {
+      "values": {
+        "value": 4,
+        "min": 0,
+        "max": 250
+      },
+      "type": "gauge",
+      "contains": "default"
+    },
+    "viajes_iniciados{etapa:3,ventana:estable}": {
+      "type": "counter",
+      "contains": "default",
+      "values": {
+        "count": 180,
+        "rate": 0.4498912234970438
+      },
+      "thresholds": {
+        "count>=0": {
+          "ok": true
+        }
+      }
+    },
+    "http_req_duration{nombre:estado,etapa:4,ventana:estable}": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "avg": 3.5279031304812842,
+        "min": 1.560416,
+        "med": 2.422119,
+        "p(90)": 5.2720412,
+        "p(95)": 6.487631599999998,
+        "p(99)": 30.41280107999994,
+        "max": 77.41733,
+        "count": 935
+      },
+      "thresholds": {
+        "max>=0": {
+          "ok": true
+        }
+      }
+    },
+    "viajes_asignados{etapa:1,ventana:estable}": {
+      "type": "counter",
+      "contains": "default",
+      "values": {
+        "count": 45,
+        "rate": 0.11247280587426095
+      },
+      "thresholds": {
+        "count>=0": {
+          "ok": true
+        }
+      }
+    },
+    "viajes_503_ubicacion{etapa:2,ventana:estable}": {
+      "thresholds": {
+        "count>=0": {
+          "ok": true
+        }
+      },
+      "type": "counter",
+      "contains": "default",
+      "values": {
+        "count": 0,
+        "rate": 0
+      }
+    },
+    "http_req_duration{nombre:cancelar,etapa:2,ventana:estable}": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "max": 280.096982,
+        "count": 91,
+        "avg": 70.34601945054945,
+        "min": 35.56526,
+        "med": 63.303638,
+        "p(90)": 82.298814,
+        "p(95)": 118.96527900000001,
+        "p(99)": 223.56349369999964
+      },
+      "thresholds": {
+        "max>=0": {
+          "ok": true
+        }
+      }
+    },
+    "viajes_503_ubicacion{etapa:3,ventana:estable}": {
+      "type": "counter",
+      "contains": "default",
+      "values": {
+        "rate": 0,
+        "count": 0
+      },
+      "thresholds": {
+        "count>=0": {
+          "ok": true
+        }
+      }
+    },
+    "viajes_creados{etapa:6,ventana:estable}": {
+      "type": "counter",
+      "contains": "default",
+      "values": {
+        "count": 929,
+        "rate": 2.321938592381965
+      },
+      "thresholds": {
+        "count>=0": {
+          "ok": true
+        }
+      }
+    },
+    "tiempo_hasta_asignacion{etapa:3,ventana:estable}": {
+      "contains": "time",
+      "values": {
+        "med": 255,
+        "p(90)": 285.1,
+        "p(95)": 302.09999999999997,
+        "p(99)": 362.8900000000001,
+        "max": 437,
+        "count": 180,
+        "avg": 233.56666666666666,
+        "min": 140
+      },
+      "thresholds": {
+        "p(95)<2000": {
+          "ok": true
+        }
+      },
+      "type": "trend"
+    },
+    "viajes_sin_resolver{etapa:2,ventana:estable}": {
+      "thresholds": {
+        "count>=0": {
+          "ok": true
+        }
+      },
+      "type": "counter",
+      "contains": "default",
+      "values": {
+        "count": 0,
+        "rate": 0
+      }
+    },
+    "dropped_iterations{scenario:etapa_1}": {
+      "type": "counter",
+      "contains": "default",
+      "values": {
+        "count": 0,
+        "rate": 0
+      },
+      "thresholds": {
+        "count>=0": {
+          "ok": true
+        }
+      }
+    },
+    "http_req_duration{nombre:estado,etapa:6,ventana:estable}": {
+      "values": {
+        "p(99)": 876.3639795,
+        "max": 1005.121649,
+        "count": 10131,
+        "avg": 528.9046489948646,
+        "min": 1.490475,
+        "med": 550.487445,
+        "p(90)": 734.713301,
+        "p(95)": 776.3140515
+      },
+      "thresholds": {
+        "max>=0": {
+          "ok": true
+        }
+      },
+      "type": "trend",
+      "contains": "time"
+    },
+    "viajes_sin_choferes{etapa:6,ventana:estable}": {
+      "thresholds": {
+        "count>=0": {
+          "ok": true
+        }
+      },
+      "type": "counter",
+      "contains": "default",
+      "values": {
+        "count": 0,
+        "rate": 0
+      }
+    },
+    "http_req_duration{nombre:crear,etapa:2,ventana:estable}": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "max": 289.396843,
+        "count": 91,
+        "avg": 86.68369579120879,
+        "min": 45.241711,
+        "med": 74.312128,
+        "p(90)": 127.380258,
+        "p(95)": 195.7041645,
+        "p(99)": 255.52583169999977
+      },
+      "thresholds": {
+        "p(95)<500": {
+          "ok": true
+        }
+      }
+    },
+    "http_req_waiting": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "avg": 650.7602702572083,
+        "min": 1.261063,
+        "med": 475.912593,
+        "p(90)": 1647.918213400001,
+        "p(95)": 2815.7538285999967,
+        "p(99)": 3845.714582100001,
+        "max": 10359.249088,
+        "count": 25015
+      }
+    },
+    "viajes_sin_choferes{etapa:4,ventana:estable}": {
+      "type": "counter",
+      "contains": "default",
+      "values": {
+        "count": 0,
+        "rate": 0
+      },
+      "thresholds": {
+        "count>=0": {
+          "ok": true
+        }
+      }
+    },
+    "viajes_503_ubicacion{etapa:4,ventana:estable}": {
+      "contains": "default",
+      "values": {
+        "count": 0,
+        "rate": 0
+      },
+      "thresholds": {
+        "count>=0": {
+          "ok": true
+        }
+      },
+      "type": "counter"
+    },
+    "viajes_iniciados{etapa:4,ventana:estable}": {
+      "values": {
+        "count": 361,
+        "rate": 0.9022818426801823
+      },
+      "thresholds": {
+        "count>=0": {
+          "ok": true
+        }
+      },
+      "type": "counter",
+      "contains": "default"
+    },
+    "http_req_duration{nombre:crear,etapa:5,ventana:estable}": {
+      "contains": "time",
+      "values": {
+        "count": 580,
+        "avg": 2457.023655699998,
+        "min": 41.022048,
+        "med": 1934.4414345,
+        "p(90)": 6532.850406300001,
+        "p(95)": 8074.251155399998,
+        "p(99)": 8598.53404025,
+        "max": 10359.402296
+      },
+      "thresholds": {
+        "p(95)<500": {
+          "ok": false
+        }
+      },
+      "type": "trend"
+    },
+    "data_received": {
+      "type": "counter",
+      "contains": "data",
+      "values": {
+        "count": 30439831,
+        "rate": 76081.18228685134
+      }
+    },
+    "tiempo_hasta_asignacion{etapa:5,ventana:estable}": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "avg": 3353.9835051546393,
+        "min": 146,
+        "med": 3260,
+        "p(90)": 7476.600000000002,
+        "p(95)": 8985.599999999999,
+        "p(99)": 10368.999999999996,
+        "max": 14947,
+        "count": 485
+      },
+      "thresholds": {
+        "p(95)<2000": {
+          "ok": false
+        }
+      }
+    },
+    "dropped_iterations": {
+      "type": "counter",
+      "contains": "default",
+      "values": {
+        "rate": 1.9645250092704245,
+        "count": 786
+      }
+    },
+    "iteration_duration": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "count": 3028,
+        "avg": 5907.675064176688,
+        "min": 176.342262,
+        "med": 6223.8606285000005,
+        "p(90)": 12720.772492400001,
+        "p(95)": 12926.5788763,
+        "p(99)": 14193.994968450002,
+        "max": 16126.176091
+      }
+    },
+    "viajes_sin_choferes{etapa:3,ventana:estable}": {
+      "type": "counter",
+      "contains": "default",
+      "values": {
+        "count": 0,
+        "rate": 0
+      },
+      "thresholds": {
+        "count>=0": {
+          "ok": true
+        }
+      }
+    },
+    "viajes_asignados{etapa:6,ventana:estable}": {
+      "thresholds": {
+        "count>=0": {
+          "ok": true
+        }
+      },
+      "type": "counter",
+      "contains": "default",
+      "values": {
+        "count": 398,
+        "rate": 0.9947594830656857
+      }
+    },
+    "viajes_creados": {
+      "type": "counter",
+      "contains": "default",
+      "values": {
+        "count": 3028,
+        "rate": 7.568170137494715
+      }
+    },
+    "viajes_asignados{etapa:5,ventana:estable}": {
+      "type": "counter",
+      "contains": "default",
+      "values": {
+        "count": 485,
+        "rate": 1.2122069077559237
+      },
+      "thresholds": {
+        "count>=0": {
+          "ok": true
+        }
+      }
+    },
+    "tiempo_hasta_asignacion{etapa:4,ventana:estable}": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "min": 141,
+        "med": 255,
+        "p(90)": 302,
+        "p(95)": 355,
+        "p(99)": 432.19999999999993,
+        "max": 583,
+        "count": 361,
+        "avg": 239.67036011080333
+      },
+      "thresholds": {
+        "p(95)<2000": {
+          "ok": true
+        }
+      }
+    },
+    "http_req_duration{nombre:crear,etapa:1,ventana:estable}": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "med": 70.47443,
+        "p(90)": 114.80074940000002,
+        "p(95)": 181.0700087999998,
+        "p(99)": 292.7208464000003,
+        "max": 350.170388,
+        "count": 45,
+        "avg": 83.89612702222225,
+        "min": 38.374603
+      },
+      "thresholds": {
+        "p(95)<500": {
+          "ok": true
+        }
+      }
+    },
+    "viajes_errores": {
+      "contains": "default",
+      "values": {
+        "count": 0,
+        "rate": 0
+      },
+      "type": "counter"
+    },
+    "http_reqs": {
+      "type": "counter",
+      "contains": "default",
+      "values": {
+        "count": 25015,
+        "rate": 62.52238308765861
+      }
+    },
+    "viajes_creados{etapa:2,ventana:estable}": {
+      "thresholds": {
+        "count>=0": {
+          "ok": true
+        }
+      },
+      "type": "counter",
+      "contains": "default",
+      "values": {
+        "count": 91,
+        "rate": 0.2274450074346166
+      }
+    },
+    "http_req_duration{nombre:cancelar,etapa:4,ventana:estable}": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "avg": 61.823666340720216,
+        "min": 29.423859,
+        "med": 55.012927,
+        "p(90)": 85.872318,
+        "p(95)": 102.083615,
+        "p(99)": 229.8298731999997,
+        "max": 413.382793,
+        "count": 361
+      },
+      "thresholds": {
+        "max>=0": {
+          "ok": true
+        }
+      }
+    },
+    "viajes_sin_resolver{etapa:6,ventana:estable}": {
+      "type": "counter",
+      "contains": "default",
+      "values": {
+        "count": 531,
+        "rate": 1.3271791093162792
+      },
+      "thresholds": {
+        "count>=0": {
+          "ok": true
+        }
+      }
+    },
+    "http_req_duration{nombre:estado,etapa:3,ventana:estable}": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "p(95)": 4.132157099999998,
+        "p(99)": 6.93177657,
+        "max": 21.579856,
+        "count": 462,
+        "avg": 2.5106071861471846,
+        "min": 1.698469,
+        "med": 2.2031145,
+        "p(90)": 3.2845729000000015
+      },
+      "thresholds": {
+        "max>=0": {
+          "ok": true
+        }
+      }
+    },
+    "viajes_errores{etapa:5,ventana:estable}": {
+      "type": "counter",
+      "contains": "default",
+      "values": {
+        "count": 0,
+        "rate": 0
+      },
+      "thresholds": {
+        "count>=0": {
+          "ok": true
+        }
+      }
+    },
+    "viajes_sin_choferes{etapa:1,ventana:estable}": {
+      "values": {
+        "count": 0,
+        "rate": 0
+      },
+      "thresholds": {
+        "count>=0": {
+          "ok": true
+        }
+      },
+      "type": "counter",
+      "contains": "default"
+    },
+    "viajes_sin_choferes": {
+      "type": "counter",
+      "contains": "default",
+      "values": {
+        "count": 0,
+        "rate": 0
+      }
+    },
+    "viajes_iniciados{etapa:6,ventana:estable}": {
+      "contains": "default",
+      "values": {
+        "count": 929,
+        "rate": 2.321938592381965
+      },
+      "thresholds": {
+        "count>=0": {
+          "ok": true
+        }
+      },
+      "type": "counter"
+    },
+    "http_req_duration{nombre:estado,etapa:1,ventana:estable}": {
+      "values": {
+        "p(99)": 8.032997800000006,
+        "max": 10.722043,
+        "count": 120,
+        "avg": 2.5609630749999996,
+        "min": 1.799589,
+        "med": 2.2491149999999998,
+        "p(90)": 3.1698267,
+        "p(95)": 3.81715065
+      },
+      "thresholds": {
+        "max>=0": {
+          "ok": true
+        }
+      },
+      "type": "trend",
+      "contains": "time"
+    },
+    "iterations": {
+      "type": "counter",
+      "contains": "default",
+      "values": {
+        "count": 3028,
+        "rate": 7.568170137494715
+      }
+    },
+    "http_req_duration{nombre:estado,etapa:2,ventana:estable}": {
+      "values": {
+        "p(90)": 3.4352512,
+        "p(95)": 4.443262199999997,
+        "p(99)": 6.432234199999981,
+        "max": 34.15256,
+        "count": 247,
+        "avg": 2.6247750242914947,
+        "min": 1.749288,
+        "med": 2.203511
+      },
+      "thresholds": {
+        "max>=0": {
+          "ok": true
+        }
+      },
+      "type": "trend",
+      "contains": "time"
+    },
+    "viajes_creados{etapa:5,ventana:estable}": {
+      "type": "counter",
+      "contains": "default",
+      "values": {
+        "count": 580,
+        "rate": 1.4496494979349188
+      },
+      "thresholds": {
+        "count>=0": {
+          "ok": true
+        }
+      }
+    },
+    "http_req_duration{nombre:crear,etapa:3,ventana:estable}": {
+      "values": {
+        "max": 256.583894,
+        "count": 180,
+        "avg": 71.45039918333335,
+        "min": 36.414087,
+        "med": 62.809431000000004,
+        "p(90)": 96.16228049999998,
+        "p(95)": 129.87198314999944,
+        "p(99)": 227.54904449000009
+      },
+      "thresholds": {
+        "p(95)<500": {
+          "ok": true
+        }
+      },
+      "type": "trend",
+      "contains": "time"
+    },
+    "viajes_asignados{etapa:3,ventana:estable}": {
+      "type": "counter",
+      "contains": "default",
+      "values": {
+        "count": 180,
+        "rate": 0.4498912234970438
+      },
+      "thresholds": {
+        "count>=0": {
+          "ok": true
+        }
+      }
+    },
+    "viajes_errores{etapa:2,ventana:estable}": {
+      "type": "counter",
+      "contains": "default",
+      "values": {
+        "count": 0,
+        "rate": 0
+      },
+      "thresholds": {
+        "count>=0": {
+          "ok": true
+        }
+      }
+    },
+    "http_req_connecting": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "p(99)": 0.19971,
+        "max": 27.442339,
+        "count": 25015,
+        "avg": 0.0062673307615430775,
+        "min": 0,
+        "med": 0,
+        "p(90)": 0,
+        "p(95)": 0
+      }
+    },
+    "viajes_sin_choferes{etapa:2,ventana:estable}": {
+      "values": {
+        "count": 0,
+        "rate": 0
+      },
+      "thresholds": {
+        "count>=0": {
+          "ok": true
+        }
+      },
+      "type": "counter",
+      "contains": "default"
+    },
+    "http_req_duration{nombre:cancelar,etapa:6,ventana:estable}": {
+      "thresholds": {
+        "max>=0": {
+          "ok": true
+        }
+      },
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "p(90)": 2073.30987,
+        "p(95)": 2153.0282654,
+        "p(99)": 2316.4270606800014,
+        "max": 2395.684532,
+        "count": 929,
+        "avg": 1676.5102316081795,
+        "min": 46.569846,
+        "med": 1761.466564
+      }
+    },
+    "viajes_asignados{etapa:4,ventana:estable}": {
+      "type": "counter",
+      "contains": "default",
+      "values": {
+        "count": 361,
+        "rate": 0.9022818426801823
+      },
+      "thresholds": {
+        "count>=0": {
+          "ok": true
+        }
+      }
+    },
+    "viajes_errores{etapa:1,ventana:estable}": {
+      "type": "counter",
+      "contains": "default",
+      "values": {
+        "count": 0,
+        "rate": 0
+      },
+      "thresholds": {
+        "count>=0": {
+          "ok": true
+        }
+      }
+    },
+    "viajes_iniciados{etapa:5,ventana:estable}": {
+      "thresholds": {
+        "count>=0": {
+          "ok": true
+        }
+      },
+      "type": "counter",
+      "contains": "default",
+      "values": {
+        "count": 580,
+        "rate": 1.4496494979349188
+      }
+    },
+    "tiempo_hasta_asignacion": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "avg": 3041.4425237683663,
+        "min": 140,
+        "med": 318,
+        "p(90)": 9199.2,
+        "p(95)": 9876.35,
+        "p(99)": 10445.919999999998,
+        "max": 14947,
+        "count": 2314
+      }
+    },
+    "viajes_asignados{etapa:2,ventana:estable}": {
+      "type": "counter",
+      "contains": "default",
+      "values": {
+        "count": 91,
+        "rate": 0.2274450074346166
+      },
+      "thresholds": {
+        "count>=0": {
+          "ok": true
+        }
+      }
+    },
+    "http_req_duration{nombre:crear,etapa:4,ventana:estable}": {
+      "type": "trend",
+      "contains": "time",
+      "values": {
+        "p(90)": 103.235908,
+        "p(95)": 144.029625,
+        "p(99)": 226.43041519999971,
+        "max": 320.295078,
+        "count": 361,
+        "avg": 73.57591068421054,
+        "min": 33.378752,
+        "med": 63.558645
+      },
+      "thresholds": {
+        "p(95)<500": {
+          "ok": true
+        }
+      }
+    },
+    "viajes_asignados": {
+      "type": "counter",
+      "contains": "default",
+      "values": {
+        "count": 2314,
+        "rate": 5.783601617623107
+      }
+    },
+    "viajes_iniciados{etapa:2,ventana:estable}": {
+      "values": {
+        "count": 91,
+        "rate": 0.2274450074346166
+      },
+      "thresholds": {
+        "count>=0": {
+          "ok": true
+        }
+      },
+      "type": "counter",
+      "contains": "default"
+    }
+  }
+}

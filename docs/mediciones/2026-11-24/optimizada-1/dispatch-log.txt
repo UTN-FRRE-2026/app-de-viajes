@@ -1,0 +1,15 @@
+﻿{"level":30,"time":1795509434972,"pid":1,"hostname":"27613e3d1b5b","name":"dispatch","puerto":3005,"persistencia":"postgres","buscador":"location","msg":"dispatch escuchando"}
+{"level":30,"time":1795509435008,"pid":1,"hostname":"27613e3d1b5b","name":"dispatch","version":"v1","configuradaPor":"semilla","msg":"tarifa vigente"}
+{"level":30,"time":1795509497012,"pid":1,"hostname":"27613e3d1b5b","name":"dispatch","cantidad":2,"msg":"barrido: ofertas vencidas procesadas"}
+{"level":30,"time":1795509498870,"pid":1,"hostname":"27613e3d1b5b","name":"dispatch","cantidad":1,"msg":"barrido: ofertas vencidas procesadas"}
+{"level":30,"time":1795509530859,"pid":1,"hostname":"27613e3d1b5b","name":"dispatch","cantidad":1,"msg":"barrido: ofertas vencidas procesadas"}
+{"level":30,"time":1795509532967,"pid":1,"hostname":"27613e3d1b5b","name":"dispatch","cantidad":1,"msg":"barrido: ofertas vencidas procesadas"}
+{"level":30,"time":1795509534866,"pid":1,"hostname":"27613e3d1b5b","name":"dispatch","cantidad":1,"msg":"barrido: ofertas vencidas procesadas"}
+{"level":30,"time":1795509538900,"pid":1,"hostname":"27613e3d1b5b","name":"dispatch","cantidad":1,"msg":"barrido: ofertas vencidas procesadas"}
+{"level":30,"time":1795509610933,"pid":1,"hostname":"27613e3d1b5b","name":"dispatch","cantidad":1,"msg":"barrido: ofertas vencidas procesadas"}
+{"level":30,"time":1795509674967,"pid":1,"hostname":"27613e3d1b5b","name":"dispatch","cantidad":1,"msg":"barrido: ofertas vencidas procesadas"}
+{"level":30,"time":1795509692971,"pid":1,"hostname":"27613e3d1b5b","name":"dispatch","cantidad":1,"msg":"barrido: ofertas vencidas procesadas"}
+{"level":30,"time":1795509752923,"pid":1,"hostname":"27613e3d1b5b","name":"dispatch","cantidad":1,"msg":"barrido: ofertas vencidas procesadas"}
+{"level":30,"time":1795509782121,"pid":1,"hostname":"27613e3d1b5b","name":"dispatch","senal":"SIGTERM","msg":"apagado: dejo de aceptar conexiones y drenando pedidos"}
+{"level":30,"time":1795509782123,"pid":1,"hostname":"27613e3d1b5b","name":"dispatch","msg":"apagado: pedidos drenados, cerrando recursos"}
+{"level":30,"time":1795509782125,"pid":1,"hostname":"27613e3d1b5b","name":"dispatch","msg":"apagado: listo"}

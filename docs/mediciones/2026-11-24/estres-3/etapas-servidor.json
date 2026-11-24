@@ -1,0 +1,373 @@
+{
+  "calentamiento_s": 30,
+  "etapa_s": 60,
+  "transicion_s": 15,
+  "etapas": [
+    {
+      "etapa": 1,
+      "tasa": 1,
+      "ventana_estable": {
+        "desde": "2026-11-24T09:31:01.455Z",
+        "hasta": "2026-11-24T09:31:46.452Z",
+        "segundos": 44.997
+      },
+      "crear_s": {
+        "cuenta": 45,
+        "p50": 0.1,
+        "p95": 0.25,
+        "p99": 0.5
+      },
+      "aceptar_s": {
+        "cuenta": 138,
+        "p50": 0.1,
+        "p95": 0.25,
+        "p99": 0.5
+      },
+      "hasta_asignacion_s": {
+        "cuenta": 46,
+        "p50": 0.25,
+        "p95": 0.5,
+        "p99": 1
+      },
+      "lag_dispatch_s": {
+        "cuenta": 450,
+        "p50": 0.001,
+        "p95": 0.001,
+        "p99": 0.002
+      },
+      "lag_location_s": {
+        "cuenta": 448,
+        "p50": 0.001,
+        "p95": 0.002,
+        "p99": 0.01
+      },
+      "memoria_mb": {
+        "dispatch": 133,
+        "location": 125
+      },
+      "busquedas_sin_aptos": {
+        "sin_candidatos": 0,
+        "filtrados": 0,
+        "tope_agotado": 0
+      },
+      "pings_location_por_s": 404.9,
+      "pings_location_aceptados_por_s": 404.9,
+      "pings_choferes_prueba_por_s": 154.9,
+      "choferes_prueba": {
+        "segundos": 44.997,
+        "enviados": 6968,
+        "aceptados_por_location": 6968,
+        "fallidos": 0,
+        "enviados_por_s": 154.9,
+        "aceptados_por_s": 154.9,
+        "choferes_activos": 310
+      },
+      "pings_fondo_aceptados_por_s": 250
+    },
+    {
+      "etapa": 2,
+      "tasa": 2,
+      "ventana_estable": {
+        "desde": "2026-11-24T09:32:01.456Z",
+        "hasta": "2026-11-24T09:32:46.453Z",
+        "segundos": 44.997
+      },
+      "crear_s": {
+        "cuenta": 91,
+        "p50": 0.1,
+        "p95": 0.25,
+        "p99": 0.5
+      },
+      "aceptar_s": {
+        "cuenta": 273,
+        "p50": 0.1,
+        "p95": 0.25,
+        "p99": 0.5
+      },
+      "hasta_asignacion_s": {
+        "cuenta": 91,
+        "p50": 0.25,
+        "p95": 0.5,
+        "p99": 0.5
+      },
+      "lag_dispatch_s": {
+        "cuenta": 449,
+        "p50": 0.001,
+        "p95": 0.001,
+        "p99": 0.001
+      },
+      "lag_location_s": {
+        "cuenta": 448,
+        "p50": 0.001,
+        "p95": 0.002,
+        "p99": 0.01
+      },
+      "memoria_mb": {
+        "dispatch": 134,
+        "location": 126
+      },
+      "busquedas_sin_aptos": {
+        "sin_candidatos": 0,
+        "filtrados": 0,
+        "tope_agotado": 0
+      },
+      "pings_location_por_s": 404.9,
+      "pings_location_aceptados_por_s": 404.9,
+      "pings_choferes_prueba_por_s": 154.9,
+      "choferes_prueba": {
+        "segundos": 44.997,
+        "enviados": 6968,
+        "aceptados_por_location": 6968,
+        "fallidos": 0,
+        "enviados_por_s": 154.9,
+        "aceptados_por_s": 154.9,
+        "choferes_activos": 310
+      },
+      "pings_fondo_aceptados_por_s": 250
+    },
+    {
+      "etapa": 3,
+      "tasa": 4,
+      "ventana_estable": {
+        "desde": "2026-11-24T09:33:01.455Z",
+        "hasta": "2026-11-24T09:33:46.456Z",
+        "segundos": 45.001
+      },
+      "crear_s": {
+        "cuenta": 181,
+        "p50": 0.1,
+        "p95": 0.25,
+        "p99": 0.25
+      },
+      "aceptar_s": {
+        "cuenta": 536,
+        "p50": 0.1,
+        "p95": 0.1,
+        "p99": 0.25
+      },
+      "hasta_asignacion_s": {
+        "cuenta": 181,
+        "p50": 0.25,
+        "p95": 0.25,
+        "p99": 0.5
+      },
+      "lag_dispatch_s": {
+        "cuenta": 449,
+        "p50": 0.001,
+        "p95": 0.001,
+        "p99": 0.002
+      },
+      "lag_location_s": {
+        "cuenta": 449,
+        "p50": 0.001,
+        "p95": 0.002,
+        "p99": 0.005
+      },
+      "memoria_mb": {
+        "dispatch": 138,
+        "location": 125
+      },
+      "busquedas_sin_aptos": {
+        "sin_candidatos": 0,
+        "filtrados": 0,
+        "tope_agotado": 0
+      },
+      "pings_location_por_s": 404.9,
+      "pings_location_aceptados_por_s": 404.9,
+      "pings_choferes_prueba_por_s": 154.9,
+      "choferes_prueba": {
+        "segundos": 45.001,
+        "enviados": 6969,
+        "aceptados_por_location": 6969,
+        "fallidos": 0,
+        "enviados_por_s": 154.9,
+        "aceptados_por_s": 154.9,
+        "choferes_activos": 310
+      },
+      "pings_fondo_aceptados_por_s": 250
+    },
+    {
+      "etapa": 4,
+      "tasa": 8,
+      "ventana_estable": {
+        "desde": "2026-11-24T09:34:01.457Z",
+        "hasta": "2026-11-24T09:34:46.454Z",
+        "segundos": 44.997
+      },
+      "crear_s": {
+        "cuenta": 364,
+        "p50": 0.1,
+        "p95": 0.25,
+        "p99": 0.25
+      },
+      "aceptar_s": {
+        "cuenta": 979,
+        "p50": 0.1,
+        "p95": 0.25,
+        "p99": 0.25
+      },
+      "hasta_asignacion_s": {
+        "cuenta": 363,
+        "p50": 0.25,
+        "p95": 0.5,
+        "p99": 0.5
+      },
+      "lag_dispatch_s": {
+        "cuenta": 449,
+        "p50": 0.001,
+        "p95": 0.001,
+        "p99": 0.002
+      },
+      "lag_location_s": {
+        "cuenta": 449,
+        "p50": 0.001,
+        "p95": 0.001,
+        "p99": 0.01
+      },
+      "memoria_mb": {
+        "dispatch": 145,
+        "location": 126
+      },
+      "busquedas_sin_aptos": {
+        "sin_candidatos": 0,
+        "filtrados": 0,
+        "tope_agotado": 0
+      },
+      "pings_location_por_s": 404.8,
+      "pings_location_aceptados_por_s": 404.8,
+      "pings_choferes_prueba_por_s": 154.9,
+      "choferes_prueba": {
+        "segundos": 44.997,
+        "enviados": 6968,
+        "aceptados_por_location": 6968,
+        "fallidos": 0,
+        "enviados_por_s": 154.9,
+        "aceptados_por_s": 154.9,
+        "choferes_activos": 310
+      },
+      "pings_fondo_aceptados_por_s": 250
+    },
+    {
+      "etapa": 5,
+      "tasa": 16,
+      "ventana_estable": {
+        "desde": "2026-11-24T09:35:01.455Z",
+        "hasta": "2026-11-24T09:35:46.532Z",
+        "segundos": 45.077
+      },
+      "crear_s": {
+        "cuenta": 523,
+        "p50": 2.5,
+        "p95": 10,
+        "p99": 10
+      },
+      "aceptar_s": {
+        "cuenta": 1067,
+        "p50": 1,
+        "p95": 5,
+        "p99": 10
+      },
+      "hasta_asignacion_s": {
+        "cuenta": 449,
+        "p50": 5,
+        "p95": 15,
+        "p99": 15
+      },
+      "lag_dispatch_s": {
+        "cuenta": 439,
+        "p50": 0.001,
+        "p95": 0.01,
+        "p99": 0.1
+      },
+      "lag_location_s": {
+        "cuenta": 442,
+        "p50": 0.001,
+        "p95": 0.01,
+        "p99": 0.1
+      },
+      "memoria_mb": {
+        "dispatch": 156,
+        "location": 151
+      },
+      "busquedas_sin_aptos": {
+        "sin_candidatos": 0,
+        "filtrados": 0,
+        "tope_agotado": 0
+      },
+      "pings_location_por_s": 404.9,
+      "pings_location_aceptados_por_s": 404.9,
+      "pings_choferes_prueba_por_s": 154.8,
+      "choferes_prueba": {
+        "segundos": 45.077,
+        "enviados": 6980,
+        "aceptados_por_location": 6980,
+        "fallidos": 0,
+        "enviados_por_s": 154.8,
+        "aceptados_por_s": 154.8,
+        "choferes_activos": 310
+      },
+      "pings_fondo_aceptados_por_s": 250
+    },
+    {
+      "etapa": 6,
+      "tasa": 32,
+      "ventana_estable": {
+        "desde": "2026-11-24T09:36:01.642Z",
+        "hasta": "2026-11-24T09:36:46.492Z",
+        "segundos": 44.85
+      },
+      "crear_s": {
+        "cuenta": 924,
+        "p50": 5,
+        "p95": 5,
+        "p99": 5
+      },
+      "aceptar_s": {
+        "cuenta": 625,
+        "p50": 2.5,
+        "p95": 5,
+        "p99": 5
+      },
+      "hasta_asignacion_s": {
+        "cuenta": 447,
+        "p50": 10,
+        "p95": 10,
+        "p99": 15
+      },
+      "lag_dispatch_s": {
+        "cuenta": 418,
+        "p50": 0.002,
+        "p95": 0.1,
+        "p99": 0.1
+      },
+      "lag_location_s": {
+        "cuenta": 444,
+        "p50": 0.001,
+        "p95": 0.005,
+        "p99": 0.05
+      },
+      "memoria_mb": {
+        "dispatch": 165,
+        "location": 151
+      },
+      "busquedas_sin_aptos": {
+        "sin_candidatos": 0,
+        "filtrados": 0,
+        "tope_agotado": 0
+      },
+      "pings_location_por_s": 406,
+      "pings_location_aceptados_por_s": 406,
+      "pings_choferes_prueba_por_s": 154.9,
+      "choferes_prueba": {
+        "segundos": 44.85,
+        "enviados": 6946,
+        "aceptados_por_location": 6967,
+        "fallidos": 0,
+        "enviados_por_s": 154.9,
+        "aceptados_por_s": 155.3,
+        "choferes_activos": 310
+      },
+      "pings_fondo_aceptados_por_s": 250.6
+    }
+  ]
+}

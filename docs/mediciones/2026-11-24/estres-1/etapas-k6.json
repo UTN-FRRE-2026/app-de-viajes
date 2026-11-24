@@ -1,0 +1,169 @@
+{
+  "calentamiento_s": 30,
+  "etapa_s": 60,
+  "transicion_s": 15,
+  "etapas": [
+    {
+      "etapa": 1,
+      "tasa": 1,
+      "previstos_etapa": 60,
+      "previstos_ventana_estable": 45,
+      "iniciados_ventana_estable": 45,
+      "omitidos_por_k6_etapa": 0,
+      "creados": 45,
+      "asignados": 45,
+      "sin_choferes": 0,
+      "sin_resolver": 0,
+      "ubicacion_503": 0,
+      "errores": 0,
+      "viajes_por_s": 1,
+      "crear_ms": {
+        "p50": 61.238352,
+        "p95": 122.30559859999991,
+        "p99": 236.5574589200001,
+        "max": 256.784537
+      },
+      "hasta_asignacion_ms": {
+        "p50": 234,
+        "p95": 363.2,
+        "p99": 404.7200000000001,
+        "max": 421
+      }
+    },
+    {
+      "etapa": 2,
+      "tasa": 2,
+      "previstos_etapa": 120,
+      "previstos_ventana_estable": 90,
+      "iniciados_ventana_estable": 91,
+      "omitidos_por_k6_etapa": 0,
+      "creados": 91,
+      "asignados": 91,
+      "sin_choferes": 0,
+      "sin_resolver": 0,
+      "ubicacion_503": 0,
+      "errores": 0,
+      "viajes_por_s": 2.02,
+      "crear_ms": {
+        "p50": 71.205045,
+        "p95": 140.5841825,
+        "p99": 203.09191469999936,
+        "max": 303.456078
+      },
+      "hasta_asignacion_ms": {
+        "p50": 264,
+        "p95": 432.5,
+        "p99": 508.8999999999993,
+        "max": 616
+      }
+    },
+    {
+      "etapa": 3,
+      "tasa": 4,
+      "previstos_etapa": 240,
+      "previstos_ventana_estable": 180,
+      "iniciados_ventana_estable": 181,
+      "omitidos_por_k6_etapa": 0,
+      "creados": 181,
+      "asignados": 181,
+      "sin_choferes": 0,
+      "sin_resolver": 0,
+      "ubicacion_503": 0,
+      "errores": 0,
+      "viajes_por_s": 4.02,
+      "crear_ms": {
+        "p50": 70.645133,
+        "p95": 127.855695,
+        "p99": 229.7948467999999,
+        "max": 268.188414
+      },
+      "hasta_asignacion_ms": {
+        "p50": 269,
+        "p95": 333,
+        "p99": 446.9999999999996,
+        "max": 479
+      }
+    },
+    {
+      "etapa": 4,
+      "tasa": 8,
+      "previstos_etapa": 480,
+      "previstos_ventana_estable": 360,
+      "iniciados_ventana_estable": 361,
+      "omitidos_por_k6_etapa": 0,
+      "creados": 361,
+      "asignados": 361,
+      "sin_choferes": 0,
+      "sin_resolver": 0,
+      "ubicacion_503": 0,
+      "errores": 0,
+      "viajes_por_s": 8.02,
+      "crear_ms": {
+        "p50": 75.158869,
+        "p95": 163.777319,
+        "p99": 285.44987139999995,
+        "max": 316.385408
+      },
+      "hasta_asignacion_ms": {
+        "p50": 272,
+        "p95": 378,
+        "p99": 497.5999999999999,
+        "max": 506
+      }
+    },
+    {
+      "etapa": 5,
+      "tasa": 16,
+      "previstos_etapa": 960,
+      "previstos_ventana_estable": 720,
+      "iniciados_ventana_estable": 599,
+      "omitidos_por_k6_etapa": 122,
+      "creados": 590,
+      "asignados": 480,
+      "sin_choferes": 0,
+      "sin_resolver": 110,
+      "ubicacion_503": 9,
+      "errores": 0,
+      "viajes_por_s": 13.31,
+      "crear_ms": {
+        "p50": 113.580014,
+        "p95": 18113.118149900005,
+        "p99": 20612.37093416,
+        "max": 21143.011017
+      },
+      "hasta_asignacion_ms": {
+        "p50": 291,
+        "p95": 560.8999999999992,
+        "p99": 8014.4999999999045,
+        "max": 11940
+      }
+    },
+    {
+      "etapa": 6,
+      "tasa": 32,
+      "previstos_etapa": 1920,
+      "previstos_ventana_estable": 1440,
+      "iniciados_ventana_estable": 869,
+      "omitidos_por_k6_etapa": 764,
+      "creados": 869,
+      "asignados": 0,
+      "sin_choferes": 0,
+      "sin_resolver": 869,
+      "ubicacion_503": 0,
+      "errores": 0,
+      "viajes_por_s": 19.31,
+      "crear_ms": {
+        "p50": 3607.148078,
+        "p95": 5420.5936902,
+        "p99": 5619.15401252,
+        "max": 5741.494195
+      },
+      "hasta_asignacion_ms": {
+        "p50": 0,
+        "p95": 0,
+        "p99": 0,
+        "max": 0
+      }
+    }
+  ]
+}

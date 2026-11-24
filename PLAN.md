@@ -361,7 +361,7 @@ Al cerrar esta fase el sistema tiene que poder congelarse para el ataque cruzado
 
 - [ ] Playwright y job `e2e` (Agos, Ivan).
 - [ ] Job `sast` y corrección de lo que encuentre (Ivan).
-- [ ] Grafana Cloud y dashboards; `estres.js` y `carrera.js` (Maxi). Hecho: `carga/carrera.js` (22/11, una corrida de validación) y `carga/estres.js` con 3 corridas (24/11): la degradación empieza en 16 viajes/s, por dispatch. Falta Grafana Cloud.
+- [ ] Grafana Cloud y dashboards; `estres.js` y `carrera.js` (Maxi). Hecho: `carga/carrera.js` (22/11, una corrida de validación) y `carga/estres.js` con 3 corridas (24/11): se degrada en 16 viajes/s por la espera del commit en el disco mecánico de esta máquina; sin esa espera, sostiene 16 y se satura en 32, por la CPU de dispatch. Falta repetirlo con Docker en un SSD, y Grafana Cloud.
 - [ ] Mediciones finales, tres corridas por escenario, con conclusión (Maxi).
 - [ ] ADR restantes: 0007 SSE, 0008 búsqueda geográfica, 0009 límite por flota, 0010 idempotencia, 0011 vencimiento de ofertas, 0012 inventario de carreras. Hechos: 0007 y 0010.
 - [ ] Autoevaluación de ProgIV 10.6 completa, clon limpio en otra máquina y tag `entrega-final` (Ivan).

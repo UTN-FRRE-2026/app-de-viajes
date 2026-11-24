@@ -1,0 +1,190 @@
+{
+  "calentamiento_s": 30,
+  "etapa_s": 60,
+  "transicion_s": 15,
+  "etapas": [
+    {
+      "etapa": 1,
+      "tasa": 8,
+      "ventana_estable": {
+        "desde": "2026-11-24T09:50:58.022Z",
+        "hasta": "2026-11-24T09:51:43.019Z",
+        "segundos": 44.997
+      },
+      "crear_s": {
+        "cuenta": 362,
+        "p50": 0.025,
+        "p95": 0.1,
+        "p99": 0.5
+      },
+      "aceptar_s": {
+        "cuenta": 1074,
+        "p50": 0.025,
+        "p95": 0.1,
+        "p99": 0.1
+      },
+      "hasta_asignacion_s": {
+        "cuenta": 362,
+        "p50": 0.1,
+        "p95": 0.25,
+        "p99": 1
+      },
+      "lag_dispatch_s": {
+        "cuenta": 449,
+        "p50": 0.001,
+        "p95": 0.001,
+        "p99": 0.005
+      },
+      "lag_location_s": {
+        "cuenta": 447,
+        "p50": 0.001,
+        "p95": 0.002,
+        "p99": 0.01
+      },
+      "memoria_mb": {
+        "dispatch": 139,
+        "location": 121
+      },
+      "busquedas_sin_aptos": {
+        "sin_candidatos": 0,
+        "filtrados": 0,
+        "tope_agotado": 0
+      },
+      "pings_location_por_s": 405.2,
+      "pings_location_aceptados_por_s": 405.2,
+      "pings_choferes_prueba_por_s": 155.1,
+      "choferes_prueba": {
+        "segundos": 44.997,
+        "enviados": 6980,
+        "aceptados_por_location": 6982,
+        "fallidos": 0,
+        "enviados_por_s": 155.1,
+        "aceptados_por_s": 155.2,
+        "choferes_activos": 310
+      },
+      "pings_fondo_aceptados_por_s": 250.1
+    },
+    {
+      "etapa": 2,
+      "tasa": 16,
+      "ventana_estable": {
+        "desde": "2026-11-24T09:51:58.025Z",
+        "hasta": "2026-11-24T09:52:43.023Z",
+        "segundos": 44.998
+      },
+      "crear_s": {
+        "cuenta": 722,
+        "p50": 0.05,
+        "p95": 0.25,
+        "p99": 0.5
+      },
+      "aceptar_s": {
+        "cuenta": 1928,
+        "p50": 0.05,
+        "p95": 0.25,
+        "p99": 0.25
+      },
+      "hasta_asignacion_s": {
+        "cuenta": 722,
+        "p50": 0.25,
+        "p95": 0.5,
+        "p99": 0.5
+      },
+      "lag_dispatch_s": {
+        "cuenta": 444,
+        "p50": 0.001,
+        "p95": 0.005,
+        "p99": 0.1
+      },
+      "lag_location_s": {
+        "cuenta": 441,
+        "p50": 0.001,
+        "p95": 0.01,
+        "p99": 0.1
+      },
+      "memoria_mb": {
+        "dispatch": 147,
+        "location": 122
+      },
+      "busquedas_sin_aptos": {
+        "sin_candidatos": 0,
+        "filtrados": 0,
+        "tope_agotado": 0
+      },
+      "pings_location_por_s": 405.2,
+      "pings_location_aceptados_por_s": 405.2,
+      "pings_choferes_prueba_por_s": 155.1,
+      "choferes_prueba": {
+        "segundos": 44.998,
+        "enviados": 6981,
+        "aceptados_por_location": 6981,
+        "fallidos": 0,
+        "enviados_por_s": 155.1,
+        "aceptados_por_s": 155.1,
+        "choferes_activos": 310
+      },
+      "pings_fondo_aceptados_por_s": 250
+    },
+    {
+      "etapa": 3,
+      "tasa": 32,
+      "ventana_estable": {
+        "desde": "2026-11-24T09:52:58.035Z",
+        "hasta": "2026-11-24T09:53:43.111Z",
+        "segundos": 45.076
+      },
+      "crear_s": {
+        "cuenta": 836,
+        "p50": 5,
+        "p95": 5,
+        "p99": 5
+      },
+      "aceptar_s": {
+        "cuenta": 630,
+        "p50": 5,
+        "p95": 5,
+        "p99": 5
+      },
+      "hasta_asignacion_s": {
+        "cuenta": 34,
+        "p50": 10,
+        "p95": 15,
+        "p99": 15
+      },
+      "lag_dispatch_s": {
+        "cuenta": 403,
+        "p50": 0.005,
+        "p95": 0.1,
+        "p99": 0.1
+      },
+      "lag_location_s": {
+        "cuenta": 442,
+        "p50": 0.001,
+        "p95": 0.01,
+        "p99": 0.1
+      },
+      "memoria_mb": {
+        "dispatch": 162,
+        "location": 123
+      },
+      "busquedas_sin_aptos": {
+        "sin_candidatos": 0,
+        "filtrados": 0,
+        "tope_agotado": 0
+      },
+      "pings_location_por_s": 405.2,
+      "pings_location_aceptados_por_s": 405.2,
+      "pings_choferes_prueba_por_s": 155.1,
+      "choferes_prueba": {
+        "segundos": 45.076,
+        "enviados": 6992,
+        "aceptados_por_location": 6993,
+        "fallidos": 0,
+        "enviados_por_s": 155.1,
+        "aceptados_por_s": 155.1,
+        "choferes_activos": 310
+      },
+      "pings_fondo_aceptados_por_s": 250
+    }
+  ]
+}

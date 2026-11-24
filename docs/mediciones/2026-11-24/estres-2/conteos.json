@@ -1,0 +1,20 @@
+﻿{
+    "corrida":  2,
+    "calentamiento_s":  30,
+    "etapa_s":  60,
+    "transicion_s":  15,
+    "etapas":  "1,2,4,8,16,32",
+    "choferes_aptos":  300,
+    "codigo_k6":  99,
+    "correccion":  {
+                       "viajes_creados":  2734,
+                       "viajes_activos":  0,
+                       "asignaciones_activas":  0,
+                       "ofertas":  8202,
+                       "ofertas_a_no_aptos":  0,
+                       "viajes_de_no_aptos":  0,
+                       "viajes_fuera_de_cordoba":  0,
+                       "asignados_sin_flota":  0
+                   },
+    "commit":  "4dae036"
+}

@@ -1,0 +1,8 @@
+﻿pings enviados 63750 | aceptados 63750 | fallidos 0 | omitidos por k6 0
+b├║squedas ok 5101 | fallidas 0 | omitidas 0
+pings      (medici├│n): p50 3.5 | p95 52.7 | p99 104.6 ms
+b├║squedas  (medici├│n): p50 3.9 | p95 38.8 | p99 102.2 ms
+/health    (medici├│n): p50 1.0 | p95 8.2 | p99 69.6 ms
+errores    (medici├│n): 0.00 %
+time="2026-11-24T09:54:28Z" level=error msg="thresholds on metrics 'http_req_duration{escenario:pings,fase:medicion}' have been crossed"
+codigo=99

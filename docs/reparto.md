@@ -78,7 +78,7 @@ Cada integrante es **dueño** de un problema central y de los módulos que lo ro
 
 **Fase C y ataque cruzado**
 - [ ] Grafana Cloud: Alloy en un perfil de Compose, métricas de negocio y tres dashboards exportados.
-- [ ] `carga/estres.js` y `carga/carrera.js`; mediciones finales con tres corridas. Hecho: `estres.js` y las solicitudes con tres corridas cada uno (24/11). `carrera.js` tiene una corrida de validación (22/11): faltan las otras dos.
+- [ ] `carga/estres.js` y `carga/carrera.js`; mediciones finales con tres corridas. Hecho: `estres.js` y las solicitudes con tres corridas cada uno (24/11). `carrera.js` tiene una corrida de validación (22/11) y otra con los datos de carga nuevos (24/11): falta la tercera. El estrés conviene repetirlo con Docker en un SSD (ver `docs/mediciones.md`).
 - [ ] Ataque a los otros grupos: validación, montos y operaciones costosas.
 - [ ] ADR 0008 (búsqueda geográfica) y 0010 (idempotencia, con Ivan). Hecho: [0010](adr/0010-idempotencia.md), lo escribió Ivan.
 
