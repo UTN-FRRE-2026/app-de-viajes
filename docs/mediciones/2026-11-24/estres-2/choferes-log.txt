@@ -1,0 +1,10 @@
+﻿[2026-11-24T07:39:37.164Z] 310 choferes de prueba arrancados; espero el primer POST /solicitudes de k6
+[2026-11-24T07:39:46.092Z] k6 detectado: arranca el reloj de la rampa
+[2026-11-24T07:41:16.157Z] etapa 1 (1/s): crear p95 0.25 s, lag dispatch p99 0.002 s
+[2026-11-24T07:42:16.147Z] etapa 2 (2/s): crear p95 0.25 s, lag dispatch p99 0.002 s
+[2026-11-24T07:43:16.128Z] etapa 3 (4/s): crear p95 0.25 s, lag dispatch p99 0.002 s
+[2026-11-24T07:44:16.117Z] etapa 4 (8/s): crear p95 0.5 s, lag dispatch p99 0.005 s
+[2026-11-24T07:45:16.141Z] etapa 5 (16/s): crear p95 2.5 s, lag dispatch p99 0.1 s
+[2026-11-24T07:46:16.124Z] etapa 6 (32/s): crear p95 5 s, lag dispatch p99 0.1 s
+[2026-11-24T07:46:36.133Z] choferes: {"choferes":310,"pings_enviados":13020,"pings_ok":13020,"pings_fallidos":0,"ofertas_recibidas":9216,"ofertas_a_no_aptos":0,"ofertas_ignoradas_ocupado":958,"ofertas_en_espera_probadas":1652,"aceptadas_200":2256,"aceptadas_por_no_aptos":0,"rechazos_409_esperados":{"SOLICITUD_NO_DISPONIBLE":4573},"aceptar_errores":{},"reintentos":0,"liberados_por_evento":2256,"liberados_por_consulta":0,"sse_reconexiones":0}
+codigo=0

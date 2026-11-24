@@ -1,0 +1,1779 @@
+{
+  "resumen": {
+    "pasajeros": 20,
+    "choferes": {
+      "aptos": 40,
+      "no_aptos": 10
+    },
+    "k6Detectado": "2026-11-24T06:32:26.771Z",
+    "ventana": {
+      "inicio": "2026-11-24T06:32:33.820Z",
+      "fin": "2026-11-24T06:32:58.779Z",
+      "segundos": 25,
+      "calentamiento_s": 5,
+      "medicion_s": 30
+    },
+    "iteraciones": 238,
+    "solicitudes_por_s": 9.53,
+    "asignadas": 0,
+    "asignadas_por_s": 0,
+    "sin_choferes": 0,
+    "ubicacion_no_disponible_503": 238,
+    "timeouts": 0,
+    "errores": {},
+    "errores_total": 0,
+    "reintentos_cliente": 0,
+    "cliente_ms": {
+      "crear": {
+        "n": 238,
+        "p50": 1009,
+        "p95": 1013,
+        "p99": 1029,
+        "max": 1078
+      },
+      "hasta_asignacion": {
+        "n": 0,
+        "p50": null,
+        "p95": null,
+        "p99": null,
+        "max": null
+      }
+    },
+    "servidor": {
+      "crear": {
+        "cuenta": 238,
+        "p50": 2.5,
+        "p95": 2.5,
+        "p99": 2.5
+      },
+      "aceptar": {
+        "cuenta": 0,
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "hasta_asignacion_s": {
+        "cuenta": 0,
+        "p50": null,
+        "p95": null,
+        "p99": null
+      },
+      "busquedas_sin_aptos": {
+        "sin_candidatos": 0,
+        "filtrados": 0,
+        "tope_agotado": 0
+      },
+      "ofertas_vencidas": 0,
+      "lag_dispatch_s": {
+        "cuenta": 249,
+        "p50": 0.001,
+        "p95": 0.001,
+        "p99": 0.002
+      },
+      "lag_location_s": {
+        "cuenta": 245,
+        "p50": 0.001,
+        "p95": 0.01,
+        "p99": 0.1
+      },
+      "memoria_mb": {
+        "dispatch": {
+          "inicio": 113,
+          "fin": 120
+        },
+        "location": {
+          "inicio": 130,
+          "fin": 142
+        }
+      }
+    },
+    "choferes_prueba": {
+      "choferes": 50,
+      "pings_enviados": 150,
+      "pings_ok": 150,
+      "pings_fallidos": 0,
+      "ofertas_recibidas": 0,
+      "ofertas_a_no_aptos": 0,
+      "ofertas_ignoradas_ocupado": 0,
+      "ofertas_en_espera_probadas": 0,
+      "aceptadas_200": 0,
+      "aceptadas_por_no_aptos": 0,
+      "rechazos_409_esperados": {},
+      "aceptar_errores": {},
+      "reintentos": 0,
+      "liberados_por_evento": 0,
+      "liberados_por_consulta": 0,
+      "sse_reconexiones": 0,
+      "pings_en_la_ventana": 100,
+      "pings_por_s_en_la_ventana": 4
+    }
+  },
+  "filas": [
+    {
+      "pasajero": 1,
+      "inicio": "2026-11-24T06:32:33.872Z",
+      "crearMs": 1031,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 0,
+      "inicio": "2026-11-24T06:32:33.827Z",
+      "crearMs": 1078,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 2,
+      "inicio": "2026-11-24T06:32:33.923Z",
+      "crearMs": 1013,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 3,
+      "inicio": "2026-11-24T06:32:33.972Z",
+      "crearMs": 1010,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 4,
+      "inicio": "2026-11-24T06:32:34.023Z",
+      "crearMs": 1012,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 5,
+      "inicio": "2026-11-24T06:32:34.072Z",
+      "crearMs": 1011,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 6,
+      "inicio": "2026-11-24T06:32:34.123Z",
+      "crearMs": 1010,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 7,
+      "inicio": "2026-11-24T06:32:34.173Z",
+      "crearMs": 1013,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 8,
+      "inicio": "2026-11-24T06:32:34.223Z",
+      "crearMs": 1010,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 9,
+      "inicio": "2026-11-24T06:32:34.274Z",
+      "crearMs": 1014,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 10,
+      "inicio": "2026-11-24T06:32:34.324Z",
+      "crearMs": 1011,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 11,
+      "inicio": "2026-11-24T06:32:34.374Z",
+      "crearMs": 1009,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 12,
+      "inicio": "2026-11-24T06:32:34.425Z",
+      "crearMs": 1011,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 13,
+      "inicio": "2026-11-24T06:32:34.475Z",
+      "crearMs": 1024,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 14,
+      "inicio": "2026-11-24T06:32:34.525Z",
+      "crearMs": 1009,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 15,
+      "inicio": "2026-11-24T06:32:34.576Z",
+      "crearMs": 1010,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 16,
+      "inicio": "2026-11-24T06:32:34.627Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 17,
+      "inicio": "2026-11-24T06:32:34.677Z",
+      "crearMs": 1010,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 18,
+      "inicio": "2026-11-24T06:32:34.727Z",
+      "crearMs": 1009,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 19,
+      "inicio": "2026-11-24T06:32:34.777Z",
+      "crearMs": 1010,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 1,
+      "inicio": "2026-11-24T06:32:35.902Z",
+      "crearMs": 1011,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 0,
+      "inicio": "2026-11-24T06:32:35.905Z",
+      "crearMs": 1009,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 2,
+      "inicio": "2026-11-24T06:32:35.936Z",
+      "crearMs": 1012,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 3,
+      "inicio": "2026-11-24T06:32:35.982Z",
+      "crearMs": 1011,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 4,
+      "inicio": "2026-11-24T06:32:36.035Z",
+      "crearMs": 1009,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 5,
+      "inicio": "2026-11-24T06:32:36.082Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 6,
+      "inicio": "2026-11-24T06:32:36.133Z",
+      "crearMs": 1011,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 7,
+      "inicio": "2026-11-24T06:32:36.186Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 8,
+      "inicio": "2026-11-24T06:32:36.234Z",
+      "crearMs": 1007,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 9,
+      "inicio": "2026-11-24T06:32:36.289Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 10,
+      "inicio": "2026-11-24T06:32:36.335Z",
+      "crearMs": 1011,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 11,
+      "inicio": "2026-11-24T06:32:36.383Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 12,
+      "inicio": "2026-11-24T06:32:36.437Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 13,
+      "inicio": "2026-11-24T06:32:36.499Z",
+      "crearMs": 1007,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 14,
+      "inicio": "2026-11-24T06:32:36.535Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 15,
+      "inicio": "2026-11-24T06:32:36.586Z",
+      "crearMs": 1007,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 16,
+      "inicio": "2026-11-24T06:32:36.635Z",
+      "crearMs": 1009,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 17,
+      "inicio": "2026-11-24T06:32:36.687Z",
+      "crearMs": 1007,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 18,
+      "inicio": "2026-11-24T06:32:36.736Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 19,
+      "inicio": "2026-11-24T06:32:36.786Z",
+      "crearMs": 1010,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 1,
+      "inicio": "2026-11-24T06:32:37.914Z",
+      "crearMs": 1009,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 0,
+      "inicio": "2026-11-24T06:32:37.914Z",
+      "crearMs": 1009,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 2,
+      "inicio": "2026-11-24T06:32:37.947Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 3,
+      "inicio": "2026-11-24T06:32:37.994Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 4,
+      "inicio": "2026-11-24T06:32:38.044Z",
+      "crearMs": 1009,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 5,
+      "inicio": "2026-11-24T06:32:38.089Z",
+      "crearMs": 1012,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 6,
+      "inicio": "2026-11-24T06:32:38.145Z",
+      "crearMs": 1009,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 7,
+      "inicio": "2026-11-24T06:32:38.194Z",
+      "crearMs": 1009,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 8,
+      "inicio": "2026-11-24T06:32:38.241Z",
+      "crearMs": 1009,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 9,
+      "inicio": "2026-11-24T06:32:38.297Z",
+      "crearMs": 1009,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 10,
+      "inicio": "2026-11-24T06:32:38.346Z",
+      "crearMs": 1009,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 11,
+      "inicio": "2026-11-24T06:32:38.392Z",
+      "crearMs": 1011,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 12,
+      "inicio": "2026-11-24T06:32:38.444Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 13,
+      "inicio": "2026-11-24T06:32:38.507Z",
+      "crearMs": 1009,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 14,
+      "inicio": "2026-11-24T06:32:38.543Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 15,
+      "inicio": "2026-11-24T06:32:38.595Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 16,
+      "inicio": "2026-11-24T06:32:38.644Z",
+      "crearMs": 1009,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 17,
+      "inicio": "2026-11-24T06:32:38.694Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 18,
+      "inicio": "2026-11-24T06:32:38.748Z",
+      "crearMs": 1018,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 19,
+      "inicio": "2026-11-24T06:32:38.796Z",
+      "crearMs": 1009,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 1,
+      "inicio": "2026-11-24T06:32:39.923Z",
+      "crearMs": 1009,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 0,
+      "inicio": "2026-11-24T06:32:39.924Z",
+      "crearMs": 1010,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 2,
+      "inicio": "2026-11-24T06:32:39.955Z",
+      "crearMs": 1006,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 3,
+      "inicio": "2026-11-24T06:32:40.002Z",
+      "crearMs": 1011,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 4,
+      "inicio": "2026-11-24T06:32:40.053Z",
+      "crearMs": 1009,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 5,
+      "inicio": "2026-11-24T06:32:40.102Z",
+      "crearMs": 1009,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 6,
+      "inicio": "2026-11-24T06:32:40.155Z",
+      "crearMs": 1011,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 7,
+      "inicio": "2026-11-24T06:32:40.204Z",
+      "crearMs": 1007,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 8,
+      "inicio": "2026-11-24T06:32:40.251Z",
+      "crearMs": 1007,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 9,
+      "inicio": "2026-11-24T06:32:40.305Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 10,
+      "inicio": "2026-11-24T06:32:40.355Z",
+      "crearMs": 1013,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 11,
+      "inicio": "2026-11-24T06:32:40.404Z",
+      "crearMs": 1009,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 12,
+      "inicio": "2026-11-24T06:32:40.453Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 13,
+      "inicio": "2026-11-24T06:32:40.517Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 14,
+      "inicio": "2026-11-24T06:32:40.551Z",
+      "crearMs": 1010,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 15,
+      "inicio": "2026-11-24T06:32:40.604Z",
+      "crearMs": 1009,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 16,
+      "inicio": "2026-11-24T06:32:40.654Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 17,
+      "inicio": "2026-11-24T06:32:40.702Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 18,
+      "inicio": "2026-11-24T06:32:40.766Z",
+      "crearMs": 1007,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 19,
+      "inicio": "2026-11-24T06:32:40.805Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 1,
+      "inicio": "2026-11-24T06:32:41.931Z",
+      "crearMs": 1013,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 0,
+      "inicio": "2026-11-24T06:32:41.932Z",
+      "crearMs": 1013,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 2,
+      "inicio": "2026-11-24T06:32:41.961Z",
+      "crearMs": 1007,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 3,
+      "inicio": "2026-11-24T06:32:42.012Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 4,
+      "inicio": "2026-11-24T06:32:42.062Z",
+      "crearMs": 1011,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 5,
+      "inicio": "2026-11-24T06:32:42.110Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 6,
+      "inicio": "2026-11-24T06:32:42.165Z",
+      "crearMs": 1007,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 7,
+      "inicio": "2026-11-24T06:32:42.209Z",
+      "crearMs": 1009,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 8,
+      "inicio": "2026-11-24T06:32:42.257Z",
+      "crearMs": 1009,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 9,
+      "inicio": "2026-11-24T06:32:42.313Z",
+      "crearMs": 1009,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 10,
+      "inicio": "2026-11-24T06:32:42.367Z",
+      "crearMs": 1007,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 11,
+      "inicio": "2026-11-24T06:32:42.412Z",
+      "crearMs": 1007,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 12,
+      "inicio": "2026-11-24T06:32:42.459Z",
+      "crearMs": 1009,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 13,
+      "inicio": "2026-11-24T06:32:42.523Z",
+      "crearMs": 1007,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 14,
+      "inicio": "2026-11-24T06:32:42.560Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 15,
+      "inicio": "2026-11-24T06:32:42.612Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 16,
+      "inicio": "2026-11-24T06:32:42.660Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 17,
+      "inicio": "2026-11-24T06:32:42.708Z",
+      "crearMs": 1007,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 18,
+      "inicio": "2026-11-24T06:32:42.772Z",
+      "crearMs": 1007,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 19,
+      "inicio": "2026-11-24T06:32:42.812Z",
+      "crearMs": 1010,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 1,
+      "inicio": "2026-11-24T06:32:43.944Z",
+      "crearMs": 1009,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 0,
+      "inicio": "2026-11-24T06:32:43.944Z",
+      "crearMs": 1010,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 2,
+      "inicio": "2026-11-24T06:32:43.968Z",
+      "crearMs": 1009,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 3,
+      "inicio": "2026-11-24T06:32:44.020Z",
+      "crearMs": 1010,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 4,
+      "inicio": "2026-11-24T06:32:44.073Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 5,
+      "inicio": "2026-11-24T06:32:44.119Z",
+      "crearMs": 1009,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 6,
+      "inicio": "2026-11-24T06:32:44.172Z",
+      "crearMs": 1009,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 7,
+      "inicio": "2026-11-24T06:32:44.218Z",
+      "crearMs": 1009,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 8,
+      "inicio": "2026-11-24T06:32:44.266Z",
+      "crearMs": 1009,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 9,
+      "inicio": "2026-11-24T06:32:44.322Z",
+      "crearMs": 1013,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 10,
+      "inicio": "2026-11-24T06:32:44.374Z",
+      "crearMs": 1006,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 11,
+      "inicio": "2026-11-24T06:32:44.419Z",
+      "crearMs": 1009,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 12,
+      "inicio": "2026-11-24T06:32:44.469Z",
+      "crearMs": 1009,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 13,
+      "inicio": "2026-11-24T06:32:44.531Z",
+      "crearMs": 1010,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 14,
+      "inicio": "2026-11-24T06:32:44.569Z",
+      "crearMs": 1010,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 15,
+      "inicio": "2026-11-24T06:32:44.620Z",
+      "crearMs": 1009,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 16,
+      "inicio": "2026-11-24T06:32:44.669Z",
+      "crearMs": 1010,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 17,
+      "inicio": "2026-11-24T06:32:44.715Z",
+      "crearMs": 1012,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 18,
+      "inicio": "2026-11-24T06:32:44.779Z",
+      "crearMs": 1010,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 19,
+      "inicio": "2026-11-24T06:32:44.821Z",
+      "crearMs": 1010,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 1,
+      "inicio": "2026-11-24T06:32:45.953Z",
+      "crearMs": 1010,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 0,
+      "inicio": "2026-11-24T06:32:45.953Z",
+      "crearMs": 1011,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 2,
+      "inicio": "2026-11-24T06:32:45.978Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 3,
+      "inicio": "2026-11-24T06:32:46.029Z",
+      "crearMs": 1011,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 4,
+      "inicio": "2026-11-24T06:32:46.080Z",
+      "crearMs": 1009,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 5,
+      "inicio": "2026-11-24T06:32:46.128Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 6,
+      "inicio": "2026-11-24T06:32:46.181Z",
+      "crearMs": 1007,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 7,
+      "inicio": "2026-11-24T06:32:46.228Z",
+      "crearMs": 1010,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 8,
+      "inicio": "2026-11-24T06:32:46.275Z",
+      "crearMs": 1007,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 9,
+      "inicio": "2026-11-24T06:32:46.335Z",
+      "crearMs": 1010,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 10,
+      "inicio": "2026-11-24T06:32:46.380Z",
+      "crearMs": 1007,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 11,
+      "inicio": "2026-11-24T06:32:46.428Z",
+      "crearMs": 1011,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 12,
+      "inicio": "2026-11-24T06:32:46.478Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 13,
+      "inicio": "2026-11-24T06:32:46.541Z",
+      "crearMs": 1007,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 14,
+      "inicio": "2026-11-24T06:32:46.579Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 15,
+      "inicio": "2026-11-24T06:32:46.629Z",
+      "crearMs": 1009,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 16,
+      "inicio": "2026-11-24T06:32:46.679Z",
+      "crearMs": 1007,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 17,
+      "inicio": "2026-11-24T06:32:46.727Z",
+      "crearMs": 1010,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 18,
+      "inicio": "2026-11-24T06:32:46.789Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 19,
+      "inicio": "2026-11-24T06:32:46.830Z",
+      "crearMs": 1014,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 0,
+      "inicio": "2026-11-24T06:32:47.964Z",
+      "crearMs": 1009,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 1,
+      "inicio": "2026-11-24T06:32:47.963Z",
+      "crearMs": 1011,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 2,
+      "inicio": "2026-11-24T06:32:47.986Z",
+      "crearMs": 1006,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 3,
+      "inicio": "2026-11-24T06:32:48.040Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 4,
+      "inicio": "2026-11-24T06:32:48.090Z",
+      "crearMs": 1009,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 5,
+      "inicio": "2026-11-24T06:32:48.136Z",
+      "crearMs": 1007,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 6,
+      "inicio": "2026-11-24T06:32:48.188Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 7,
+      "inicio": "2026-11-24T06:32:48.238Z",
+      "crearMs": 1007,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 8,
+      "inicio": "2026-11-24T06:32:48.281Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 9,
+      "inicio": "2026-11-24T06:32:48.346Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 10,
+      "inicio": "2026-11-24T06:32:48.387Z",
+      "crearMs": 1009,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 11,
+      "inicio": "2026-11-24T06:32:48.440Z",
+      "crearMs": 1009,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 12,
+      "inicio": "2026-11-24T06:32:48.486Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 13,
+      "inicio": "2026-11-24T06:32:48.548Z",
+      "crearMs": 1009,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 14,
+      "inicio": "2026-11-24T06:32:48.587Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 15,
+      "inicio": "2026-11-24T06:32:48.639Z",
+      "crearMs": 1009,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 16,
+      "inicio": "2026-11-24T06:32:48.686Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 17,
+      "inicio": "2026-11-24T06:32:48.736Z",
+      "crearMs": 1009,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 18,
+      "inicio": "2026-11-24T06:32:48.798Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 19,
+      "inicio": "2026-11-24T06:32:48.844Z",
+      "crearMs": 1007,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 0,
+      "inicio": "2026-11-24T06:32:49.973Z",
+      "crearMs": 1010,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 1,
+      "inicio": "2026-11-24T06:32:49.975Z",
+      "crearMs": 1011,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 2,
+      "inicio": "2026-11-24T06:32:49.993Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 3,
+      "inicio": "2026-11-24T06:32:50.048Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 4,
+      "inicio": "2026-11-24T06:32:50.099Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 5,
+      "inicio": "2026-11-24T06:32:50.143Z",
+      "crearMs": 1009,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 6,
+      "inicio": "2026-11-24T06:32:50.196Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 7,
+      "inicio": "2026-11-24T06:32:50.245Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 8,
+      "inicio": "2026-11-24T06:32:50.290Z",
+      "crearMs": 1009,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 9,
+      "inicio": "2026-11-24T06:32:50.354Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 10,
+      "inicio": "2026-11-24T06:32:50.396Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 11,
+      "inicio": "2026-11-24T06:32:50.448Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 12,
+      "inicio": "2026-11-24T06:32:50.493Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 13,
+      "inicio": "2026-11-24T06:32:50.557Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 14,
+      "inicio": "2026-11-24T06:32:50.595Z",
+      "crearMs": 1010,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 15,
+      "inicio": "2026-11-24T06:32:50.648Z",
+      "crearMs": 1009,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 16,
+      "inicio": "2026-11-24T06:32:50.694Z",
+      "crearMs": 1009,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 17,
+      "inicio": "2026-11-24T06:32:50.745Z",
+      "crearMs": 1010,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 18,
+      "inicio": "2026-11-24T06:32:50.806Z",
+      "crearMs": 1011,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 19,
+      "inicio": "2026-11-24T06:32:50.852Z",
+      "crearMs": 1009,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 0,
+      "inicio": "2026-11-24T06:32:51.983Z",
+      "crearMs": 1009,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 2,
+      "inicio": "2026-11-24T06:32:52.001Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 1,
+      "inicio": "2026-11-24T06:32:51.986Z",
+      "crearMs": 1029,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 3,
+      "inicio": "2026-11-24T06:32:52.056Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 4,
+      "inicio": "2026-11-24T06:32:52.107Z",
+      "crearMs": 1007,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 5,
+      "inicio": "2026-11-24T06:32:52.153Z",
+      "crearMs": 1007,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 6,
+      "inicio": "2026-11-24T06:32:52.204Z",
+      "crearMs": 1009,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 7,
+      "inicio": "2026-11-24T06:32:52.252Z",
+      "crearMs": 1010,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 8,
+      "inicio": "2026-11-24T06:32:52.299Z",
+      "crearMs": 1007,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 9,
+      "inicio": "2026-11-24T06:32:52.362Z",
+      "crearMs": 1011,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 10,
+      "inicio": "2026-11-24T06:32:52.404Z",
+      "crearMs": 1006,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 11,
+      "inicio": "2026-11-24T06:32:52.457Z",
+      "crearMs": 1011,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 12,
+      "inicio": "2026-11-24T06:32:52.501Z",
+      "crearMs": 1009,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 13,
+      "inicio": "2026-11-24T06:32:52.566Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 14,
+      "inicio": "2026-11-24T06:32:52.606Z",
+      "crearMs": 1006,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 15,
+      "inicio": "2026-11-24T06:32:52.657Z",
+      "crearMs": 1006,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 16,
+      "inicio": "2026-11-24T06:32:52.703Z",
+      "crearMs": 1009,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 17,
+      "inicio": "2026-11-24T06:32:52.755Z",
+      "crearMs": 1007,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 18,
+      "inicio": "2026-11-24T06:32:52.818Z",
+      "crearMs": 1009,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 19,
+      "inicio": "2026-11-24T06:32:52.861Z",
+      "crearMs": 1007,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 0,
+      "inicio": "2026-11-24T06:32:53.991Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 2,
+      "inicio": "2026-11-24T06:32:54.010Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 1,
+      "inicio": "2026-11-24T06:32:54.015Z",
+      "crearMs": 1009,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 3,
+      "inicio": "2026-11-24T06:32:54.064Z",
+      "crearMs": 1007,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 4,
+      "inicio": "2026-11-24T06:32:54.114Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 5,
+      "inicio": "2026-11-24T06:32:54.160Z",
+      "crearMs": 1007,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 6,
+      "inicio": "2026-11-24T06:32:54.213Z",
+      "crearMs": 1009,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 7,
+      "inicio": "2026-11-24T06:32:54.262Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 8,
+      "inicio": "2026-11-24T06:32:54.307Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 9,
+      "inicio": "2026-11-24T06:32:54.373Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 10,
+      "inicio": "2026-11-24T06:32:54.410Z",
+      "crearMs": 1009,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 11,
+      "inicio": "2026-11-24T06:32:54.468Z",
+      "crearMs": 1007,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 12,
+      "inicio": "2026-11-24T06:32:54.510Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 13,
+      "inicio": "2026-11-24T06:32:54.574Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 14,
+      "inicio": "2026-11-24T06:32:54.611Z",
+      "crearMs": 1009,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 15,
+      "inicio": "2026-11-24T06:32:54.663Z",
+      "crearMs": 1007,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 16,
+      "inicio": "2026-11-24T06:32:54.712Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 17,
+      "inicio": "2026-11-24T06:32:54.762Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 18,
+      "inicio": "2026-11-24T06:32:54.827Z",
+      "crearMs": 1009,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 19,
+      "inicio": "2026-11-24T06:32:54.868Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 0,
+      "inicio": "2026-11-24T06:32:55.999Z",
+      "crearMs": 1010,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 2,
+      "inicio": "2026-11-24T06:32:56.018Z",
+      "crearMs": 1010,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 1,
+      "inicio": "2026-11-24T06:32:56.024Z",
+      "crearMs": 1009,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 3,
+      "inicio": "2026-11-24T06:32:56.071Z",
+      "crearMs": 1009,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 4,
+      "inicio": "2026-11-24T06:32:56.122Z",
+      "crearMs": 1007,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 5,
+      "inicio": "2026-11-24T06:32:56.167Z",
+      "crearMs": 1007,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 6,
+      "inicio": "2026-11-24T06:32:56.222Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 7,
+      "inicio": "2026-11-24T06:32:56.268Z",
+      "crearMs": 1006,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 8,
+      "inicio": "2026-11-24T06:32:56.316Z",
+      "crearMs": 1006,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 9,
+      "inicio": "2026-11-24T06:32:56.382Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 10,
+      "inicio": "2026-11-24T06:32:56.419Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 11,
+      "inicio": "2026-11-24T06:32:56.474Z",
+      "crearMs": 1007,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 12,
+      "inicio": "2026-11-24T06:32:56.518Z",
+      "crearMs": 1009,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 13,
+      "inicio": "2026-11-24T06:32:56.582Z",
+      "crearMs": 1007,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 14,
+      "inicio": "2026-11-24T06:32:56.621Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 15,
+      "inicio": "2026-11-24T06:32:56.671Z",
+      "crearMs": 1007,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 16,
+      "inicio": "2026-11-24T06:32:56.720Z",
+      "crearMs": 1009,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    },
+    {
+      "pasajero": 17,
+      "inicio": "2026-11-24T06:32:56.770Z",
+      "crearMs": 1008,
+      "resultado": "ubicacion_no_disponible",
+      "motivo": "crear_503_UBICACION_NO_DISPONIBLE"
+    }
+  ]
+}

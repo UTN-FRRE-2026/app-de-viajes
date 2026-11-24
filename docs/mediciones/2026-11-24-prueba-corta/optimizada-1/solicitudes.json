@@ -1,0 +1,1600 @@
+{
+  "resumen": {
+    "pasajeros": 20,
+    "choferes": {
+      "aptos": 40,
+      "no_aptos": 10
+    },
+    "k6Detectado": "2026-11-24T06:27:52.658Z",
+    "ventana": {
+      "inicio": "2026-11-24T06:27:59.709Z",
+      "fin": "2026-11-24T06:28:24.916Z",
+      "segundos": 25,
+      "calentamiento_s": 5,
+      "medicion_s": 30
+    },
+    "iteraciones": 165,
+    "solicitudes_por_s": 6.55,
+    "asignadas": 165,
+    "asignadas_por_s": 6.55,
+    "sin_choferes": 0,
+    "ubicacion_no_disponible_503": 0,
+    "timeouts": 0,
+    "errores": {},
+    "errores_total": 0,
+    "reintentos_cliente": 0,
+    "cliente_ms": {
+      "crear": {
+        "n": 165,
+        "p50": 125,
+        "p95": 418,
+        "p99": 505,
+        "max": 518
+      },
+      "hasta_asignacion": {
+        "n": 165,
+        "p50": 359,
+        "p95": 1159,
+        "p99": 16330,
+        "max": 16526
+      }
+    },
+    "servidor": {
+      "crear": {
+        "cuenta": 165,
+        "p50": 0.25,
+        "p95": 0.5,
+        "p99": 0.5
+      },
+      "aceptar": {
+        "cuenta": 436,
+        "p50": 0.25,
+        "p95": 0.5,
+        "p99": 0.5
+      },
+      "hasta_asignacion_s": {
+        "cuenta": 165,
+        "p50": 0.5,
+        "p95": 1,
+        "p99": 30
+      },
+      "busquedas_sin_aptos": {
+        "sin_candidatos": 0,
+        "filtrados": 0,
+        "tope_agotado": 0
+      },
+      "ofertas_vencidas": 9,
+      "lag_dispatch_s": {
+        "cuenta": 250,
+        "p50": 0.001,
+        "p95": 0.005,
+        "p99": 0.01
+      },
+      "lag_location_s": {
+        "cuenta": 251,
+        "p50": 0.001,
+        "p95": 0.002,
+        "p99": 0.01
+      },
+      "memoria_mb": {
+        "dispatch": {
+          "inicio": 112,
+          "fin": 128
+        },
+        "location": {
+          "inicio": 118,
+          "fin": 121
+        }
+      }
+    },
+    "choferes_prueba": {
+      "choferes": 50,
+      "pings_enviados": 200,
+      "pings_ok": 200,
+      "pings_fallidos": 0,
+      "ofertas_recibidas": 504,
+      "ofertas_a_no_aptos": 0,
+      "ofertas_ignoradas_ocupado": 31,
+      "ofertas_en_espera_probadas": 47,
+      "aceptadas_200": 165,
+      "aceptadas_por_no_aptos": 0,
+      "rechazos_409_esperados": {
+        "SOLICITUD_NO_DISPONIBLE": 271
+      },
+      "aceptar_errores": {},
+      "reintentos": 0,
+      "liberados_por_evento": 165,
+      "liberados_por_consulta": 0,
+      "sse_reconexiones": 0,
+      "pings_en_la_ventana": 150,
+      "pings_por_s_en_la_ventana": 6
+    }
+  },
+  "filas": [
+    {
+      "pasajero": 1,
+      "inicio": "2026-11-24T06:27:59.760Z",
+      "crearMs": 204,
+      "solicitudId": "50170cdb-5f28-4d54-8e6b-9eeb41a176a5",
+      "resultado": "asignada",
+      "asignacionMs": 761,
+      "liberado": true
+    },
+    {
+      "pasajero": 0,
+      "inicio": "2026-11-24T06:27:59.715Z",
+      "crearMs": 248,
+      "solicitudId": "31140fd5-61b6-433b-9b3a-764727e0166b",
+      "resultado": "asignada",
+      "asignacionMs": 852,
+      "liberado": true
+    },
+    {
+      "pasajero": 3,
+      "inicio": "2026-11-24T06:27:59.860Z",
+      "crearMs": 407,
+      "solicitudId": "3d34d66d-7e5d-4c9b-8bfd-3fabad968bf9",
+      "resultado": "asignada",
+      "asignacionMs": 940,
+      "liberado": true
+    },
+    {
+      "pasajero": 2,
+      "inicio": "2026-11-24T06:27:59.811Z",
+      "crearMs": 253,
+      "solicitudId": "2550ae29-8826-4cb3-ae63-af594938d0ab",
+      "resultado": "asignada",
+      "asignacionMs": 982,
+      "liberado": true
+    },
+    {
+      "pasajero": 4,
+      "inicio": "2026-11-24T06:27:59.910Z",
+      "crearMs": 488,
+      "solicitudId": "42bd698f-1de2-4829-9830-388c0b5e26c5",
+      "resultado": "asignada",
+      "asignacionMs": 1197,
+      "liberado": true
+    },
+    {
+      "pasajero": 5,
+      "inicio": "2026-11-24T06:27:59.961Z",
+      "crearMs": 505,
+      "solicitudId": "0a597b79-200f-4c5a-ad93-bfb38b6fcf3e",
+      "resultado": "asignada",
+      "asignacionMs": 1157,
+      "liberado": true
+    },
+    {
+      "pasajero": 6,
+      "inicio": "2026-11-24T06:28:00.011Z",
+      "crearMs": 456,
+      "solicitudId": "63e57ccd-5535-44c8-a5f3-1668c2fd3c31",
+      "resultado": "asignada",
+      "asignacionMs": 1159,
+      "liberado": true
+    },
+    {
+      "pasajero": 7,
+      "inicio": "2026-11-24T06:28:00.062Z",
+      "crearMs": 466,
+      "solicitudId": "4c1c4b03-9127-43e1-8431-3fffe838004d",
+      "resultado": "asignada",
+      "asignacionMs": 1324,
+      "liberado": true
+    },
+    {
+      "pasajero": 10,
+      "inicio": "2026-11-24T06:28:00.213Z",
+      "crearMs": 463,
+      "solicitudId": "d30db5fa-4833-45c7-8ac1-85095b9a045b",
+      "resultado": "asignada",
+      "asignacionMs": 1180,
+      "liberado": true
+    },
+    {
+      "pasajero": 8,
+      "inicio": "2026-11-24T06:28:00.111Z",
+      "crearMs": 468,
+      "solicitudId": "6fa5ca82-5ec3-4464-9148-120f8b563133",
+      "resultado": "asignada",
+      "asignacionMs": 1281,
+      "liberado": true
+    },
+    {
+      "pasajero": 9,
+      "inicio": "2026-11-24T06:28:00.162Z",
+      "crearMs": 418,
+      "solicitudId": "1731380c-6127-4650-a161-878995e72636",
+      "resultado": "asignada",
+      "asignacionMs": 1238,
+      "liberado": true
+    },
+    {
+      "pasajero": 11,
+      "inicio": "2026-11-24T06:28:00.262Z",
+      "crearMs": 416,
+      "solicitudId": "4a50f3ce-7643-4788-a57c-711fe6d765eb",
+      "resultado": "asignada",
+      "asignacionMs": 1138,
+      "liberado": true
+    },
+    {
+      "pasajero": 12,
+      "inicio": "2026-11-24T06:28:00.312Z",
+      "crearMs": 364,
+      "solicitudId": "e81d3259-6e47-4ba1-926b-93665382ee87",
+      "resultado": "asignada",
+      "asignacionMs": 1096,
+      "liberado": true
+    },
+    {
+      "pasajero": 16,
+      "inicio": "2026-11-24T06:28:00.513Z",
+      "crearMs": 518,
+      "solicitudId": "4f5c89a9-39a7-4e08-81ae-bb8d7686b6c0",
+      "resultado": "asignada",
+      "asignacionMs": 903,
+      "liberado": true
+    },
+    {
+      "pasajero": 14,
+      "inicio": "2026-11-24T06:28:00.414Z",
+      "crearMs": 358,
+      "solicitudId": "4ec21149-22c1-4674-8a2e-9ca14d5586bf",
+      "resultado": "asignada",
+      "asignacionMs": 1046,
+      "liberado": true
+    },
+    {
+      "pasajero": 13,
+      "inicio": "2026-11-24T06:28:00.364Z",
+      "crearMs": 403,
+      "solicitudId": "a00d3c16-541b-4597-afc9-6acda10ddcc8",
+      "resultado": "asignada",
+      "asignacionMs": 1045,
+      "liberado": true
+    },
+    {
+      "pasajero": 15,
+      "inicio": "2026-11-24T06:28:00.464Z",
+      "crearMs": 403,
+      "solicitudId": "596b2217-fd88-42ab-b05a-f5e7975e99e9",
+      "resultado": "asignada",
+      "asignacionMs": 995,
+      "liberado": true
+    },
+    {
+      "pasajero": 18,
+      "inicio": "2026-11-24T06:28:00.614Z",
+      "crearMs": 455,
+      "solicitudId": "07dfa756-5fb9-4fb7-a8f0-5e5939f31f9e",
+      "resultado": "asignada",
+      "asignacionMs": 929,
+      "liberado": true
+    },
+    {
+      "pasajero": 0,
+      "inicio": "2026-11-24T06:28:02.652Z",
+      "crearMs": 63,
+      "solicitudId": "a855cbee-0c90-42b4-9424-693a629b96af",
+      "resultado": "asignada",
+      "asignacionMs": 318,
+      "liberado": true
+    },
+    {
+      "pasajero": 1,
+      "inicio": "2026-11-24T06:28:02.650Z",
+      "crearMs": 97,
+      "solicitudId": "a839d596-3637-4c05-ae2d-67fc88ad3477",
+      "resultado": "asignada",
+      "asignacionMs": 323,
+      "liberado": true
+    },
+    {
+      "pasajero": 2,
+      "inicio": "2026-11-24T06:28:02.869Z",
+      "crearMs": 91,
+      "solicitudId": "7a3c5233-1124-4ad9-bae1-95c54fd1b41d",
+      "resultado": "asignada",
+      "asignacionMs": 205,
+      "liberado": true
+    },
+    {
+      "pasajero": 3,
+      "inicio": "2026-11-24T06:28:02.868Z",
+      "crearMs": 120,
+      "solicitudId": "55e65410-83a2-4f5c-8920-21f1c0e8dfd2",
+      "resultado": "asignada",
+      "asignacionMs": 474,
+      "liberado": true
+    },
+    {
+      "pasajero": 5,
+      "inicio": "2026-11-24T06:28:03.192Z",
+      "crearMs": 147,
+      "solicitudId": "8f771e94-5fdf-456f-bbdd-9904627282d2",
+      "resultado": "asignada",
+      "asignacionMs": 283,
+      "liberado": true
+    },
+    {
+      "pasajero": 4,
+      "inicio": "2026-11-24T06:28:03.158Z",
+      "crearMs": 182,
+      "solicitudId": "461b442a-7d50-4b4a-bbbe-2fabf98f5b2d",
+      "resultado": "asignada",
+      "asignacionMs": 316,
+      "liberado": true
+    },
+    {
+      "pasajero": 6,
+      "inicio": "2026-11-24T06:28:03.225Z",
+      "crearMs": 113,
+      "solicitudId": "b485a933-52ce-4564-a76b-2dcb2901ed2c",
+      "resultado": "asignada",
+      "asignacionMs": 250,
+      "liberado": true
+    },
+    {
+      "pasajero": 10,
+      "inicio": "2026-11-24T06:28:03.506Z",
+      "crearMs": 111,
+      "solicitudId": "5719e381-9481-4832-85e9-eff4b4ae0493",
+      "resultado": "asignada",
+      "asignacionMs": 318,
+      "liberado": true
+    },
+    {
+      "pasajero": 7,
+      "inicio": "2026-11-24T06:28:03.460Z",
+      "crearMs": 116,
+      "solicitudId": "67ba846a-fd2e-43b2-8694-ce6beee60125",
+      "resultado": "asignada",
+      "asignacionMs": 359,
+      "liberado": true
+    },
+    {
+      "pasajero": 9,
+      "inicio": "2026-11-24T06:28:03.509Z",
+      "crearMs": 107,
+      "solicitudId": "41ccadfd-f543-4140-9e52-66f86358d1c2",
+      "resultado": "asignada",
+      "asignacionMs": 387,
+      "liberado": true
+    },
+    {
+      "pasajero": 11,
+      "inicio": "2026-11-24T06:28:03.509Z",
+      "crearMs": 152,
+      "solicitudId": "1e7f7777-29f8-43dd-94d3-209cc22180bb",
+      "resultado": "asignada",
+      "asignacionMs": 387,
+      "liberado": true
+    },
+    {
+      "pasajero": 12,
+      "inicio": "2026-11-24T06:28:03.510Z",
+      "crearMs": 153,
+      "solicitudId": "4586d3fb-90cf-441f-954f-f6dd585aa2cf",
+      "resultado": "asignada",
+      "asignacionMs": 393,
+      "liberado": true
+    },
+    {
+      "pasajero": 8,
+      "inicio": "2026-11-24T06:28:03.508Z",
+      "crearMs": 156,
+      "solicitudId": "d6d91504-efdb-4e74-9dfc-0c2720479d03",
+      "resultado": "asignada",
+      "asignacionMs": 390,
+      "liberado": true
+    },
+    {
+      "pasajero": 18,
+      "inicio": "2026-11-24T06:28:03.616Z",
+      "crearMs": 148,
+      "solicitudId": "cbb4b1cb-840f-4f71-bf1e-78df9ba5e066",
+      "resultado": "asignada",
+      "asignacionMs": 390,
+      "liberado": true
+    },
+    {
+      "pasajero": 13,
+      "inicio": "2026-11-24T06:28:03.549Z",
+      "crearMs": 145,
+      "solicitudId": "848cef8b-7178-4251-bc8e-2432c11e75b3",
+      "resultado": "asignada",
+      "asignacionMs": 457,
+      "liberado": true
+    },
+    {
+      "pasajero": 16,
+      "inicio": "2026-11-24T06:28:03.546Z",
+      "crearMs": 147,
+      "solicitudId": "cd9c8a45-3f1d-420f-a9a9-f08dc61b7c46",
+      "resultado": "asignada",
+      "asignacionMs": 463,
+      "liberado": true
+    },
+    {
+      "pasajero": 15,
+      "inicio": "2026-11-24T06:28:03.550Z",
+      "crearMs": 179,
+      "solicitudId": "60b27093-bd71-4782-8f21-573fd5f66aab",
+      "resultado": "asignada",
+      "asignacionMs": 531,
+      "liberado": true
+    },
+    {
+      "pasajero": 0,
+      "inicio": "2026-11-24T06:28:05.050Z",
+      "crearMs": 98,
+      "solicitudId": "b34ef874-39f0-4801-b8d9-9d889bcc9ada",
+      "resultado": "asignada",
+      "asignacionMs": 239,
+      "liberado": true
+    },
+    {
+      "pasajero": 1,
+      "inicio": "2026-11-24T06:28:05.051Z",
+      "crearMs": 97,
+      "solicitudId": "92d85f94-56ae-4a9f-9223-153635ce0d4c",
+      "resultado": "asignada",
+      "asignacionMs": 335,
+      "liberado": true
+    },
+    {
+      "pasajero": 2,
+      "inicio": "2026-11-24T06:28:05.149Z",
+      "crearMs": 72,
+      "solicitudId": "183c9741-35f9-414e-a631-848e9f510261",
+      "resultado": "asignada",
+      "asignacionMs": 237,
+      "liberado": true
+    },
+    {
+      "pasajero": 3,
+      "inicio": "2026-11-24T06:28:05.423Z",
+      "crearMs": 74,
+      "solicitudId": "367c7a92-94f1-4c52-bcbe-6bb596b7d4ff",
+      "resultado": "asignada",
+      "asignacionMs": 267,
+      "liberado": true
+    },
+    {
+      "pasajero": 5,
+      "inicio": "2026-11-24T06:28:05.543Z",
+      "crearMs": 114,
+      "solicitudId": "4c70730a-89c7-415e-9c1a-47a89ea07b1f",
+      "resultado": "asignada",
+      "asignacionMs": 247,
+      "liberado": true
+    },
+    {
+      "pasajero": 4,
+      "inicio": "2026-11-24T06:28:05.587Z",
+      "crearMs": 70,
+      "solicitudId": "7e95cd54-8df5-4957-bef0-6f3c2a76a7cd",
+      "resultado": "asignada",
+      "asignacionMs": 205,
+      "liberado": true
+    },
+    {
+      "pasajero": 6,
+      "inicio": "2026-11-24T06:28:05.588Z",
+      "crearMs": 111,
+      "solicitudId": "d91884b8-36ac-48e8-8266-e5aef60e7725",
+      "resultado": "asignada",
+      "asignacionMs": 297,
+      "liberado": true
+    },
+    {
+      "pasajero": 7,
+      "inicio": "2026-11-24T06:28:05.915Z",
+      "crearMs": 91,
+      "solicitudId": "37518fb7-f3da-4839-9be9-c5332fed0009",
+      "resultado": "asignada",
+      "asignacionMs": 383,
+      "liberado": true
+    },
+    {
+      "pasajero": 10,
+      "inicio": "2026-11-24T06:28:05.915Z",
+      "crearMs": 91,
+      "solicitudId": "4985ba54-abca-46c0-95be-9eaa4a1063d1",
+      "resultado": "asignada",
+      "asignacionMs": 385,
+      "liberado": true
+    },
+    {
+      "pasajero": 11,
+      "inicio": "2026-11-24T06:28:05.996Z",
+      "crearMs": 195,
+      "solicitudId": "f243a117-cb55-4cb2-92f4-24c4dee65cd8",
+      "resultado": "asignada",
+      "asignacionMs": 388,
+      "liberado": true
+    },
+    {
+      "pasajero": 8,
+      "inicio": "2026-11-24T06:28:05.997Z",
+      "crearMs": 195,
+      "solicitudId": "d27086ec-2bfb-4b42-8d91-a830096a37f5",
+      "resultado": "asignada",
+      "asignacionMs": 388,
+      "liberado": true
+    },
+    {
+      "pasajero": 9,
+      "inicio": "2026-11-24T06:28:05.996Z",
+      "crearMs": 194,
+      "solicitudId": "33e04221-e518-4ec8-ad2a-41561f75db1f",
+      "resultado": "asignada",
+      "asignacionMs": 383,
+      "liberado": true
+    },
+    {
+      "pasajero": 13,
+      "inicio": "2026-11-24T06:28:06.080Z",
+      "crearMs": 159,
+      "solicitudId": "2541865e-8b0b-4b1e-8f7c-20c2b813aed4",
+      "resultado": "asignada",
+      "asignacionMs": 525,
+      "liberado": true
+    },
+    {
+      "pasajero": 18,
+      "inicio": "2026-11-24T06:28:06.079Z",
+      "crearMs": 158,
+      "solicitudId": "4273ecfb-30b1-4d75-9097-727acdc34ec4",
+      "resultado": "asignada",
+      "asignacionMs": 525,
+      "liberado": true
+    },
+    {
+      "pasajero": 12,
+      "inicio": "2026-11-24T06:28:05.996Z",
+      "crearMs": 196,
+      "solicitudId": "c9f7e02f-3385-4ebe-bcb2-f29629e5a8af",
+      "resultado": "asignada",
+      "asignacionMs": 621,
+      "liberado": true
+    },
+    {
+      "pasajero": 15,
+      "inicio": "2026-11-24T06:28:06.150Z",
+      "crearMs": 123,
+      "solicitudId": "33d9f0ef-ca7d-415a-a74c-a17ed379ce75",
+      "resultado": "asignada",
+      "asignacionMs": 473,
+      "liberado": true
+    },
+    {
+      "pasajero": 16,
+      "inicio": "2026-11-24T06:28:06.111Z",
+      "crearMs": 163,
+      "solicitudId": "2f2001b3-8b73-4cd0-9a1c-5dcbdf4637e6",
+      "resultado": "asignada",
+      "asignacionMs": 507,
+      "liberado": true
+    },
+    {
+      "pasajero": 0,
+      "inicio": "2026-11-24T06:28:07.552Z",
+      "crearMs": 336,
+      "solicitudId": "fbca7f7c-cf3f-4891-8c6a-7de3a5d756bd",
+      "resultado": "asignada",
+      "asignacionMs": 659,
+      "liberado": true
+    },
+    {
+      "pasajero": 1,
+      "inicio": "2026-11-24T06:28:07.639Z",
+      "crearMs": 252,
+      "solicitudId": "ecd22184-bcf6-427b-a8af-5023eb7069a0",
+      "resultado": "asignada",
+      "asignacionMs": 651,
+      "liberado": true
+    },
+    {
+      "pasajero": 2,
+      "inicio": "2026-11-24T06:28:07.639Z",
+      "crearMs": 322,
+      "solicitudId": "d4046619-b270-4ba9-aef3-fcfeab5238b9",
+      "resultado": "asignada",
+      "asignacionMs": 651,
+      "liberado": true
+    },
+    {
+      "pasajero": 3,
+      "inicio": "2026-11-24T06:28:07.815Z",
+      "crearMs": 249,
+      "solicitudId": "f4be33a2-dbdf-41da-8ff8-5848735fc489",
+      "resultado": "asignada",
+      "asignacionMs": 548,
+      "liberado": true
+    },
+    {
+      "pasajero": 5,
+      "inicio": "2026-11-24T06:28:07.867Z",
+      "crearMs": 195,
+      "solicitudId": "f2204cb0-5c3d-467d-b053-a85746e76d43",
+      "resultado": "asignada",
+      "asignacionMs": 495,
+      "liberado": true
+    },
+    {
+      "pasajero": 6,
+      "inicio": "2026-11-24T06:28:07.981Z",
+      "crearMs": 240,
+      "solicitudId": "c5508d8f-db27-47a2-86c4-07f45f45f11f",
+      "resultado": "asignada",
+      "asignacionMs": 498,
+      "liberado": true
+    },
+    {
+      "pasajero": 4,
+      "inicio": "2026-11-24T06:28:07.910Z",
+      "crearMs": 272,
+      "solicitudId": "d6780d08-97db-492b-849f-1d2e2962eb59",
+      "resultado": "asignada",
+      "asignacionMs": 569,
+      "liberado": true
+    },
+    {
+      "pasajero": 7,
+      "inicio": "2026-11-24T06:28:08.386Z",
+      "crearMs": 274,
+      "solicitudId": "c3b6c945-5cfe-425f-a1f0-69bab3b40f52",
+      "resultado": "asignada",
+      "asignacionMs": 441,
+      "liberado": true
+    },
+    {
+      "pasajero": 11,
+      "inicio": "2026-11-24T06:28:08.497Z",
+      "crearMs": 165,
+      "solicitudId": "bb37cf00-a3e0-41d5-9e55-e2c2315cb00b",
+      "resultado": "asignada",
+      "asignacionMs": 416,
+      "liberado": true
+    },
+    {
+      "pasajero": 8,
+      "inicio": "2026-11-24T06:28:08.498Z",
+      "crearMs": 163,
+      "solicitudId": "be9bc9e7-2205-4451-b0b6-e80fcc8ddd78",
+      "resultado": "asignada",
+      "asignacionMs": 411,
+      "liberado": true
+    },
+    {
+      "pasajero": 10,
+      "inicio": "2026-11-24T06:28:08.390Z",
+      "crearMs": 271,
+      "solicitudId": "e07138e6-3615-45e1-b7f7-415d59c4325e",
+      "resultado": "asignada",
+      "asignacionMs": 519,
+      "liberado": true
+    },
+    {
+      "pasajero": 9,
+      "inicio": "2026-11-24T06:28:08.500Z",
+      "crearMs": 162,
+      "solicitudId": "4586466a-b710-414d-a2f8-4247ea56bedf",
+      "resultado": "asignada",
+      "asignacionMs": 497,
+      "liberado": true
+    },
+    {
+      "pasajero": 18,
+      "inicio": "2026-11-24T06:28:08.975Z",
+      "crearMs": 91,
+      "solicitudId": "bbf83e48-c72a-4bab-bd4e-5ad21c7673c6",
+      "resultado": "asignada",
+      "asignacionMs": 241,
+      "liberado": true
+    },
+    {
+      "pasajero": 12,
+      "inicio": "2026-11-24T06:28:08.975Z",
+      "crearMs": 87,
+      "solicitudId": "b4d92968-90ff-4501-840a-8f78edaeef71",
+      "resultado": "asignada",
+      "asignacionMs": 241,
+      "liberado": true
+    },
+    {
+      "pasajero": 13,
+      "inicio": "2026-11-24T06:28:08.974Z",
+      "crearMs": 89,
+      "solicitudId": "960c89cb-4bb2-4fd0-b37a-171b4a4dafa3",
+      "resultado": "asignada",
+      "asignacionMs": 238,
+      "liberado": true
+    },
+    {
+      "pasajero": 15,
+      "inicio": "2026-11-24T06:28:08.976Z",
+      "crearMs": 87,
+      "solicitudId": "4549b6f6-3439-4919-b42f-a865c229f894",
+      "resultado": "asignada",
+      "asignacionMs": 307,
+      "liberado": true
+    },
+    {
+      "pasajero": 16,
+      "inicio": "2026-11-24T06:28:08.978Z",
+      "crearMs": 86,
+      "solicitudId": "22fd10b1-b5c3-44c5-b3aa-283453a38486",
+      "resultado": "asignada",
+      "asignacionMs": 305,
+      "liberado": true
+    },
+    {
+      "pasajero": 1,
+      "inicio": "2026-11-24T06:28:10.352Z",
+      "crearMs": 129,
+      "solicitudId": "2241fbb3-a3f5-429b-976f-5cffcfb13c60",
+      "resultado": "asignada",
+      "asignacionMs": 276,
+      "liberado": true
+    },
+    {
+      "pasajero": 2,
+      "inicio": "2026-11-24T06:28:10.353Z",
+      "crearMs": 129,
+      "solicitudId": "2599e489-aebf-405a-8ca9-273d990ee403",
+      "resultado": "asignada",
+      "asignacionMs": 284,
+      "liberado": true
+    },
+    {
+      "pasajero": 0,
+      "inicio": "2026-11-24T06:28:10.289Z",
+      "crearMs": 111,
+      "solicitudId": "84a478df-b3ba-43db-ae69-e29ae9e2f098",
+      "resultado": "asignada",
+      "asignacionMs": 338,
+      "liberado": true
+    },
+    {
+      "pasajero": 5,
+      "inicio": "2026-11-24T06:28:10.452Z",
+      "crearMs": 95,
+      "solicitudId": "558d36cb-461f-44f2-bb4b-14e2d811b6e9",
+      "resultado": "asignada",
+      "asignacionMs": 347,
+      "liberado": true
+    },
+    {
+      "pasajero": 3,
+      "inicio": "2026-11-24T06:28:10.451Z",
+      "crearMs": 95,
+      "solicitudId": "0e447c0d-ca8e-4137-a80a-c692710ab111",
+      "resultado": "asignada",
+      "asignacionMs": 347,
+      "liberado": true
+    },
+    {
+      "pasajero": 6,
+      "inicio": "2026-11-24T06:28:10.576Z",
+      "crearMs": 129,
+      "solicitudId": "2ff35d96-c14b-48a5-b29d-410b973408bc",
+      "resultado": "asignada",
+      "asignacionMs": 226,
+      "liberado": true
+    },
+    {
+      "pasajero": 4,
+      "inicio": "2026-11-24T06:28:10.579Z",
+      "crearMs": 125,
+      "solicitudId": "ac6f97d9-143e-403c-ac96-013a1a5bc2b9",
+      "resultado": "asignada",
+      "asignacionMs": 299,
+      "liberado": true
+    },
+    {
+      "pasajero": 7,
+      "inicio": "2026-11-24T06:28:10.921Z",
+      "crearMs": 64,
+      "solicitudId": "cb57c65e-0d57-41d6-87ad-ab51c0740876",
+      "resultado": "asignada",
+      "asignacionMs": 356,
+      "liberado": true
+    },
+    {
+      "pasajero": 8,
+      "inicio": "2026-11-24T06:28:11.019Z",
+      "crearMs": 75,
+      "solicitudId": "bb7d6c29-ba4e-4f0a-a550-55590cb5f8d5",
+      "resultado": "asignada",
+      "asignacionMs": 361,
+      "liberado": true
+    },
+    {
+      "pasajero": 11,
+      "inicio": "2026-11-24T06:28:11.017Z",
+      "crearMs": 77,
+      "solicitudId": "e611f457-ebc0-4452-a198-7f6e1d97e732",
+      "resultado": "asignada",
+      "asignacionMs": 363,
+      "liberado": true
+    },
+    {
+      "pasajero": 10,
+      "inicio": "2026-11-24T06:28:11.019Z",
+      "crearMs": 74,
+      "solicitudId": "ea986e19-a546-4a47-b81c-3a43521927a6",
+      "resultado": "asignada",
+      "asignacionMs": 359,
+      "liberado": true
+    },
+    {
+      "pasajero": 9,
+      "inicio": "2026-11-24T06:28:11.084Z",
+      "crearMs": 93,
+      "solicitudId": "e844c6d5-ac4a-4dcf-a032-e9d1ae803cba",
+      "resultado": "asignada",
+      "asignacionMs": 302,
+      "liberado": true
+    },
+    {
+      "pasajero": 18,
+      "inicio": "2026-11-24T06:28:11.295Z",
+      "crearMs": 73,
+      "solicitudId": "30fe4b61-aedb-40e8-97d0-13d5b4a5eecd",
+      "resultado": "asignada",
+      "asignacionMs": 283,
+      "liberado": true
+    },
+    {
+      "pasajero": 13,
+      "inicio": "2026-11-24T06:28:11.331Z",
+      "crearMs": 81,
+      "solicitudId": "3aec22c9-115b-4cef-b0fc-6e09bfd79acb",
+      "resultado": "asignada",
+      "asignacionMs": 346,
+      "liberado": true
+    },
+    {
+      "pasajero": 15,
+      "inicio": "2026-11-24T06:28:11.361Z",
+      "crearMs": 93,
+      "solicitudId": "9d25bfa9-ee95-42ee-ab62-d188d0c4b5fb",
+      "resultado": "asignada",
+      "asignacionMs": 318,
+      "liberado": true
+    },
+    {
+      "pasajero": 16,
+      "inicio": "2026-11-24T06:28:11.362Z",
+      "crearMs": 94,
+      "solicitudId": "a06dd04f-517a-4ab5-9616-a6e1d7cdc12a",
+      "resultado": "asignada",
+      "asignacionMs": 318,
+      "liberado": true
+    },
+    {
+      "pasajero": 12,
+      "inicio": "2026-11-24T06:28:11.331Z",
+      "crearMs": 81,
+      "solicitudId": "dbe981f3-0607-47ac-9121-a656b327b2c8",
+      "resultado": "asignada",
+      "asignacionMs": 347,
+      "liberado": true
+    },
+    {
+      "pasajero": 2,
+      "inicio": "2026-11-24T06:28:12.733Z",
+      "crearMs": 270,
+      "solicitudId": "2d871588-a6b1-4ef7-91db-fcd20a78beae",
+      "resultado": "asignada",
+      "asignacionMs": 442,
+      "liberado": true
+    },
+    {
+      "pasajero": 0,
+      "inicio": "2026-11-24T06:28:12.735Z",
+      "crearMs": 269,
+      "solicitudId": "3ff5c788-c630-43c2-9fa6-dac22fcdcf9e",
+      "resultado": "asignada",
+      "asignacionMs": 451,
+      "liberado": true
+    },
+    {
+      "pasajero": 1,
+      "inicio": "2026-11-24T06:28:12.731Z",
+      "crearMs": 274,
+      "solicitudId": "b246d7ea-63ed-42b4-a919-d449b754d4df",
+      "resultado": "asignada",
+      "asignacionMs": 455,
+      "liberado": true
+    },
+    {
+      "pasajero": 5,
+      "inicio": "2026-11-24T06:28:12.855Z",
+      "crearMs": 150,
+      "solicitudId": "a51f220b-f3f4-4a9a-8a32-de936dd5075b",
+      "resultado": "asignada",
+      "asignacionMs": 395,
+      "liberado": true
+    },
+    {
+      "pasajero": 3,
+      "inicio": "2026-11-24T06:28:12.896Z",
+      "crearMs": 108,
+      "solicitudId": "076ea5d2-2386-4809-a72f-720b6c9e1db6",
+      "resultado": "asignada",
+      "asignacionMs": 354,
+      "liberado": true
+    },
+    {
+      "pasajero": 6,
+      "inicio": "2026-11-24T06:28:12.897Z",
+      "crearMs": 186,
+      "solicitudId": "b9acdd47-acdf-480c-b164-27bfb17fde9f",
+      "resultado": "asignada",
+      "asignacionMs": 361,
+      "liberado": true
+    },
+    {
+      "pasajero": 4,
+      "inicio": "2026-11-24T06:28:12.929Z",
+      "crearMs": 180,
+      "solicitudId": "9bc35dc9-d478-48e9-815e-5d9db924944f",
+      "resultado": "asignada",
+      "asignacionMs": 329,
+      "liberado": true
+    },
+    {
+      "pasajero": 7,
+      "inicio": "2026-11-24T06:28:13.355Z",
+      "crearMs": 55,
+      "solicitudId": "4f4d3186-2543-4fee-b94e-f621fa520f0e",
+      "resultado": "asignada",
+      "asignacionMs": 266,
+      "liberado": true
+    },
+    {
+      "pasajero": 8,
+      "inicio": "2026-11-24T06:28:13.473Z",
+      "crearMs": 111,
+      "solicitudId": "986913f2-9292-4d9d-b060-745bf9cef0e8",
+      "resultado": "asignada",
+      "asignacionMs": 220,
+      "liberado": true
+    },
+    {
+      "pasajero": 11,
+      "inicio": "2026-11-24T06:28:13.474Z",
+      "crearMs": 111,
+      "solicitudId": "6386624f-7fae-4561-b092-d557454d6c71",
+      "resultado": "asignada",
+      "asignacionMs": 219,
+      "liberado": true
+    },
+    {
+      "pasajero": 9,
+      "inicio": "2026-11-24T06:28:13.475Z",
+      "crearMs": 111,
+      "solicitudId": "b3580c76-50ff-4f30-9560-3c3ced35bab7",
+      "resultado": "asignada",
+      "asignacionMs": 313,
+      "liberado": true
+    },
+    {
+      "pasajero": 10,
+      "inicio": "2026-11-24T06:28:13.475Z",
+      "crearMs": 110,
+      "solicitudId": "df31c99f-8ee4-4ecb-a74c-2d28dfae11d2",
+      "resultado": "asignada",
+      "asignacionMs": 312,
+      "liberado": true
+    },
+    {
+      "pasajero": 18,
+      "inicio": "2026-11-24T06:28:13.646Z",
+      "crearMs": 139,
+      "solicitudId": "6ec75419-2e78-4525-b7ba-da720cd0da5f",
+      "resultado": "asignada",
+      "asignacionMs": 239,
+      "liberado": true
+    },
+    {
+      "pasajero": 13,
+      "inicio": "2026-11-24T06:28:14.014Z",
+      "crearMs": 62,
+      "solicitudId": "e49dac7d-db98-412c-a3f2-e8fd7b982631",
+      "resultado": "asignada",
+      "asignacionMs": 197,
+      "liberado": true
+    },
+    {
+      "pasajero": 15,
+      "inicio": "2026-11-24T06:28:14.016Z",
+      "crearMs": 107,
+      "solicitudId": "c438cb2b-a921-400b-a611-b5b4fc5d5410",
+      "resultado": "asignada",
+      "asignacionMs": 369,
+      "liberado": true
+    },
+    {
+      "pasajero": 16,
+      "inicio": "2026-11-24T06:28:14.017Z",
+      "crearMs": 106,
+      "solicitudId": "77a4b3c8-649d-4ad0-b690-c1e7adcbe24d",
+      "resultado": "asignada",
+      "asignacionMs": 369,
+      "liberado": true
+    },
+    {
+      "pasajero": 12,
+      "inicio": "2026-11-24T06:28:14.021Z",
+      "crearMs": 101,
+      "solicitudId": "1a546bb1-4d93-4abb-907b-93520588321e",
+      "resultado": "asignada",
+      "asignacionMs": 367,
+      "liberado": true
+    },
+    {
+      "pasajero": 2,
+      "inicio": "2026-11-24T06:28:15.272Z",
+      "crearMs": 68,
+      "solicitudId": "82096442-30bb-4e7f-8d0c-12668138bff5",
+      "resultado": "asignada",
+      "asignacionMs": 247,
+      "liberado": true
+    },
+    {
+      "pasajero": 0,
+      "inicio": "2026-11-24T06:28:15.302Z",
+      "crearMs": 71,
+      "solicitudId": "221884de-dc44-4fa4-92e7-667dbd0f24b2",
+      "resultado": "asignada",
+      "asignacionMs": 228,
+      "liberado": true
+    },
+    {
+      "pasajero": 1,
+      "inicio": "2026-11-24T06:28:15.302Z",
+      "crearMs": 71,
+      "solicitudId": "f55eafde-51bf-437d-99e7-9f1d9b688bca",
+      "resultado": "asignada",
+      "asignacionMs": 309,
+      "liberado": true
+    },
+    {
+      "pasajero": 5,
+      "inicio": "2026-11-24T06:28:15.362Z",
+      "crearMs": 96,
+      "solicitudId": "1e703ec0-9697-438a-b8c7-fdfb63436a61",
+      "resultado": "asignada",
+      "asignacionMs": 268,
+      "liberado": true
+    },
+    {
+      "pasajero": 6,
+      "inicio": "2026-11-24T06:28:15.428Z",
+      "crearMs": 181,
+      "solicitudId": "0a2d79c5-fc5b-426f-914f-e30e342092fe",
+      "resultado": "asignada",
+      "asignacionMs": 361,
+      "liberado": true
+    },
+    {
+      "pasajero": 3,
+      "inicio": "2026-11-24T06:28:15.395Z",
+      "crearMs": 173,
+      "solicitudId": "475e027d-c6ee-426e-94e4-fd2b5b95f231",
+      "resultado": "asignada",
+      "asignacionMs": 392,
+      "liberado": true
+    },
+    {
+      "pasajero": 4,
+      "inicio": "2026-11-24T06:28:15.428Z",
+      "crearMs": 180,
+      "solicitudId": "d34a329b-2f20-45ea-9e4d-e1f450beb303",
+      "resultado": "asignada",
+      "asignacionMs": 359,
+      "liberado": true
+    },
+    {
+      "pasajero": 7,
+      "inicio": "2026-11-24T06:28:15.711Z",
+      "crearMs": 58,
+      "solicitudId": "dc4509e5-ba29-4194-b280-acf9e66276ab",
+      "resultado": "asignada",
+      "asignacionMs": 177,
+      "liberado": true
+    },
+    {
+      "pasajero": 8,
+      "inicio": "2026-11-24T06:28:15.876Z",
+      "crearMs": 90,
+      "solicitudId": "aaf4ef25-eeda-4f92-b0ae-acdaa0e90ac4",
+      "resultado": "asignada",
+      "asignacionMs": 227,
+      "liberado": true
+    },
+    {
+      "pasajero": 11,
+      "inicio": "2026-11-24T06:28:15.876Z",
+      "crearMs": 90,
+      "solicitudId": "d62aa5ee-6921-4cb6-ada3-e8c1ef912b29",
+      "resultado": "asignada",
+      "asignacionMs": 233,
+      "liberado": true
+    },
+    {
+      "pasajero": 10,
+      "inicio": "2026-11-24T06:28:15.906Z",
+      "crearMs": 104,
+      "solicitudId": "749c946b-ca6c-48eb-aee2-831697c2f4db",
+      "resultado": "asignada",
+      "asignacionMs": 380,
+      "liberado": true
+    },
+    {
+      "pasajero": 18,
+      "inicio": "2026-11-24T06:28:15.936Z",
+      "crearMs": 75,
+      "solicitudId": "fe840995-29eb-428d-aaba-27cd53c6c361",
+      "resultado": "asignada",
+      "asignacionMs": 355,
+      "liberado": true
+    },
+    {
+      "pasajero": 9,
+      "inicio": "2026-11-24T06:28:15.905Z",
+      "crearMs": 106,
+      "solicitudId": "09b5d024-ccf8-49c0-b3c5-99da7501b0b4",
+      "resultado": "asignada",
+      "asignacionMs": 381,
+      "liberado": true
+    },
+    {
+      "pasajero": 13,
+      "inicio": "2026-11-24T06:28:16.278Z",
+      "crearMs": 80,
+      "solicitudId": "aca564ac-fb56-4489-bd33-6138abe1fa83",
+      "resultado": "asignada",
+      "asignacionMs": 315,
+      "liberado": true
+    },
+    {
+      "pasajero": 15,
+      "inicio": "2026-11-24T06:28:16.512Z",
+      "crearMs": 72,
+      "solicitudId": "77427497-fbf5-4946-8ef9-f35f4f48d5f6",
+      "resultado": "asignada",
+      "asignacionMs": 288,
+      "liberado": true
+    },
+    {
+      "pasajero": 12,
+      "inicio": "2026-11-24T06:28:16.512Z",
+      "crearMs": 71,
+      "solicitudId": "eef26210-72c0-446d-9175-92eb44d685db",
+      "resultado": "asignada",
+      "asignacionMs": 288,
+      "liberado": true
+    },
+    {
+      "pasajero": 16,
+      "inicio": "2026-11-24T06:28:16.512Z",
+      "crearMs": 74,
+      "solicitudId": "edc628b6-2045-4ca7-903c-eb1490711707",
+      "resultado": "asignada",
+      "asignacionMs": 294,
+      "liberado": true
+    },
+    {
+      "pasajero": 19,
+      "inicio": "2026-11-24T06:28:00.665Z",
+      "crearMs": 405,
+      "solicitudId": "d1b2f1b6-fc00-4fd0-905a-688c3e5b9d70",
+      "resultado": "asignada",
+      "asignacionMs": 16330,
+      "liberado": true
+    },
+    {
+      "pasajero": 17,
+      "inicio": "2026-11-24T06:28:00.565Z",
+      "crearMs": 402,
+      "solicitudId": "82e50520-67d2-48bb-b968-d8d44a56d14a",
+      "resultado": "asignada",
+      "asignacionMs": 16526,
+      "liberado": true
+    },
+    {
+      "pasajero": 2,
+      "inicio": "2026-11-24T06:28:17.591Z",
+      "crearMs": 217,
+      "solicitudId": "06e16414-bd02-42e4-81a5-d8609e45ddf8",
+      "resultado": "asignada",
+      "asignacionMs": 409,
+      "liberado": true
+    },
+    {
+      "pasajero": 0,
+      "inicio": "2026-11-24T06:28:17.666Z",
+      "crearMs": 141,
+      "solicitudId": "58c8f5ae-fa93-4d66-8f7e-2d2e43e022ed",
+      "resultado": "asignada",
+      "asignacionMs": 339,
+      "liberado": true
+    },
+    {
+      "pasajero": 1,
+      "inicio": "2026-11-24T06:28:17.781Z",
+      "crearMs": 59,
+      "solicitudId": "e460f17c-aff1-456f-b14b-4bd41628d79c",
+      "resultado": "asignada",
+      "asignacionMs": 310,
+      "liberado": true
+    },
+    {
+      "pasajero": 5,
+      "inicio": "2026-11-24T06:28:17.833Z",
+      "crearMs": 78,
+      "solicitudId": "6906b37c-32aa-4d75-835c-57ec87795a8f",
+      "resultado": "asignada",
+      "asignacionMs": 449,
+      "liberado": true
+    },
+    {
+      "pasajero": 6,
+      "inicio": "2026-11-24T06:28:17.944Z",
+      "crearMs": 129,
+      "solicitudId": "b8d6aaaa-c808-48a1-a071-c709f88e6953",
+      "resultado": "asignada",
+      "asignacionMs": 348,
+      "liberado": true
+    },
+    {
+      "pasajero": 3,
+      "inicio": "2026-11-24T06:28:17.946Z",
+      "crearMs": 128,
+      "solicitudId": "a75c4b03-5482-469c-8f80-3479e8a0d327",
+      "resultado": "asignada",
+      "asignacionMs": 356,
+      "liberado": true
+    },
+    {
+      "pasajero": 7,
+      "inicio": "2026-11-24T06:28:17.980Z",
+      "crearMs": 95,
+      "solicitudId": "387b6578-30f4-40a1-8cf0-9a699bdb745c",
+      "resultado": "asignada",
+      "asignacionMs": 328,
+      "liberado": true
+    },
+    {
+      "pasajero": 4,
+      "inicio": "2026-11-24T06:28:17.947Z",
+      "crearMs": 126,
+      "solicitudId": "c7dc1df1-8195-4f18-bcd6-477e5476ba61",
+      "resultado": "asignada",
+      "asignacionMs": 356,
+      "liberado": true
+    },
+    {
+      "pasajero": 11,
+      "inicio": "2026-11-24T06:28:18.236Z",
+      "crearMs": 224,
+      "solicitudId": "c39dcecf-11a3-4595-8a01-9029d6aad18f",
+      "resultado": "asignada",
+      "asignacionMs": 440,
+      "liberado": true
+    },
+    {
+      "pasajero": 8,
+      "inicio": "2026-11-24T06:28:18.235Z",
+      "crearMs": 225,
+      "solicitudId": "c43c35f9-2d66-4223-8d70-0ef62f0c05b4",
+      "resultado": "asignada",
+      "asignacionMs": 441,
+      "liberado": true
+    },
+    {
+      "pasajero": 18,
+      "inicio": "2026-11-24T06:28:18.395Z",
+      "crearMs": 164,
+      "solicitudId": "845fa119-500a-4cb6-a962-02c0c98ffbff",
+      "resultado": "asignada",
+      "asignacionMs": 367,
+      "liberado": true
+    },
+    {
+      "pasajero": 10,
+      "inicio": "2026-11-24T06:28:18.394Z",
+      "crearMs": 165,
+      "solicitudId": "df1e3a70-0589-4ff0-90a0-ff4e1b02b662",
+      "resultado": "asignada",
+      "asignacionMs": 375,
+      "liberado": true
+    },
+    {
+      "pasajero": 9,
+      "inicio": "2026-11-24T06:28:18.397Z",
+      "crearMs": 261,
+      "solicitudId": "140fc2c9-8366-46de-a6bb-3953d403a8cb",
+      "resultado": "asignada",
+      "asignacionMs": 428,
+      "liberado": true
+    },
+    {
+      "pasajero": 14,
+      "inicio": "2026-11-24T06:28:03.548Z",
+      "crearMs": 181,
+      "solicitudId": "31aa9cf6-0293-43df-892e-464424a57885",
+      "resultado": "asignada",
+      "asignacionMs": 15370,
+      "liberado": true
+    },
+    {
+      "pasajero": 13,
+      "inicio": "2026-11-24T06:28:18.817Z",
+      "crearMs": 75,
+      "solicitudId": "823aaf50-c244-4c3b-8244-b2d0f2ebedbb",
+      "resultado": "asignada",
+      "asignacionMs": 389,
+      "liberado": true
+    },
+    {
+      "pasajero": 12,
+      "inicio": "2026-11-24T06:28:18.883Z",
+      "crearMs": 232,
+      "solicitudId": "ac78c204-8605-42d1-828c-76466d6c4690",
+      "resultado": "asignada",
+      "asignacionMs": 508,
+      "liberado": true
+    },
+    {
+      "pasajero": 15,
+      "inicio": "2026-11-24T06:28:18.882Z",
+      "crearMs": 233,
+      "solicitudId": "f24ce824-e7b6-4dea-8a44-4db87bb4c4e1",
+      "resultado": "asignada",
+      "asignacionMs": 510,
+      "liberado": true
+    },
+    {
+      "pasajero": 16,
+      "inicio": "2026-11-24T06:28:18.883Z",
+      "crearMs": 232,
+      "solicitudId": "01f5482d-5f2d-4330-b3fd-ba5dd0df8554",
+      "resultado": "asignada",
+      "asignacionMs": 508,
+      "liberado": true
+    },
+    {
+      "pasajero": 17,
+      "inicio": "2026-11-24T06:28:19.284Z",
+      "crearMs": 89,
+      "solicitudId": "bc66c2c1-a655-41a0-a6d4-6465b0090c9e",
+      "resultado": "asignada",
+      "asignacionMs": 214,
+      "liberado": true
+    },
+    {
+      "pasajero": 19,
+      "inicio": "2026-11-24T06:28:19.127Z",
+      "crearMs": 73,
+      "solicitudId": "fd7113cf-a548-4480-8455-968e353596a0",
+      "resultado": "asignada",
+      "asignacionMs": 364,
+      "liberado": true
+    },
+    {
+      "pasajero": 2,
+      "inicio": "2026-11-24T06:28:20.121Z",
+      "crearMs": 128,
+      "solicitudId": "52b6a64b-8e76-4b9a-b104-d445635d39f7",
+      "resultado": "asignada",
+      "asignacionMs": 251,
+      "liberado": true
+    },
+    {
+      "pasajero": 0,
+      "inicio": "2026-11-24T06:28:20.121Z",
+      "crearMs": 127,
+      "solicitudId": "525b7c86-5255-452e-b8a8-265cd62fa3d7",
+      "resultado": "asignada",
+      "asignacionMs": 251,
+      "liberado": true
+    },
+    {
+      "pasajero": 1,
+      "inicio": "2026-11-24T06:28:20.159Z",
+      "crearMs": 89,
+      "solicitudId": "7b5cd510-82de-44ec-b481-5469d841c3bc",
+      "resultado": "asignada",
+      "asignacionMs": 307,
+      "liberado": true
+    },
+    {
+      "pasajero": 5,
+      "inicio": "2026-11-24T06:28:20.360Z",
+      "crearMs": 100,
+      "solicitudId": "30c799b5-2828-4b8d-8bb9-e3764daa726d",
+      "resultado": "asignada",
+      "asignacionMs": 272,
+      "liberado": true
+    },
+    {
+      "pasajero": 7,
+      "inicio": "2026-11-24T06:28:20.424Z",
+      "crearMs": 131,
+      "solicitudId": "d0e86b7c-caf4-4a92-ba25-3b447c3e8581",
+      "resultado": "asignada",
+      "asignacionMs": 304,
+      "liberado": true
+    },
+    {
+      "pasajero": 6,
+      "inicio": "2026-11-24T06:28:20.423Z",
+      "crearMs": 132,
+      "solicitudId": "e5361601-896e-4c27-a442-80b789edc606",
+      "resultado": "asignada",
+      "asignacionMs": 300,
+      "liberado": true
+    },
+    {
+      "pasajero": 3,
+      "inicio": "2026-11-24T06:28:20.424Z",
+      "crearMs": 132,
+      "solicitudId": "292e1847-2a9b-4ed5-bf5c-fd0954a25e53",
+      "resultado": "asignada",
+      "asignacionMs": 301,
+      "liberado": true
+    },
+    {
+      "pasajero": 4,
+      "inicio": "2026-11-24T06:28:20.426Z",
+      "crearMs": 171,
+      "solicitudId": "3cb81d49-244f-47db-b6d1-c1ca52226f6d",
+      "resultado": "asignada",
+      "asignacionMs": 374,
+      "liberado": true
+    },
+    {
+      "pasajero": 8,
+      "inicio": "2026-11-24T06:28:20.779Z",
+      "crearMs": 60,
+      "solicitudId": "98764d8e-243f-4410-9897-eeb661df9cfa",
+      "resultado": "asignada",
+      "asignacionMs": 320,
+      "liberado": true
+    },
+    {
+      "pasajero": 18,
+      "inicio": "2026-11-24T06:28:20.809Z",
+      "crearMs": 63,
+      "solicitudId": "c2d0b8ed-0b1b-4135-b00d-0265b9d45c74",
+      "resultado": "asignada",
+      "asignacionMs": 291,
+      "liberado": true
+    },
+    {
+      "pasajero": 11,
+      "inicio": "2026-11-24T06:28:20.735Z",
+      "crearMs": 104,
+      "solicitudId": "2d2e3e54-5562-4e0b-b269-b6761f4d1d8c",
+      "resultado": "asignada",
+      "asignacionMs": 363,
+      "liberado": true
+    },
+    {
+      "pasajero": 9,
+      "inicio": "2026-11-24T06:28:20.884Z",
+      "crearMs": 65,
+      "solicitudId": "08025756-064f-4cf8-8b88-cdd4aab705f5",
+      "resultado": "asignada",
+      "asignacionMs": 317,
+      "liberado": true
+    },
+    {
+      "pasajero": 10,
+      "inicio": "2026-11-24T06:28:20.851Z",
+      "crearMs": 70,
+      "solicitudId": "157f39ef-e190-49c6-80fd-e2618d1d3304",
+      "resultado": "asignada",
+      "asignacionMs": 351,
+      "liberado": true
+    },
+    {
+      "pasajero": 14,
+      "inicio": "2026-11-24T06:28:21.017Z",
+      "crearMs": 114,
+      "solicitudId": "a9c4d1ae-65ae-467a-9411-835b29f52805",
+      "resultado": "asignada",
+      "asignacionMs": 283,
+      "liberado": true
+    },
+    {
+      "pasajero": 13,
+      "inicio": "2026-11-24T06:28:21.364Z",
+      "crearMs": 100,
+      "solicitudId": "df1632fb-7a15-4cf1-92fe-8eba2b449c54",
+      "resultado": "asignada",
+      "asignacionMs": 239,
+      "liberado": true
+    },
+    {
+      "pasajero": 15,
+      "inicio": "2026-11-24T06:28:21.495Z",
+      "crearMs": 128,
+      "solicitudId": "1cba0b81-e3b1-468f-b090-b102a5005bdb",
+      "resultado": "asignada",
+      "asignacionMs": 332,
+      "liberado": true
+    },
+    {
+      "pasajero": 16,
+      "inicio": "2026-11-24T06:28:21.498Z",
+      "crearMs": 82,
+      "solicitudId": "4e2f8dba-87da-4500-9349-9eb2b968f4d6",
+      "resultado": "asignada",
+      "asignacionMs": 303,
+      "liberado": true
+    },
+    {
+      "pasajero": 12,
+      "inicio": "2026-11-24T06:28:21.494Z",
+      "crearMs": 86,
+      "solicitudId": "d0ff796a-87d6-422b-8988-ef7d9d4d1921",
+      "resultado": "asignada",
+      "asignacionMs": 306,
+      "liberado": true
+    },
+    {
+      "pasajero": 17,
+      "inicio": "2026-11-24T06:28:21.607Z",
+      "crearMs": 98,
+      "solicitudId": "81e8a769-feaa-47e1-926f-698a711b968d",
+      "resultado": "asignada",
+      "asignacionMs": 300,
+      "liberado": true
+    },
+    {
+      "pasajero": 19,
+      "inicio": "2026-11-24T06:28:21.609Z",
+      "crearMs": 97,
+      "solicitudId": "6239aa34-aa1e-49bc-8ec1-1b20a25aa89e",
+      "resultado": "asignada",
+      "asignacionMs": 303,
+      "liberado": true
+    },
+    {
+      "pasajero": 0,
+      "inicio": "2026-11-24T06:28:22.468Z",
+      "crearMs": 55,
+      "solicitudId": "c323c47a-cb1f-44a5-9cad-e1afebbdf10b",
+      "resultado": "asignada",
+      "asignacionMs": 337,
+      "liberado": true
+    },
+    {
+      "pasajero": 2,
+      "inicio": "2026-11-24T06:28:22.468Z",
+      "crearMs": 88,
+      "solicitudId": "76c4daec-4a98-48c9-b587-da7ff548bd55",
+      "resultado": "asignada",
+      "asignacionMs": 338,
+      "liberado": true
+    },
+    {
+      "pasajero": 1,
+      "inicio": "2026-11-24T06:28:22.540Z",
+      "crearMs": 75,
+      "solicitudId": "368b04bb-0e4e-49fc-9c72-d97ed92bf4b9",
+      "resultado": "asignada",
+      "asignacionMs": 274,
+      "liberado": true
+    }
+  ]
+}

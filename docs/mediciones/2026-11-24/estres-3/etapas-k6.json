@@ -1,0 +1,169 @@
+{
+  "calentamiento_s": 30,
+  "etapa_s": 60,
+  "transicion_s": 15,
+  "etapas": [
+    {
+      "etapa": 1,
+      "tasa": 1,
+      "previstos_etapa": 60,
+      "previstos_ventana_estable": 45,
+      "iniciados_ventana_estable": 46,
+      "omitidos_por_k6_etapa": 0,
+      "creados": 46,
+      "asignados": 46,
+      "sin_choferes": 0,
+      "sin_resolver": 0,
+      "ubicacion_503": 0,
+      "errores": 0,
+      "viajes_por_s": 1.02,
+      "crear_ms": {
+        "p50": 65.69154499999999,
+        "p95": 110.24704675000001,
+        "p99": 124.77694504999997,
+        "max": 128.137973
+      },
+      "hasta_asignacion_ms": {
+        "p50": 184,
+        "p95": 335,
+        "p99": 433.94999999999965,
+        "max": 492
+      }
+    },
+    {
+      "etapa": 2,
+      "tasa": 2,
+      "previstos_etapa": 120,
+      "previstos_ventana_estable": 90,
+      "iniciados_ventana_estable": 91,
+      "omitidos_por_k6_etapa": 0,
+      "creados": 91,
+      "asignados": 91,
+      "sin_choferes": 0,
+      "sin_resolver": 0,
+      "ubicacion_503": 0,
+      "errores": 0,
+      "viajes_por_s": 2.02,
+      "crear_ms": {
+        "p50": 72.282,
+        "p95": 152.23856800000001,
+        "p99": 324.0118466999998,
+        "max": 353.730474
+      },
+      "hasta_asignacion_ms": {
+        "p50": 270,
+        "p95": 376,
+        "p99": 530.4999999999998,
+        "max": 562
+      }
+    },
+    {
+      "etapa": 3,
+      "tasa": 4,
+      "previstos_etapa": 240,
+      "previstos_ventana_estable": 180,
+      "iniciados_ventana_estable": 181,
+      "omitidos_por_k6_etapa": 0,
+      "creados": 181,
+      "asignados": 181,
+      "sin_choferes": 0,
+      "sin_resolver": 0,
+      "ubicacion_503": 0,
+      "errores": 0,
+      "viajes_por_s": 4.02,
+      "crear_ms": {
+        "p50": 84.703028,
+        "p95": 208.293616,
+        "p99": 314.0691267999989,
+        "max": 450.210915
+      },
+      "hasta_asignacion_ms": {
+        "p50": 285,
+        "p95": 454,
+        "p99": 610.1999999999994,
+        "max": 699
+      }
+    },
+    {
+      "etapa": 4,
+      "tasa": 8,
+      "previstos_etapa": 480,
+      "previstos_ventana_estable": 360,
+      "iniciados_ventana_estable": 240,
+      "omitidos_por_k6_etapa": 134,
+      "creados": 240,
+      "asignados": 206,
+      "sin_choferes": 0,
+      "sin_resolver": 34,
+      "ubicacion_503": 0,
+      "errores": 0,
+      "viajes_por_s": 5.33,
+      "crear_ms": {
+        "p50": 3522.602354,
+        "p95": 9307.298749799998,
+        "p99": 10542.633324549999,
+        "max": 10795.621431
+      },
+      "hasta_asignacion_ms": {
+        "p50": 7125,
+        "p95": 9661.75,
+        "p99": 10603.449999999999,
+        "max": 12787
+      }
+    },
+    {
+      "etapa": 5,
+      "tasa": 16,
+      "previstos_etapa": 960,
+      "previstos_ventana_estable": 720,
+      "iniciados_ventana_estable": 721,
+      "omitidos_por_k6_etapa": 8,
+      "creados": 721,
+      "asignados": 721,
+      "sin_choferes": 0,
+      "sin_resolver": 0,
+      "ubicacion_503": 0,
+      "errores": 0,
+      "viajes_por_s": 16.02,
+      "crear_ms": {
+        "p50": 88.225335,
+        "p95": 248.527382,
+        "p99": 457.63414439999957,
+        "max": 689.70288
+      },
+      "hasta_asignacion_ms": {
+        "p50": 273,
+        "p95": 530,
+        "p99": 939.1999999999996,
+        "max": 1388
+      }
+    },
+    {
+      "etapa": 6,
+      "tasa": 32,
+      "previstos_etapa": 1920,
+      "previstos_ventana_estable": 1440,
+      "iniciados_ventana_estable": 840,
+      "omitidos_por_k6_etapa": 710,
+      "creados": 840,
+      "asignados": 146,
+      "sin_choferes": 0,
+      "sin_resolver": 694,
+      "ubicacion_503": 0,
+      "errores": 0,
+      "viajes_por_s": 18.67,
+      "crear_ms": {
+        "p50": 4596.8205815,
+        "p95": 6092.905410899999,
+        "p99": 6407.76648785,
+        "max": 6686.939068
+      },
+      "hasta_asignacion_ms": {
+        "p50": 9903.5,
+        "p95": 10777.75,
+        "p99": 11183.800000000001,
+        "max": 11287
+      }
+    }
+  ]
+}

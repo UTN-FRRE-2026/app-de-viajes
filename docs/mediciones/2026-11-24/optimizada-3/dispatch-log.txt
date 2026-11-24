@@ -1,0 +1,20 @@
+﻿{"level":30,"time":1795505074307,"pid":1,"hostname":"37e599aa3796","name":"dispatch","cantidad":2,"msg":"barrido: ofertas vencidas procesadas"}
+{"level":30,"time":1795505076264,"pid":1,"hostname":"37e599aa3796","name":"dispatch","cantidad":1,"msg":"barrido: ofertas vencidas procesadas"}
+{"level":30,"time":1795505120223,"pid":1,"hostname":"37e599aa3796","name":"dispatch","cantidad":1,"msg":"barrido: ofertas vencidas procesadas"}
+{"level":30,"time":1795505122239,"pid":1,"hostname":"37e599aa3796","name":"dispatch","cantidad":1,"msg":"barrido: ofertas vencidas procesadas"}
+{"level":30,"time":1795505144291,"pid":1,"hostname":"37e599aa3796","name":"dispatch","cantidad":1,"msg":"barrido: ofertas vencidas procesadas"}
+{"level":30,"time":1795505196256,"pid":1,"hostname":"37e599aa3796","name":"dispatch","cantidad":1,"msg":"barrido: ofertas vencidas procesadas"}
+{"level":30,"time":1795505198231,"pid":1,"hostname":"37e599aa3796","name":"dispatch","cantidad":1,"msg":"barrido: ofertas vencidas procesadas"}
+{"level":30,"time":1795505204251,"pid":1,"hostname":"37e599aa3796","name":"dispatch","cantidad":1,"msg":"barrido: ofertas vencidas procesadas"}
+{"level":30,"time":1795505246272,"pid":1,"hostname":"37e599aa3796","name":"dispatch","cantidad":1,"msg":"barrido: ofertas vencidas procesadas"}
+{"level":30,"time":1795505252260,"pid":1,"hostname":"37e599aa3796","name":"dispatch","cantidad":1,"msg":"barrido: ofertas vencidas procesadas"}
+{"level":30,"time":1795505264344,"pid":1,"hostname":"37e599aa3796","name":"dispatch","cantidad":2,"msg":"barrido: ofertas vencidas procesadas"}
+{"level":30,"time":1795505266264,"pid":1,"hostname":"37e599aa3796","name":"dispatch","cantidad":1,"msg":"barrido: ofertas vencidas procesadas"}
+{"level":30,"time":1795505276243,"pid":1,"hostname":"37e599aa3796","name":"dispatch","cantidad":1,"msg":"barrido: ofertas vencidas procesadas"}
+{"level":50,"time":1795505350190,"pid":1,"hostname":"37e599aa3796","name":"dispatch","err":{"type":"PrismaClientKnownRequestError","message":"Transaction API error: Unable to start a transaction in the given time.","stack":"PrismaClientKnownRequestError: Transaction API error: Unable to start a transaction in the given time.\n    at #c (/app/node_modules/@prisma/client/runtime/client.js:57:14161)\n    at yr.transaction (/app/node_modules/@prisma/client/runtime/client.js:58:1820)\n    at async Proxy._transactionWithCallback (/app/node_modules/@prisma/client/runtime/client.js:99:4732)\n    at async file:///app/packages/platform/dist/barrido.js:13:27","code":"P2028","meta":{},"clientVersion":"7.10.1","name":"PrismaClientKnownRequestError"},"msg":"barrido (eventos publicados): fall├│"}
+{"level":50,"time":1795505352189,"pid":1,"hostname":"37e599aa3796","name":"dispatch","err":{"type":"PrismaClientKnownRequestError","message":"Transaction API error: Unable to start a transaction in the given time.","stack":"PrismaClientKnownRequestError: Transaction API error: Unable to start a transaction in the given time.\n    at #c (/app/node_modules/@prisma/client/runtime/client.js:57:14161)\n    at yr.transaction (/app/node_modules/@prisma/client/runtime/client.js:58:1820)\n    at async Proxy._transactionWithCallback (/app/node_modules/@prisma/client/runtime/client.js:99:4732)\n    at async file:///app/packages/platform/dist/barrido.js:13:27","code":"P2028","meta":{},"clientVersion":"7.10.1","name":"PrismaClientKnownRequestError"},"msg":"barrido (eventos publicados): fall├│"}
+{"level":30,"time":1795505356681,"pid":1,"hostname":"37e599aa3796","name":"dispatch","cantidad":1,"msg":"barrido: ofertas vencidas procesadas"}
+{"level":30,"time":1795505368630,"pid":1,"hostname":"37e599aa3796","name":"dispatch","cantidad":1,"msg":"barrido: ofertas vencidas procesadas"}
+{"level":30,"time":1795505376444,"pid":1,"hostname":"37e599aa3796","name":"dispatch","senal":"SIGTERM","msg":"apagado: dejo de aceptar conexiones y drenando pedidos"}
+{"level":30,"time":1795505376445,"pid":1,"hostname":"37e599aa3796","name":"dispatch","msg":"apagado: pedidos drenados, cerrando recursos"}
+{"level":30,"time":1795505376448,"pid":1,"hostname":"37e599aa3796","name":"dispatch","msg":"apagado: listo"}

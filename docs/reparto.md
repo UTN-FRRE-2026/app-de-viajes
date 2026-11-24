@@ -63,7 +63,7 @@ Cada integrante es **dueño** de un problema central y de los módulos que lo ro
 - [x] location optimizada: Redis `GEOADD` / `GEOSEARCH`, vencimiento contra choferes fantasma, historial por cola con escritura en lotes. Se elige con `UBICACION_ESTRATEGIA`.
 - [x] `GET /interno/candidatos`, protegido con el token de servicio.
 - [x] `/metrics` en `platform` con el lag del event loop (`monitorEventLoopDelay`) y memoria, para los tres servicios. Suma la duración por ruta y, en dispatch, solicitudes, asignaciones, ofertas vencidas y tiempo hasta la asignación.
-- [ ] `carga/choferes.js` (500 choferes cada 2 s) y `carga/solicitudes.js`. Hecho como `carga/ubicaciones.js`, y `carga/solicitudes.js` como prueba piloto (una solicitud real bajo carga, [docs/mediciones.md](mediciones.md#prueba-piloto-una-solicitud-real-bajo-la-carga-de-ubicaciones)). Falta la medición completa.
+- [x] `carga/choferes.js` (500 choferes cada 2 s) y `carga/solicitudes.js`. Hechos como `carga/ubicaciones.js` y `carga/solicitudes.js` (viajes en paralelo con el filtro real, 3 corridas por estrategia: [docs/mediciones.md](mediciones.md#solicitudes-de-viaje-bajo-carga-y-estrés-66-k6)).
 - [x] Hipótesis con número y primera medición en `docs/mediciones.md`.
 - [x] ADR 0005 (tarea pesada).
 
@@ -78,7 +78,7 @@ Cada integrante es **dueño** de un problema central y de los módulos que lo ro
 
 **Fase C y ataque cruzado**
 - [ ] Grafana Cloud: Alloy en un perfil de Compose, métricas de negocio y tres dashboards exportados.
-- [ ] `carga/estres.js` y `carga/carrera.js`; mediciones finales con tres corridas.
+- [ ] `carga/estres.js` y `carga/carrera.js`; mediciones finales con tres corridas. Hecho: `estres.js` y las solicitudes con tres corridas cada uno (24/11). `carrera.js` tiene una corrida de validación (22/11): faltan las otras dos.
 - [ ] Ataque a los otros grupos: validación, montos y operaciones costosas.
 - [ ] ADR 0008 (búsqueda geográfica) y 0010 (idempotencia, con Ivan). Hecho: [0010](adr/0010-idempotencia.md), lo escribió Ivan.
 

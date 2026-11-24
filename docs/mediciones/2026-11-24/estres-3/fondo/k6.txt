@@ -1,0 +1,7 @@
+﻿pings enviados 101251 | aceptados 101251 | fallidos 0 | omitidos por k6 0
+b├║squedas ok 8100 | fallidas 0 | omitidas 0
+pings      (medici├│n): p50 2.0 | p95 23.8 | p99 81.1 ms
+b├║squedas  (medici├│n): p50 2.9 | p95 22.5 | p99 79.1 ms
+/health    (medici├│n): p50 0.7 | p95 17.0 | p99 29.6 ms
+errores    (medici├│n): 0.00 %
+codigo=0

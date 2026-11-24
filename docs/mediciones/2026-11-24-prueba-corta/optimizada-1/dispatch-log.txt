@@ -1,0 +1,7 @@
+﻿{"level":30,"time":1795501662804,"pid":1,"hostname":"4cb5ac9fa806","name":"dispatch","puerto":3005,"persistencia":"postgres","buscador":"location","msg":"dispatch escuchando"}
+{"level":30,"time":1795501662869,"pid":1,"hostname":"4cb5ac9fa806","name":"dispatch","version":"v1","configuradaPor":"semilla","msg":"tarifa vigente"}
+{"level":30,"time":1795501696974,"pid":1,"hostname":"4cb5ac9fa806","name":"dispatch","cantidad":2,"msg":"barrido: ofertas vencidas procesadas"}
+{"level":30,"time":1795501698822,"pid":1,"hostname":"4cb5ac9fa806","name":"dispatch","cantidad":1,"msg":"barrido: ofertas vencidas procesadas"}
+{"level":30,"time":1795501713477,"pid":1,"hostname":"4cb5ac9fa806","name":"dispatch","senal":"SIGTERM","msg":"apagado: dejo de aceptar conexiones y drenando pedidos"}
+{"level":30,"time":1795501713477,"pid":1,"hostname":"4cb5ac9fa806","name":"dispatch","msg":"apagado: pedidos drenados, cerrando recursos"}
+{"level":30,"time":1795501713481,"pid":1,"hostname":"4cb5ac9fa806","name":"dispatch","msg":"apagado: listo"}

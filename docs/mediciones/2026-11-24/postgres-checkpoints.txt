@@ -1,0 +1,40 @@
+2026-11-24 06:19:39.705 UTC [63] LOG:  checkpoint starting: shutdown immediate
+..2026-11-24 06:19:43.944 UTC [63] LOG:  checkpoint complete: wrote 4481 buffers (27.3%); 0 WAL file(s) added, 0 removed, 2 recycled; write=0.253 s, sync=3.554 s, total=4.319 s; sync files=963, longest=0.615 s, average=0.004 s; distance=35002 kB, estimate=35002 kB; lsn=0/3715628, redo lsn=0/3715628
+2026-11-24 06:24:44.760 UTC [212] LOG:  checkpoint starting: time
+2026-11-24 06:28:36.484 UTC [212] LOG:  checkpoint complete: wrote 2260 buffers (13.8%); 0 WAL file(s) added, 0 removed, 1 recycled; write=229.316 s, sync=1.658 s, total=231.724 s; sync files=650, longest=0.035 s, average=0.003 s; distance=24398 kB, estimate=24398 kB; lsn=0/5C264B0, redo lsn=0/4EE9140
+2026-11-24 06:29:44.547 UTC [212] LOG:  checkpoint starting: time
+2026-11-24 06:30:02.352 UTC [212] LOG:  checkpoint complete: wrote 137 buffers (0.8%); 0 WAL file(s) added, 0 removed, 1 recycled; write=13.666 s, sync=3.236 s, total=17.805 s; sync files=97, longest=0.184 s, average=0.034 s; distance=14132 kB, estimate=23372 kB; lsn=0/5CED430, redo lsn=0/5CB6478
+2026-11-24 06:34:44.391 UTC [212] LOG:  checkpoint starting: time
+2026-11-24 06:35:07.387 UTC [212] LOG:  checkpoint complete: wrote 184 buffers (1.1%); 0 WAL file(s) added, 0 removed, 1 recycled; write=18.281 s, sync=3.559 s, total=22.997 s; sync files=154, longest=0.171 s, average=0.024 s; distance=5729 kB, estimate=21607 kB; lsn=0/657BA50, redo lsn=0/624E958
+2026-11-24 06:39:44.471 UTC [212] LOG:  checkpoint starting: time
+2026-11-24 06:40:56.521 UTC [212] LOG:  checkpoint complete: wrote 709 buffers (4.3%); 0 WAL file(s) added, 0 removed, 0 recycled; write=70.954 s, sync=0.862 s, total=72.051 s; sync files=105, longest=0.082 s, average=0.009 s; distance=9705 kB, estimate=20417 kB; lsn=0/6BEA2B8, redo lsn=0/6BC8EA8
+2026-11-24 06:44:44.608 UTC [212] LOG:  checkpoint starting: time
+2026-11-24 06:45:40.995 UTC [212] LOG:  checkpoint complete: wrote 546 buffers (3.3%); 0 WAL file(s) added, 0 removed, 1 recycled; write=53.877 s, sync=1.265 s, total=56.387 s; sync files=40, longest=0.157 s, average=0.032 s; distance=9123 kB, estimate=19288 kB; lsn=0/78194D0, redo lsn=0/74B1DE8
+2026-11-24 06:49:45.081 UTC [212] LOG:  checkpoint starting: time
+2026-11-24 06:49:54.524 UTC [212] LOG:  checkpoint complete: wrote 89 buffers (0.5%); 0 WAL file(s) added, 0 removed, 0 recycled; write=8.436 s, sync=0.325 s, total=9.443 s; sync files=83, longest=0.216 s, average=0.004 s; distance=9473 kB, estimate=18306 kB; lsn=0/7DF22E8, redo lsn=0/7DF2278
+2026-11-24 06:54:45.525 UTC [212] LOG:  checkpoint starting: time
+2026-11-24 07:05:51.113 UTC [212] LOG:  checkpoint complete: wrote 1012 buffers (6.2%); 0 WAL file(s) added, 0 removed, 4 recycled; write=268.920 s, sync=329.108 s, total=665.588 s; sync files=108, longest=11.291 s, average=3.048 s; distance=54078 kB, estimate=54078 kB; lsn=0/C4C77E8, redo lsn=0/B2C1B10
+2026-11-24 07:05:51.113 UTC [212] LOG:  checkpoint starting: time
+2026-11-24 07:07:43.616 UTC [212] LOG:  checkpoint complete: wrote 215 buffers (1.3%); 0 WAL file(s) added, 0 removed, 1 recycled; write=32.286 s, sync=34.323 s, total=112.504 s; sync files=42, longest=3.273 s, average=0.818 s; distance=18506 kB, estimate=50521 kB; lsn=0/C4E0858, redo lsn=0/C4D45D0
+2026-11-24 07:10:51.704 UTC [212] LOG:  checkpoint starting: time
+2026-11-24 07:12:16.185 UTC [212] LOG:  checkpoint complete: wrote 780 buffers (4.8%); 0 WAL file(s) added, 0 removed, 0 recycled; write=78.284 s, sync=5.414 s, total=84.481 s; sync files=98, longest=0.334 s, average=0.056 s; distance=11046 kB, estimate=46573 kB; lsn=0/E60C250, redo lsn=0/CF9DEA8
+2026-11-24 07:15:51.271 UTC [212] LOG:  checkpoint starting: time
+2026-11-24 07:16:05.536 UTC [212] LOG:  checkpoint complete: wrote 137 buffers (0.8%); 0 WAL file(s) added, 0 removed, 5 recycled; write=12.386 s, sync=0.959 s, total=14.266 s; sync files=107, longest=0.802 s, average=0.009 s; distance=69740 kB, estimate=69740 kB; lsn=0/113C8538, redo lsn=0/113B90C0
+2026-11-24 07:20:51.600 UTC [212] LOG:  checkpoint starting: time
+2026-11-24 07:22:17.345 UTC [212] LOG:  checkpoint complete: wrote 731 buffers (4.5%); 0 WAL file(s) added, 0 removed, 1 recycled; write=76.194 s, sync=7.293 s, total=85.746 s; sync files=17, longest=1.975 s, average=0.430 s; distance=13109 kB, estimate=64077 kB; lsn=0/1256A6A0, redo lsn=0/12086600
+2026-11-24 07:25:51.431 UTC [212] LOG:  checkpoint starting: time
+2026-11-24 07:28:52.740 UTC [212] LOG:  checkpoint complete: wrote 1773 buffers (10.8%); 0 WAL file(s) added, 0 removed, 2 recycled; write=177.158 s, sync=2.777 s, total=181.309 s; sync files=102, longest=0.142 s, average=0.028 s; distance=32536 kB, estimate=60923 kB; lsn=0/170E7850, redo lsn=0/1404C640
+2026-11-24 07:30:51.833 UTC [212] LOG:  checkpoint starting: time
+2026-11-24 07:31:11.285 UTC [212] LOG:  checkpoint complete: wrote 136 buffers (0.8%); 0 WAL file(s) added, 0 removed, 3 recycled; write=12.828 s, sync=4.232 s, total=19.453 s; sync files=109, longest=0.250 s, average=0.039 s; distance=55293 kB, estimate=60360 kB; lsn=0/1773A948, redo lsn=0/1764BD50
+2026-11-24 07:35:51.280 UTC [212] LOG:  checkpoint starting: time
+2026-11-24 07:40:26.636 UTC [212] LOG:  checkpoint complete: wrote 1767 buffers (10.8%); 0 WAL file(s) added, 0 removed, 3 recycled; write=268.914 s, sync=4.697 s, total=275.356 s; sync files=110, longest=0.181 s, average=0.043 s; distance=55486 kB, estimate=59872 kB; lsn=0/1E185A70, redo lsn=0/1AC7B6A0
+2026-11-24 07:40:51.660 UTC [212] LOG:  checkpoint starting: time
+2026-11-24 07:42:14.006 UTC [212] LOG:  checkpoint complete: wrote 763 buffers (4.7%); 0 WAL file(s) added, 0 removed, 4 recycled; write=75.841 s, sync=3.732 s, total=82.347 s; sync files=76, longest=0.198 s, average=0.050 s; distance=57873 kB, estimate=59672 kB; lsn=0/1F1F04B0, redo lsn=0/1E4FFAB0
+2026-11-24 07:45:51.092 UTC [212] LOG:  checkpoint starting: time
+2026-11-24 07:50:26.750 UTC [212] LOG:  checkpoint complete: wrote 1134 buffers (6.9%); 0 WAL file(s) added, 0 removed, 5 recycled; write=269.344 s, sync=4.052 s, total=275.658 s; sync files=115, longest=0.241 s, average=0.036 s; distance=78470 kB, estimate=78470 kB; lsn=0/260EDCA0, redo lsn=0/231A1380
+2026-11-24 07:50:51.771 UTC [212] LOG:  checkpoint starting: time
+2026-11-24 07:54:05.423 UTC [212] LOG:  checkpoint complete: wrote 1828 buffers (11.2%); 0 WAL file(s) added, 0 removed, 3 recycled; write=187.020 s, sync=4.590 s, total=193.652 s; sync files=79, longest=0.348 s, average=0.059 s; distance=53370 kB, estimate=75960 kB; lsn=0/2A5ECBC0, redo lsn=0/265BFF30
+2026-11-24 07:55:51.517 UTC [212] LOG:  checkpoint starting: time
+2026-11-24 08:00:25.513 UTC [212] LOG:  checkpoint complete: wrote 2531 buffers (15.4%); 0 WAL file(s) added, 0 removed, 4 recycled; write=269.190 s, sync=3.050 s, total=273.997 s; sync files=101, longest=0.221 s, average=0.031 s; distance=75040 kB, estimate=75868 kB; lsn=0/2B333538, redo lsn=0/2AF08258
+2026-11-24 08:00:51.534 UTC [212] LOG:  checkpoint starting: time
+2026-11-24 08:01:33.915 UTC [212] LOG:  checkpoint complete: wrote 392 buffers (2.4%); 0 WAL file(s) added, 0 removed, 1 recycled; write=39.401 s, sync=1.431 s, total=42.381 s; sync files=42, longest=0.251 s, average=0.035 s; distance=5523 kB, estimate=68833 kB; lsn=0/2B6E6100, redo lsn=0/2B46D190
