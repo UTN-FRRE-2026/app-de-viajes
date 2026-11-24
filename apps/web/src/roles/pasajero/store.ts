@@ -9,6 +9,8 @@ import {
   aplicarRespuesta,
   ESTADO_INICIAL,
   esActivo,
+  faltaCobro,
+  puedeCancelar,
   textoRechazoPedido,
   type Cobro,
   type EstadoPasajero,
@@ -59,6 +61,22 @@ let pendiente = false;
 const COBRO_INICIAL = { cargando: false, error: null };
 
 export const usePasajero = create<StorePasajero>()((set, get) => {
+  /**
+   * El cobro del viaje terminado, de `GET /solicitudes/:id` (una lectura: no lo procesa). Así, si el
+   * evento del cobro llegó con el stream cortado, la relectura al reconectar lo trae igual.
+   */
+  async function leerCobro(g: number) {
+    const viaje = get().viaje;
+    if (!viaje || !faltaCobro(get())) return;
+    try {
+      const d = await pedir<Solicitud & { cobro: Cobro | null }>('GET', `/viajes/solicitudes/${viaje.id}`);
+      if (g !== generacion || get().viaje?.id !== viaje.id || !d.cobro) return;
+      set({ cobro: d.cobro });
+    } catch {
+      // Se vuelve a intentar con la próxima relectura; mientras, queda «Ver el cobro ahora».
+    }
+  }
+
   async function enviarPedido() {
     const g = generacion;
     const p = get().pedido;
@@ -122,6 +140,7 @@ export const usePasajero = create<StorePasajero>()((set, get) => {
             const { estado, descartada } = aplicarLectura(get(), r.viajes, inicio);
             set(estado);
             if (descartada) pendiente = true;
+            else await leerCobro(g);
           } catch (err) {
             if (g !== generacion) return;
             set({ errorLectura: err });
@@ -177,7 +196,7 @@ export const usePasajero = create<StorePasajero>()((set, get) => {
 
     cancelar() {
       const { viaje, cancelacion } = get();
-      if (!viaje || !esActivo(viaje) || cancelacion) return;
+      if (!viaje || !puedeCancelar(viaje) || cancelacion) return;
       set({ cancelacion: { solicitudId: viaje.id, clave: nuevaClave(), fase: 'enviando', error: null }, aviso: null });
       void enviarCancelacion();
     },

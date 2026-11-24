@@ -393,7 +393,9 @@ function DetalleViaje({ envio }: { envio: ReturnType<typeof useEnvioUbicacion> }
         </div>
       ) : null}
 
-      {activo ? (
+      {viaje.estado === 'EN_CURSO' && !cancelacion ? (
+        <p className="nota">Ya estás en viaje: desde acá no se puede cancelar.</p>
+      ) : activo ? (
         cancelacion?.fase === 'incierta' ? (
           <div className="incierto">
             <p className="error">No sabemos si se canceló: no llegó la respuesta.</p>

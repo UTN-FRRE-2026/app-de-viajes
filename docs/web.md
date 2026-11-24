@@ -139,8 +139,8 @@ Va en `src/roles/pasajero/`, con la división de las otras pantallas: `Panel.tsx
 
 **Pedir, cancelar y cobrar** (operaciones con Idempotency-Key):
 - **Pedir:** con la estimación a la vista (`GET /tarifas/estimacion`). Si el resultado es incierto, «No sabemos si se pidió el viaje» y «Reintentar» con la MISMA clave; la relectura lo resuelve si el viaje ya existe. Los rechazos conocidos tienen su texto: `SOLICITUD_ACTIVA_EXISTENTE`, `ORIGEN_FUERA_DE_ZONA` y `VIAJE_FUERA_DE_RANGO`.
-- **Cancelar:** se confirma en la misma columna, sin modal. Si el resultado es incierto, se reintenta con la misma clave, y la relectura lo resuelve si el viaje ya no está activo. Si cancela el chofer o un operador, un aviso dice quién y con qué motivo.
-- **El cobro** llega por `PaymentCaptured` o `PaymentDeclined`. Si la pantalla se abrió después, «Ver el cobro ahora» usa `POST /solicitudes/:id/cobrar`, que devuelve el cobro como está si ya se resolvió y nunca cobra dos veces.
+- **Cancelar:** solo buscando chofer, asignado o con el chofer en camino, lo mismo que permite dispatch; ya en viaje, solo el operador. Se confirma en la misma columna, sin modal. Si el resultado es incierto, se reintenta con la misma clave, y la relectura lo resuelve si el viaje ya no está activo. Si cancela el chofer o un operador, un aviso dice quién y con qué motivo.
+- **El cobro** llega por `PaymentCaptured` o `PaymentDeclined`. Esos eventos no se reponen: si llegaron con el stream cortado, cada relectura de un viaje terminado con el cobro sin resolver lo lee de `GET /solicitudes/:id`, que trae el cobro y no lo procesa. «Ver el cobro ahora» usa `POST /solicitudes/:id/cobrar`: lo procesa en el momento, lo devuelve como está si ya se resolvió y nunca cobra dos veces.
 - **La ubicación del pasajero** se comparte con el chofer mientras viene a buscarlo (`ASIGNADO` y `EN_CAMINO`), con el mismo control de GPS o manual que el chofer.
 
 ## El panel del operador (`/operador`)

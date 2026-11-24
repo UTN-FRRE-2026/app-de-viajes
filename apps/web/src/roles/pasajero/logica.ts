@@ -65,6 +65,20 @@ const PASO_DE_EVENTO: Record<string, Paso> = {
 export const ESTADOS_ACTIVOS: readonly EstadoSolicitud[] = ['BUSCANDO', ...ESTADOS_CON_CHOFER];
 export const esActivo = (s: Solicitud) => ESTADOS_ACTIVOS.includes(s.estado);
 
+/**
+ * Lo que el pasajero puede cancelar: lo mismo que `CANCELABLE_DESDE.pasajero` en dispatch. Ya en
+ * viaje (`EN_CURSO`) no: solo el operador.
+ */
+const CANCELABLE_PASAJERO: readonly EstadoSolicitud[] = ['BUSCANDO', 'ASIGNADO', 'EN_CAMINO'];
+export const puedeCancelar = (s: Solicitud) => CANCELABLE_PASAJERO.includes(s.estado);
+
+/**
+ * Hay que leer el cobro del viaje en pantalla: terminó y el cobro todavía no se resolvió. Los
+ * `PaymentCaptured` y `PaymentDeclined` que llegaron con el stream cortado no se reponen.
+ */
+export const faltaCobro = (e: EstadoPasajero) =>
+  e.viaje?.estado === 'COMPLETADA' && (e.cobro === null || e.cobro.estado === 'PENDIENTE');
+
 /** Una operación con efecto y su `Idempotency-Key` (`incierta`: no se sabe si se aplicó). */
 export interface Operacion {
   clave: string;

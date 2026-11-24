@@ -6,7 +6,9 @@ import {
   aplicarLectura,
   aplicarRespuesta,
   ESTADO_INICIAL,
+  faltaCobro,
   lineaDeTiempo,
+  puedeCancelar,
   textoImporte,
   textoRechazoPedido,
   type EstadoPasajero,
@@ -179,6 +181,28 @@ describe('línea de tiempo', () => {
     expect(e.viaje?.id).toBe(S1);
     expect(e.horas.pedido).toBe(T0);
     expect(e.ultimaMutacion).toBe(9);
+  });
+});
+
+describe('lo que puede hacer el pasajero', () => {
+  it('cancela buscando, asignado o con el chofer en camino; ya en viaje, no (como dispatch)', () => {
+    expect(['BUSCANDO', 'ASIGNADO', 'EN_CAMINO', 'EN_CURSO', 'COMPLETADA'].map((s) => puedeCancelar(solicitud(S1, s as Solicitud['estado'], 1)))).toEqual([
+      true,
+      true,
+      true,
+      false,
+      false,
+    ]);
+  });
+
+  it('el cobro se lee si el viaje terminó y no se resolvió (el evento pudo llegar con el stream cortado)', () => {
+    const terminado = con(solicitud(S1, 'COMPLETADA', 5));
+    const cobro = (estado: 'PENDIENTE' | 'APROBADO' | 'RECHAZADO') => ({ id: 'c', solicitudId: S1, montoCentavos: 1, estado, motivoRechazo: null });
+    expect(faltaCobro(terminado)).toBe(true);
+    expect(faltaCobro({ ...terminado, cobro: cobro('PENDIENTE') })).toBe(true);
+    expect(faltaCobro({ ...terminado, cobro: cobro('APROBADO') })).toBe(false);
+    expect(faltaCobro({ ...terminado, cobro: cobro('RECHAZADO') })).toBe(false);
+    expect(faltaCobro(con(solicitud(S1, 'EN_CURSO', 4)))).toBe(false);
   });
 });
 
