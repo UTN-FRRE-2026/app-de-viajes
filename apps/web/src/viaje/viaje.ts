@@ -36,5 +36,7 @@ export function distanciaMetros(a: Punto, b: Punto): number {
   return 2 * 6_371_000 * Math.asin(Math.sqrt(h));
 }
 
-export const textoDistancia = (m: number) => (m < 1000 ? `${Math.round(m)} m` : `${(m / 1000).toFixed(1)} km`);
+const KM = new Intl.NumberFormat('es-AR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+/** «650 m», «6,2 km»: con coma decimal, como los importes. */
+export const textoDistancia = (m: number) => (m < 1000 ? `${Math.round(m)} m` : `${KM.format(m / 1000)} km`);
 export const textoPunto = (p: Punto) => `${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}`;

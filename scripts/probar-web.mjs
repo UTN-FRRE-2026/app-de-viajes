@@ -11,7 +11,7 @@ import { leerEnv } from './lib/entorno.mjs';
 const env = { ...leerEnv(), ...process.env };
 const BASE = (process.argv[2] ?? `http://localhost:${env.WEB_PUERTO || 8080}`).replace(/\/$/, '');
 const CSP =
-  "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; " +
+  "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https://tile.openstreetmap.org; connect-src 'self'; " +
   "object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'";
 
 let fallas = 0;
