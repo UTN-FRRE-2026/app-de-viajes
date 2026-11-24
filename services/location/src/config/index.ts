@@ -1,4 +1,4 @@
-import { proxyConfiable, tokenMetricas } from '@viajes/platform';
+import { proxyConfiable, tokenMetricas, vacioComoAusente } from '@viajes/platform';
 import { z } from 'zod';
 
 export const EsquemaConfig = z
@@ -35,11 +35,12 @@ export const EsquemaConfig = z
     LOCATION_PURGA_INTERVALO_MS: z.coerce.number().int().min(1000).default(10_000),
     // Retención del historial (`pings`, las dos estrategias). El mínimo, 1 h, siempre supera la vigencia
     // máxima (600 s): la búsqueda nunca pierde una posición vigente. 720 h = 30 días.
-    LOCATION_HISTORIAL_RETENCION_HORAS: z.coerce.number().int().min(1).max(8760).default(720),
-    // Cada pasada borra hasta 20 lotes: 20 × 5000 cada 5 min son 333 pings/s, por encima de los 250/s
-    // que escriben 500 choferes.
-    LOCATION_HISTORIAL_RETENCION_INTERVALO_MS: z.coerce.number().int().min(1000).default(300_000),
-    LOCATION_HISTORIAL_RETENCION_LOTE: z.coerce.number().int().min(1).max(50_000).default(5000),
+    // Vacías en el Compose si no están en el .env (vacioComoAusente): toman estos valores por defecto.
+    LOCATION_HISTORIAL_RETENCION_HORAS: vacioComoAusente(z.coerce.number().int().min(1).max(8760).default(720)),
+    // Cada pasada borra hasta 20 lotes: 20 × 5000 cada 5 min dan un tope teórico de unos 333 pings/s
+    // (no medido), por encima de los 250/s que escriben 500 choferes.
+    LOCATION_HISTORIAL_RETENCION_INTERVALO_MS: vacioComoAusente(z.coerce.number().int().min(1000).default(300_000)),
+    LOCATION_HISTORIAL_RETENCION_LOTE: vacioComoAusente(z.coerce.number().int().min(1).max(50_000).default(5000)),
     APAGADO_TIMEOUT_MS: z.coerce.number().int().positive().default(10_000),
   })
   .refine((c) => c.UBICACION_ESTRATEGIA === 'memoria' || c.LOCATION_DATABASE_URL, {

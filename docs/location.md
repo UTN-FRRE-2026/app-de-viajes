@@ -166,7 +166,12 @@ La tabla `pings` es el historial de las dos estrategias: la ingenua inserta cada
 - `FOR UPDATE SKIP LOCKED`: varias instancias pueden purgar a la vez sin esperarse;
 - la pasada termina cuando un lote borra menos de 5000 filas, o a los 20 lotes.
 
-**Margen:** 20 × 5000 cada 5 minutos son unos 333 pings por segundo, más que los 250 por segundo de 500 choferes. Si la purga se atrasa, se pone al día en las pasadas siguientes.
+**Margen (teórico, no medido):**
+- 20 × 5000 cada 5 minutos dan un tope teórico de unos 333 pings por segundo, más que los 250 por segundo de 500 choferes;
+- no se midió cuánto tarda una pasada bajo carga;
+- si la purga se atrasa, se pone al día en las pasadas siguientes.
+
+**En el Compose:** las tres variables pasan a `location` con `${…:-}`. Si no están en el `.env`, llegan vacías y valen los valores por defecto de `src/config` (`vacioComoAusente`).
 
 **La búsqueda no cambia:**
 - la ingenua solo lee los pings de los últimos `UBICACION_VIGENCIA_SEGUNDOS` (como mucho 600 s), y la retención mínima es de 1 h, así que la purga nunca borra una posición vigente;
