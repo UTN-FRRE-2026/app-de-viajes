@@ -11,6 +11,12 @@ interface OpcionesApp {
   rutas: Router;
   chequeos: ChequeoListo[];
   limiteBody?: string;
+  /**
+   * Límite del cuerpo solo para `/interno/*` (de servicio a servicio, con token y fuera de nginx). Sin
+   * esto, el mismo que `limiteBody`. Lo usa dispatch: una consulta de tramos con 1000 choferes pasa
+   * los 16 KB de las rutas públicas.
+   */
+  limiteBodyInterno?: string;
   /** Con métricas: mide cada pedido y publica `GET /metrics`, protegido con el token. */
   metricas?: { metricas: Metricas; token: string };
   /**
@@ -21,7 +27,7 @@ interface OpcionesApp {
 }
 
 /** Arma la app con el mismo orden de middlewares en todos los servicios. */
-export function crearApp({ logger, rutas, chequeos, limiteBody = '16kb', metricas, confiarEnProxy }: OpcionesApp): Express {
+export function crearApp({ logger, rutas, chequeos, limiteBody = '16kb', limiteBodyInterno, metricas, confiarEnProxy }: OpcionesApp): Express {
   const app = express();
   app.disable('x-powered-by');
   // Solo las direcciones dadas: Express toma la IP del cliente de la última entrada de X-Forwarded-For
@@ -30,7 +36,9 @@ export function crearApp({ logger, rutas, chequeos, limiteBody = '16kb', metrica
   app.use(middlewareRequestId());
   if (metricas) app.use(middlewareDuracion(metricas.metricas));
   app.use(middlewareSeguridad());
-  app.use(express.json({ limit: limiteBody }));
+  const json = express.json({ limit: limiteBody });
+  const jsonInterno = limiteBodyInterno ? express.json({ limit: limiteBodyInterno }) : json;
+  app.use((req, res, next) => (req.path.startsWith('/interno/') ? jsonInterno : json)(req, res, next));
   app.use(rutasSalud(chequeos));
   // Antes que las rutas del servicio: algunas autentican con JWT a todo lo que pasa por su router.
   if (metricas) app.use(rutaMetricas(metricas.metricas, metricas.token));

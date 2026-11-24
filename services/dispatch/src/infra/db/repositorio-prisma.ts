@@ -541,6 +541,22 @@ export class RepositorioDespachoPrisma implements RepositorioDespacho {
     };
   }
 
+  async tramosDeViaje(choferes: readonly string[], desde: Date, hasta: Date) {
+    // Por el índice de driver_id. En un viaje activo el tramo queda abierto; en uno terminado, cierra con
+    // updated_at, que solo cambia en cada transición (en un estado final no hay más).
+    const filas = await this.prisma.$queryRaw<{ chofer: string; inicio: Date; fin: Date | null }[]>`
+      SELECT r.driver_id AS chofer,
+             COALESCE(o.created_at, r.created_at) AS inicio,
+             CASE WHEN r.status IN (${Prisma.join(ESTADOS_CON_CHOFER)}) THEN NULL ELSE r.updated_at END AS fin
+      FROM ride_requests r
+      LEFT JOIN offers o ON o.request_id = r.id AND o.driver_id = r.driver_id AND o.status = 'ACEPTADA'
+      WHERE r.driver_id = ANY(${[...choferes]}::uuid[])
+        AND COALESCE(o.created_at, r.created_at) <= ${hasta}
+        AND (r.status IN (${Prisma.join(ESTADOS_CON_CHOFER)}) OR r.updated_at >= ${desde})
+      ORDER BY r.driver_id, inicio`;
+    return filas.map((f) => ({ choferId: f.chofer, inicio: f.inicio, fin: f.fin }));
+  }
+
   async registrarFalloCobro(cobroId: string, motivo: string) {
     // Solo si sigue pendiente: un fallo que llega tarde no toca un cobro ya resuelto.
     await this.prisma.cobro.updateMany({

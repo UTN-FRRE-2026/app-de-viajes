@@ -53,6 +53,30 @@ describe('configuración', () => {
     expect(variablesConError({ ...base, LOCATION_HISTORIAL_RETENCION_INTERVALO_MS: '10' })).toEqual(['LOCATION_HISTORIAL_RETENCION_INTERVALO_MS']);
   });
 
+  it('pings sin viaje: ausente o vacía, el menor entre 24 h y la retención total; nunca más que la retención', () => {
+    const horas = (entorno: Record<string, string>) => EsquemaConfig.parse({ ...base, ...entorno }).LOCATION_HISTORIAL_SIN_VIAJE_HORAS;
+    expect(horas({})).toBe(24);
+    expect(horas({ LOCATION_HISTORIAL_SIN_VIAJE_HORAS: '' })).toBe(24);
+    expect(horas({ LOCATION_HISTORIAL_RETENCION_HORAS: '12' })).toBe(12);
+    expect(horas({ LOCATION_HISTORIAL_SIN_VIAJE_HORAS: '48' })).toBe(48);
+    expect(horas({ LOCATION_HISTORIAL_SIN_VIAJE_HORAS: '720' })).toBe(720);
+    expect(variablesConError({ ...base, LOCATION_HISTORIAL_SIN_VIAJE_HORAS: '721' })).toEqual(['LOCATION_HISTORIAL_SIN_VIAJE_HORAS']);
+    expect(variablesConError({ ...base, LOCATION_HISTORIAL_RETENCION_HORAS: '12', LOCATION_HISTORIAL_SIN_VIAJE_HORAS: '24' })).toEqual([
+      'LOCATION_HISTORIAL_SIN_VIAJE_HORAS',
+    ]);
+    expect(variablesConError({ ...base, LOCATION_HISTORIAL_SIN_VIAJE_HORAS: '0' })).toEqual(['LOCATION_HISTORIAL_SIN_VIAJE_HORAS']);
+  });
+
+  it('dispatch para la retención por viaje: opcional; vacías valen como ausentes; un token corto se rechaza', () => {
+    expect(EsquemaConfig.parse({ ...base, DISPATCH_URL: '', DISPATCH_TOKEN_SERVICIO: '', DISPATCH_TIMEOUT_MS: '' })).toMatchObject({
+      DISPATCH_URL: undefined,
+      DISPATCH_TOKEN_SERVICIO: undefined,
+      DISPATCH_TIMEOUT_MS: 1000,
+    });
+    expect(variablesConError({ ...base, DISPATCH_TOKEN_SERVICIO: 'corto' })).toEqual(['DISPATCH_TOKEN_SERVICIO']);
+    expect(variablesConError({ ...base, DISPATCH_URL: 'no-es-url' })).toEqual(['DISPATCH_URL']);
+  });
+
   it('sin token de servicio nombra la variable', () => {
     expect(variablesConError({ ...base, LOCATION_TOKEN_SERVICIO: undefined })).toEqual(['LOCATION_TOKEN_SERVICIO']);
   });

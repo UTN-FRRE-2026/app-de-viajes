@@ -41,6 +41,13 @@ export const EsquemaConfig = z
     // (no medido), por encima de los 250/s que escriben 500 choferes.
     LOCATION_HISTORIAL_RETENCION_INTERVALO_MS: vacioComoAusente(z.coerce.number().int().min(1000).default(300_000)),
     LOCATION_HISTORIAL_RETENCION_LOTE: vacioComoAusente(z.coerce.number().int().min(1).max(50_000).default(5000)),
+    // Los pings de choferes sin viaje se borran antes. Ausente: el menor entre 24 h y la retención total.
+    LOCATION_HISTORIAL_SIN_VIAJE_HORAS: vacioComoAusente(z.coerce.number().int().min(1).max(8760).optional()),
+    // Para saber qué ping fue de un viaje, location le pregunta a dispatch (POST /interno/tramos-viaje).
+    // Sin URL o sin token, no clasifica: los pings sin viaje se conservan hasta la retención total.
+    DISPATCH_URL: vacioComoAusente(z.string().url().optional()),
+    DISPATCH_TOKEN_SERVICIO: vacioComoAusente(z.string().min(32, 'tiene que tener al menos 32 caracteres').max(256).optional()),
+    DISPATCH_TIMEOUT_MS: vacioComoAusente(z.coerce.number().int().min(50).max(10_000).default(1000)),
     APAGADO_TIMEOUT_MS: z.coerce.number().int().positive().default(10_000),
   })
   .refine((c) => c.UBICACION_ESTRATEGIA === 'memoria' || c.LOCATION_DATABASE_URL, {
@@ -50,6 +57,15 @@ export const EsquemaConfig = z
   .refine((c) => c.UBICACION_ESTRATEGIA !== 'optimizada' || c.REDIS_URL, {
     path: ['REDIS_URL'],
     message: 'es obligatoria cuando UBICACION_ESTRATEGIA=optimizada',
-  });
+  })
+  .refine((c) => c.LOCATION_HISTORIAL_SIN_VIAJE_HORAS === undefined || c.LOCATION_HISTORIAL_SIN_VIAJE_HORAS <= c.LOCATION_HISTORIAL_RETENCION_HORAS, {
+    path: ['LOCATION_HISTORIAL_SIN_VIAJE_HORAS'],
+    message: 'no puede ser mayor que LOCATION_HISTORIAL_RETENCION_HORAS',
+  })
+  // Ausente: el menor entre 24 h y la retención total (con una retención de 12 h, también 12 h).
+  .transform((c) => ({
+    ...c,
+    LOCATION_HISTORIAL_SIN_VIAJE_HORAS: c.LOCATION_HISTORIAL_SIN_VIAJE_HORAS ?? Math.min(24, c.LOCATION_HISTORIAL_RETENCION_HORAS),
+  }));
 
 export type Config = z.infer<typeof EsquemaConfig>;

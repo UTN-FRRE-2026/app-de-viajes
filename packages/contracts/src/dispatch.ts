@@ -168,3 +168,33 @@ export const EventosDispatch = {
 
 export type TipoEventoDispatch = keyof typeof EventosDispatch;
 export type PayloadEventoDispatch<T extends TipoEventoDispatch> = z.infer<(typeof EventosDispatch)[T]>;
+
+// --- Tramos de viaje, para la retención del historial de location (docs/location.md#retención-del-historial) ---
+
+/** Tope de choferes por consulta: acota el pedido y la consulta; location parte sus lotes en grupos así. */
+export const TRAMOS_CHOFERES_MAX = 1000;
+
+const InstanteTramo = z.iso.datetime({ offset: true });
+
+/**
+ * `POST /interno/tramos-viaje` (location → dispatch, con token de servicio): los viajes de esos choferes
+ * que se superponen con [desde, hasta]. Es una consulta: no tiene efecto ni Idempotency-Key.
+ */
+export const TramosViajeBody = z
+  .strictObject({
+    choferes: z.array(z.uuid()).min(1).max(TRAMOS_CHOFERES_MAX),
+    desde: InstanteTramo,
+    hasta: InstanteTramo,
+  })
+  .refine(({ desde, hasta }) => Date.parse(desde) < Date.parse(hasta), { message: 'desde tiene que ser anterior a hasta', path: ['hasta'] });
+export type TramosViajeBody = z.infer<typeof TramosViajeBody>;
+
+/**
+ * Un tramo: desde que el chofer recibió la oferta que aceptó hasta que el viaje terminó (completado o
+ * cancelado). `fin` es null si el viaje sigue activo.
+ */
+export const TramoViaje = z.strictObject({ choferId: z.uuid(), inicio: InstanteTramo, fin: InstanteTramo.nullable() });
+export type TramoViaje = z.infer<typeof TramoViaje>;
+
+export const TramosViajeRespuesta = z.strictObject({ tramos: z.array(TramoViaje) });
+export type TramosViajeRespuesta = z.infer<typeof TramosViajeRespuesta>;

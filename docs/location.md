@@ -177,10 +177,42 @@ La tabla `pings` es el historial de las dos estrategias: la ingenua inserta cada
 - la ingenua solo lee los pings de los últimos `UBICACION_VIGENCIA_SEGUNDOS` (como mucho 600 s), y la retención mínima es de 1 h, así que la purga nunca borra una posición vigente;
 - la optimizada busca en Redis, que tiene su propia purga.
 
-**Pendiente:**
-- `PLAN.md` pide 30 días para los puntos de un viaje y **24 h para los pings de choferes sin viaje**. location no sabe qué ping fue parte de un viaje: eso lo sabe dispatch;
-- por ahora hay un solo plazo, de 30 días, para todos;
-- el de 24 h para los pings sin viaje queda para cuando dispatch le informe a location los tramos de cada viaje.
+### Retención por viaje: 30 días los de viaje, 24 h los demás
+
+Lo pide `PLAN.md` (§3.2). location no sabe qué ping fue parte de un viaje, así que se lo pregunta a dispatch.
+
+| Variable | Por defecto | Qué es |
+|---|---|---|
+| `LOCATION_HISTORIAL_SIN_VIAJE_HORAS` | el menor entre 24 h y la retención total | Cuánto dura un ping sin viaje. No puede pasar de `LOCATION_HISTORIAL_RETENCION_HORAS` |
+| `DISPATCH_URL` | — (en el Compose, `http://dispatch:3005`) | Dónde preguntar |
+| `DISPATCH_TOKEN_SERVICIO` | — | Secreto compartido con dispatch. Sin él (o sin URL), no se clasifica |
+| `DISPATCH_TIMEOUT_MS` | 1000 | Tiempo máximo de cada consulta |
+
+**El tramo de un viaje** (`POST /interno/tramos-viaje` de dispatch, con token de servicio, solo en la red interna):
+- **inicio:** el `created_at` de la oferta que el chofer aceptó. Es como mucho 15 s (el TTL) anterior a la aceptación. Si no hay oferta, se usa el de la solicitud;
+- **fin:** el `updated_at` del viaje si ya terminó (completado o cancelado), porque en un estado final no cambia más. Si sigue activo, el tramo queda abierto;
+- no hace falta ninguna columna nueva en dispatch;
+- la ruta acepta un cuerpo de hasta 64 KB (`limiteBodyInterno` de `crearApp`, solo para `/interno/*`), porque 1000 choferes son unos 39 KB. Las rutas públicas siguen con 16 KB.
+
+**La marca por fila:** cada ping tiene `en_viaje`, NULL hasta que se clasifica. Hay un índice parcial `(recorded_at, id) WHERE en_viaje IS NULL`, en la migración `20261126000000_retencion_por_viaje`. Es un índice más en cada `INSERT`, pero chico: solo tiene los pings que faltan clasificar.
+
+**Cómo clasifica, por lote** (cada 5 minutos, hasta 20 lotes de 5000):
+1. elige los pings sin clasificar con `recorded_at` de más de 24 h, por `(recorded_at, id)`. Un ping viejo que la optimizada escribió tarde entra en la próxima pasada, porque se elige por su `recorded_at`, no por cuándo se escribió;
+2. le pregunta a dispatch por los tramos de esos choferes, **fuera de toda transacción** de location:
+   - en grupos de hasta 1000 choferes, porque un lote puede tener más;
+   - con el rango del lote ampliado con el mismo margen que se usa para clasificar, 2 minutos a cada lado. Con un solo timestamp, el rango igual es válido;
+3. en una transacción, marca `en_viaje = true` los pings que cubre algún tramo (± 2 minutos, por la diferencia de reloj entre contenedores) y borra los demás del lote.
+
+Los pings de viaje marcados los borra la purga de la retención total, a los 30 días.
+
+**Ante la duda, se conserva:**
+- **si dispatch falla** (timeout, error, respuesta que no cumple el contrato), aunque sea en un solo grupo, el lote entero queda sin clasificar y la pasada termina. Se reintenta en la próxima;
+- **sin `DISPATCH_URL` o `DISPATCH_TOKEN_SERVICIO`** no se clasifica: todos los pings duran la retención total, y se avisa una vez en el log;
+- **los pings que ya estaban** cuando se aplicó la migración quedan sin clasificar y se clasifican igual que los nuevos, del más viejo al más nuevo, con el historial de dispatch, que no se purga;
+- **solo se borra a las 24 h** un ping de un chofer para el que dispatch respondió sin ningún tramo que lo cubra;
+- **el riesgo:** si la base de dispatch no corresponde a la de location (por ejemplo, se reinició en desarrollo), esos pings se tratan como sin viaje.
+
+**Dos instancias** pueden tomar el mismo lote: llegan al mismo resultado, porque marcar y borrar son idempotentes.
 
 ## Posición en vivo
 
@@ -476,6 +508,11 @@ npm run test:dominio -w @viajes/location
   - solo se borran los pings vencidos, en lotes, y la búsqueda de la ingenua devuelve lo mismo antes y después;
   - un ping viejo insertado después de uno reciente se borra en la misma pasada;
   - el tope de lotes corta la pasada, y la siguiente la termina.
+- **Retención por viaje** (`tests/integracion/retencion-por-viaje.test.ts`):
+  - después de 24 h se conservan los pings de viaje, también en el margen o con el tramo abierto, y se borran los demás;
+  - un ping escrito tarde se clasifica en la próxima pasada: se borra si es sin viaje y se conserva si es de viaje;
+  - los choferes se consultan en grupos de hasta 1000, y el rango se amplía con el margen, también con un solo timestamp;
+  - si un grupo falla, el lote entero se conserva.
 - **Historial** (`tests/integracion/historial.test.ts`):
   - Postgres cae y vuelve, y no quedan duplicados;
   - la escritura sale bien y falla la confirmación;
@@ -488,7 +525,7 @@ npm run test:dominio -w @viajes/location
 1. **Medir de punta a punta** con dispatch integrado: tiempo hasta la asignación que pide 6.6 (con la hipótesis escrita antes) y lag del event loop de dispatch mientras corre el simulador. Lotes crecientes cuando entre el filtro de flota y zona.
 2. **Después:**
    - límite de pedidos en `/ubicaciones`;
-   - ~~retención del historial~~ (hecho, con un solo plazo, ver [Retención del historial](#retención-del-historial)). Falta el plazo de 24 h para los pings sin viaje;
+   - ~~retención del historial~~ (hecho: 30 días los de viaje y 24 h los demás, ver [Retención del historial](#retención-del-historial));
    - ~~publicación por Redis para el seguimiento~~ (hecho, ver [Posición en vivo](#posición-en-vivo)); la regla de privacidad la aplica dispatch al suscribirse;
    - Alloy y los dashboards de Grafana sobre el `/metrics` de `platform` (ya hecho);
    - ADR 0008 (Redis GEO frente a PostGIS frente a geohash), con los números de [docs/mediciones.md](mediciones.md).

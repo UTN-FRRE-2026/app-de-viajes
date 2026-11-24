@@ -305,12 +305,15 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
 
   const app = crearApp({
     logger,
+    // POST /interno/tramos-viaje: hasta 1000 uuid (unos 39 KB). Las rutas públicas siguen en 16 KB.
+    limiteBodyInterno: '64kb',
     rutas: rutasDespacho(
       casos,
       verificador,
       streams,
       crearIdempotencia({ ...idempotencia, ttlEnVueloMs: config.IDEMPOTENCIA_EN_VUELO_SEGUNDOS * 1000 }),
       casosFlotas,
+      config.DISPATCH_TOKEN_SERVICIO,
     ),
     chequeos,
     metricas: { metricas, token: config.METRICAS_TOKEN },

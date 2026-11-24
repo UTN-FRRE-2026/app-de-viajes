@@ -7,11 +7,14 @@ import {
   PanelQuery,
   ParamsId,
   SinBody,
+  TramosViajeBody,
   type EstadoChoferRespuesta,
+  type TramosViajeRespuesta,
   type EstimacionRespuesta,
 } from '@viajes/contracts';
 import {
   autenticar,
+  exigirTokenServicio,
   requerirRol,
   usuarioDe,
   validar,
@@ -45,8 +48,24 @@ export function rutasDespacho(
   streams: StreamsEventos,
   idempotente: ReturnType<typeof crearIdempotencia>,
   casosFlotas: CasosDeFlotas,
+  /** Token de servicio de location para /interno/*. Sin él, la ruta interna no se monta. */
+  tokenInterno?: string,
 ): Router {
   const r = Router();
+
+  // Ruta interna (location → dispatch), antes de `autenticar`: con token de servicio, no con el JWT de un
+  // usuario. nginx no publica /interno/*. Es una consulta: sin efecto, no lleva Idempotency-Key.
+  if (tokenInterno) {
+    r.post('/interno/tramos-viaje', exigirTokenServicio(tokenInterno), validar({ body: TramosViajeBody }), async (req, res) => {
+      const { choferes, desde, hasta } = req.body as TramosViajeBody;
+      const tramos = await casos.tramosDeViaje(choferes, new Date(desde), new Date(hasta));
+      const respuesta: TramosViajeRespuesta = {
+        tramos: tramos.map((t) => ({ choferId: t.choferId, inicio: t.inicio.toISOString(), fin: t.fin?.toISOString() ?? null })),
+      };
+      res.set('Cache-Control', 'no-store').json(respuesta);
+    });
+  }
+
   r.use(autenticar(verificar));
 
   // Tiempo real (SSE): los eventos de los viajes propios. El usuario sale del token.
