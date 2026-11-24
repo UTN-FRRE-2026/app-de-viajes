@@ -2,7 +2,7 @@ import { decodeJwt } from 'jose';
 import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { HasherArgon2 } from '../../src/infra/externos/hasher-argon2.js';
-import { FLOTA_DEMO_ID, sembrarUsuarios, USUARIOS_SEMILLA } from '../../src/infra/db/semilla.js';
+import { FLOTA_DEMO_2_ID, FLOTA_DEMO_ID, sembrarUsuarios, USUARIOS_SEMILLA } from '../../src/infra/db/semilla.js';
 import { clave, CONTRASENA, datosRegistro, levantarIdentity, type Identity } from '../soporte/sistema.js';
 
 let d: Identity;
@@ -91,18 +91,24 @@ describe('seed', () => {
     await sembrarUsuarios(d.prisma, hasher, CONTRASENA);
     const filas = await d.prisma.usuario.findMany({ orderBy: { id: 'asc' } });
     expect(filas.map((f) => f.id)).toEqual(USUARIOS_SEMILLA.map((u) => u.id));
-    expect(filas.map((f) => f.rol)).toEqual(['pasajero', 'chofer', 'operador', 'admin', 'admin_flota']);
+    expect(filas.map((f) => f.rol)).toEqual(['pasajero', 'chofer', 'operador', 'admin', 'admin_flota', 'admin_flota']);
   });
 
-  it('cada rol puede entrar, y solo admin_flota recibe fleetId', async () => {
+  it('cada rol puede entrar, y solo admin_flota recibe fleetId: el de su flota', async () => {
     await sembrarUsuarios(d.prisma, hasher, CONTRASENA);
+    const flotaEsperada: Record<string, string> = {
+      'admin.flota@viajes.test': FLOTA_DEMO_ID,
+      'admin.flota2@viajes.test': FLOTA_DEMO_2_ID,
+    };
     for (const usuario of USUARIOS_SEMILLA) {
       const res = await login(usuario.email);
       expect(res.status).toBe(200);
       const claims = decodeJwt(res.body.token);
       expect(claims).toMatchObject({ sub: usuario.id, rol: usuario.rol });
-      expect(claims['fleetId']).toBe(usuario.rol === 'admin_flota' ? FLOTA_DEMO_ID : undefined);
+      expect(claims['fleetId']).toBe(flotaEsperada[usuario.email]);
     }
+    // Las dos flotas del seed son distintas: sirven para probar el aislamiento.
+    expect(new Set(Object.values(flotaEsperada)).size).toBe(2);
   });
 });
 

@@ -1,6 +1,6 @@
 # Flotas (variante G)
 
-> **Estado:** PR 1 de flotas. Hecho: flotas con límite de choferes activos, alta de choferes con su vehículo, habilitación, activación con la **carrera G**, disponibilidad y aislamiento entre flotas. **Falta (PR siguiente):** zonas operativas en PostGIS, filtro de candidatos por flota y zona, y el reporte por flota.
+> **Estado:** PR 1 de flotas, y el panel `/flota` de la web ([docs/web.md](web.md#el-panel-de-la-flota-flota)). Hecho: flotas con límite de choferes activos, alta de choferes con su vehículo, habilitación, activación con la **carrera G**, disponibilidad y aislamiento entre flotas. **Falta (PR siguiente):** zonas operativas en PostGIS, filtro de candidatos por flota y zona, y el reporte por flota.
 
 Vive dentro de dispatch ([PLAN.md](../PLAN.md) §3.3): comparte la base y, en el PR siguiente, la transacción con la asignación de viajes.
 
@@ -142,3 +142,6 @@ Todas las escrituras llevan `Idempotency-Key`. Los demás roles reciben 403 `ROL
 - Zonas operativas en PostGIS y zonas habilitadas por flota.
 - Filtro de candidatos: solo choferes habilitados, activos, disponibles, sin viaje activo y de una flota con la zona del origen habilitada. La aceptación de una oferta va a bloquear también la fila del chofer, y desactivar a un chofer con un viaje en curso va a depender de eso: hoy está permitido.
 - Reporte por flota: choferes activos, viajes y facturación.
+  - **Los activos ya están:** el cupo de `GET /flota`, mantenido por la carrera G.
+  - **Los viajes y la facturación necesitan ampliar el modelo.** `ride_requests` no guarda la flota. Contarlos por la flota *actual* del chofer (con un JOIN a `drivers`) no es confiable: sin el filtro de candidatos, un chofer inactivo, o uno que todavía no estaba en la flota, toma viajes que se le sumarían; y un cambio de flota o una baja futuros reescribirían la historia.
+  - **Lo confiable:** guardar `fleet_id` en la solicitud dentro de la transacción de la aceptación (junto con el bloqueo del chofer de la aceptación, de este mismo PR 2). Más un índice `(fleet_id, status, started_at)` para consultar por un período acotado. La facturación, de la tarifa final de los `COMPLETADO` o de los cobros aprobados (a decidir).

@@ -3,6 +3,8 @@ import type { HasherContrasenas } from '../../dominio/puertos/index.js';
 import type { PrismaClient } from './generated/client.js';
 
 export const FLOTA_DEMO_ID = '00000000-0000-4000-8000-0000000000f1';
+/** Una segunda flota, para probar el aislamiento entre flotas con dos admin_flota reales. */
+export const FLOTA_DEMO_2_ID = '00000000-0000-4000-8000-0000000000f2';
 
 /** UUID fijos: el seed es reproducible y el chofer se puede usar en DISPATCH_CANDIDATOS_DEMO. */
 export const USUARIOS_SEMILLA: ReadonlyArray<{
@@ -17,6 +19,7 @@ export const USUARIOS_SEMILLA: ReadonlyArray<{
   { id: '00000000-0000-4000-8000-000000000003', email: 'operador@viajes.test', nombre: 'Operador Demo', rol: 'operador', fleetId: null },
   { id: '00000000-0000-4000-8000-000000000004', email: 'admin@viajes.test', nombre: 'Admin Demo', rol: 'admin', fleetId: null },
   { id: '00000000-0000-4000-8000-000000000005', email: 'admin.flota@viajes.test', nombre: 'Admin Flota Demo', rol: 'admin_flota', fleetId: FLOTA_DEMO_ID },
+  { id: '00000000-0000-4000-8000-000000000006', email: 'admin.flota2@viajes.test', nombre: 'Admin Flota Demo 2', rol: 'admin_flota', fleetId: FLOTA_DEMO_2_ID },
 ];
 
 /**

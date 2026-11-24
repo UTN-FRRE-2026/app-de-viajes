@@ -1,10 +1,12 @@
 import { useEffect } from 'react';
 import { esIncierto } from '../../api/operacion';
 import { ErrorApi } from '../../api/errores';
+import { CopiarCodigo } from '../../componentes/CopiarCodigo';
 import { MensajeError, textoDeError } from '../../componentes/MensajeError';
 import { useAhora } from '../../componentes/useAhora';
 import type { EstadoConexion } from '../../tiempo-real/eventos';
 import { useEventos } from '../../tiempo-real/useEventos';
+import { useSesion } from '../../sesion/store';
 import { ControlUbicacion } from '../../ubicacion/ControlUbicacion';
 import { useEnvioUbicacion, type EnvioUbicacion } from '../../ubicacion/useEnvioUbicacion';
 import { Posicion } from '../../viaje/Posicion';
@@ -94,6 +96,7 @@ function Disponibilidad() {
   const registro = useChofer((s) => s.registro);
   const cambio = useChofer((s) => s.disponibilidad);
   const cambiar = useChofer((s) => s.cambiarDisponible);
+  const miId = useSesion((s) => s.usuario?.id);
 
   let motivo: string | null = null;
   if (!registro) motivo = TEXTO_DISPONIBILIDAD['CHOFER_NO_ENCONTRADO']!;
@@ -109,6 +112,12 @@ function Disponibilidad() {
         {disponible ? <strong className="ok">Disponible</strong> : <strong>No disponible</strong>}
         {registro ? <span className="nota"> · {registro.vehiculo.marca} {registro.vehiculo.modelo} ({registro.vehiculo.patente})</span> : null}
       </p>
+      {!registro && miId ? (
+        // El admin de flota da de alta con este código: identity no permite buscar cuentas por email.
+        <p className="nota">
+          Tu código de chofer, para el alta: <CopiarCodigo codigo={miId} />
+        </p>
+      ) : null}
       {motivo && !disponible ? (
         <p className="nota">{motivo}</p>
       ) : (
