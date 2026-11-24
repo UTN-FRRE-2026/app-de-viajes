@@ -151,7 +151,8 @@ const seg = (x) => (x === null || x === undefined ? '—' : x === '+Inf' ? '> 2 
 if (conViajes.length) {
   console.log('\n### Viajes en paralelo bajo la carga de 6.6 (escenario A)\n');
   console.log('Solo la ventana de medición. Cliente: percentiles exactos. Servidor: por cubeta (el borde superior de la cubeta del percentil).\n');
-  console.log('| Corrida | Viajes/s | Asignados/s | `POST /solicitudes` cliente p50 / p95 / p99 (ms) | Hasta la asignación, cliente p50 / p95 / p99 (ms) | Hasta la asignación, servidor p50 / p95 / p99 | 503 ubicación | Sin choferes | Sin resolver | Errores | Lag dispatch p99 | RSS dispatch / location al final (MB) | CPU dispatch prom. / máx (%) | Pings: fondo / choferes de prueba (por s) |');
+  console.log('Intentos: cada `POST /solicitudes`. Creados: los que respondieron 201. Asignados: los que llegaron a `TripAssigned`.\n');
+  console.log('| Corrida | Intentos/s | Creados/s | Asignados/s | `POST /solicitudes` cliente p50 / p95 / p99 (ms) | Hasta la asignación, cliente p50 / p95 / p99 (ms) | Hasta la asignación, servidor p50 / p95 / p99 | 503 ubicación | Sin choferes | Sin resolver | Errores | Lag dispatch p99 | RSS dispatch / location al final (MB) | CPU dispatch prom. / máx (%) |');
   console.log('|---|---|---|---|---|---|---|---|---|---|---|---|---|---|');
   for (const c of conViajes) {
     const v = c.viajes;
@@ -159,7 +160,19 @@ if (conViajes.length) {
     const as = v.cliente_ms.hasta_asignacion;
     const sv = v.servidor.hasta_asignacion_s;
     console.log(
-      `| ${c.nombre} | ${v.solicitudes_por_s} | ${v.asignadas_por_s} | ${ms(cr.p50)} / ${ms(cr.p95)} / ${ms(cr.p99)} | ${ms(as.p50)} / ${ms(as.p95)} / ${ms(as.p99)} | ${seg(sv.p50)} / ${seg(sv.p95)} / ${seg(sv.p99)} | ${v.ubicacion_no_disponible_503} | ${v.sin_choferes} | ${v.timeouts} | ${v.errores_total} | ${seg(v.servidor.lag_dispatch_s.p99)} | ${v.servidor.memoria_mb.dispatch.fin} / ${v.servidor.memoria_mb.location.fin} | ${f(c.cpuDispatchProm, 0)} / ${f(c.cpuDispatchMax, 0)} | ${f(c.pingsPorS, 0)} / ${v.choferes_prueba.pings_por_s_en_la_ventana} |`,
+      `| ${c.nombre} | ${v.intentos_por_s ?? v.solicitudes_por_s} | ${v.creados_por_s ?? '—'} | ${v.asignadas_por_s} | ${ms(cr.p50)} / ${ms(cr.p95)} / ${ms(cr.p99)} | ${ms(as.p50)} / ${ms(as.p95)} / ${ms(as.p99)} | ${seg(sv.p50)} / ${seg(sv.p95)} / ${seg(sv.p99)} | ${v.ubicacion_no_disponible_503} | ${v.sin_choferes} | ${v.timeouts} | ${v.errores_total} | ${seg(v.servidor.lag_dispatch_s.p99)} | ${v.servidor.memoria_mb.dispatch.fin} / ${v.servidor.memoria_mb.location.fin} | ${f(c.cpuDispatchProm, 0)} / ${f(c.cpuDispatchMax, 0)} |`,
+    );
+  }
+  console.log('\n#### Pings a location en la ventana de los viajes (escenario A)\n');
+  console.log('Choferes de prueba: lo que enviaron y lo que location les aceptó (204), del lado del cliente. Location: todos los `POST /ubicaciones` que aceptó en la ventana, por `/metrics`; el fondo de k6 es la diferencia.\n');
+  console.log('| Corrida | Choferes de prueba (activos en la ventana / total) | Cadencia | Choferes de prueba: enviados / aceptados (por s) | Location aceptó (por s) | Fondo de k6 aceptado (por s) | Fallidos de los choferes de prueba |');
+  console.log('|---|---|---|---|---|---|---|');
+  for (const c of conViajes) {
+    const ch = c.viajes.choferes_prueba;
+    const w = ch.ventana;
+    const l = c.viajes.location_pings_ventana;
+    console.log(
+      `| ${c.nombre} | ${w ? `${w.choferes_activos} / ${ch.choferes}` : `— / ${ch.choferes}`} | ${ch.ping_cada_ms ? `${ch.ping_cada_ms / 1000} s` : '10 s'} | ${w ? `${w.enviados_por_s} / ${w.aceptados_por_s}` : `${ch.pings_por_s_en_la_ventana} / —`} | ${l?.aceptados_por_s ?? '—'} | ${l?.fondo_aceptados_por_s ?? '—'} | ${w ? w.fallidos : ch.pings_fallidos} |`,
     );
   }
   console.log('\n#### Competencia y corrección (escenario A)\n');
@@ -175,8 +188,8 @@ if (conViajes.length) {
     );
   }
   console.log('\n#### Mediana de las corridas por estrategia (escenario A)\n');
-  console.log('| Estrategia | Corridas | Viajes/s | `POST /solicitudes` p50 / p95 / p99 (ms) | Hasta la asignación p50 / p95 / p99 (ms) | 503 ubicación (% de los intentos) | Lag dispatch p99 (ms, cubeta) | CPU dispatch prom. (%) | RSS dispatch / location (MB) |');
-  console.log('|---|---|---|---|---|---|---|---|---|');
+  console.log('| Estrategia | Corridas | Intentos/s | Creados/s | Asignados/s | `POST /solicitudes` p50 / p95 / p99 (ms) | Hasta la asignación p50 / p95 / p99 (ms) | 503 ubicación (% de los intentos) | Lag dispatch p99 (ms, cubeta) | CPU dispatch prom. (%) | RSS dispatch / location (MB) |');
+  console.log('|---|---|---|---|---|---|---|---|---|---|---|');
   for (const e of ['ingenua', 'optimizada']) {
     const cs = conViajes.filter((c) => c.estrategia === e);
     if (!cs.length) continue;
@@ -184,7 +197,7 @@ if (conViajes.length) {
     const pct503 = (c) => (100 * c.viajes.ubicacion_no_disponible_503) / Math.max(1, c.viajes.iteraciones);
     const lag = (c) => (c.viajes.servidor.lag_dispatch_s.p99 === '+Inf' ? Infinity : c.viajes.servidor.lag_dispatch_s.p99 * 1000);
     console.log(
-      `| ${e} | ${cs.length} | ${m((c) => c.viajes.solicitudes_por_s, 2)} | ${m((c) => c.viajes.cliente_ms.crear.p50)} / ${m((c) => c.viajes.cliente_ms.crear.p95)} / ${m((c) => c.viajes.cliente_ms.crear.p99)} | ${m((c) => c.viajes.cliente_ms.hasta_asignacion.p50 ?? NaN)} / ${m((c) => c.viajes.cliente_ms.hasta_asignacion.p95 ?? NaN)} / ${m((c) => c.viajes.cliente_ms.hasta_asignacion.p99 ?? NaN)} | ${m(pct503, 1)} | ${m(lag)} | ${m((c) => c.cpuDispatchProm)} | ${m((c) => c.viajes.servidor.memoria_mb.dispatch.fin)} / ${m((c) => c.viajes.servidor.memoria_mb.location.fin)} |`,
+      `| ${e} | ${cs.length} | ${m((c) => c.viajes.intentos_por_s ?? c.viajes.solicitudes_por_s, 2)} | ${m((c) => c.viajes.creados_por_s ?? NaN, 2)} | ${m((c) => c.viajes.asignadas_por_s, 2)} | ${m((c) => c.viajes.cliente_ms.crear.p50)} / ${m((c) => c.viajes.cliente_ms.crear.p95)} / ${m((c) => c.viajes.cliente_ms.crear.p99)} | ${m((c) => c.viajes.cliente_ms.hasta_asignacion.p50 ?? NaN)} / ${m((c) => c.viajes.cliente_ms.hasta_asignacion.p95 ?? NaN)} / ${m((c) => c.viajes.cliente_ms.hasta_asignacion.p99 ?? NaN)} | ${m(pct503, 1)} | ${m(lag)} | ${m((c) => c.cpuDispatchProm)} | ${m((c) => c.viajes.servidor.memoria_mb.dispatch.fin)} / ${m((c) => c.viajes.servidor.memoria_mb.location.fin)} |`,
     );
   }
 }
@@ -237,12 +250,14 @@ if (estres.length) {
     const primera = c.primeraDegradada;
     const motivos = primera ? Object.entries(primera.criterios).filter(([, v]) => v).map(([k]) => k).join(', ') : '';
     console.log(`#### ${c.nombre}: primera etapa degradada: ${primera ? `${primera.tasa} viajes/s (${motivos})` : 'ninguna'}\n`);
-    console.log('| Tasa (viajes/s) | Previstos (etapa / ventana) | Iniciados (ventana) | Omitidos por k6 (etapa) | Viajes/s | Asignados | Sin choferes | Sin resolver | 503 ubicación | Errores | Crear p50 / p95 / p99 (ms) | Asignación p50 / p95 / p99 (ms) | Asignación servidor p95 | Lag dispatch p99 | RSS dispatch / location (MB) | CPU dispatch / Postgres / location (%) | Pings a location: total / choferes de prueba (por s) | ¿Degradada? |');
-    console.log('|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|');
+    console.log('| Tasa (viajes/s) | Previstos (etapa / ventana) | Iniciados (ventana) | Omitidos por k6 (etapa) | Intentos / creados / asignados (por s) | Asignados | Sin choferes | Sin resolver | 503 ubicación | Errores | Crear p50 / p95 / p99 (ms) | Asignación p50 / p95 / p99 (ms) | Asignación servidor p95 | Lag dispatch p99 | RSS dispatch / location (MB) | CPU dispatch / Postgres / location (%) | Location: pings recibidos / aceptados / del fondo aceptados (por s) | Choferes de prueba: activos, enviados / aceptados (por s) | ¿Degradada? |');
+    console.log('|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|');
     for (const e of c.etapas) {
       const s = e.servidor;
+      const segS = s.ventana_estable?.segundos ?? 45;
+      const pc = s.choferes_prueba;
       console.log(
-        `| ${e.tasa} | ${e.previstos_etapa} / ${e.previstos_ventana_estable} | ${e.iniciados_ventana_estable} | ${e.omitidos_por_k6_etapa} | ${e.viajes_por_s} | ${e.asignados} | ${e.sin_choferes} | ${e.sin_resolver} | ${e.ubicacion_503} | ${e.errores} | ${n0(e.crear_ms.p50)} / ${n0(e.crear_ms.p95)} / ${n0(e.crear_ms.p99)} | ${n0(e.hasta_asignacion_ms.p50)} / ${n0(e.hasta_asignacion_ms.p95)} / ${n0(e.hasta_asignacion_ms.p99)} | ${seg(s.hasta_asignacion_s?.p95)} | ${seg(s.lag_dispatch_s?.p99)} | ${s.memoria_mb?.dispatch ?? '—'} / ${s.memoria_mb?.location ?? '—'} | ${f(e.cpuDispatch, 0)} / ${f(e.cpuPostgres, 0)} / ${f(e.cpuLocation, 0)} | ${s.pings_location_por_s ?? '—'} / ${s.pings_choferes_prueba_por_s ?? '—'} | ${e.degradada ? 'sí' : 'no'} |`,
+        `| ${e.tasa} | ${e.previstos_etapa} / ${e.previstos_ventana_estable} | ${e.iniciados_ventana_estable} | ${e.omitidos_por_k6_etapa} | ${e.viajes_por_s} / ${f(e.creados / segS, 2)} / ${f(e.asignados / segS, 2)} | ${e.asignados} | ${e.sin_choferes} | ${e.sin_resolver} | ${e.ubicacion_503} | ${e.errores} | ${n0(e.crear_ms.p50)} / ${n0(e.crear_ms.p95)} / ${n0(e.crear_ms.p99)} | ${n0(e.hasta_asignacion_ms.p50)} / ${n0(e.hasta_asignacion_ms.p95)} / ${n0(e.hasta_asignacion_ms.p99)} | ${seg(s.hasta_asignacion_s?.p95)} | ${seg(s.lag_dispatch_s?.p99)} | ${s.memoria_mb?.dispatch ?? '—'} / ${s.memoria_mb?.location ?? '—'} | ${f(e.cpuDispatch, 0)} / ${f(e.cpuPostgres, 0)} / ${f(e.cpuLocation, 0)} | ${s.pings_location_por_s ?? '—'} / ${s.pings_location_aceptados_por_s ?? '—'} / ${s.pings_fondo_aceptados_por_s ?? '—'} | ${pc ? `${pc.choferes_activos}, ${pc.enviados_por_s} / ${pc.aceptados_por_s}` : `—, ${s.pings_choferes_prueba_por_s ?? '—'} / —`} | ${e.degradada ? 'sí' : 'no'} |`,
       );
     }
     const k = c.conteos.correccion ?? {};

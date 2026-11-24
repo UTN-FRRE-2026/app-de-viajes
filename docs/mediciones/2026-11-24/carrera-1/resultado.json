@@ -1,0 +1,25 @@
+{
+    "solicitudId":  "9cc4b535-a283-4ea3-8cf4-14f4192ef301",
+    "ofertas":  50,
+    "ok200":  1,
+    "conflictos409":  49,
+    "codigos409":  [
+                       "SOLICITUD_NO_DISPONIBLE"
+                   ],
+    "ganador":  "00000000-0000-4000-8000-c00000000014",
+    "asignacionesActivas":  1,
+    "asignacionCoincide":  true,
+    "estadosOfertas":  {
+                           "ACEPTADA":  1,
+                           "CANCELADA":  49
+                       },
+    "tripAssigned":  1,
+    "totalLoteMs":  680,
+    "sumaDuracionesMs":  22668,
+    "codigoK6":  0,
+    "cancelacion":  200,
+    "cancelada":  true,
+    "liberados":  true,
+    "commit":  "2cdccf4",
+    "ok":  true
+}

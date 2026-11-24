@@ -202,6 +202,8 @@ Escritas el 24/11/2026, **antes** de cualquier corrida de estos escenarios (incl
 - los viajes van en paralelo, con pasajeros y choferes distintos;
 - hay competencia: cada viaje se ofrece a 3 choferes, y los que pierden reciben 409.
 
+**Corrección del 24/11, antes de la segunda tanda.** La primera versión de estas hipótesis decía que los choferes de prueba informaban su posición cada 10 s (unos 5 y 31 pings/s extra). El plan aprobado decía cada 2 s, que es también la cadencia de los 500 choferes de k6 y el mínimo entre envíos de la pantalla del chofer. Además, cada chofer esperaba la respuesta antes de esperar los 10 s, y todos arrancaban dentro del mismo segundo, así que los pings salían en ráfagas. La primera tanda se hizo así, y por eso se repitió (ver [Resultados](#resultados-1)). **Los umbrales y las hipótesis no cambian:** solo la cadencia de los choferes de prueba.
+
 **Dato que condiciona HS2:** dispatch corta la búsqueda en location a **1 s** (`LOCATION_TIMEOUT_MS`), y el 19/11 la búsqueda de la ingenua dio 4,6 s de p95 con esta misma carga.
 
 #### Escenario A: solicitudes bajo la carga de 6.6 (ingenua frente a optimizada)
@@ -216,7 +218,7 @@ Escritas el 24/11/2026, **antes** de cualquier corrida de estos escenarios (incl
 - **50 choferes de prueba en Córdoba:**
   - 40 aptos y 10 **no aptos**: 4 inactivos, 3 no disponibles y 3 de una flota que no opera en Córdoba;
   - aceptan enseguida la primera oferta mientras están libres;
-  - informan su posición cada 10 s. Son unos **5 pings/s extra**, que se cuentan aparte del fondo.
+  - informan su posición **cada 2 s**, a tasa fija y con las fases repartidas en el intervalo, como los choferes de k6. Son unos **25 pings/s extra**, que se cuentan aparte del fondo (ver la corrección de abajo).
 
 **El método:** 30 s de calentamiento y 300 s de medición. **Tres corridas por estrategia, alternadas.**
 
@@ -235,7 +237,7 @@ Escritas el 24/11/2026, **antes** de cualquier corrida de estos escenarios (incl
   - Las tasas son **1, 2, 4, 8, 16 y 32 viajes/s**, durante 60 s cada una, después de 30 s de calentamiento a 1 viaje/s.
   - Cada usuario virtual es un pasajero distinto: nunca tiene dos viajes activos.
   - Si un viaje no se resuelve en 10 s, se consulta su estado y se cancela si sigue activo, antes de volver a usar ese pasajero.
-- **Los choferes de prueba:** 300 aptos y los 10 no aptos, que aceptan enseguida e informan su posición cada 10 s. Son unos **31 pings/s extra**, que se cuentan aparte del fondo.
+- **Los choferes de prueba:** 300 aptos y los 10 no aptos, que aceptan enseguida e informan su posición **cada 2 s**. Son unos **155 pings/s extra**, que se cuentan aparte del fondo (ver la corrección de abajo).
 - **Location:** optimizada.
 
 **La ventana estable de cada escalón:** se descartan los primeros 15 s (la transición) y se mide en los **45 s restantes**. Por escalón se guardan los viajes previstos, los iniciados y los omitidos por k6.
@@ -285,7 +287,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File carga/estres.ps1 -Corrida 1 
 node carga/resumir.mjs docs/mediciones/2026-11-24
 ```
 
-**La evidencia** está en [`mediciones/2026-11-24/`](mediciones/2026-11-24/), sin credenciales. Las tablas completas de `resumir.mjs` están en [`tablas.md`](mediciones/2026-11-24/tablas.md), y los checkpoints de Postgres de toda la tanda en [`postgres-checkpoints.txt`](mediciones/2026-11-24/postgres-checkpoints.txt).
+**La evidencia** está en [`mediciones/2026-11-24-pings-cada-10s/`](mediciones/2026-11-24-pings-cada-10s/), sin credenciales. Las tablas completas de `resumir.mjs` están en [`tablas.md`](mediciones/2026-11-24-pings-cada-10s/tablas.md), y los checkpoints de Postgres de toda la tanda en [`postgres-checkpoints.txt`](mediciones/2026-11-24-pings-cada-10s/postgres-checkpoints.txt).
 
 **La prueba corta** (30 s por estrategia y estrés con los escalones de 1 y 4 viajes/s) no cuenta para el informe. Su evidencia está en [`mediciones/2026-11-24-prueba-corta/`](mediciones/2026-11-24-prueba-corta/). Dejó todo completo y 0 viajes activos, y sirvió para corregir dos cosas del script, no del sistema:
 - los choferes de prueba descartaban las ofertas que llegaban mientras aceptaban otra;
@@ -298,7 +300,7 @@ Durante `ingenua-2` (03:56 a 04:02), **el disco virtual de Docker se trabó.**
 - **location** se quedó sin CPU (2 %) a los 33 s, mientras su memoria subía de 90 a 240 MB con los pedidos encolados. Postgres también estaba casi sin CPU.
 - **k6:** 2.500 pings en 5 min, y el 80 % con timeout de 60 s.
 
-Es una falla del entorno, no de la estrategia, así que **la corrida no cuenta para las latencias**. Se corrió **ingenua 4** en su lugar. La evidencia quedó aparte, en [`mediciones/2026-11-24-descartadas/ingenua-2/`](mediciones/2026-11-24-descartadas/ingenua-2/).
+Es una falla del entorno, no de la estrategia, así que **la corrida no cuenta para las latencias**. Se corrió **ingenua 4** en su lugar. La evidencia quedó aparte, en [`mediciones/2026-11-24-pings-cada-10s/descartada-ingenua-2/`](mediciones/2026-11-24-pings-cada-10s/descartada-ingenua-2/).
 
 Sirve igual para HS2: con location trabado, dispatch respondió **503 a los 1.007 ms (p50) en los 2.920 intentos**, y no creó ningún viaje. Es la falla cerrada que se esperaba.
 
@@ -330,7 +332,7 @@ Sirve igual para HS2: con location trabado, dispatch respondió **503 a los 1.00
 | optimizada-3 | 7,38 | 88 / 243 / 482 | 291 / 566 / 8.546 | ≤ 0,25 / ≤ 0,5 / ≤ 10 s | 0 / 0 / 0 | ≤ 10 ms | 39 / 60 % | 250 / 4,9 |
 
 - **Fondo y choferes de prueba:** el fondo son los pings/s de k6 que location aceptó en la medición; los de los choferes de prueba van aparte. Con la ingenua, el fondo no llega a 250, como el 19/11: k6 omite unos 40.000 pings por corrida.
-- **Las ubicaciones de 6.6, en estas mismas corridas,** repiten lo del 19/11 (ver [`tablas.md`](mediciones/2026-11-24/tablas.md)):
+- **Las ubicaciones de 6.6, en estas mismas corridas,** repiten lo del 19/11 (ver [`tablas.md`](mediciones/2026-11-24-pings-cada-10s/tablas.md)):
   - **pings p95:** 4.702 ms en la ingenua y 6,8 ms en la optimizada;
   - **búsquedas p95:** 4.653 ms y 7,1 ms;
   - **pings/s:** 124 y 250.

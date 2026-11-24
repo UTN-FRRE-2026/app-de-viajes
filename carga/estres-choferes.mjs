@@ -9,7 +9,7 @@
 // /resultados/choferes.json, sin tokens, y las fotos en /resultados/metrics/.
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { setTimeout as esperar } from 'node:timers/promises';
-import { arrancarChoferes } from './lib/choferes.mjs';
+import { arrancarChoferes, ventanaPings } from './lib/choferes.mjs';
 import { leerMetricas, memoriaMb, sumaSerie, ventanaHistograma } from './lib/metricas.mjs';
 
 const DISPATCH = process.env.DISPATCH_URL ?? 'http://dispatch:3005';
@@ -52,11 +52,12 @@ async function main() {
     const hasta = inicio + ETAPA_S * 1000;
     await esperar(Math.max(0, desde - Date.now()));
     const [dA, lA] = await fotos();
-    const pingsAntes = ch.estadisticas.pings_enviados;
+    const pingsAntes = ch.fotoPings();
     const desdeIso = new Date().toISOString();
     await esperar(Math.max(0, hasta - Date.now()));
     const [dD, lD] = await fotos();
     const hastaIso = new Date().toISOString();
+    const pingsDespues = ch.fotoPings();
     const segundos = (Date.parse(hastaIso) - Date.parse(desdeIso)) / 1000;
     for (const [nombre, texto] of [
       [`dispatch-etapa-${i + 1}-inicio`, dA],
@@ -67,6 +68,9 @@ async function main() {
       writeFileSync(`${SALIDA}/metrics/${nombre}.txt`, texto);
     }
     const delta = (nombre, ...f) => sumaSerie(dD, nombre, ...f) - sumaSerie(dA, nombre, ...f);
+    const deltaL = (...f) =>
+      sumaSerie(lD, 'http_request_duration_seconds_count', 'ruta="/ubicaciones"', 'metodo="POST"', ...f) -
+      sumaSerie(lA, 'http_request_duration_seconds_count', 'ruta="/ubicaciones"', 'metodo="POST"', ...f);
     const etapa = {
       etapa: i + 1,
       tasa,
@@ -82,19 +86,21 @@ async function main() {
         filtrados: delta('dispatch_busquedas_sin_aptos_total', 'motivo="filtrados"'),
         tope_agotado: delta('dispatch_busquedas_sin_aptos_total', 'motivo="tope_agotado"'),
       },
-      // Pings de location en la ventana: todos (fondo + choferes de prueba) y los de los choferes de prueba.
-      pings_location_por_s: Number(
-        ((sumaSerie(lD, 'http_request_duration_seconds_count', 'ruta="/ubicaciones"', 'metodo="POST"') -
-          sumaSerie(lA, 'http_request_duration_seconds_count', 'ruta="/ubicaciones"', 'metodo="POST"')) /
-          segundos).toFixed(1),
+      // Pings de location en la ventana: todos los que recibió (fondo + choferes de prueba), los que
+      // aceptó (204), y los de los choferes de prueba (enviados y aceptados, y cuántos choferes).
+      pings_location_por_s: Number((deltaL() / segundos).toFixed(1)),
+      pings_location_aceptados_por_s: Number((deltaL('estado="204"') / segundos).toFixed(1)),
+      pings_choferes_prueba_por_s: ventanaPings(pingsAntes, pingsDespues, segundos).enviados_por_s,
+      choferes_prueba: ventanaPings(pingsAntes, pingsDespues, segundos),
+      pings_fondo_aceptados_por_s: Number(
+        ((deltaL('estado="204"') - ventanaPings(pingsAntes, pingsDespues, segundos).aceptados_por_location) / segundos).toFixed(1),
       ),
-      pings_choferes_prueba_por_s: Number(((ch.estadisticas.pings_enviados - pingsAntes) / segundos).toFixed(1)),
     };
     etapas.push(etapa);
     log(`etapa ${i + 1} (${tasa}/s): crear p95 ${etapa.crear_s.p95} s, lag dispatch p99 ${etapa.lag_dispatch_s.p99} s`);
   }
-  // Los viajes que quedaron en vuelo terminan dentro del gracefulStop de k6 (15 s).
-  await esperar(20_000);
+  // Los viajes que quedaron en vuelo terminan dentro del gracefulStop del último escalón de k6 (40 s).
+  await esperar(45_000);
   ch.parar();
   writeFileSync(`${SALIDA}/etapas-servidor.json`, JSON.stringify({ calentamiento_s: CALENTAMIENTO_S, etapa_s: ETAPA_S, transicion_s: TRANSICION_S, etapas }, null, 2));
   writeFileSync(`${SALIDA}/choferes.json`, JSON.stringify(ch.estadisticas, null, 2));

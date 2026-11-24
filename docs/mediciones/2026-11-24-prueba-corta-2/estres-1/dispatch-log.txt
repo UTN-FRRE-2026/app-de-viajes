@@ -1,0 +1,5 @@
+﻿{"level":30,"time":1795508747448,"pid":1,"hostname":"52d46d52082f","name":"dispatch","puerto":3005,"persistencia":"postgres","buscador":"location","msg":"dispatch escuchando"}
+{"level":30,"time":1795508747514,"pid":1,"hostname":"52d46d52082f","name":"dispatch","version":"v1","configuradaPor":"semilla","msg":"tarifa vigente"}
+{"level":30,"time":1795508864635,"pid":1,"hostname":"52d46d52082f","name":"dispatch","senal":"SIGTERM","msg":"apagado: dejo de aceptar conexiones y drenando pedidos"}
+{"level":30,"time":1795508864636,"pid":1,"hostname":"52d46d52082f","name":"dispatch","msg":"apagado: pedidos drenados, cerrando recursos"}
+{"level":30,"time":1795508864638,"pid":1,"hostname":"52d46d52082f","name":"dispatch","msg":"apagado: listo"}

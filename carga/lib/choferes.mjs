@@ -2,8 +2,10 @@
 // el chofer se entera de su oferta por SSE (GET /eventos), y k6 no lee streams. Sin dependencias.
 //
 // Cada chofer:
-// - informa su posición cada `pingCadaMs` (10 s: vigente en location, que olvida a los 30 s), en un
-//   lugar fijo y determinista cerca del origen de los viajes;
+// - informa su posición cada `pingCadaMs` (2 s, como los 500 choferes de k6 y como el mínimo entre
+//   envíos de la pantalla del chofer), en un lugar fijo y determinista cerca del origen de los viajes.
+//   A tasa fija, sin esperar la respuesta (modelo abierto, como k6), y con las fases repartidas en
+//   todo el intervalo: no salen en ráfagas;
 // - escucha su SSE y, si está libre, acepta enseguida la primera oferta (sin tiempo de reacción humano:
 //   se mide el sistema). Con la misma Idempotency-Key si hay que reintentar. Las ofertas que le llegan
 //   mientras acepta otra quedan en espera: si pierde la que estaba aceptando (409), prueba la siguiente
@@ -119,18 +121,35 @@ export async function escucharSse(base, token, vivo, alEvento, { alConectar = ()
   }
 }
 
+/** Los pings de los choferes de prueba entre dos `fotoPings()`. */
+export function ventanaPings(antes, despues, segundos) {
+  const enviados = despues.enviados - antes.enviados;
+  const ok = despues.ok - antes.ok;
+  return {
+    segundos,
+    enviados,
+    aceptados_por_location: ok,
+    fallidos: despues.fallidos - antes.fallidos,
+    enviados_por_s: Number((enviados / segundos).toFixed(1)),
+    aceptados_por_s: Number((ok / segundos).toFixed(1)),
+    choferes_activos: despues.porChofer.filter((n, i) => n > antes.porChofer[i]).length,
+  };
+}
+
 /**
- * Arranca los choferes. Devuelve `{ estadisticas, parar, conectados }`.
+ * Arranca los choferes. Devuelve `{ estadisticas, fotoPings, parar, conectados }`.
  * - `choferes`: [{ id, token, tipo }] (de tokens-viajes.json).
  * - `estadisticas`: contadores totales, por tipo de chofer, sin tokens.
  */
-export function arrancarChoferes({ dispatch, location, choferes, origen, radioM = 2000, pingCadaMs = 10_000, log = () => {} }) {
+export function arrancarChoferes({ dispatch, location, choferes, origen, radioM = 2000, pingCadaMs = 2_000, log = () => {} }) {
   let vivo = true;
   const estadisticas = {
     choferes: choferes.length,
+    ping_cada_ms: pingCadaMs,
     pings_enviados: 0,
     pings_ok: 0,
     pings_fallidos: 0,
+    pings_en_vuelo: 0,
     ofertas_recibidas: 0,
     ofertas_a_no_aptos: 0,
     ofertas_ignoradas_ocupado: 0,
@@ -146,6 +165,8 @@ export function arrancarChoferes({ dispatch, location, choferes, origen, radioM 
   };
   let conectados = 0;
   const sumar = (mapa, clave) => (mapa[clave] = (mapa[clave] ?? 0) + 1);
+  // Pings aceptados (204) por chofer: para contar cuántos estuvieron activos en una ventana.
+  const okPorChofer = choferes.map(() => 0);
 
   const uno = (chofer, i) => {
     const posicion = posicionDe(i, choferes.length, origen, radioM);
@@ -160,19 +181,28 @@ export function arrancarChoferes({ dispatch, location, choferes, origen, radioM 
       return enEspera.shift() ?? null;
     };
 
-    // Posición: la primera enseguida (escalonadas en 1 s) y después cada pingCadaMs.
+    // Posición: a tasa fija cada pingCadaMs, con la fase del chofer `i` en i/n del intervalo. El
+    // siguiente sale a su hora aunque el anterior no haya respondido (un teléfono no espera a location).
     void (async () => {
-      await esperar(Math.floor((i * Math.min(pingCadaMs, 1000)) / choferes.length));
-      while (vivo) {
+      const inicio = Date.now() + Math.floor((i * pingCadaMs) / choferes.length);
+      for (let k = 0; vivo; k++) {
+        await esperar(Math.max(0, inicio + k * pingCadaMs - Date.now()));
+        if (!vivo) break;
         estadisticas.pings_enviados += 1;
-        try {
-          const r = await pedir('POST', `${location}/ubicaciones`, chofer.token, posicion);
-          if (r.estado === 204) estadisticas.pings_ok += 1;
-          else estadisticas.pings_fallidos += 1;
-        } catch {
-          estadisticas.pings_fallidos += 1;
-        }
-        await esperar(pingCadaMs);
+        estadisticas.pings_en_vuelo += 1;
+        pedir('POST', `${location}/ubicaciones`, chofer.token, posicion)
+          .then((r) => {
+            if (r.estado === 204) {
+              estadisticas.pings_ok += 1;
+              okPorChofer[i] += 1;
+            } else estadisticas.pings_fallidos += 1;
+          })
+          .catch(() => {
+            estadisticas.pings_fallidos += 1;
+          })
+          .finally(() => {
+            estadisticas.pings_en_vuelo -= 1;
+          });
       }
     })();
 
@@ -261,6 +291,17 @@ export function arrancarChoferes({ dispatch, location, choferes, origen, radioM 
   choferes.forEach(uno);
   return {
     estadisticas,
+    /**
+     * Foto de los pings para medir una ventana: `ventanaPings(antes, despues, segundos)` da los
+     * enviados y aceptados por location (204) en ella, por segundo, y cuántos choferes tuvieron al
+     * menos un ping aceptado.
+     */
+    fotoPings: () => ({
+      enviados: estadisticas.pings_enviados,
+      ok: estadisticas.pings_ok,
+      fallidos: estadisticas.pings_fallidos,
+      porChofer: [...okPorChofer],
+    }),
     conectados: () => Math.min(conectados, choferes.length),
     parar: () => {
       vivo = false;

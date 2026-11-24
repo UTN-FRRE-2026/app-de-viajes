@@ -149,7 +149,7 @@ $companero = Start-Job -ArgumentList $carga, $secretos, $salida, $token, $Calent
 Start-Sleep -Seconds 8
 
 Paso "fondo de 6.6 en un k6 aparte: 250 pings/s y 20 búsquedas/s durante $duracionS s"
-$fondo = Start-Job -ArgumentList $carga, $secretos, (Join-Path $salida 'fondo'), $token, $CalentamientoS, ($duracionS - $CalentamientoS + 15), $k6 -ScriptBlock {
+$fondo = Start-Job -ArgumentList $carga, $secretos, (Join-Path $salida 'fondo'), $token, $CalentamientoS, ($duracionS - $CalentamientoS + 45), $k6 -ScriptBlock {
   param($carga, $secretos, $salidaFondo, $token, $cal, $medicion, $imagen)
   $env:TOKEN_SERVICIO = $token
   docker run --rm --network viajes-carga_default `

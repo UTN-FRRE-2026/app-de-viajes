@@ -60,7 +60,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File carga/medir.ps1 -Estrategia 
   - **los pasajeros:** 20, distintos (`-Pasajeros`);
   - **los choferes de prueba:** 40 aptos (`-ChoferesAptos`) y 10 no aptos (4 inactivos, 3 no disponibles y 3 de una flota que no opera en Córdoba).
   - **Dónde:** todos en Córdoba, lejos de los 500 choferes de k6 (Buenos Aires).
-  - **Su posición:** cada chofer de prueba la informa cada 10 s. Son **pings extra**, que se cuentan aparte del fondo de 250 pings/s.
+  - **Su posición:** cada chofer de prueba la informa **cada 2 s**, como los choferes de k6: a tasa fija, sin esperar la respuesta, y con las fases repartidas en el intervalo, así no salen en ráfagas. Son **pings extra** (unos 25/s con 50 choferes y 155/s con 310), que se cuentan aparte del fondo de 250 pings/s. El resumen dice, para la ventana, cuántos choferes de prueba estuvieron activos, cuántos pings enviaron y cuántos les aceptó location (204), y cuántos aceptó location en total (por `/metrics`): la diferencia es el fondo.
 - **Un pasajero,** en lazo cerrado:
   1. crea el viaje;
   2. espera `TripAssigned` o `NoDriversFound` en su SSE, hasta 20 s;
@@ -102,7 +102,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File carga/estres.ps1 -Corrida 1
     2. consulta su estado cada 100 ms hasta `ASIGNADO` o `SIN_CHOFERES` (hasta 10 s);
     3. cancela si sigue activo, y lo confirma.
 - **Los choferes de prueba** (300 aptos y 10 no aptos) y las fotos de `/metrics` los hace `estres-choferes.mjs` (Node).
-- **La ventana estable:** los primeros 15 s de cada escalón son la transición, y se mide en los 45 s siguientes. Por escalón quedan los viajes previstos, los iniciados y los omitidos por k6.
+- **La ventana estable:** los primeros 15 s de cada escalón son la transición, y se mide en los 45 s siguientes. Por escalón quedan los viajes previstos, los iniciados y los omitidos por k6, y los intentos, creados y asignados por segundo.
+- **Los usuarios virtuales por escalón** tienen un tope de `tasa × 8` (máximo 250). Si cada viaje tarda más de unos 8 s, k6 no llega a la tasa y **omite** viajes: por eso los omitidos cuentan como degradación.
+- **El cierre:** el último escalón espera hasta 40 s a que terminen los viajes en vuelo (`gracefulStop`), así cada uno se resuelve y se cancela, y no quedan viajes activos.
 - **Los criterios de degradación** son umbrales de k6 que **no cortan la corrida**. Si se incumplen, k6 termina con 99, y `estres.ps1` lo registra como resultado.
 - **Qué deja,** en `docs/mediciones/<fecha>/estres-<corrida>/`:
   - `etapas-k6.json`: el cliente, por escalón;

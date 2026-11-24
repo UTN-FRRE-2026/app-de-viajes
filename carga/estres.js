@@ -66,7 +66,9 @@ ETAPAS.forEach((tasa, i) => {
     preAllocatedVUs: Math.max(2, tasa * 2),
     maxVUs: maxVus(tasa),
     exec: 'viaje',
-    gracefulStop: '15s',
+    // El último escalón no tiene uno siguiente que lo pise: se le da tiempo a cada viaje en vuelo para
+    // resolverse y cancelarse (crear, hasta 10 s de espera y cancelar), así no quedan viajes activos.
+    gracefulStop: i === ETAPAS.length - 1 ? '40s' : '15s',
     tags: { etapa: String(i + 1), tasa: String(tasa) },
   };
 });

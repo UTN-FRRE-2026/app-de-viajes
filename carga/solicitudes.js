@@ -13,7 +13,7 @@
 // (sin tokens) y fotos de /metrics de dispatch y de location al empezar y al terminar la ventana.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { setTimeout as esperar } from 'node:timers/promises';
-import { arrancarChoferes, conClave, escucharSse, pedir } from './lib/choferes.mjs';
+import { arrancarChoferes, conClave, escucharSse, pedir, ventanaPings } from './lib/choferes.mjs';
 import { leerMetricas, memoriaMb, percentiles, serie, sumaSerie, ventanaHistograma } from './lib/metricas.mjs';
 
 const DISPATCH = process.env.DISPATCH_URL ?? 'http://dispatch:3005';
@@ -175,7 +175,7 @@ async function main() {
   const [dAntes, lAntes] = [await leerMetricas(DISPATCH, TOKEN_METRICAS), await leerMetricas(LOCATION, TOKEN_METRICAS)];
   writeFileSync(`${SALIDA}/metrics-dispatch-antes.txt`, dAntes);
   writeFileSync(`${SALIDA}/metrics-location-antes.txt`, lAntes);
-  const pingsChoferesAntes = ch.estadisticas.pings_enviados;
+  const pingsAntes = ch.fotoPings();
   const ventanaInicio = iso();
   const tInicio = ahora();
   const fin = tInicio + MEDICION_S * 1000 - MARGEN_INICIO_MS - MARGEN_FIN_MS;
@@ -186,8 +186,12 @@ async function main() {
   const [dDespues, lDespues] = [await leerMetricas(DISPATCH, TOKEN_METRICAS), await leerMetricas(LOCATION, TOKEN_METRICAS)];
   writeFileSync(`${SALIDA}/metrics-dispatch.txt`, dDespues);
   writeFileSync(`${SALIDA}/metrics-location-despues.txt`, lDespues);
-  const pingsChoferes = ch.estadisticas.pings_enviados - pingsChoferesAntes;
+  const pingsDespues = ch.fotoPings();
   ch.parar();
+  const pingsChoferes = ventanaPings(pingsAntes, pingsDespues, ventanaS);
+  // Lo que location aceptó en la ventana: el fondo de k6 más los choferes de prueba.
+  const deltaL = (...f) => sumaSerie(lDespues, 'http_request_duration_seconds_count', 'metodo="POST"', 'ruta="/ubicaciones"', ...f) - sumaSerie(lAntes, 'http_request_duration_seconds_count', 'metodo="POST"', 'ruta="/ubicaciones"', ...f);
+  const location204 = deltaL('estado="204"');
 
   const contar = (r) => global.filas.filter((f) => f.resultado === r).length;
   const delta = (nombre, ...f) => sumaSerie(dDespues, nombre, ...f) - sumaSerie(dAntes, nombre, ...f);
@@ -198,6 +202,11 @@ async function main() {
     k6Detectado,
     ventana: { inicio: ventanaInicio, fin: ventanaFin, segundos: Math.round(ventanaS), calentamiento_s: CALENTAMIENTO_S, medicion_s: MEDICION_S },
     iteraciones,
+    // Intentos: cada POST /solicitudes. Creados: los que respondieron 201. Asignados: los que llegaron a TripAssigned.
+    intentos: iteraciones,
+    intentos_por_s: Number((iteraciones / ventanaS).toFixed(2)),
+    creados: global.filas.filter((f) => f.solicitudId).length,
+    creados_por_s: Number((global.filas.filter((f) => f.solicitudId).length / ventanaS).toFixed(2)),
     solicitudes_por_s: Number((iteraciones / ventanaS).toFixed(2)),
     asignadas: contar('asignada'),
     asignadas_por_s: Number((contar('asignada') / ventanaS).toFixed(2)),
@@ -225,7 +234,18 @@ async function main() {
         location: { inicio: memoriaMb(lAntes), fin: memoriaMb(lDespues) },
       },
     },
-    choferes_prueba: { ...ch.estadisticas, pings_en_la_ventana: pingsChoferes, pings_por_s_en_la_ventana: Number((pingsChoferes / ventanaS).toFixed(1)) },
+    choferes_prueba: {
+      ...ch.estadisticas,
+      ventana: pingsChoferes,
+      pings_en_la_ventana: pingsChoferes.enviados,
+      pings_por_s_en_la_ventana: pingsChoferes.enviados_por_s,
+    },
+    location_pings_ventana: {
+      aceptados_204: location204,
+      otros_estados: deltaL() - location204,
+      aceptados_por_s: Number((location204 / ventanaS).toFixed(1)),
+      fondo_aceptados_por_s: Number(((location204 - pingsChoferes.aceptados_por_location) / ventanaS).toFixed(1)),
+    },
   };
   writeFileSync(`${SALIDA}/solicitudes.json`, JSON.stringify({ resumen, filas: global.filas }, null, 2));
   log('resumen:', JSON.stringify(resumen));

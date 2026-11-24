@@ -1,0 +1,407 @@
+{
+    "ganador":  "00000000-0000-4000-8000-c00000000014",
+    "totalLoteMs":  680,
+    "sumaDuracionesMs":  22668,
+    "filas":  [
+                  {
+                      "ofertaId":  "4d9110f3-8337-4082-a775-d86ef9bafad8",
+                      "choferId":  "00000000-0000-4000-8000-c00000000001",
+                      "estado":  409,
+                      "codigo":  "SOLICITUD_NO_DISPONIBLE",
+                      "choferAsignado":  null,
+                      "duracionMs":  507
+                  },
+                  {
+                      "ofertaId":  "255ceb31-aff5-4bf4-85c1-739c4a7f16c0",
+                      "choferId":  "00000000-0000-4000-8000-c00000000002",
+                      "estado":  409,
+                      "codigo":  "SOLICITUD_NO_DISPONIBLE",
+                      "choferAsignado":  null,
+                      "duracionMs":  499
+                  },
+                  {
+                      "ofertaId":  "a0db6626-f576-4b9d-85b7-f5f2704eb06d",
+                      "choferId":  "00000000-0000-4000-8000-c00000000003",
+                      "estado":  409,
+                      "codigo":  "SOLICITUD_NO_DISPONIBLE",
+                      "choferAsignado":  null,
+                      "duracionMs":  503
+                  },
+                  {
+                      "ofertaId":  "12d39fa8-d587-4bfd-9980-afb9e5c0d56f",
+                      "choferId":  "00000000-0000-4000-8000-c00000000004",
+                      "estado":  409,
+                      "codigo":  "SOLICITUD_NO_DISPONIBLE",
+                      "choferAsignado":  null,
+                      "duracionMs":  532
+                  },
+                  {
+                      "ofertaId":  "b8ea33b5-290b-42b0-a712-430e18441748",
+                      "choferId":  "00000000-0000-4000-8000-c00000000005",
+                      "estado":  409,
+                      "codigo":  "SOLICITUD_NO_DISPONIBLE",
+                      "choferAsignado":  null,
+                      "duracionMs":  511
+                  },
+                  {
+                      "ofertaId":  "d226099a-95e6-40f2-be82-b528cb89bf81",
+                      "choferId":  "00000000-0000-4000-8000-c00000000006",
+                      "estado":  409,
+                      "codigo":  "SOLICITUD_NO_DISPONIBLE",
+                      "choferAsignado":  null,
+                      "duracionMs":  196
+                  },
+                  {
+                      "ofertaId":  "00f0d7d7-5ff5-4457-972f-57d991b5d84e",
+                      "choferId":  "00000000-0000-4000-8000-c00000000007",
+                      "estado":  409,
+                      "codigo":  "SOLICITUD_NO_DISPONIBLE",
+                      "choferAsignado":  null,
+                      "duracionMs":  388
+                  },
+                  {
+                      "ofertaId":  "1c633842-3f67-49e1-8770-51b40714094b",
+                      "choferId":  "00000000-0000-4000-8000-c00000000008",
+                      "estado":  409,
+                      "codigo":  "SOLICITUD_NO_DISPONIBLE",
+                      "choferAsignado":  null,
+                      "duracionMs":  320
+                  },
+                  {
+                      "ofertaId":  "32ad05ed-2b87-4e1b-a371-903250c526fe",
+                      "choferId":  "00000000-0000-4000-8000-c00000000009",
+                      "estado":  409,
+                      "codigo":  "SOLICITUD_NO_DISPONIBLE",
+                      "choferAsignado":  null,
+                      "duracionMs":  676
+                  },
+                  {
+                      "ofertaId":  "b47f8f48-d71e-4ab7-b0b7-1b208c0abfe3",
+                      "choferId":  "00000000-0000-4000-8000-c0000000000a",
+                      "estado":  409,
+                      "codigo":  "SOLICITUD_NO_DISPONIBLE",
+                      "choferAsignado":  null,
+                      "duracionMs":  381
+                  },
+                  {
+                      "ofertaId":  "5a6b5357-16f9-449b-ba55-12dc0e661e9c",
+                      "choferId":  "00000000-0000-4000-8000-c0000000000b",
+                      "estado":  409,
+                      "codigo":  "SOLICITUD_NO_DISPONIBLE",
+                      "choferAsignado":  null,
+                      "duracionMs":  488
+                  },
+                  {
+                      "ofertaId":  "2012430b-9663-4f96-8097-1c23cf6a14ef",
+                      "choferId":  "00000000-0000-4000-8000-c0000000000c",
+                      "estado":  409,
+                      "codigo":  "SOLICITUD_NO_DISPONIBLE",
+                      "choferAsignado":  null,
+                      "duracionMs":  604
+                  },
+                  {
+                      "ofertaId":  "3a130199-66c3-4cc4-8d31-d210bc00a45a",
+                      "choferId":  "00000000-0000-4000-8000-c0000000000d",
+                      "estado":  409,
+                      "codigo":  "SOLICITUD_NO_DISPONIBLE",
+                      "choferAsignado":  null,
+                      "duracionMs":  528
+                  },
+                  {
+                      "ofertaId":  "226d456c-8c2c-4b9d-9df0-e0a61599e200",
+                      "choferId":  "00000000-0000-4000-8000-c0000000000e",
+                      "estado":  409,
+                      "codigo":  "SOLICITUD_NO_DISPONIBLE",
+                      "choferAsignado":  null,
+                      "duracionMs":  518
+                  },
+                  {
+                      "ofertaId":  "42ce4724-213b-4904-b88a-32ec4199ab30",
+                      "choferId":  "00000000-0000-4000-8000-c0000000000f",
+                      "estado":  409,
+                      "codigo":  "SOLICITUD_NO_DISPONIBLE",
+                      "choferAsignado":  null,
+                      "duracionMs":  249
+                  },
+                  {
+                      "ofertaId":  "4964285a-fab8-48fe-b0ce-e09230db489e",
+                      "choferId":  "00000000-0000-4000-8000-c00000000010",
+                      "estado":  409,
+                      "codigo":  "SOLICITUD_NO_DISPONIBLE",
+                      "choferAsignado":  null,
+                      "duracionMs":  674
+                  },
+                  {
+                      "ofertaId":  "1b493c2a-4057-41de-8dd4-011c7631810a",
+                      "choferId":  "00000000-0000-4000-8000-c00000000011",
+                      "estado":  409,
+                      "codigo":  "SOLICITUD_NO_DISPONIBLE",
+                      "choferAsignado":  null,
+                      "duracionMs":  234
+                  },
+                  {
+                      "ofertaId":  "c04ede4e-e0a7-48e1-ab5b-f986aa9e9357",
+                      "choferId":  "00000000-0000-4000-8000-c00000000012",
+                      "estado":  409,
+                      "codigo":  "SOLICITUD_NO_DISPONIBLE",
+                      "choferAsignado":  null,
+                      "duracionMs":  327
+                  },
+                  {
+                      "ofertaId":  "4b8b1a1d-0341-4570-8b28-3b961b4736d7",
+                      "choferId":  "00000000-0000-4000-8000-c00000000013",
+                      "estado":  409,
+                      "codigo":  "SOLICITUD_NO_DISPONIBLE",
+                      "choferAsignado":  null,
+                      "duracionMs":  588
+                  },
+                  {
+                      "ofertaId":  "59a0b9ea-660b-408c-8ff0-a3dd9842ea8e",
+                      "choferId":  "00000000-0000-4000-8000-c00000000014",
+                      "estado":  200,
+                      "codigo":  null,
+                      "choferAsignado":  "00000000-0000-4000-8000-c00000000014",
+                      "duracionMs":  180
+                  },
+                  {
+                      "ofertaId":  "a4bdcdc9-be51-48a8-9271-6d9990a46faf",
+                      "choferId":  "00000000-0000-4000-8000-c00000000015",
+                      "estado":  409,
+                      "codigo":  "SOLICITUD_NO_DISPONIBLE",
+                      "choferAsignado":  null,
+                      "duracionMs":  597
+                  },
+                  {
+                      "ofertaId":  "a0c6e38a-50a0-4936-8a91-27fd410877ed",
+                      "choferId":  "00000000-0000-4000-8000-c00000000016",
+                      "estado":  409,
+                      "codigo":  "SOLICITUD_NO_DISPONIBLE",
+                      "choferAsignado":  null,
+                      "duracionMs":  582
+                  },
+                  {
+                      "ofertaId":  "40aea1e6-b6a5-4290-8ad6-8f297ae82dd2",
+                      "choferId":  "00000000-0000-4000-8000-c00000000017",
+                      "estado":  409,
+                      "codigo":  "SOLICITUD_NO_DISPONIBLE",
+                      "choferAsignado":  null,
+                      "duracionMs":  537
+                  },
+                  {
+                      "ofertaId":  "672f2231-a508-45b9-93c3-2cf6a893b344",
+                      "choferId":  "00000000-0000-4000-8000-c00000000018",
+                      "estado":  409,
+                      "codigo":  "SOLICITUD_NO_DISPONIBLE",
+                      "choferAsignado":  null,
+                      "duracionMs":  416
+                  },
+                  {
+                      "ofertaId":  "6e385c97-524b-4eeb-b25a-1068c95ce072",
+                      "choferId":  "00000000-0000-4000-8000-c00000000019",
+                      "estado":  409,
+                      "codigo":  "SOLICITUD_NO_DISPONIBLE",
+                      "choferAsignado":  null,
+                      "duracionMs":  524
+                  },
+                  {
+                      "ofertaId":  "802b676d-e941-4c4a-b30d-5a013715626f",
+                      "choferId":  "00000000-0000-4000-8000-c0000000001a",
+                      "estado":  409,
+                      "codigo":  "SOLICITUD_NO_DISPONIBLE",
+                      "choferAsignado":  null,
+                      "duracionMs":  314
+                  },
+                  {
+                      "ofertaId":  "763b18ad-cc35-4605-abb9-d465069c03f2",
+                      "choferId":  "00000000-0000-4000-8000-c0000000001b",
+                      "estado":  409,
+                      "codigo":  "SOLICITUD_NO_DISPONIBLE",
+                      "choferAsignado":  null,
+                      "duracionMs":  282
+                  },
+                  {
+                      "ofertaId":  "d3192e8b-4854-4012-97c1-f7195fd39914",
+                      "choferId":  "00000000-0000-4000-8000-c0000000001c",
+                      "estado":  409,
+                      "codigo":  "SOLICITUD_NO_DISPONIBLE",
+                      "choferAsignado":  null,
+                      "duracionMs":  304
+                  },
+                  {
+                      "ofertaId":  "d1c58466-a9c4-4672-b0be-c37651732684",
+                      "choferId":  "00000000-0000-4000-8000-c0000000001d",
+                      "estado":  409,
+                      "codigo":  "SOLICITUD_NO_DISPONIBLE",
+                      "choferAsignado":  null,
+                      "duracionMs":  258
+                  },
+                  {
+                      "ofertaId":  "ee7d0f3f-248e-4114-a20b-ba65d3315906",
+                      "choferId":  "00000000-0000-4000-8000-c0000000001e",
+                      "estado":  409,
+                      "codigo":  "SOLICITUD_NO_DISPONIBLE",
+                      "choferAsignado":  null,
+                      "duracionMs":  492
+                  },
+                  {
+                      "ofertaId":  "39dd853f-b88a-4bbb-9e8c-072e2e1941b8",
+                      "choferId":  "00000000-0000-4000-8000-c0000000001f",
+                      "estado":  409,
+                      "codigo":  "SOLICITUD_NO_DISPONIBLE",
+                      "choferAsignado":  null,
+                      "duracionMs":  423
+                  },
+                  {
+                      "ofertaId":  "a4c67f1f-c33d-43fd-9c1b-2bc5170af326",
+                      "choferId":  "00000000-0000-4000-8000-c00000000020",
+                      "estado":  409,
+                      "codigo":  "SOLICITUD_NO_DISPONIBLE",
+                      "choferAsignado":  null,
+                      "duracionMs":  494
+                  },
+                  {
+                      "ofertaId":  "017741f1-db8a-4968-bfa0-dd0819c04c3e",
+                      "choferId":  "00000000-0000-4000-8000-c00000000021",
+                      "estado":  409,
+                      "codigo":  "SOLICITUD_NO_DISPONIBLE",
+                      "choferAsignado":  null,
+                      "duracionMs":  480
+                  },
+                  {
+                      "ofertaId":  "15b12ca0-b623-4c4b-99a1-bf899f66b354",
+                      "choferId":  "00000000-0000-4000-8000-c00000000022",
+                      "estado":  409,
+                      "codigo":  "SOLICITUD_NO_DISPONIBLE",
+                      "choferAsignado":  null,
+                      "duracionMs":  273
+                  },
+                  {
+                      "ofertaId":  "2a437f22-c382-482d-ab79-7e6c11966f6d",
+                      "choferId":  "00000000-0000-4000-8000-c00000000023",
+                      "estado":  409,
+                      "codigo":  "SOLICITUD_NO_DISPONIBLE",
+                      "choferAsignado":  null,
+                      "duracionMs":  266
+                  },
+                  {
+                      "ofertaId":  "c1c4f714-c2b5-451a-be31-0234122e409b",
+                      "choferId":  "00000000-0000-4000-8000-c00000000024",
+                      "estado":  409,
+                      "codigo":  "SOLICITUD_NO_DISPONIBLE",
+                      "choferAsignado":  null,
+                      "duracionMs":  593
+                  },
+                  {
+                      "ofertaId":  "0d6f8d1d-902a-432a-9de3-9685234e2e2c",
+                      "choferId":  "00000000-0000-4000-8000-c00000000025",
+                      "estado":  409,
+                      "codigo":  "SOLICITUD_NO_DISPONIBLE",
+                      "choferAsignado":  null,
+                      "duracionMs":  432
+                  },
+                  {
+                      "ofertaId":  "978e185b-7be4-4603-853a-100372d70e0a",
+                      "choferId":  "00000000-0000-4000-8000-c00000000026",
+                      "estado":  409,
+                      "codigo":  "SOLICITUD_NO_DISPONIBLE",
+                      "choferAsignado":  null,
+                      "duracionMs":  586
+                  },
+                  {
+                      "ofertaId":  "7c9c29e3-9cb2-446f-922a-1bebebb98dcd",
+                      "choferId":  "00000000-0000-4000-8000-c00000000027",
+                      "estado":  409,
+                      "codigo":  "SOLICITUD_NO_DISPONIBLE",
+                      "choferAsignado":  null,
+                      "duracionMs":  409
+                  },
+                  {
+                      "ofertaId":  "fa537243-89f6-4ca7-b294-68571385539c",
+                      "choferId":  "00000000-0000-4000-8000-c00000000028",
+                      "estado":  409,
+                      "codigo":  "SOLICITUD_NO_DISPONIBLE",
+                      "choferAsignado":  null,
+                      "duracionMs":  521
+                  },
+                  {
+                      "ofertaId":  "e00255ee-3411-451c-b506-12243a45bbe9",
+                      "choferId":  "00000000-0000-4000-8000-c00000000029",
+                      "estado":  409,
+                      "codigo":  "SOLICITUD_NO_DISPONIBLE",
+                      "choferAsignado":  null,
+                      "duracionMs":  396
+                  },
+                  {
+                      "ofertaId":  "b9706776-0f65-48d2-aa28-875f9351bee6",
+                      "choferId":  "00000000-0000-4000-8000-c0000000002a",
+                      "estado":  409,
+                      "codigo":  "SOLICITUD_NO_DISPONIBLE",
+                      "choferAsignado":  null,
+                      "duracionMs":  576
+                  },
+                  {
+                      "ofertaId":  "2bbe6cb3-8da4-421a-87d2-04c1a2ad8dbb",
+                      "choferId":  "00000000-0000-4000-8000-c0000000002b",
+                      "estado":  409,
+                      "codigo":  "SOLICITUD_NO_DISPONIBLE",
+                      "choferAsignado":  null,
+                      "duracionMs":  295
+                  },
+                  {
+                      "ofertaId":  "c83975eb-acb4-4b50-9570-59ae336e939b",
+                      "choferId":  "00000000-0000-4000-8000-c0000000002c",
+                      "estado":  409,
+                      "codigo":  "SOLICITUD_NO_DISPONIBLE",
+                      "choferAsignado":  null,
+                      "duracionMs":  483
+                  },
+                  {
+                      "ofertaId":  "27323d62-8b67-44b0-ad97-4ed62730c4ce",
+                      "choferId":  "00000000-0000-4000-8000-c0000000002d",
+                      "estado":  409,
+                      "codigo":  "SOLICITUD_NO_DISPONIBLE",
+                      "choferAsignado":  null,
+                      "duracionMs":  333
+                  },
+                  {
+                      "ofertaId":  "4c177db3-0b8a-46a5-bf6a-27fcd8d83749",
+                      "choferId":  "00000000-0000-4000-8000-c0000000002e",
+                      "estado":  409,
+                      "codigo":  "SOLICITUD_NO_DISPONIBLE",
+                      "choferAsignado":  null,
+                      "duracionMs":  580
+                  },
+                  {
+                      "ofertaId":  "1173771a-0555-4f88-9eb7-5bd97e43dd4b",
+                      "choferId":  "00000000-0000-4000-8000-c0000000002f",
+                      "estado":  409,
+                      "codigo":  "SOLICITUD_NO_DISPONIBLE",
+                      "choferAsignado":  null,
+                      "duracionMs":  515
+                  },
+                  {
+                      "ofertaId":  "9dbefd84-2c1f-4ef4-8826-c396808fe116",
+                      "choferId":  "00000000-0000-4000-8000-c00000000030",
+                      "estado":  409,
+                      "codigo":  "SOLICITUD_NO_DISPONIBLE",
+                      "choferAsignado":  null,
+                      "duracionMs":  591
+                  },
+                  {
+                      "ofertaId":  "cb1afa9b-fb9e-435b-a9e0-4c45312a4be0",
+                      "choferId":  "00000000-0000-4000-8000-c00000000031",
+                      "estado":  409,
+                      "codigo":  "SOLICITUD_NO_DISPONIBLE",
+                      "choferAsignado":  null,
+                      "duracionMs":  600
+                  },
+                  {
+                      "ofertaId":  "76003513-7936-40c4-9302-604b76878836",
+                      "choferId":  "00000000-0000-4000-8000-c00000000032",
+                      "estado":  409,
+                      "codigo":  "SOLICITUD_NO_DISPONIBLE",
+                      "choferAsignado":  null,
+                      "duracionMs":  613
+                  }
+              ]
+}

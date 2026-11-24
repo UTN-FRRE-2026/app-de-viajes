@@ -1,0 +1,61 @@
+{
+  "calentamiento_s": 10,
+  "etapa_s": 20,
+  "transicion_s": 5,
+  "etapas": [
+    {
+      "etapa": 1,
+      "tasa": 1,
+      "previstos_etapa": 20,
+      "previstos_ventana_estable": 15,
+      "iniciados_ventana_estable": 16,
+      "omitidos_por_k6_etapa": 0,
+      "creados": 16,
+      "asignados": 16,
+      "sin_choferes": 0,
+      "sin_resolver": 0,
+      "ubicacion_503": 0,
+      "errores": 0,
+      "viajes_por_s": 1.07,
+      "crear_ms": {
+        "p50": 54.417999,
+        "p95": 115.07868625,
+        "p99": 160.76197404999996,
+        "max": 172.182796
+      },
+      "hasta_asignacion_ms": {
+        "p50": 164,
+        "p95": 297,
+        "p99": 347.4,
+        "max": 360
+      }
+    },
+    {
+      "etapa": 2,
+      "tasa": 4,
+      "previstos_etapa": 80,
+      "previstos_ventana_estable": 60,
+      "iniciados_ventana_estable": 60,
+      "omitidos_por_k6_etapa": 0,
+      "creados": 60,
+      "asignados": 60,
+      "sin_choferes": 0,
+      "sin_resolver": 0,
+      "ubicacion_503": 0,
+      "errores": 0,
+      "viajes_por_s": 4,
+      "crear_ms": {
+        "p50": 73.83948749999999,
+        "p95": 134.71175614999999,
+        "p99": 180.5100762199998,
+        "max": 216.48305
+      },
+      "hasta_asignacion_ms": {
+        "p50": 272,
+        "p95": 320.2,
+        "p99": 361.9399999999999,
+        "max": 382
+      }
+    }
+  ]
+}
