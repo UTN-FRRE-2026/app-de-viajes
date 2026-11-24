@@ -43,10 +43,10 @@ Cada integrante es **dueño** de un problema central y de los módulos que lo ro
 
 **Fase B**
 - [ ] Zonas (PostGIS), zonas habilitadas por flota y filtro en dispatch de los candidatos que devuelve location, por flota y zona (con Ivan).
-- [ ] Aislamiento por `fleetId` en el caso de uso (404 a otra flota, con test) y reporte por flota. Hecho: el aislamiento. Falta: el reporte.
+- [ ] Aislamiento por `fleetId` en el caso de uso (404 a otra flota, con test) y reporte por flota. Hecho: el aislamiento, y los activos del reporte (el cupo, en el panel). Falta: viajes y facturación del reporte, que necesitan guardar la flota en el viaje ([docs/flotas.md](flotas.md#lo-que-sigue-pr-2-de-flotas)).
 - [ ] En `platform`, para los tres servicios: helmet, CORS restringido, rate limit genérico con 429 y encabezados, validación de encabezados y log por pedido.
 - [ ] Tests del bloque 5 que faltan: `constructor.prototype` y claves anidadas, inyección SQL en la búsqueda, rate limit en solicitud y ubicación, acceso a recursos ajenos en cada módulo.
-- [ ] Frontend: proyecto base (Vite, router, stores, cliente HTTP, componente de errores), login y pantallas de admin de flota. Hecho: la base y el login ([docs/web.md](web.md#el-frontend-appsweb)). Falta: las pantallas de admin de flota.
+- [ ] Frontend: proyecto base (Vite, router, stores, cliente HTTP, componente de errores), login y pantallas de admin de flota. Hecho: la base y el login ([docs/web.md](web.md#el-frontend-appsweb)), y el panel del admin de flota ([docs/web.md](web.md#el-panel-de-la-flota-flota)): cupo, lista, alta, activar y desactivar.
 - [x] identity: logout y revocación. Lo hizo Maxi (#5).
 - [x] Tarifas, PR 2: configuración por el admin (`GET` y `PUT /admin/tarifas`), tarifa global versionada con auditoría, semilla desde el entorno y caché en Redis. Lo tomó del reparto de Maxi ([docs/tarifas.md](tarifas.md)).
 - [ ] Tabla de roles y permisos en el README.

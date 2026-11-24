@@ -145,7 +145,7 @@ Vive en identity porque todavía no hay gateway. Corre después de validar el bo
 
 ## Usuarios de prueba
 
-`npm run local -- identity seed` carga uno por rol. Es idempotente, usa UUID fijos y se niega a correr con `NODE_ENV=production`. La contraseña es `IDENTITY_SEED_CONTRASENA` del `.env`, solo para desarrollo.
+`npm run local -- identity seed` carga uno por rol, y dos `admin_flota` de flotas distintas. Es idempotente, usa UUID fijos y se niega a correr con `NODE_ENV=production`. La contraseña es `IDENTITY_SEED_CONTRASENA` del `.env`, solo para desarrollo.
 
 | Email | Rol | id |
 |---|---|---|
@@ -154,6 +154,7 @@ Vive en identity porque todavía no hay gateway. Corre después de validar el bo
 | `operador@viajes.test` | `operador` | `00000000-0000-4000-8000-000000000003` |
 | `admin@viajes.test` | `admin` | `00000000-0000-4000-8000-000000000004` |
 | `admin.flota@viajes.test` | `admin_flota` (fleetId `00000000-0000-4000-8000-0000000000f1`) | `00000000-0000-4000-8000-000000000005` |
+| `admin.flota2@viajes.test` | `admin_flota` (fleetId `00000000-0000-4000-8000-0000000000f2`): otra flota, para probar el aislamiento | `00000000-0000-4000-8000-000000000006` |
 
 ## Levantarlo desde PowerShell
 
