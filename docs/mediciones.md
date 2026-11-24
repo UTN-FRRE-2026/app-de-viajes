@@ -190,3 +190,78 @@ La máquina era la misma y no se lanzó otra carga a propósito. Pero es un Wind
 | Lote | Las 50 aceptaciones salieron en un solo `http.batch`: 890 ms en total contra 28,8 s de suma de duraciones, así que corrieron superpuestas |
 
 **Límite:** el test fuerza la superposición con una demora dentro de la transacción, y acá no. El resultado no depende de eso: con o sin superposición tiene que ser 1×200 y 49×409.
+
+## Solicitudes de viaje bajo carga y estrés (6.6, k6)
+
+### Hipótesis y umbrales
+
+Escritas el 24/11/2026, **antes** de cualquier corrida de estos escenarios (incluidas las pruebas cortas), y commiteadas antes de correr. Los números del piloto del 22/11 no cuentan: eran un solo viaje por vez y sin el filtro de flotas y zonas.
+
+**Qué cambió desde el piloto:**
+- dispatch filtra los candidatos por flota, zona y disponibilidad, con lotes crecientes (PR #36);
+- los viajes van en paralelo, con pasajeros y choferes distintos;
+- hay competencia: cada viaje se ofrece a 3 choferes, y los que pierden reciben 409.
+
+**Dato que condiciona HS2:** dispatch corta la búsqueda en location a **1 s** (`LOCATION_TIMEOUT_MS`), y el 19/11 la búsqueda de la ingenua dio 4,6 s de p95 con esta misma carga.
+
+#### Escenario A: solicitudes bajo la carga de 6.6 (ingenua frente a optimizada)
+
+**La carga** es la de 6.6, igual que el 19/11: 250 pings/s de los 500 choferes de k6 (el **fondo**), 20 búsquedas/s y `/health`. Además corren:
+- **20 pasajeros en paralelo,** en lazo cerrado:
+  1. crean el viaje;
+  2. esperan `TripAssigned` o `NoDriversFound` en su SSE, hasta 20 s;
+  3. lo dejan asignado 1 s;
+  4. cancelan;
+  5. esperan 1 s y repiten.
+- **50 choferes de prueba en Córdoba:**
+  - 40 aptos y 10 **no aptos**: 4 inactivos, 3 no disponibles y 3 de una flota que no opera en Córdoba;
+  - aceptan enseguida la primera oferta mientras están libres;
+  - informan su posición cada 10 s. Son unos **5 pings/s extra**, que se cuentan aparte del fondo.
+
+**El método:** 30 s de calentamiento y 300 s de medición. **Tres corridas por estrategia, alternadas.**
+
+| # | Hipótesis | Número |
+|---|---|---|
+| HS1 | La optimizada asigna rápido aun con el fondo de 250 pings/s | Tiempo hasta la asignación en el cliente (del `POST` a `TripAssigned`): p95 **≤ 1 s**, p99 **≤ 2 s**. `POST /solicitudes`: p95 **≤ 300 ms**. Errores (5xx, red y 4xx inesperados) **< 1 %** |
+| HS2 | La ingenua no llega: su búsqueda pasa el timeout de 1 s, y la solicitud **falla cerrado** | **Más del 50 %** de los `POST /solicitudes` con 503 `UBICACION_NO_DISPONIBLE`. Las que entran tardan más de 1 s. Ninguna queda a medias |
+| HS3 | El filtro y la competencia no rompen la corrección | 0 ofertas y 0 asignaciones a los no aptos. Cada viaje asignado tiene un solo chofer. Al final, 0 viajes activos. Todo viaje creado tiene la zona Córdoba, y todo viaje asignado tiene `fleet_id` |
+| HS4 | dispatch no traba su event loop | Lag de la ventana de medición: p99 **< 20 ms** en las dos estrategias. CPU de dispatch: promedio **< 60 %** de 1 CPU |
+
+#### Escenario B: rampa de estrés, por escalones (`carga/estres.js`)
+
+**La carga:**
+- **El fondo:** los mismos 250 pings/s y 20 búsquedas/s de 6.6 (`ubicaciones.js`), en **un k6 aparte**, así sus usuarios virtuales no se mezclan con los de los pasajeros.
+- **Los pasajeros:** k6 crea viajes en modelo abierto, con un escalón por tasa.
+  - Las tasas son **1, 2, 4, 8, 16 y 32 viajes/s**, durante 60 s cada una, después de 30 s de calentamiento a 1 viaje/s.
+  - Cada usuario virtual es un pasajero distinto: nunca tiene dos viajes activos.
+  - Si un viaje no se resuelve en 10 s, se consulta su estado y se cancela si sigue activo, antes de volver a usar ese pasajero.
+- **Los choferes de prueba:** 300 aptos y los 10 no aptos, que aceptan enseguida e informan su posición cada 10 s. Son unos **31 pings/s extra**, que se cuentan aparte del fondo.
+- **Location:** optimizada.
+
+**La ventana estable de cada escalón:** se descartan los primeros 15 s (la transición) y se mide en los **45 s restantes**. Por escalón se guardan los viajes previstos, los iniciados y los omitidos por k6.
+
+**Una etapa está degradada** si, en su ventana estable, pasa cualquiera de estas cosas:
+- `POST /solicitudes` con p95 **> 500 ms**;
+- tiempo hasta la asignación con p95 **> 2 s**;
+- errores (5xx, red o 4xx inesperados) **> 1 %**;
+- viajes omitidos por k6 **> 1 %** de los previstos;
+- viajes sin resolver en 10 s, o `NoDriversFound`, **> 1 %**. Hay choferes de sobra, así que indican que la búsqueda o la asignación fallan.
+
+**«Empieza a degradarse»** es la primera etapa degradada. Un umbral incumplido **no corta la corrida**: es justo lo que busca el estrés. La evidencia se guarda igual.
+
+**Tres corridas.**
+
+| # | Hipótesis |
+|---|---|
+| HE1 | Sostiene **hasta 8 viajes/s** sin degradarse |
+| HE2 | La degradación empieza en **16 o 32 viajes/s**, y la limita **dispatch**: 1 CPU, un pool de 10 conexiones, unas 8 transacciones por viaje y el relay del outbox cada 100 ms. No la limita location, que en la optimizada tiene margen |
+| HE3 | Antes de la primera etapa degradada, el lag p99 de dispatch en cada ventana queda **< 50 ms**. En la etapa degradada, o sube el lag, o la CPU de dispatch se acerca al 100 % |
+
+**Lo que se informa en los dos escenarios:**
+- p50, p95 y p99 en el cliente;
+- solicitudes por segundo;
+- el tiempo hasta la asignación, en el cliente y en el servidor (por cubeta);
+- el lag de dispatch de la ventana (histograma nuevo `event_loop_lag_seconds`, por cubeta);
+- la memoria (RSS) de dispatch y de location;
+- la CPU por contenedor;
+- los 409 esperados por la competencia, los viajes sin resolver y los errores, por separado.
