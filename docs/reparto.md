@@ -30,7 +30,7 @@ Cada integrante es **dueño** de un problema central y de los módulos que lo ro
 - [ ] Despliegue y tag `congelado`.
 
 **Fase C y ataque cruzado**
-- [ ] Jobs `e2e` y `sast` en el CI.
+- [x] Jobs `e2e` y `sast` en el CI ([docs/ci.md](ci.md)). Semgrep con todos los hallazgos resueltos o justificados.
 - [ ] Ataque a los otros grupos: carreras e idempotencia.
 - [ ] ADR 0011 y 0012; autoevaluación 10.6 y tag `entrega-final`.
 
@@ -52,7 +52,7 @@ Cada integrante es **dueño** de un problema central y de los módulos que lo ro
 - [ ] Tabla de roles y permisos en el README.
 
 **Fase C y ataque cruzado**
-- [ ] Playwright: los cinco flujos de la sección 5.3 del plan.
+- [x] Playwright: los cinco flujos de la sección 5.3 del plan. Los hizo Ivan, junto con el job `e2e` ([docs/ci.md](ci.md#e2e-playwright-e2e)).
 - [ ] Ataque a los otros grupos: autenticación, recursos ajenos y rate limit.
 - [ ] ADR 0007 (SSE frente a WebSocket, con Ivan) y 0009 (límite por flota). Hecho: [0007](adr/0007-tiempo-real-sse.md), lo escribió Ivan.
 

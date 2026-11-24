@@ -1,0 +1,3 @@
+# Lo que deja cada corrida de Playwright (en el CI se sube como artefacto).
+reporte/
+resultados/

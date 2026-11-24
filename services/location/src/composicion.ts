@@ -113,6 +113,7 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
     const consumidor = historial;
     iniciar = () => {
       consumidor.iniciar();
+      // nosemgrep: ajinabraham.njsscan.eval.eval_node.eval_nodejs -- setInterval con una función, no con un texto: no evalúa nada.
       purga = setInterval(() => {
         geo
           .purgarVencidos(new Date(reloj.ahora().getTime() - vigenciaMs))

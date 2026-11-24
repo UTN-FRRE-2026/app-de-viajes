@@ -2,7 +2,8 @@ import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   // apps/web entra al lint (sus .ts y .tsx): solo se ignora su build, por la regla de dist.
-  { ignores: ['**/dist/**', '**/node_modules/**', '**/generated/**'] },
+  // También lo que deja cada corrida de Playwright (e2e/reporte y e2e/resultados).
+  { ignores: ['**/dist/**', '**/node_modules/**', '**/generated/**', 'e2e/reporte/**', 'e2e/resultados/**'] },
   ...tseslint.configs.recommended,
   {
     rules: {

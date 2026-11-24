@@ -235,6 +235,7 @@ export class CerrojoMemoria implements CerrojoEnVuelo {
   }
 
   async soltar(nombre: string, token: string) {
+    // nosemgrep: ajinabraham.njsscan.crypto.timing_attack_node.node_timing_attack -- el token del cerrojo en memoria (tests y modo memoria), no una credencial: nadie de afuera lo compara.
     if (this.tomados.get(nombre)?.token === token) this.tomados.delete(nombre);
   }
 }

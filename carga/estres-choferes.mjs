@@ -23,6 +23,7 @@ const CHOFERES_APTOS = Number(process.env.CHOFERES_APTOS ?? 300);
 const SALIDA = process.env.SALIDA ?? '/resultados';
 if (!TOKEN_METRICAS) throw new Error('falta METRICAS_TOKEN');
 
+// nosemgrep: ajinabraham.njsscan.generic.hardcoded_secrets.node_secret -- los tokens se leen de un archivo montado; no hay ningún secreto en el código.
 const viajes = JSON.parse(readFileSync('/secretos/tokens-viajes.json', 'utf8'));
 const choferes = [...viajes.choferes.filter((c) => c.tipo === 'apto').slice(0, CHOFERES_APTOS), ...viajes.choferes.filter((c) => c.tipo !== 'apto')];
 const ORIGEN = { lat: -31.4201, lng: -64.1888 };

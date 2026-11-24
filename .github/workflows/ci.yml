@@ -5,6 +5,10 @@ on:
     branches: [main]
   pull_request:
 
+# Solo lectura del repo: ningún job publica nada fuera de sus artefactos.
+permissions:
+  contents: read
+
 jobs:
   verificar:
     runs-on: ubuntu-latest
@@ -35,8 +39,9 @@ jobs:
       REDIS_URL_TEST: redis://localhost:6379/15
       DISPATCH_REDIS_URL_TEST: redis://localhost:6379/13
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      # Las acciones van fijadas por commit (el tag, al lado): un tag se puede mover, un commit no.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
           cache: npm
@@ -53,3 +58,58 @@ jobs:
       - run: npm run lint
       - run: npm test
       - run: npm audit --audit-level=high
+
+  # Los cinco flujos de Playwright (PLAN 5.3) contra el sistema entero en Docker Compose, como en la demo.
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # .env (de .env.example), clave RS256, Postgres y Redis en Compose, migraciones y usuarios del seed.
+      - run: npm run setup
+      # Los servicios y nginx, con la configuración del e2e, y la demo de flotas y zonas (e2e/levantar.mjs).
+      - run: npm run e2e:levantar
+      - run: npx -w @viajes/e2e playwright install --with-deps chromium
+      - run: npm run e2e
+      - name: Reporte de Playwright (HTML, trazas, capturas y videos de lo que falló)
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: playwright
+          path: |
+            e2e/reporte
+            e2e/resultados
+          retention-days: 14
+      - name: Logs de los contenedores
+        if: failure()
+        run: docker compose logs --no-color --tail 200
+
+  # SAST con Semgrep (PLAN 5.4): reglas de JavaScript, TypeScript, Node, OWASP y secretos. Cualquier
+  # hallazgo hace fallar el job. Los falsos positivos se marcan en el código con `nosemgrep: <regla>` y
+  # el motivo al lado (ver docs/ci.md).
+  sast:
+    runs-on: ubuntu-latest
+    container: semgrep/semgrep:1.182.1
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - name: Semgrep
+        run: >-
+          semgrep scan
+          --config p/javascript --config p/typescript --config p/nodejsscan --config p/owasp-top-ten --config p/secrets
+          --exclude 'docs/mediciones' --exclude '**/generated/**' --exclude '**/dist/**'
+          --exclude-rule ajinabraham.njsscan.good.good_helmet_checks.helmet_header_x_powered_by
+          --exclude-rule ajinabraham.njsscan.good.good_helmet_checks.helmet_header_check_csp
+          --metrics off --error
+          --sarif --output semgrep.sarif
+      - name: Resultado en SARIF
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: semgrep-sarif
+          path: semgrep.sarif
+          retention-days: 30

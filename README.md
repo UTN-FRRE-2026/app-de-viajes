@@ -65,6 +65,15 @@ npm run typecheck
 npm test          # dominio en memoria + integración/concurrencia contra Postgres y Redis
 ```
 
+**End to end** (Playwright, los cinco flujos de PLAN 5.3, contra el sistema en Docker Compose):
+
+```bash
+npm run e2e:levantar   # Compose con la configuración del e2e y la demo de flotas
+npm run e2e
+```
+
+La primera vez, `npx -w @viajes/e2e playwright install chromium`. Detalle, y el SAST con Semgrep: [docs/ci.md](docs/ci.md).
+
 `npm test` usa las bases `*_test` que crea `npm run setup`. Solo los tests de dominio, sin Docker: `npm run test:dominio -w @viajes/dispatch` (o `-w @viajes/identity`, `-w @viajes/location`).
 
 ## Estructura

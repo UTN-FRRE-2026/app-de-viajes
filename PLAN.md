@@ -229,13 +229,13 @@ El ADR 0006 registra la decisión con sus alternativas reales: monolito modular 
 | **B5** Prototype pollution | 🟡 | Solo se prueba `__proto__` en la raíz. Falta `constructor.prototype` y posiciones anidadas |
 | **B5** Inyección SQL | ✅ | Consultas parametrizadas y tests con cargas típicas en la búsqueda del panel (`GET /panel/viajes?q=`) |
 | **B5** Límite de tasa | 🟡 | En login, y 3 streams SSE por usuario. Falta en solicitud de viaje y ubicación, con 429 y encabezados |
-| **B5** Helmet, CSP y CORS | 🟡 | Hecho: helmet en `crearApp` de `platform`, con una CSP que lo niega todo (`default-src 'none'`) en la API de los tres servicios, con test en cada uno; y la CSP de la página en el nginx del contenedor `web` (`npm run web:probar`, [docs/web.md](docs/web.md)). El frontend y la API quedan en el mismo origen: no hace falta CORS. Falta: el test en Playwright de que la página carga sin violaciones de CSP |
+| **B5** Helmet, CSP y CORS | ✅ | Hecho: helmet en `crearApp` de `platform`, con una CSP que lo niega todo (`default-src 'none'`) en la API de los tres servicios, con test en cada uno; y la CSP de la página en el nginx del contenedor `web` (`npm run web:probar`, [docs/web.md](docs/web.md)). El frontend y la API quedan en el mismo origen: no hace falta CORS. Playwright comprueba en cada pantalla que no hay violaciones de la CSP ([docs/ci.md](docs/ci.md)) |
 | **B5** `npm audit` | ✅ | En el CI |
 | **B6** ADR de carreras + test de 50 | ✅ | Falta el inventario completo (3.5) |
 | **B6** Idempotencia | ✅ | En los `POST` de dispatch, el `PUT` de tarifas, el cobro (que además usa el id del cobro como clave con el proveedor), las rutas de flotas con la activación de choferes y el registro de identity. Las respuestas se guardan 24 h y una purga borra las vencidas, en los dos servicios (3.5, [ADR 0010](docs/adr/0010-idempotencia.md)) |
 | **B7** Tarea pesada, dos versiones, medida | ✅ | location: ingenua (Postgres) frente a optimizada (Redis GEO e historial en lotes), con hipótesis escrita antes y 3 corridas de k6 por versión (`docs/mediciones.md`). Es lo que se muestra en el Control 3 |
 | **B8** Tres niveles de tests, un comando | ✅ | Sostenerlo |
-| **6.2** Alcance funcional | 🟡 | Hecho en el backend: registro, login, solicitud, ofertas, ubicación, estados completos del viaje, estimación, tarifa final y cobro, historial, panel, flotas y seguimiento en vivo. En el frontend, las pantallas de los cuatro roles: pasajero, chofer, operador y admin de flota ([docs/web.md](docs/web.md)). Falta recorrerlas con Playwright |
+| **6.2** Alcance funcional | ✅ | Hecho en el backend: registro, login, solicitud, ofertas, ubicación, estados completos del viaje, estimación, tarifa final y cobro, historial, panel, flotas y seguimiento en vivo. En el frontend, las pantallas de los cuatro roles: pasajero, chofer, operador y admin de flota ([docs/web.md](docs/web.md)). Los flujos principales, recorridos con Playwright (e2e/) |
 | **6.3** ADR + 3 tests | ✅ | — |
 | **6.4** Búsqueda, retención, privacidad | 🟡 | Hecho: la búsqueda de candidatos con vigencia de 30 s (los choferes que dejan de reportar no aparecen) y la privacidad de la posición (la del chofer solo la ve el pasajero del viaje, y la del pasajero solo su chofer). Falta la retención del historial de ubicaciones |
 | **6.5** Tarifa | ✅ | Cálculo, estimación, configuración por el admin, tarifa final con por qué difiere, y cobro (3.4) |
@@ -294,9 +294,11 @@ En `e2e/`, contra el sistema levantado con Docker Compose y la base sembrada:
 
 Evidencias: reporte HTML, trazas y capturas como artefactos del CI y en `docs/evidencias/`.
 
+**Hecho:** los cinco, en `e2e/` con Playwright 1.64.1, más la comprobación de que ninguna página tiene violaciones de la CSP. Cómo correrlos y las decisiones: [docs/ci.md](docs/ci.md#e2e-playwright-e2e).
+
 ### 5.4 CI y SAST (10)
 
-Jobs: `verificar` (typecheck, lint, tests; ya existe), `e2e` (compose, `setup`, Playwright, sube el reporte), `sast` (Semgrep con reglas de JavaScript, TypeScript, Node y OWASP; sube SARIF) y `npm audit`. Los cuatro son obligatorios para mergear.
+**Hecho** ([docs/ci.md](docs/ci.md)). Jobs: `verificar` (typecheck, lint, tests; ya existe), `e2e` (compose, `setup`, Playwright, sube el reporte), `sast` (Semgrep con reglas de JavaScript, TypeScript, Node y OWASP; sube SARIF) y `npm audit`. Los cuatro son obligatorios para mergear.
 
 La cátedra no pidió una herramienta en particular. Se usa **Semgrep**: corre dentro de GitHub Actions, funciona con el repositorio privado y no depende de una cuenta externa. En clase se vieron Codacy y SonarCloud; cambiar a una de ellas es reemplazar un job. CodeQL queda afuera: en repositorios privados necesita GitHub Advanced Security.
 
@@ -359,8 +361,8 @@ Al cerrar esta fase el sistema tiene que poder congelarse para el ataque cruzado
 
 ### Fase C — rúbrica del Integrador y cierre
 
-- [ ] Playwright y job `e2e` (Agos, Ivan).
-- [ ] Job `sast` y corrección de lo que encuentre (Ivan).
+- [x] Playwright y job `e2e` (Ivan): los cinco flujos de 5.3 en `e2e/` ([docs/ci.md](docs/ci.md)).
+- [x] Job `sast` y corrección de lo que encuentre (Ivan): Semgrep, 11 hallazgos en la primera pasada, corregidos o justificados en el código ([docs/ci.md](docs/ci.md#sast-semgrep)).
 - [ ] Grafana Cloud y dashboards; `estres.js` y `carrera.js` (Maxi). Hecho: `carga/carrera.js` (22/11, una corrida de validación) y `carga/estres.js` con 3 corridas (24/11): se degrada en 16 viajes/s por la espera del commit en el disco mecánico de esta máquina; sin esa espera, sostiene 16 y se satura en 32, por la CPU de dispatch. Falta repetirlo con Docker en un SSD, y Grafana Cloud.
 - [ ] Mediciones finales, tres corridas por escenario, con conclusión (Maxi).
 - [ ] ADR restantes: 0007 SSE, 0008 búsqueda geográfica, 0009 límite por flota, 0010 idempotencia, 0011 vencimiento de ofertas, 0012 inventario de carreras. Hechos: 0007 y 0010.
@@ -391,7 +393,7 @@ Cada dueño le explica su parte a los otros dos. Ensayar los cuatro tipos de pre
 6. La misma `Idempotency-Key` dos veces: un solo efecto.
 7. `docker compose ps` muestra `identity`, `dispatch` y `location` en contenedores separados. Con location detenido, la solicitud de viaje devuelve 503 y el login sigue andando.
 8. Demo de 6.8: ciclo completo con seguimiento, oferta que vence con el chofer desconectado, ubicación ajena rechazada, 500 choferes con medición antes y después, variante G con su carrera.
-9. `npm run test:e2e` en verde, y el pipeline completo en verde en GitHub.
+9. `npm run e2e` en verde, y el pipeline completo en verde en GitHub.
 10. k6 en versión ingenua y optimizada, con los números en `docs/mediciones.md`.
 11. Dashboards de Grafana Cloud mostrando una corrida de k6.
 
