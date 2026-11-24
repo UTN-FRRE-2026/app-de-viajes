@@ -74,8 +74,10 @@ test('el primer chofer deja vencer la oferta y el viaje se le ofrece al siguient
   const delSegundo = exigir(await api(await entrarPorApi(segundo.email), 'GET', '/viajes/chofer/estado'), 200, 'estado del segundo chofer');
   expect(delSegundo.ofertas).toEqual([]);
 
-  // No la acepta: vence, y el viaje pasa al otro chofer.
-  await expect(cerca.getByText('Venció')).toBeVisible({ timeout: 15_000 });
+  // No la acepta: vence, se le va de la pantalla y el viaje pasa al otro chofer. No se espera la etiqueta
+  // «Venció»: si el OfferExpired llega por SSE antes del siguiente tic de la cuenta regresiva, la oferta
+  // sale de la lista sin llegar a mostrarla.
+  await expect(cerca.locator('.oferta')).toHaveCount(0, { timeout: 15_000 });
   await expect(lejos.getByRole('button', { name: 'Aceptar' })).toBeVisible({ timeout: 15_000 });
   await lejos.getByRole('button', { name: 'Aceptar' }).click();
   await expect(lejos.getByRole('button', { name: 'Voy en camino' })).toBeVisible();

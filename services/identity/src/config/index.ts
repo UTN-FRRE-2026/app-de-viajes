@@ -1,5 +1,5 @@
 import { createPrivateKey, type KeyObject } from 'node:crypto';
-import { proxyConfiable, tokenMetricas } from '@viajes/platform';
+import { proxyConfiable, tokenMetricas, vacioComoAusente } from '@viajes/platform';
 import { z } from 'zod';
 
 const BITS_MINIMOS_RSA = 2048;
@@ -41,8 +41,9 @@ export const EsquemaConfig = z
     ARGON2_MEMORIA_KIB: z.coerce.number().int().min(19_456).default(19_456),
     ARGON2_ITERACIONES: z.coerce.number().int().min(2).default(2),
     ARGON2_PARALELISMO: z.coerce.number().int().min(1).default(1),
-    IDENTITY_LOGIN_MAX_POR_EMAIL: z.coerce.number().int().min(1).default(5),
-    IDENTITY_LOGIN_MAX_POR_IP: z.coerce.number().int().min(1).default(30),
+    // Vacías en el Compose si no están en el .env (vacioComoAusente): 5 y 30. El e2e sube la de la IP.
+    IDENTITY_LOGIN_MAX_POR_EMAIL: vacioComoAusente(z.coerce.number().int().min(1).default(5)),
+    IDENTITY_LOGIN_MAX_POR_IP: vacioComoAusente(z.coerce.number().int().min(1).default(30)),
     IDENTITY_LOGIN_VENTANA_SEGUNDOS: z.coerce.number().int().min(1).default(900),
     // Idempotency-Key del registro. Los mismos nombres y valores que en dispatch: el .env es compartido.
     IDEMPOTENCIA_EN_VUELO_SEGUNDOS: z.coerce.number().int().min(5).max(300).default(30),

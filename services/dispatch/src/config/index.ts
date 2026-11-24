@@ -1,14 +1,6 @@
-import { proxyConfiable, tokenMetricas } from '@viajes/platform';
+import { proxyConfiable, tokenMetricas, vacioComoAusente } from '@viajes/platform';
 import { z } from 'zod';
 import { TOPE_IMPORTE_CENTAVOS, TOPE_MAX_METROS } from '../dominio/tarifas/parametros.js';
-
-/**
- * Compose pasa una variable que no está en el .env como texto vacío, y `z.coerce.number()` convertiría
- * "" (y también "  ", porque Number(" ") es 0) en 0: una tarifa en cero sin ningún aviso. Vacío o solo
- * espacios cuenta como ausente: se usa el valor por defecto. Un "0" escrito a propósito sigue valiendo 0.
- */
-const vacioComoAusente = <T extends z.ZodType>(esquema: T) =>
-  z.preprocess((v) => (typeof v === 'string' && v.trim() === '' ? undefined : v), esquema);
 
 const centavos = (porDefecto: number) =>
   vacioComoAusente(z.coerce.number().int().min(0).max(TOPE_IMPORTE_CENTAVOS).default(porDefecto));
@@ -38,8 +30,9 @@ export const EsquemaConfig = z
     JWKS_URL: z.string().url(),
     JWT_ISSUER: z.string().min(1),
     JWT_AUDIENCE: z.string().min(1),
-    OFERTAS_SIMULTANEAS: z.coerce.number().int().min(1).max(50).default(3),
-    OFERTA_TTL_SEGUNDOS: z.coerce.number().int().min(1).default(15),
+    // Vacías en el Compose si no están en el .env (vacioComoAusente): 3 y 15 s. El e2e usa 1 y 6 s.
+    OFERTAS_SIMULTANEAS: vacioComoAusente(z.coerce.number().int().min(1).max(50).default(3)),
+    OFERTA_TTL_SEGUNDOS: vacioComoAusente(z.coerce.number().int().min(1).default(15)),
     BARRIDO_INTERVALO_MS: z.coerce.number().int().min(100).default(2000),
     // Tiempo real (SSE): cada cuánto el relay publica lo nuevo del outbox (es la demora máxima de un
     // evento), y cuántos streams puede tener abiertos cada usuario.
