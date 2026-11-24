@@ -47,6 +47,24 @@ describe('GET /metrics', () => {
     expect(res.text).not.toContain(TOKEN_METRICAS);
   });
 
+  it('lag por ventana: la diferencia entre dos fotos del histograma muestra un bloqueo del event loop', async () => {
+    const lentas = (texto: string) => {
+      const total = serie(texto, 'event_loop_lag_seconds_count', { servicio: 'identity' }) ?? 0;
+      const hasta100ms = serie(texto, 'event_loop_lag_seconds_bucket', { le: '0.1', servicio: 'identity' }) ?? 0;
+      return { total, masDe100ms: total - hasta100ms };
+    };
+    const antes = lentas((await metricas()).text);
+    // Bloquea el event loop 200 ms: la próxima muestra del temporizador llega atrasada.
+    const hasta = Date.now() + 200;
+    while (Date.now() < hasta) {
+      // espera activa a propósito
+    }
+    await new Promise((r) => setTimeout(r, 350));
+    const despues = lentas((await metricas()).text);
+    expect(despues.total).toBeGreaterThan(antes.total);
+    expect(despues.masDe100ms - antes.masDe100ms).toBeGreaterThanOrEqual(1);
+  });
+
   it('mide los pedidos por ruta y estado; lo que no llega a una ruta queda como sin_ruta', async () => {
     await request(d.url).post('/login').send({}).expect(400);
     await request(d.url).get('/no-existe-esta-ruta').expect(404);
