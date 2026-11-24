@@ -75,7 +75,8 @@ services:
       PUERTO: "3004"
       # Detrás de nginx: cree en el X-Forwarded-For solo si viene del contenedor web (su IP fija).
       CONFIAR_EN_PROXY: ${WEB_IP:-10.250.77.10}
-      UBICACION_ESTRATEGIA: ingenua
+      # Del .env (ingenua u optimizada, docs/location.md). Vacía: ingenua.
+      UBICACION_ESTRATEGIA: ${UBICACION_ESTRATEGIA:-ingenua}
       LOCATION_DATABASE_URL: postgresql://location_svc:${DB_PASSWORD_LOCATION:-location_dev}@postgres:5432/location
       # Posiciones e historial en la optimizada; en las dos, la publicación de la posición en vivo.
       REDIS_URL: redis://redis:6379
@@ -97,6 +98,8 @@ services:
       DISPATCH_URL: http://dispatch:3005
       DISPATCH_TOKEN_SERVICIO: ${DISPATCH_TOKEN_SERVICIO:-}
       DISPATCH_TIMEOUT_MS: ${DISPATCH_TIMEOUT_MS:-}
+      # Límite de tasa de los pings, por usuario. Vacía: el valor por defecto de location (120 por minuto).
+      LIMITE_UBICACIONES_POR_MINUTO: ${LIMITE_UBICACIONES_POR_MINUTO:-}
     ports:
       - "3004:3004"
     networks:
@@ -138,6 +141,8 @@ services:
       # El e2e usa 1 y 6 s, para probar que una oferta vencida pasa al siguiente chofer.
       OFERTAS_SIMULTANEAS: ${OFERTAS_SIMULTANEAS:-}
       OFERTA_TTL_SEGUNDOS: ${OFERTA_TTL_SEGUNDOS:-}
+      # Límite de tasa de la solicitud, por pasajero. Vacía: el valor por defecto de dispatch (10 por minuto).
+      LIMITE_SOLICITUDES_POR_MINUTO: ${LIMITE_SOLICITUDES_POR_MINUTO:-}
       # Flotas: el alta de un chofer verifica la cuenta en identity (red interna; /interno/* no se publica).
       IDENTITY_URL: http://identity:3001
       IDENTITY_TOKEN_SERVICIO: ${IDENTITY_TOKEN_SERVICIO:-}

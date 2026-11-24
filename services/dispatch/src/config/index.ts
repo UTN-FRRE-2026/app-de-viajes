@@ -1,4 +1,4 @@
-import { proxyConfiable, tokenMetricas, vacioComoAusente } from '@viajes/platform';
+import { logPedidos, proxyConfiable, tokenMetricas, vacioComoAusente } from '@viajes/platform';
 import { z } from 'zod';
 import { TOPE_IMPORTE_CENTAVOS, TOPE_MAX_METROS } from '../dominio/tarifas/parametros.js';
 
@@ -17,6 +17,8 @@ export const EsquemaConfig = z
     // Detrás del nginx del Compose: su IP, para tomar la del cliente de X-Forwarded-For. Vacío: no se confía en nadie.
     CONFIAR_EN_PROXY: proxyConfiable,
     NIVEL_LOG: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
+    // Una línea de log por pedido (método, ruta, estado, duración, requestId). `no` solo en el entorno de carga.
+    LOG_PEDIDOS: logPedidos,
     DISPATCH_PERSISTENCIA: z.enum(['postgres', 'memoria']).default('postgres'),
     DATABASE_URL: z.string().url().optional(),
     DB_POOL_MAX: z.coerce.number().int().positive().default(10),
@@ -38,6 +40,9 @@ export const EsquemaConfig = z
     // evento), y cuántos streams puede tener abiertos cada usuario.
     RELAY_INTERVALO_MS: z.coerce.number().int().min(20).max(5000).default(100),
     SSE_MAX_POR_USUARIO: z.coerce.number().int().min(1).max(20).default(3),
+    // Límite de tasa de POST /solicitudes por pasajero, por minuto (429 con RateLimit-*). 0 lo desactiva
+    // (el entorno de carga, donde un pasajero de k6 pide decenas por minuto).
+    LIMITE_SOLICITUDES_POR_MINUTO: vacioComoAusente(z.coerce.number().int().min(0).max(10_000).default(10)),
     // La posición del chofer en vivo: los canales `<prefijo>posicion:<choferId>` que publica location.
     // Mismo nombre, misma regla y mismo valor que en location: el .env es compartido.
     LOCATION_REDIS_PREFIJO: z

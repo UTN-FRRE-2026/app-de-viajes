@@ -68,6 +68,11 @@ services:
       PUERTO: "3004"
       # info: location no loguea cada pedido; así quedan en el log el arranque y el apagado ordenado.
       NIVEL_LOG: info
+      # Sin la línea por pedido (250 pings/s) ni límites de tasa: las mediciones de docs/mediciones.md se
+      # tomaron así, y un pasajero o chofer de k6 pide más que una persona.
+      LOG_PEDIDOS: "no"
+      LIMITE_SOLICITUDES_POR_MINUTO: "0"
+      LIMITE_UBICACIONES_POR_MINUTO: "0"
       UBICACION_ESTRATEGIA: "${ESTRATEGIA:?falta ESTRATEGIA (ingenua u optimizada)}"
       LOCATION_DATABASE_URL: postgresql://carga:${CARGA_PG_PASSWORD}@postgres:5432/location_carga
       DB_POOL_MAX: "10"
@@ -106,6 +111,11 @@ services:
     environment:
       PUERTO: "3005"
       NIVEL_LOG: info
+      # Sin la línea por pedido (250 pings/s) ni límites de tasa: las mediciones de docs/mediciones.md se
+      # tomaron así, y un pasajero o chofer de k6 pide más que una persona.
+      LOG_PEDIDOS: "no"
+      LIMITE_SOLICITUDES_POR_MINUTO: "0"
+      LIMITE_UBICACIONES_POR_MINUTO: "0"
       DISPATCH_PERSISTENCIA: postgres
       DATABASE_URL: postgresql://carga:${CARGA_PG_PASSWORD}@postgres:5432/dispatch_carga
       DB_POOL_MAX: "10"

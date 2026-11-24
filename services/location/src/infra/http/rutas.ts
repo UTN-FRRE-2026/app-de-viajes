@@ -8,15 +8,21 @@ import {
   validar,
   type VerificadorToken,
 } from '@viajes/platform';
-import { Router } from 'express';
+import { Router, type RequestHandler } from 'express';
 import type { CasosDeUso } from '../../dominio/casos-uso/index.js';
 
 /** `/metrics` lo monta `platform` (crearApp), con su propio token. */
-export function rutasUbicacion(casos: CasosDeUso, verificar: VerificadorToken, tokenServicio: string): Router {
+export function rutasUbicacion(
+  casos: CasosDeUso,
+  verificar: VerificadorToken,
+  tokenServicio: string,
+  /** Límite de tasa de los pings, por usuario (`limitarTasa`). Sin él, no hay límite. */
+  limitarPings: RequestHandler = (_req, _res, next) => next(),
+): Router {
   const r = Router();
 
   // El chofer informa su posición. El id sale del token: un body con choferId se rechaza (strictObject).
-  r.post('/ubicaciones', autenticar(verificar), requerirRol('chofer'), validar({ body: UbicacionBody }), async (req, res) => {
+  r.post('/ubicaciones', autenticar(verificar), requerirRol('chofer'), limitarPings, validar({ body: UbicacionBody }), async (req, res) => {
     const { lat, lng } = req.body as UbicacionBody;
     await casos.registrarUbicacion({ choferId: usuarioDe(req).id, lat, lng });
     res.status(204).end();
@@ -25,7 +31,7 @@ export function rutasUbicacion(casos: CasosDeUso, verificar: VerificadorToken, t
   // El pasajero informa su posición, para que la vea el chofer asignado a su viaje (la regla la aplica
   // dispatch). El id sale del token. Efímera: no se guarda ni entra en la búsqueda de candidatos.
   // Publicar es su único efecto: si no se pudo (sin Redis, caído o sin confirmación en 200 ms), 503.
-  r.post('/ubicaciones/pasajero', autenticar(verificar), requerirRol('pasajero'), validar({ body: UbicacionBody }), async (req, res) => {
+  r.post('/ubicaciones/pasajero', autenticar(verificar), requerirRol('pasajero'), limitarPings, validar({ body: UbicacionBody }), async (req, res) => {
     const { lat, lng } = req.body as UbicacionBody;
     const resultado = await casos.informarPosicionPasajero({ pasajeroId: usuarioDe(req).id, lat, lng });
     if (resultado === 'error' || resultado === 'sin_publicador') {

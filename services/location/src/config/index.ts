@@ -1,4 +1,4 @@
-import { proxyConfiable, tokenMetricas, vacioComoAusente } from '@viajes/platform';
+import { logPedidos, proxyConfiable, tokenMetricas, vacioComoAusente } from '@viajes/platform';
 import { z } from 'zod';
 
 export const EsquemaConfig = z
@@ -7,6 +7,8 @@ export const EsquemaConfig = z
     // Detrás del nginx del Compose: su IP, para tomar la del cliente de X-Forwarded-For. Vacío: no se confía en nadie.
     CONFIAR_EN_PROXY: proxyConfiable,
     NIVEL_LOG: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
+    // Una línea de log por pedido (método, ruta, estado, duración, requestId). `no` solo en el entorno de carga.
+    LOG_PEDIDOS: logPedidos,
     // 6.6: `ingenua` (Postgres, referencia) y `optimizada` (Redis GEO + historial en lotes).
     UBICACION_ESTRATEGIA: z.enum(['ingenua', 'optimizada', 'memoria']).default('ingenua'),
     // No se usa DATABASE_URL: en el .env compartido apunta a la base de dispatch.
@@ -26,6 +28,9 @@ export const EsquemaConfig = z
     // Bearer de GET /metrics (Alloy). El mismo en los tres servicios: el .env es compartido.
     METRICAS_TOKEN: tokenMetricas,
     UBICACION_VIGENCIA_SEGUNDOS: z.coerce.number().int().min(5).max(600).default(30),
+    // Límite de tasa de POST /ubicaciones y /ubicaciones/pasajero por usuario, por minuto (429 con
+    // RateLimit-*). Un chofer manda uno cada 2 s (30 por minuto): 120 deja margen para reintentos. 0 lo desactiva.
+    LIMITE_UBICACIONES_POR_MINUTO: vacioComoAusente(z.coerce.number().int().min(0).max(100_000).default(120)),
     // Versión optimizada: historial por cola y purga del índice.
     LOCATION_HISTORIAL_LOTE: z.coerce.number().int().min(1).max(5000).default(500),
     LOCATION_HISTORIAL_ESPERA_MS: z.coerce.number().int().min(50).max(10_000).default(1000),

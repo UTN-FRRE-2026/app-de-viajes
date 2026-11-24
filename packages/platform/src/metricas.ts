@@ -140,7 +140,7 @@ export function crearMetricas({ servicio }: { servicio: string }): Metricas {
  * Ruta del pedido como patrón (`/solicitudes/:id`), nunca la URL cruda: con ids en la etiqueta,
  * cada pedido crearía una serie nueva. Si ninguna ruta lo atendió, `sin_ruta`.
  */
-function rutaDe(req: Request): string {
+export function rutaDe(req: Request): string {
   const patron = (req.route as { path?: unknown } | undefined)?.path;
   return typeof patron === 'string' ? `${req.baseUrl}${patron}` : RUTA_SIN_RUTA;
 }

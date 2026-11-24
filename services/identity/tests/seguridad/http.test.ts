@@ -49,6 +49,18 @@ describe('elevación de privilegios en el registro', () => {
     expect(await d.prisma.usuario.count()).toBe(0);
   });
 
+  it.each([
+    ['constructor.prototype', `{"email":"ana@viajes.test","contrasena":"${CONTRASENA}","nombre":"Ana","rol":"pasajero","constructor":{"prototype":{"rol":"admin"}}}`],
+    ['__proto__ en el login', `{"email":"ana@viajes.test","contrasena":"${CONTRASENA}","__proto__":{"rol":"admin"}}`],
+    ['constructor.prototype en el login', `{"email":"ana@viajes.test","contrasena":"${CONTRASENA}","constructor":{"prototype":{"rol":"admin"}}}`],
+  ])('%s → 400 y no contamina Object.prototype', async (caso, crudo) => {
+    const ruta = caso.includes('login') ? '/login' : '/registro';
+    const res = await request(d.url).post(ruta).set(clave()).set('content-type', 'application/json').send(crudo);
+    expect(res.status).toBe(400);
+    expect(({} as Record<string, unknown>)['rol']).toBeUndefined();
+    expect(await d.prisma.usuario.count()).toBe(0);
+  });
+
   it('el login tampoco acepta claves extra → 400', async () => {
     const res = await request(d.url).post('/login').send({ email: 'ana@viajes.test', contrasena: CONTRASENA, rol: 'admin' });
     expect(res.status).toBe(400);

@@ -5,14 +5,18 @@ import {
   almacenIdempotenciaSql,
   CerrojoMemoria,
   cerrojoRedis,
+  contadorTasaMemoria,
+  contadorTasaRedis,
   crearApp,
   crearIdempotencia,
   crearMetricas,
+  limitarTasa,
   purgarIdempotenciaSql,
   verificadorJwks,
   type AlmacenIdempotencia,
   type CerrojoEnVuelo,
   type ChequeoListo,
+  type ContadorTasa,
   type Logger,
   type VerificadorToken,
 } from '@viajes/platform';
@@ -66,6 +70,8 @@ import type { BusEventos, FuentePosiciones, HistorialEventos, RelayEventos } fro
 
 /** Reemplazos para tests: cualquier adaptador se puede inyectar desde afuera. */
 export interface Reemplazos {
+  /** Contador del límite de tasa: uno propio (tests). Por defecto, Redis con Postgres y memoria sin él. */
+  contadorTasa?: ContadorTasa;
   verificador?: VerificadorToken;
   buscador?: BuscadorCandidatos;
   reloj?: Reloj;
@@ -159,6 +165,7 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
   let repoTarifas: RepositorioTarifas = reemplazos.repoTarifas ?? new RepositorioTarifasMemoria();
   let cacheTarifas: CacheTarifas | null = reemplazos.cacheTarifas ?? null;
   let repoFlotas: RepositorioFlotas = reemplazos.repoFlotas ?? new RepositorioFlotasMemoria();
+  let contadorTasa: ContadorTasa = reemplazos.contadorTasa ?? contadorTasaMemoria();
 
   let tiempoReal: TiempoReal | undefined = reemplazos.eventos;
   let elegibilidad: ElegibilidadChoferes | undefined = reemplazos.elegibilidad;
@@ -179,6 +186,8 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
       cerrojo: cerrojoRedis(redis, 'dispatch:idempotencia:'),
     };
     purgarIdempotencia = purgarIdempotenciaSql(prisma, { retencionMs: config.IDEMPOTENCIA_RETENCION_HORAS * 3_600_000 });
+    // El límite de tasa, en el mismo Redis: compartido si hubiera más de una réplica de dispatch.
+    contadorTasa = reemplazos.contadorTasa ?? contadorTasaRedis(redis, 'dispatch:tasa:');
     repoTarifas = reemplazos.repoTarifas ?? new RepositorioTarifasPrisma(prisma);
     repoFlotas = reemplazos.repoFlotas ?? new RepositorioFlotasPrisma(prisma);
     // El mismo Redis que la idempotencia. Tiempo límite corto: si no responde, se lee Postgres.
@@ -314,10 +323,18 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
       crearIdempotencia({ ...idempotencia, ttlEnVueloMs: config.IDEMPOTENCIA_EN_VUELO_SEGUNDOS * 1000 }),
       casosFlotas,
       config.DISPATCH_TOKEN_SERVICIO,
+      limitarTasa({
+        contador: contadorTasa,
+        nombre: 'solicitudes',
+        maximo: config.LIMITE_SOLICITUDES_POR_MINUTO,
+        ventanaMs: 60_000,
+        logger,
+      }),
     ),
     chequeos,
     metricas: { metricas, token: config.METRICAS_TOKEN },
     confiarEnProxy: config.CONFIAR_EN_PROXY,
+    logPedidos: config.LOG_PEDIDOS,
   });
   const cerrarConexiones = cerrar;
   return {

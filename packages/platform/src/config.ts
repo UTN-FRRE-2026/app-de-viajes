@@ -40,3 +40,10 @@ export function cargarConfig<T extends z.ZodType>(esquema: T, entorno: NodeJS.Pr
   }
   process.exit(1);
 }
+
+/**
+ * `LOG_PEDIDOS`: `no` apaga la línea por pedido (ver middlewareLogPedidos). Solo para el entorno de
+ * carga, donde 500 choferes dan 250 pings/s y las mediciones se tomaron sin ese log. Vacía o
+ * ausente: `si`.
+ */
+export const logPedidos = vacioComoAusente(z.enum(['si', 'no']).default('si')).transform((v) => v === 'si');
