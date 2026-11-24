@@ -121,6 +121,7 @@ erDiagram
         bigint amount_cents
         text status "PENDIENTE, APROBADO, RECHAZADO"
         int failed_attempts
+        timestamptz claimed_until
     }
     fleets {
         uuid id PK "= fleetId del token"
@@ -253,6 +254,7 @@ Un cobro por viaje completado, por la tarifa final. Lo crea la finalización, en
 - `PENDIENTE → APROBADO | RECHAZADO`, y los dos últimos son finales. Un proveedor caído o que no contesta **deja el cobro `PENDIENTE`** (falla cerrado), suma `failed_attempts` y anota `last_error`.
 - El resultado se registra con el cobro bloqueado (`FOR UPDATE`) y solo si sigue `PENDIENTE`.
 - Índice `(status, updated_at)`: el barrido toma los pendientes que hace más que no se intentan. Cada fallo toca `updated_at` y manda el cobro al final de la cola, así unos pocos que fallan siempre no frenan a los demás.
+- `claimed_until` (migración `20261129000000_cobros_reclamo`): el barrido **reclama** los que elige con `FOR UPDATE SKIP LOCKED` y les pone un vencimiento (120 s). Con varias instancias, dos barridos no eligen el mismo cobro. Un fallo suelta el reclamo; si la instancia muere, vence solo.
 
 ### Tarifas: `fare_versions`, `fare_current`, `fare_changes`
 
@@ -307,7 +309,7 @@ Los eventos de dispatch, escritos **en la misma transacción** que el cambio que
 | `outbox_seq_key` (único) | Un `seq` por evento |
 | `(published_at, created_at)` | De la migración inicial, de antes del `seq`. El relay actual ordena por `seq` y usa el índice parcial |
 
-El outbox **se conserva**: la reposición del SSE lee de acá. No hay purga.
+El outbox **se conserva** `OUTBOX_RETENCION_HORAS` (24 h): la reposición del SSE lee de acá. Después, una purga borra por lotes los eventos ya publicados (nunca uno pendiente), con `FOR UPDATE SKIP LOCKED` (`purgarOutboxPrisma`).
 
 ### Idempotency-Key: `idempotency_keys`
 
@@ -438,6 +440,7 @@ El historial de posiciones de los choferes. Las dos versiones de 6.6 escriben ac
 | `identity:idempotencia:<scope>:<clave>` | string | `IDEMPOTENCIA_EN_VUELO_SEGUNDOS` (30 s) | identity | Cerrojo de la `Idempotency-Key` mientras el pedido está en vuelo. Se suelta al responder |
 | `dispatch:idempotencia:<scope>:<clave>` | string | 30 s | dispatch | Lo mismo, en dispatch |
 | `dispatch:tarifas:v<N>` | string (JSON) | `TARIFAS_CACHE_TTL_SEGUNDOS` (3600 s) | dispatch | Caché de los parámetros de cada versión de tarifa. Qué versión está vigente se lee siempre de Postgres |
+| `dispatch:zonas:generacion` y `dispatch:zonas:mapa:<generacion>` | string y string (JSON) | — y `ZONAS_CACHE_TTL_SEGUNDOS` (60 s) | dispatch | Caché de las zonas (polígonos y flotas de cada una), por generación: editar zonas pone una nueva. La aceptación no lo usa ([flotas.md](flotas.md#el-caché-de-zonas-redis)) |
 | `dispatch:tasa:solicitudes:<usuarioId>` | contador | la ventana (60 s) | dispatch | Límite de tasa de `POST /solicitudes` |
 | `dispatch:eventos:<usuarioId>` | canal Pub/Sub | — | dispatch | Los eventos del outbox, uno por destinatario. No guarda nada: lo perdido se repone del `outbox` |
 | `location:pos` | HASH | — | location (optimizada) | Última posición de cada chofer, con las coordenadas originales |
@@ -452,4 +455,4 @@ El historial de posiciones de los choferes. Las dos versiones de 6.6 escriben ac
 
 - El prefijo de location es `LOCATION_REDIS_PREFIJO` (`location:` por defecto; `carga:location:` en el entorno de k6).
 - **Con la estrategia ingenua** (la del Compose), location no guarda posiciones en Redis, y el contador del límite de tasa queda **en memoria del proceso**. Con `REDIS_URL`, igual publica la posición en vivo.
-- El límite de 3 streams SSE por usuario no usa Redis: se cuenta en memoria de cada instancia de dispatch.
+- El límite de 3 streams SSE por usuario se cuenta en cada proceso y, entre instancias, en `dispatch:sse:<usuarioId>` (ZSET: un miembro por stream, con su vencimiento; lo renueva el latido).

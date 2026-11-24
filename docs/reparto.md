@@ -27,7 +27,7 @@ Cada integrante es **dueño** de un problema central y de los módulos que lo ro
 - [x] SSE: posición del chofer asignado, solo para su pasajero, y la del pasajero, solo para su chofer ([docs/eventos.md](eventos.md#posición-en-vivo)). location publica las posiciones (Maxi).
 - [x] Frontend: pantallas de pasajero (línea de tiempo del viaje, mapa con Leaflet y OpenStreetMap, historial) y de operador (viajes con búsqueda y cancelación con motivo) ([docs/web.md](web.md#la-pantalla-del-pasajero-pasajero)).
 - [x] Contenedor `web`: nginx como punto de entrada único, reverse proxy a los tres servicios, CSP de la página, SSE sin buffer y la IP del cliente para los servicios ([docs/web.md](web.md)). Falta servir el frontend cuando esté.
-- [ ] Despliegue y tag `congelado`.
+- [ ] Despliegue y tag `congelado`. Listo `deploy/` y [despliegue.md](despliegue.md); falta la máquina.
 
 **Fase C y ataque cruzado**
 - [x] Jobs `e2e` y `sast` en el CI ([docs/ci.md](ci.md)). Semgrep con todos los hallazgos resueltos o justificados.
@@ -39,14 +39,14 @@ Cada integrante es **dueño** de un problema central y de los módulos que lo ro
 **Fase A**
 - [x] flotas en dispatch: choferes, vehículos, habilitación por el admin, disponible / no disponible ([docs/flotas.md](flotas.md)).
 - [x] Flotas con `admin_flota` y **carrera G**: `UPDATE ... WHERE active_count < max_active` + `CHECK`, con el test de 50 activaciones contra límite 10.
-- [ ] ADR 0002 (Postgres + Prisma) y 0003 (JWT y autorización por recurso).
+- [x] ADR 0002 (Postgres + Prisma) y 0003 (JWT y autorización por recurso). Las redactó Ivan: [0002](adr/0002-postgres-prisma.md), [0003](adr/0003-jwt-autorizacion-recurso.md). Falta tu revisión.
 
 **Fase B**
 - [x] Zonas (PostGIS), zonas habilitadas por flota y filtro en dispatch de los candidatos que devuelve location, por flota y zona, con lotes crecientes y la revalidación al aceptar ([docs/flotas.md](flotas.md#zonas-operativas-pr-2)).
 - [x] Aislamiento por `fleetId` en el caso de uso (404 a otra flota, con test) y reporte por flota: los activos (el cupo), y los viajes completados y la facturación por los cobros aprobados, con `fleet_id` guardado en cada viaje al aceptar ([docs/flotas.md](flotas.md#el-reporte-de-la-flota)).
 - [x] En `platform`, para los tres servicios: helmet, CORS restringido, rate limit genérico con 429 y encabezados, validación de encabezados y log por pedido. El rate limit y el log por pedido los hizo Ivan; CORS no hace falta (mismo origen) ([docs/seguridad.md](seguridad.md)).
 - [x] Tests del bloque 5 que faltan: `constructor.prototype` y claves anidadas, inyección SQL en la búsqueda, rate limit en solicitud y ubicación, acceso a recursos ajenos en cada módulo. Los que faltaban (prototype pollution anidado y rate limit) los hizo Ivan.
-- [ ] Frontend: proyecto base (Vite, router, stores, cliente HTTP, componente de errores), login y pantallas de admin de flota. Hecho: la base y el login ([docs/web.md](web.md#el-frontend-appsweb)), y el panel del admin de flota ([docs/web.md](web.md#el-panel-de-la-flota-flota)): cupo, lista, alta, activar y desactivar.
+- [x] Frontend: proyecto base (Vite, router, stores, cliente HTTP, componente de errores), login y pantallas de admin de flota. Hecho: la base y el login ([docs/web.md](web.md#el-frontend-appsweb)), y el panel del admin de flota ([docs/web.md](web.md#el-panel-de-la-flota-flota)): cupo, lista, alta, activar y desactivar.
 - [x] identity: logout y revocación. Lo hizo Maxi (#5).
 - [x] Tarifas, PR 2: configuración por el admin (`GET` y `PUT /admin/tarifas`), tarifa global versionada con auditoría, semilla desde el entorno y caché en Redis. Lo tomó del reparto de Maxi ([docs/tarifas.md](tarifas.md)).
 - [x] Tabla de roles y permisos en el README. La hizo Ivan.
@@ -54,7 +54,7 @@ Cada integrante es **dueño** de un problema central y de los módulos que lo ro
 **Fase C y ataque cruzado**
 - [x] Playwright: los cinco flujos de la sección 5.3 del plan. Los hizo Ivan, junto con el job `e2e` ([docs/ci.md](ci.md#e2e-playwright-e2e)).
 - [ ] Ataque a los otros grupos: autenticación, recursos ajenos y rate limit.
-- [ ] ADR 0007 (SSE frente a WebSocket, con Ivan) y 0009 (límite por flota). Hecho: [0007](adr/0007-tiempo-real-sse.md), lo escribió Ivan.
+- [x] ADR 0007 (SSE frente a WebSocket, con Ivan) y 0009 (límite por flota). Hecho: [0007](adr/0007-tiempo-real-sse.md), lo escribió Ivan. La [0009](adr/0009-limite-flota.md) la redactó Ivan; falta tu revisión.
 
 ## Maxi
 
@@ -72,15 +72,15 @@ Cada integrante es **dueño** de un problema central y de los módulos que lo ro
 - [x] tarifas en dispatch: una función en centavos enteros para estimación y tarifa final, con los tests de borde. Estimación por `GET /tarifas/estimacion` ([docs/tarifas.md](tarifas.md)).
 - [x] Configuración de tarifas por el admin: versionada en Postgres, con Idempotency-Key y caché en Redis con invalidación. **La tomó Agostina** (PR 2 de tarifas).
 - [x] Cobro simulado idempotente que falla cerrado, con la tarifa final y por qué difiere de la estimación. **Lo hizo Ivan** (PR 3 de tarifas, [docs/tarifas.md](tarifas.md)).
-- [ ] Puertos de mapas y pagos con timeout. Hecho: mapas (simulado, con timeout y falla cerrado). Falta: pagos.
-- [ ] Caché en Redis de tarifas y zonas, con invalidación. Hecho el de tarifas, por versión (Agostina, PR 2 de tarifas). Falta el de zonas.
+- [x] Puertos de mapas y pagos con timeout. Hecho: mapas (simulado, con timeout y falla cerrado). Pagos también (`PagosConTimeout`, Ivan).
+- [x] Caché en Redis de tarifas y zonas, con invalidación. Hecho el de tarifas, por versión (Agostina, PR 2 de tarifas). El de zonas lo hizo Ivan (por generación, [flotas.md](flotas.md)).
 - [x] Frontend: pantalla del chofer. Tiene disponibilidad, ubicación (GPS o manual), ofertas por SSE con su vencimiento, aceptar, en camino, iniciar y finalizar, y la posición del pasajero. `GET /chofer/estado` la recupera al recargar ([docs/web.md](web.md#la-pantalla-del-chofer-chofer)). El cliente SSE, las claves de operación y el envío de ubicación quedan listos para la del pasajero.
 
 **Fase C y ataque cruzado**
-- [ ] Grafana Cloud: Alloy en un perfil de Compose, métricas de negocio y tres dashboards exportados.
+- [x] Grafana Cloud: Alloy en un perfil de Compose, métricas de negocio y tres dashboards exportados. Lo hizo Ivan ([observabilidad.md](observabilidad.md)), con `location_pings_total`. Falta conectar la cuenta de Grafana Cloud y sacar las capturas.
 - [ ] `carga/estres.js` y `carga/carrera.js`; mediciones finales con tres corridas. Hecho: `estres.js` y las solicitudes con tres corridas cada uno (24/11). `carrera.js` tiene una corrida de validación (22/11) y otra con los datos de carga nuevos (24/11): falta la tercera. El estrés conviene repetirlo con Docker en un SSD (ver `docs/mediciones.md`).
 - [ ] Ataque a los otros grupos: validación, montos y operaciones costosas.
-- [ ] ADR 0008 (búsqueda geográfica) y 0010 (idempotencia, con Ivan). Hecho: [0010](adr/0010-idempotencia.md), lo escribió Ivan.
+- [x] ADR 0008 (búsqueda geográfica) y 0010 (idempotencia, con Ivan). Hecho: [0010](adr/0010-idempotencia.md), lo escribió Ivan. La [0008](adr/0008-busqueda-geografica.md) la redactó Ivan; falta tu revisión.
 
 ## Dependencias
 

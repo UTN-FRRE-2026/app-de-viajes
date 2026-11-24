@@ -215,13 +215,13 @@ El ADR 0006 registra la decisión con sus alternativas reales: monolito modular 
 
 ## 4. Requisitos de ProgIV: estado al 24/11
 
-✅ hecho · 🟡 parcial · ⬜ falta. El CI está en verde en `main`. Hay 1038 tests: 628 de dispatch, 179 de identity, 158 de location y 73 de la web.
+✅ hecho · 🟡 parcial · ⬜ falta. El CI está en verde en `main`. Hay 1097 tests: 676 de dispatch, 179 de identity, 169 de location y 73 de la web.
 
 | Requisito | Estado | Qué falta |
 |---|---|---|
 | **B1** Arranque reproducible | ✅ | `npm run setup` (script de Node: `.env`, clave RS256, Postgres y Redis, bases que falten, migraciones y seed), `npm run dev` y `npm start`. Probado en un clon limpio con un volumen vacío, en Linux y en Windows |
 | **B2** Hexagonal | ✅ | Puertos con doble adaptador en los tres servicios: mapas, pagos, candidatos (location o lista fija), directorio de identity, estrategia de ubicaciones (ingenua u optimizada), bus de eventos y posiciones (Redis o memoria) |
-| **B3** Configuración y ciclo de vida | ✅ | Configuración validada con Zod al arrancar y apagado ordenado (corta los streams SSE, espera los barridos). Falta preparar la demo de SIGTERM con un pedido lento |
+| **B3** Configuración y ciclo de vida | ✅ | Configuración validada con Zod al arrancar y apagado ordenado (corta los streams SSE, espera los barridos). La demo de SIGTERM con un pedido lento es `npm run demo:apagado`: el pedido en curso termina con 200, una conexión nueva se rechaza y el proceso sale con 0 |
 | **B4** Errores y logs | ✅ | Formato de error único sin detalles internos, y una **línea por pedido** (método, ruta como patrón, estado, duración, `requestId`, usuario e IP) en los tres servicios: el pedido y su error se relacionan por `requestId` ([docs/seguridad.md](docs/seguridad.md#log-por-pedido)) |
 | **B5** Autenticación | ✅ | argon2id con costo declarado, RS256, refresh con rotación y detección de reuso |
 | **B5** Autorización por recurso | ✅ | En el caso de uso: viajes, historial, cobro, flotas (`fleetId` del token, 404 a otra flota) y el stream SSE (cada uno recibe solo lo suyo, también las posiciones en vivo: la del chofer solo su pasajero, y la del pasajero solo su chofer). En location, la posición sale del token: nadie informa la de otro |
@@ -244,11 +244,11 @@ El ADR 0006 registra la decisión con sus alternativas reales: monolito modular 
 | **6.5** Tiempo real | ✅ | SSE con los eventos del viaje, reconexión con `Last-Event-ID` y las posiciones en vivo: la del chofer para su pasajero, y la del pasajero para su chofer (3.5) |
 | **6.6** Simulador de 500 choferes y mediciones | ✅ | 500 choferes con k6 contra location, en un entorno de carga aislado (`carga/`). De punta a punta con dispatch (24/11): viajes en paralelo con el filtro real, ingenua frente a optimizada, y rampa de estrés, con las hipótesis commiteadas antes y 3 corridas por escenario (`docs/mediciones.md`) |
 | **6.7 G** Flotas y zonas | ✅ | Hecho: flotas, choferes con vehículo, habilitación, disponibilidad, límite de activos con la carrera G (test de 50 contra 10) y aislamiento entre flotas (3.3, `docs/flotas.md`), el panel `/flota` (cupo, alta, activar y desactivar), zonas en PostGIS, filtro de candidatos por flota y zona con lotes crecientes, y la revalidación al aceptar con la flota guardada en el viaje (PR 2), y el reporte de viajes y facturación por flota |
-| **7.1** Seis ADR o más | ✅ | Hay ocho: 0001, 0004, 0005, 0006, 0007 (SSE), 0010 (idempotencia), 0011 (vencimiento de ofertas) y 0012 (inventario de carreras). Faltan 0002, 0003, 0008 y 0009 |
+| **7.1** Seis ADR o más | ✅ | Los doce: 0001 a 0012 (`docs/adr/`) |
 | **7.2** `docs/mediciones.md` | ✅ | Cubre la tarea pesada, la carrera principal (6.3), y las solicitudes bajo carga y estrés con el tiempo hasta la asignación |
 | **7.3** Historial de Git | 🟡 | Los tres tienen commits y cada PR pasa por revisión de otro. El PR #1 se mergeó sin revisión |
 | **2.5** README, `modelo.md`, `api.md`, `ataque.md` | ✅ | Los cuatro, más el guion y la colección de la demo (`docs/demo.md`, `docs/demo.http`) y `docs/seguridad.md`. La bitácora de `ataque.md` se completa durante el ataque |
-| **8** Ataque cruzado | ⬜ | Entorno publicado y congelado, usuarios de prueba, bitácora |
+| **8** Ataque cruzado | 🟡 | Listo para publicar: `node deploy/desplegar.mjs <dominio>` ([docs/despliegue.md](docs/despliegue.md)), usuarios de prueba y guía de ataque. Falta la máquina, el tag `congelado` y la bitácora |
 
 ## 5. Rúbrica del Integrador: cómo se cumple cada ítem
 
@@ -341,7 +341,7 @@ Es lo que pide el Control 3: carrera principal con su test (ya está) y tarea pe
 - [x] location en sus dos versiones, con adaptador en memoria primero (Agos #7, Maxi #8).
 - [x] `carga/choferes.js`, `carga/solicitudes.js`, `/metrics` con el lag y **primera medición** en `docs/mediciones.md` (Maxi). Hecho: `carga/ubicaciones.js`, la primera medición y `/metrics` en los tres servicios desde `platform`, con el tiempo hasta la asignación en dispatch. Hecho (24/11): `carga/solicitudes.js` con 20 pasajeros y 50 choferes en paralelo, con el filtro real de flotas y zonas, 3 corridas por estrategia y el lag por ventana (`event_loop_lag_seconds`) (`docs/mediciones.md`). El simulador de 500 choferes es `carga/ubicaciones.js`.
 - [x] flotas en dispatch: choferes, vehículos, flotas y la carrera G con su test (Agos, PR 1 de flotas).
-- [ ] ADR 0001, 0002, 0003, 0005 y 0006; 0004 con el formato corregido. Hechos: 0001, 0004, 0005 y 0006. Faltan 0002 y 0003 (Agos).
+- [x] ADR 0001, 0002, 0003, 0005 y 0006; 0004 con el formato corregido. Hechos: 0001, 0004, 0005 y 0006. Hechos también 0002 y 0003.
 
 ### Fase B — sistema completo y publicado
 
@@ -353,22 +353,22 @@ Al cerrar esta fase el sistema tiene que poder congelarse para el ataque cruzado
 - [x] Zonas, candidatos filtrados por flota y zona, reporte, aislamiento entre flotas (Agos): el aislamiento entre flotas (PR 1 de flotas), las zonas en PostGIS, el filtro de candidatos y `fleet_id` guardado al aceptar (PR 2), y el reporte de viajes y facturación en `/flota` (`docs/flotas.md`).
 - [x] Seguridad transversal: rate limit en solicitud y ubicación, log por pedido, 413 de nginx en JSON y los tests del bloque 5 que faltaban (prototype pollution anidado). Helmet y CSP ya estaban; CORS no hace falta (mismo origen). Lo hizo Ivan ([docs/seguridad.md](docs/seguridad.md)).
 - [x] `tarifas`, cobro simulado y adaptadores de mapas y pagos con timeout: cálculo, estimación y mapas con timeout (Maxi); configuración por el admin con caché en Redis (Agostina); tarifa final, cobro y pagos (Ivan).
-- [ ] Caché en Redis, retención de ubicaciones y privacidad del seguimiento (Maxi). Hecho: la privacidad del seguimiento y la retención del historial, 30 días los pings de viaje y 24 h los demás ([docs/location.md](docs/location.md#retención-del-historial)).
-- [ ] Frontend mínimo: base y login (Agos), pasajero y operador (Ivan), chofer (Maxi). Hecho: la base y el login (`apps/web`, React + Vite + Zustand, servido por nginx con su CSP; `docs/web.md`), la pantalla del chofer (disponibilidad, ubicación, ofertas por SSE y viaje activo, con `GET /chofer/estado`) y el panel del admin de flota (cupo, lista, alta, activar y desactivar). Falta: pasajero y operador.
+- [x] Caché en Redis, retención de ubicaciones y privacidad del seguimiento (Maxi). Hecho: la privacidad del seguimiento y la retención del historial, 30 días los pings de viaje y 24 h los demás ([docs/location.md](docs/location.md#retención-del-historial)). Hecho también el caché de zonas en Redis, con invalidación por generación ([docs/flotas.md](docs/flotas.md)): lo hizo Ivan.
+- [x] Frontend mínimo: base y login (Agos), pasajero y operador (Ivan), chofer (Maxi). Hecho: la base y el login (`apps/web`, React + Vite + Zustand, servido por nginx con su CSP; `docs/web.md`), la pantalla del chofer (disponibilidad, ubicación, ofertas por SSE y viaje activo, con `GET /chofer/estado`) y el panel del admin de flota (cupo, lista, alta, activar y desactivar). Pasajero y operador, Ivan (#37).
 - [x] Contenedor `web` con nginx como punto de entrada único (Ivan), con la **CSP de la página** (punto extra que ofreció la cátedra): `default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https://tile.openstreetmap.org; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'` (las teselas del mapa son lo único de afuera, y solo como imágenes), `/interno/*`, `/metrics` y `/ready` sin publicar, SSE sin buffer y `trust proxy` solo para la IP de nginx ([docs/web.md](docs/web.md)). Falta: servir el build de Vite cuando esté el frontend, y el test en Playwright de que la página carga sin violaciones de CSP en la consola.
 - [x] `modelo.md`, `api.md`, tabla de roles, colección de la demo y usuarios de prueba ([docs/modelo.md](docs/modelo.md), [docs/api.md](docs/api.md), README, [docs/demo.md](docs/demo.md) y [docs/demo.http](docs/demo.http)).
 - [x] README y `docs/arquitectura.md` al día: tecnologías usadas y para qué, arquitectura, comunicación entre servicios y despliegue. La cátedra evalúa desde el repositorio y quiere ver ahí todo lo que se hizo y se usó.
-- [ ] Despliegue accesible para los grupos atacantes y tag `congelado`.
+- [ ] Despliegue accesible para los grupos atacantes y tag `congelado`. Listo el despliegue: `deploy/` (Compose de producción con Caddy y HTTPS, secretos generados, script que lo levanta entero) y [docs/despliegue.md](docs/despliegue.md). Falta la máquina y el dominio.
 
 ### Fase C — rúbrica del Integrador y cierre
 
 - [x] Playwright y job `e2e` (Ivan): los cinco flujos de 5.3 en `e2e/` ([docs/ci.md](docs/ci.md)).
 - [x] Job `sast` y corrección de lo que encuentre (Ivan): Semgrep, 11 hallazgos en la primera pasada, corregidos o justificados en el código ([docs/ci.md](docs/ci.md#sast-semgrep)).
-- [ ] Grafana Cloud y dashboards; `estres.js` y `carrera.js` (Maxi). Hecho: `carga/carrera.js` (22/11, una corrida de validación) y `carga/estres.js` con 3 corridas (24/11): se degrada en 16 viajes/s por la espera del commit en el disco mecánico de esta máquina; sin esa espera, sostiene 16 y se satura en 32, por la CPU de dispatch. Falta repetirlo con Docker en un SSD, y Grafana Cloud.
+- [ ] ~~Grafana Cloud y dashboards~~ (hecho: Alloy en el perfil `obs` y tres dashboards en `observabilidad/`, [docs/observabilidad.md](docs/observabilidad.md); falta conectar la cuenta de Grafana Cloud y las capturas); `estres.js` y `carrera.js` (Maxi). Hecho: `carga/carrera.js` (22/11, una corrida de validación) y `carga/estres.js` con 3 corridas (24/11): se degrada en 16 viajes/s por la espera del commit en el disco mecánico de esta máquina; sin esa espera, sostiene 16 y se satura en 32, por la CPU de dispatch. Falta repetirlo con Docker en un SSD, y Grafana Cloud.
 - [ ] Mediciones finales, tres corridas por escenario, con conclusión (Maxi).
-- [ ] ADR restantes: 0007 SSE, 0008 búsqueda geográfica, 0009 límite por flota, 0010 idempotencia, 0011 vencimiento de ofertas, 0012 inventario de carreras. Hechos: 0007, 0010, 0011 y 0012 (Ivan). Faltan 0008 (Maxi) y 0009 (Agos), y 0002 y 0003 (Agos).
-- [ ] Lo que dejó abierto el inventario de carreras ([ADR 0012](docs/adr/0012-inventario-carreras.md#lo-que-queda-sin-protección-o-sin-test)): tests de concurrencia que faltan (aceptar contra vencer contra Postgres, aceptar contra la cancelación del operador, bajar el límite de la flota contra activaciones, entre otros) y lo que solo se rompe con más de una réplica de dispatch (límite de streams SSE y cobro simulado en memoria).
-- [ ] Purga del `outbox`: hoy crece sin fin (se conserva para reponer eventos con `Last-Event-ID`). Falta decidir la retención ([docs/modelo.md](docs/modelo.md)).
+- [x] ADR restantes: los doce están en `docs/adr/`. 0002, 0003, 0008 y 0009 los redactó Ivan; revisión de Agos y Maxi.
+- [x] Lo que dejó abierto el inventario de carreras ([ADR 0012](docs/adr/0012-inventario-carreras.md#lo-que-queda-sin-protección-o-sin-test)): 18 tests de concurrencia nuevos (cada uno comprobado sacando su protección), el límite de streams SSE compartido entre instancias (Redis) y el reclamo de cobros del barrido con `SKIP LOCKED`. Queda documentado: el pagos simulado deduplica en memoria (uno real lo hace de su lado).
+- [x] Purga del `outbox`: los eventos publicados se borran pasada `OUTBOX_RETENCION_HORAS` (24 h), por lotes y con `SKIP LOCKED`.
 - [ ] Autoevaluación de ProgIV 10.6 completa, clon limpio en otra máquina y tag `entrega-final` (Ivan).
 
 ### Ataque cruzado — cuando lo fije la cátedra

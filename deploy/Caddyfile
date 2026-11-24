@@ -1,0 +1,10 @@
+# Caddy delante de nginx en el entorno publicado (deploy/compose.produccion.yml).
+# DOMINIO: un dominio (HTTPS automático con Let's Encrypt) o :80 (HTTP, detrás de un túnel con TLS).
+{$DOMINIO} {
+	# HSTS: el navegador no vuelve a entrar por HTTP. Con DOMINIO=:80 el navegador lo ignora (no es HTTPS).
+	header Strict-Transport-Security "max-age=31536000"
+	reverse_proxy web:8080 {
+		# SSE (GET /api/viajes/eventos): cada evento sale apenas llega, sin juntar en un buffer.
+		flush_interval -1
+	}
+}

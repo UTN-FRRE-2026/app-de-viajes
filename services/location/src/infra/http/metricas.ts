@@ -1,8 +1,20 @@
 import { Counter, Gauge, type Metricas } from '@viajes/platform';
+import type { RequestHandler } from 'express';
 import type { QuienPublica, ResultadoPublicacion } from '../../dominio/puertos/index.js';
 import type { EstadoHistorial } from '../redis/historial.js';
 
 const RESULTADOS_PUBLICACION: readonly ResultadoPublicacion[] = ['publicada', 'atrasada', 'vencida', 'error'];
+
+/** Qué pasó con un ping, según el estado de la respuesta. */
+export type ResultadoPing = 'aceptado' | 'limitado' | 'rechazado' | 'error';
+const RESULTADOS_PING: readonly ResultadoPing[] = ['aceptado', 'limitado', 'rechazado', 'error'];
+
+/** 2xx aceptado; 429 limitado (límite de tasa); otro 4xx rechazado (token, rol, cuerpo); 5xx error. */
+export function resultadoPing(estado: number): ResultadoPing {
+  if (estado < 400) return 'aceptado';
+  if (estado === 429) return 'limitado';
+  return estado < 500 ? 'rechazado' : 'error';
+}
 
 /**
  * Métricas propias de location, en el mismo Registry que las comunes de `platform` (lag, memoria,
@@ -68,4 +80,28 @@ export function registrarMetricaPublicacion({ registro }: Metricas): (resultado:
     for (const resultado of RESULTADOS_PUBLICACION) contador.inc({ de, resultado }, 0);
   }
   return (resultado, de) => contador.inc({ de, resultado });
+}
+
+/**
+ * `location_pings_total{de, estrategia, resultado}`: los pings que llegan a `POST /ubicaciones` (`de="chofer"`)
+ * y a `POST /ubicaciones/pasajero` (`de="pasajero"`), por resultado (ver resultadoPing). Su tasa es la de pings
+ * por segundo de 6.6, y la etiqueta `estrategia` deja comparar corridas de la ingenua y la optimizada en el mismo
+ * panel. Se cuenta al terminar de enviar la respuesta: un ping cuyo cliente cortó antes no se cuenta (igual que
+ * `http_request_duration_seconds`). Todas las series arrancan en 0. Devuelve el middleware de cada ruta, que se
+ * monta primero para contar también los rechazos de autenticación y del límite de tasa.
+ */
+export function registrarMetricaPings({ registro }: Metricas, estrategia: string): (de: QuienPublica) => RequestHandler {
+  const contador = new Counter({
+    name: 'location_pings_total',
+    help: 'Pings recibidos (posición del chofer o del pasajero), por estrategia y resultado: aceptado, limitado (429), rechazado (otro 4xx) o error (5xx).',
+    labelNames: ['de', 'estrategia', 'resultado'] as const,
+    registers: [registro],
+  });
+  for (const de of ['chofer', 'pasajero'] as const) {
+    for (const resultado of RESULTADOS_PING) contador.inc({ de, estrategia, resultado }, 0);
+  }
+  return (de) => (_req, res, next) => {
+    res.once('finish', () => contador.inc({ de, estrategia, resultado: resultadoPing(res.statusCode) }));
+    next();
+  };
 }

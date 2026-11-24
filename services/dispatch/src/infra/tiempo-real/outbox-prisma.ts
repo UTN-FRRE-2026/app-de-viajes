@@ -47,8 +47,52 @@ export function relayOutboxPrisma(prisma: PrismaClient, bus: BusEventos, lote = 
     });
 }
 
+export interface OpcionesPurgaOutbox {
+  /** Cuánto se conserva un evento ya publicado. */
+  retencionMs: number;
+  /** Filas por DELETE: lotes chicos, para no bloquear la tabla ni generar una transacción enorme. */
+  lote?: number;
+  /** Lotes por pasada, como mucho. Si queda más, sigue en la próxima. */
+  maxLotes?: number;
+}
+
 /**
- * Lo que se perdió un cliente desconectado, leído del mismo outbox (que se conserva). Incluye
+ * Borra los eventos **ya publicados** más viejos que la retención. El outbox se conserva para reponer
+ * lo que se perdió un cliente desconectado (`Last-Event-ID`); pasada la retención, ese cliente ya no
+ * necesita la reposición: al reconectar relee el estado (ADR 0007). Sin esto, la tabla crece con cada
+ * evento para siempre.
+ *
+ * - Nunca borra uno sin publicar: el relay todavía lo tiene que mandar.
+ * - Por lotes, los más viejos primero (índice por `published_at`), con `FOR UPDATE SKIP LOCKED`: con
+ *   varias instancias, cada una borra filas distintas, y ninguna espera al relay.
+ * - La hora es la de la base (`now()`), la misma que puso `published_at`.
+ *
+ * Devuelve cuántos borró.
+ */
+export function purgarOutboxPrisma(prisma: PrismaClient, { retencionMs, lote = 1000, maxLotes = 20 }: OpcionesPurgaOutbox) {
+  return async (): Promise<number> => {
+    let total = 0;
+    for (let i = 0; i < maxLotes; i++) {
+      const borrados = await prisma.$executeRaw`
+        DELETE FROM outbox
+        WHERE seq IN (
+          SELECT seq
+          FROM outbox
+          WHERE published_at IS NOT NULL
+            AND published_at < now() - ${retencionMs}::float8 * interval '1 millisecond'
+          ORDER BY published_at
+          LIMIT ${lote}::int
+          FOR UPDATE SKIP LOCKED
+        )`;
+      total += borrados;
+      if (borrados < lote) break;
+    }
+    return total;
+  };
+}
+
+/**
+ * Lo que se perdió un cliente desconectado, leído del mismo outbox (que se conserva OUTBOX_RETENCION_HORAS). Incluye
  * eventos todavía sin publicar: el stream descarta el repetido cuando el relay lo publique.
  */
 export class HistorialEventosPrisma implements HistorialEventos {

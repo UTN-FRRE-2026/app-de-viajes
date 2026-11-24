@@ -1,8 +1,10 @@
+import { randomUUID } from 'node:crypto';
 import { TIPO_POSICION_CHOFER, TIPO_POSICION_PASAJERO } from '@viajes/contracts';
 import { ErrorHttp, usuarioDe, type Logger } from '@viajes/platform';
 import type { RequestHandler } from 'express';
 import { z } from 'zod';
 import type { ViajeConChofer, ViajeConPasajero } from '../../dominio/puertos/index.js';
+import type { CupoConexiones } from './cupo-conexiones.js';
 import { EVENTOS_DEL_SEGUIDO, Seguimiento, type ViajeSeguido } from './seguimiento.js';
 import type { BusEventos, EventoEntregable, FuentePosiciones, HistorialEventos, Seguido } from './tipos.js';
 
@@ -24,6 +26,11 @@ export interface OpcionesStreams {
   logger: Logger;
   /** Streams abiertos a la vez por usuario. Más, 429: cada stream ocupa memoria y una suscripción. */
   maxPorUsuario?: number;
+  /**
+   * El mismo límite contado entre todas las instancias (Redis). Sin esto, se cuenta solo en este
+   * proceso: con N instancias, un usuario podría abrir N × maxPorUsuario.
+   */
+  cupo?: CupoConexiones;
   /** Cada cuánto se manda un comentario para que los proxies no corten la conexión por inactividad. */
   latidoMs?: number;
   /** Cuántos eventos perdidos se reponen como mucho al reconectar. El resto, por GET /solicitudes/:id. */
@@ -62,7 +69,7 @@ export interface OpcionesStreams {
  */
 export class StreamsEventos {
   private readonly abiertos = new Map<string, Set<() => void>>();
-  private readonly o: Required<Omit<OpcionesStreams, 'posiciones'>> & Pick<OpcionesStreams, 'posiciones'>;
+  private readonly o: Required<Omit<OpcionesStreams, 'posiciones' | 'cupo'>> & Pick<OpcionesStreams, 'posiciones' | 'cupo'>;
 
   constructor(opciones: OpcionesStreams) {
     this.o = { maxPorUsuario: 3, latidoMs: 15_000, maxReposicion: 500, memoriaRepetidos: 1000, ...opciones };
@@ -99,6 +106,16 @@ export class StreamsEventos {
       }
 
       let cerrado = false;
+      // El lugar en el cupo compartido (si hay): vence a los tres latidos sin renovar.
+      const cupo = this.o.cupo;
+      const idConexion = randomUUID();
+      const ttlCupoMs = this.o.latidoMs * 3;
+      let enCupo = false;
+      const soltarCupo = () => {
+        if (!cupo || !enCupo) return;
+        enCupo = false;
+        void cupo.soltar(usuario.id, idConexion).catch(() => {});
+      };
       const timers: { latido?: NodeJS.Timeout; vencimiento?: NodeJS.Timeout } = {};
       let desuscribir: (() => Promise<void>) | undefined;
       const seguimiento: { actual?: Seguimiento } = {};
@@ -110,6 +127,7 @@ export class StreamsEventos {
         clearTimeout(timers.vencimiento);
         propios.delete(cerrar);
         if (propios.size === 0) this.abiertos.delete(usuario.id);
+        soltarCupo();
         void desuscribir?.().catch(() => {});
         seguimiento.actual?.terminar();
       };
@@ -120,6 +138,29 @@ export class StreamsEventos {
       propios.add(cerrar);
       // El `close` de la respuesta, no el del pedido: en un GET, el pedido "cierra" apenas se terminó de leer.
       res.on('close', cerrar);
+
+      // El cupo entre instancias, después del local (que ya reservó sin await). Falla abierto: si Redis no
+      // responde, queda el límite de este proceso y el stream sigue; sin Redis tampoco llegarían eventos.
+      if (cupo) {
+        let resultado: 'tomado' | 'lleno' | 'sin_cupo';
+        try {
+          resultado = (await cupo.tomar(usuario.id, idConexion, this.o.maxPorUsuario, ttlCupoMs)) ? 'tomado' : 'lleno';
+        } catch (err) {
+          this.o.logger.warn({ err: err instanceof Error ? err.message : String(err) }, 'eventos: cupo compartido no disponible, cuenta solo esta instancia');
+          resultado = 'sin_cupo';
+        }
+        if (resultado === 'tomado') {
+          enCupo = true;
+          // El cliente se fue mientras se tomaba: se suelta ya, no al vencer.
+          if (cerrado) soltarCupo();
+        }
+        if (cerrado) return;
+        if (resultado === 'lleno') {
+          // liberar y no cerrar: la respuesta todavía no salió y tiene que ser el 429.
+          liberar();
+          throw new ErrorHttp(429, 'DEMASIADAS_CONEXIONES', `Como mucho ${this.o.maxPorUsuario} conexiones de eventos a la vez`);
+        }
+      }
 
       const enviados = new Set<number>();
       const enviar = (e: EventoEntregable) => {
@@ -189,7 +230,10 @@ export class StreamsEventos {
       reponiendo = false;
       for (const e of enEspera.sort((a, b) => a.seq - b.seq)) enviar(e);
 
-      timers.latido = setInterval(() => res.write(': latido\n\n'), this.o.latidoMs);
+      timers.latido = setInterval(() => {
+        res.write(': latido\n\n');
+        if (cupo && enCupo) void cupo.renovar(usuario.id, idConexion, ttlCupoMs).catch(() => {});
+      }, this.o.latidoMs);
       if (usuario.venceEn) {
         timers.vencimiento = setTimeout(cerrar, Math.max(0, usuario.venceEn.getTime() - Date.now()));
       }

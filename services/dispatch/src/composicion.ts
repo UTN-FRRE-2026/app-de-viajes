@@ -56,13 +56,16 @@ import { ElegibilidadMemoria } from './infra/memoria/zonas-memoria.js';
 import { ElegibilidadPrisma } from './infra/db/zonas-prisma.js';
 import { RepositorioTarifasPrisma } from './infra/db/tarifas-prisma.js';
 import { RepositorioTarifasMemoria } from './infra/memoria/tarifas-memoria.js';
-import { contadorCacheTarifas } from './infra/metricas/prometheus.js';
+import { contadorCacheTarifas, contadorCacheZonas } from './infra/metricas/prometheus.js';
 import { cacheTarifasRedis, ProveedorTarifasVersionadas, type CacheTarifas } from './infra/tarifas/proveedor-tarifas.js';
 import { semillaDesdeConfig } from './infra/tarifas/tarifas-config.js';
+import { cacheZonasRedis, type CacheZonas } from './infra/zonas/cache-zonas.js';
+import { ElegibilidadConCache } from './infra/zonas/elegibilidad-con-cache.js';
 import { BusEventosMemoria } from './infra/tiempo-real/bus-memoria.js';
 import { BusEventosRedis } from './infra/tiempo-real/bus-redis.js';
 import { EventosMemoria } from './infra/tiempo-real/eventos-memoria.js';
-import { HistorialEventosPrisma, relayOutboxPrisma } from './infra/tiempo-real/outbox-prisma.js';
+import { cupoConexionesRedis, type CupoConexiones } from './infra/tiempo-real/cupo-conexiones.js';
+import { HistorialEventosPrisma, purgarOutboxPrisma, relayOutboxPrisma } from './infra/tiempo-real/outbox-prisma.js';
 import { PosicionesMemoria } from './infra/tiempo-real/posiciones-memoria.js';
 import { PosicionesRedis } from './infra/tiempo-real/posiciones-redis.js';
 import { StreamsEventos } from './infra/tiempo-real/sse.js';
@@ -70,6 +73,8 @@ import type { BusEventos, FuentePosiciones, HistorialEventos, RelayEventos } fro
 
 /** Reemplazos para tests: cualquier adaptador se puede inyectar desde afuera. */
 export interface Reemplazos {
+  /** El cupo de streams SSE entre instancias: uno propio (tests). Por defecto, Redis con Postgres. */
+  cupoConexiones?: CupoConexiones;
   /** Contador del límite de tasa: uno propio (tests). Por defecto, Redis con Postgres y memoria sin él. */
   contadorTasa?: ContadorTasa;
   verificador?: VerificadorToken;
@@ -97,6 +102,8 @@ export interface Reemplazos {
    * con el repo y las flotas en memoria se arma solo.
    */
   elegibilidad?: ElegibilidadChoferes;
+  /** Caché de zonas sobre una `ElegibilidadPrisma`. Por defecto, Redis con Postgres y ninguno sin él. */
+  cacheZonas?: CacheZonas | null;
 }
 
 /** El tiempo real: el bus en vivo, el historial para reponer, el relay del outbox y las posiciones de location. */
@@ -118,6 +125,8 @@ export interface Sistema {
   streams: StreamsEventos;
   /** Borra las claves de idempotencia vencidas; lo corre el servidor cada IDEMPOTENCIA_PURGA_INTERVALO_MS. */
   purgarIdempotencia: () => Promise<number>;
+  /** Borra los eventos ya publicados del outbox pasada OUTBOX_RETENCION_HORAS; lo corre el servidor junto con la de idempotencia. */
+  purgarOutbox: () => Promise<number>;
   cerrar: () => Promise<void>;
 }
 
@@ -164,6 +173,7 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
   let idempotencia = reemplazos.idempotencia ?? { almacen: new AlmacenIdempotenciaMemoria(), cerrojo: new CerrojoMemoria() };
   let repoTarifas: RepositorioTarifas = reemplazos.repoTarifas ?? new RepositorioTarifasMemoria();
   let cacheTarifas: CacheTarifas | null = reemplazos.cacheTarifas ?? null;
+  let cacheZonas: CacheZonas | null = reemplazos.cacheZonas ?? null;
   let repoFlotas: RepositorioFlotas = reemplazos.repoFlotas ?? new RepositorioFlotasMemoria();
   let contadorTasa: ContadorTasa = reemplazos.contadorTasa ?? contadorTasaMemoria();
 
@@ -171,6 +181,9 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
   let elegibilidad: ElegibilidadChoferes | undefined = reemplazos.elegibilidad;
   // En memoria no hace falta: el almacén vive lo que vive el proceso.
   let purgarIdempotencia = async () => 0;
+  let purgarOutbox = async () => 0;
+  // El límite de streams SSE contado entre instancias. En memoria, alcanza con el de cada proceso.
+  let cupoConexiones: CupoConexiones | undefined = reemplazos.cupoConexiones;
 
   if (reemplazos.repo) {
     repo = reemplazos.repo;
@@ -186,6 +199,8 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
       cerrojo: cerrojoRedis(redis, 'dispatch:idempotencia:'),
     };
     purgarIdempotencia = purgarIdempotenciaSql(prisma, { retencionMs: config.IDEMPOTENCIA_RETENCION_HORAS * 3_600_000 });
+    purgarOutbox = purgarOutboxPrisma(prisma, { retencionMs: config.OUTBOX_RETENCION_HORAS * 3_600_000 });
+    cupoConexiones ??= cupoConexionesRedis(redis, 'dispatch:sse:');
     // El límite de tasa, en el mismo Redis: compartido si hubiera más de una réplica de dispatch.
     contadorTasa = reemplazos.contadorTasa ?? contadorTasaRedis(redis, 'dispatch:tasa:');
     repoTarifas = reemplazos.repoTarifas ?? new RepositorioTarifasPrisma(prisma);
@@ -195,6 +210,10 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
       reemplazos.cacheTarifas === undefined
         ? cacheTarifasRedis(redis, { prefijo: 'dispatch:tarifas:', ttlSegundos: config.TARIFAS_CACHE_TTL_SEGUNDOS, timeoutMs: 200 })
         : reemplazos.cacheTarifas;
+    // Las zonas, en el mismo Redis y con el mismo tiempo límite. ZONAS_CACHE_TTL_SEGUNDOS=0: sin caché.
+    if (reemplazos.cacheZonas === undefined && config.ZONAS_CACHE_TTL_SEGUNDOS > 0) {
+      cacheZonas = cacheZonasRedis(redis, { prefijo: 'dispatch:zonas:', ttlSegundos: config.ZONAS_CACHE_TTL_SEGUNDOS, timeoutMs: 200 });
+    }
     if (!tiempoReal) {
       const bus = new BusEventosRedis(redis, 'dispatch:eventos:', logger);
       tiempoReal = {
@@ -227,6 +246,7 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
     historial: eventos.historial,
     logger,
     maxPorUsuario: config.SSE_MAX_POR_USUARIO,
+    ...(cupoConexiones ? { cupo: cupoConexiones } : {}),
     posiciones: {
       fuente: eventos.posiciones,
       viajeConChofer: (pasajeroId) => repo.viajeConChoferDelPasajero(pasajeroId),
@@ -267,6 +287,10 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
   });
 
   const metricas = crearMetricas({ servicio: 'dispatch' });
+  // Zonas con caché: solo la búsqueda previa a la oferta. La aceptación revalida con Postgres en su transacción.
+  if (cacheZonas && elegibilidad instanceof ElegibilidadPrisma) {
+    elegibilidad = new ElegibilidadConCache({ base: elegibilidad, cache: cacheZonas, logger, alLeerCache: contadorCacheZonas(metricas) });
+  }
   const tarifas =
     reemplazos.tarifas ??
     new ProveedorTarifasVersionadas({
@@ -298,6 +322,7 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
   const casosFlotas = crearCasosDeFlotas({
     repoFlotas,
     viajes: repo,
+    elegibilidad,
     directorio:
       reemplazos.directorio ??
       new DirectorioIdentity({
@@ -346,6 +371,7 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
     relayEventos: eventos.relay,
     streams,
     purgarIdempotencia,
+    purgarOutbox,
     cerrar: async () => {
       metricas.detener();
       streams.cerrarTodos();

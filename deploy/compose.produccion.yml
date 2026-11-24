@@ -1,0 +1,71 @@
+# Entorno publicado (el que atacan los otros grupos). Se suma al docker-compose.yml de la raíz:
+#
+#   docker compose -f docker-compose.yml -f deploy/compose.produccion.yml --env-file deploy/.env.produccion up -d
+#
+# Lo maneja `node deploy/desplegar.mjs`: no hace falta escribir esto a mano (docs/despliegue.md).
+#
+# Qué cambia respecto de desarrollo:
+# - Lo único publicado es Caddy (80 y 443), con HTTPS automático, delante de nginx. Los servicios, nginx
+#   y Redis no publican puertos; Postgres solo en 127.0.0.1, para las migraciones y el seed del host.
+# - Contraseñas de las bases y tokens propios, del .env.produccion (los genera deploy/preparar-env.mjs).
+# - Todo con `restart: unless-stopped`: vuelve solo si se reinicia la máquina.
+# `!reset` y `!override` necesitan Docker Compose 2.24 o más nuevo.
+
+services:
+  postgres:
+    environment:
+      # El init (infra/postgres/init) crea cada usuario con DB_PASSWORD_<SERVICIO> si está definida.
+      DB_PASSWORD_IDENTITY: ${DB_PASSWORD_IDENTITY:?falta DB_PASSWORD_IDENTITY, correr node deploy/preparar-env.mjs}
+      DB_PASSWORD_LOCATION: ${DB_PASSWORD_LOCATION:?falta DB_PASSWORD_LOCATION}
+      DB_PASSWORD_DISPATCH: ${DB_PASSWORD_DISPATCH:?falta DB_PASSWORD_DISPATCH}
+    ports: !override
+      - "127.0.0.1:${POSTGRES_PUERTO_HOST:-5434}:5432"
+    restart: unless-stopped
+
+  redis:
+    ports: !reset []
+    restart: unless-stopped
+
+  identity:
+    ports: !reset []
+    restart: unless-stopped
+
+  location:
+    ports: !reset []
+    restart: unless-stopped
+
+  dispatch:
+    ports: !reset []
+    restart: unless-stopped
+
+  web:
+    ports: !reset []
+    restart: unless-stopped
+
+  # TLS y HSTS. Con un dominio en DOMINIO, Caddy saca el certificado de Let's Encrypt solo (hacen falta
+  # los puertos 80 y 443 abiertos y el DNS apuntando a la máquina). Con DOMINIO=:80, HTTP sin TLS (por
+  # ejemplo, detrás de un túnel que ya pone el HTTPS).
+  caddy:
+    image: caddy:2.10.2-alpine
+    environment:
+      DOMINIO: ${DOMINIO:?falta DOMINIO (un dominio, o :80 para HTTP sin TLS)}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_datos:/data
+      - caddy_config:/config
+    networks:
+      proxy:
+        # Fija: nginx cree el X-Forwarded-For solo si viene de esta IP (set_real_ip_from en
+        # infra/web/default.conf). Así los límites por IP del login cuentan por cliente y no por Caddy.
+        ipv4_address: ${CADDY_IP:-10.250.77.11}
+    depends_on:
+      - web
+    restart: unless-stopped
+
+volumes:
+  caddy_datos:
+  caddy_config:

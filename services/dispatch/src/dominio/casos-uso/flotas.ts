@@ -24,6 +24,7 @@ import type {
   DatosReporteFlota,
   DatosZona,
   DirectorioUsuarios,
+  ElegibilidadChoferes,
   Pagina,
   PeriodoReporte,
   RepositorioDespacho,
@@ -36,6 +37,8 @@ export interface DependenciasFlotas {
   directorio: DirectorioUsuarios;
   /** Los viajes y los cobros, para el reporte: viven en el repositorio de despacho. */
   viajes: Pick<RepositorioDespacho, 'reporteFlota'>;
+  /** Para avisar al caché de zonas, después del COMMIT, que cambiaron las zonas o las de una flota. */
+  elegibilidad?: Pick<ElegibilidadChoferes, 'zonasCambiadas'>;
 }
 
 /** El reporte de la flota, con el período que se consultó. */
@@ -64,7 +67,12 @@ export interface ListadoChoferes {
  * - activar a uno ya activo, cambiar la disponibilidad o bajar el límite no lo tocan.
  * El cambio del chofer y el del contador van en la misma transacción.
  */
-export function crearCasosDeFlotas({ repoFlotas, directorio, viajes }: DependenciasFlotas) {
+export function crearCasosDeFlotas({ repoFlotas, directorio, viajes, elegibilidad }: DependenciasFlotas) {
+  /** Después del COMMIT: el próximo pedido ve el cambio. No lanza (la implementación no lanza). */
+  const zonasCambiadas = async () => {
+    await elegibilidad?.zonasCambiadas?.();
+  };
+
   /** La flota del token tiene que existir en dispatch. */
   async function flotaPropia(actor: ActorFlota): Promise<Flota> {
     const flota = await repoFlotas.obtenerFlota(flotaDelActor(actor));
@@ -149,12 +157,14 @@ export function crearCasosDeFlotas({ repoFlotas, directorio, viajes }: Dependenc
      * cada una guardó su zona al crearse.
      */
     async guardarZona(zona: DatosZona): Promise<DatosZona> {
-      return repoFlotas.enTransaccion(async (tx) => {
+      const guardada = await repoFlotas.enTransaccion(async (tx) => {
         const r = await tx.guardarZona(zona);
         if (r.resultado === 'invalida') throw new ZonaInvalida(r.motivo);
         if (r.resultado === 'superpuesta') throw new ZonasSuperpuestas(r.con);
         return (await tx.obtenerZona(zona.id)) as DatosZona;
       });
+      await zonasCambiadas();
+      return guardada;
     },
 
     listarZonas: () => repoFlotas.listarZonas(),
@@ -165,12 +175,14 @@ export function crearCasosDeFlotas({ repoFlotas, directorio, viajes }: Dependenc
      * pueden aceptar ofertas de esa zona.
      */
     async zonasDeFlota(flotaId: string, zonas: readonly string[]): Promise<{ flotaId: string; zonas: string[] }> {
-      return repoFlotas.enTransaccion(async (tx) => {
+      const resultado = await repoFlotas.enTransaccion(async (tx) => {
         const r = await tx.reemplazarZonasDeFlota(flotaId, zonas);
         if (r === 'flota_no_existe') throw new FlotaNoEncontrada();
         if (r === 'zona_no_existe') throw new ZonaNoEncontrada();
         return { flotaId, zonas: await tx.zonasDeFlota(flotaId) };
       });
+      await zonasCambiadas();
+      return resultado;
     },
 
     /** Admin de la plataforma: habilita a cualquier chofer. */

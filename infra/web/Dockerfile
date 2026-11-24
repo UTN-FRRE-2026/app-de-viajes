@@ -15,7 +15,11 @@ RUN npm ci --workspace @viajes/web \
 # 2. nginx: la configuración y el build.
 FROM nginxinc/nginx-unprivileged:1.27-alpine
 
-COPY infra/web/default.conf /etc/nginx/conf.d/default.conf
+# Como plantilla: al arrancar, la imagen de nginx reemplaza ${CADDY_IP} y escribe conf.d/default.conf.
+# Solo esa variable (NGINX_ENVSUBST_FILTER): las $variables de nginx quedan como están.
+ENV CADDY_IP=10.250.77.11 \
+    NGINX_ENVSUBST_FILTER=^CADDY_IP$
+COPY infra/web/default.conf /etc/nginx/templates/default.conf.template
 COPY --from=frontend /repo/apps/web/dist/ /usr/share/nginx/html/
 
 EXPOSE 8080

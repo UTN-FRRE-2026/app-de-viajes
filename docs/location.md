@@ -81,6 +81,7 @@ Lo monta `platform`, igual en los tres servicios: `Authorization: Bearer <METRIC
 | `location_estrategia{estrategia}` | Estrategia con la que corre (siempre 1) |
 | `location_historial_en_cola`, `location_historial_pendientes` | Optimizada: entradas en el stream y entradas leídas sin confirmar. `carga/medir.ps1` las usa para esperar el drenaje y **falla si no las encuentra** |
 | `location_historial_descartados_total`, `location_historial_ocupacion`, `location_historial_max_cola` | Optimizada: entradas que no entraron por cola llena, uso de la cola (de 0 a 1) y su tope |
+| `location_pings_total{de, estrategia, resultado}` | Pings recibidos en `POST /ubicaciones` (`de="chofer"`) y `POST /ubicaciones/pasajero` (`de="pasajero"`): `aceptado` (2xx), `limitado` (429), `rechazado` (otro 4xx) o `error` (5xx). Se cuenta antes de la autenticación y del límite de tasa; su tasa es la de pings por segundo ([docs/observabilidad.md](observabilidad.md)) |
 | `location_posiciones_publicadas_total{de, resultado}` | Publicaciones de la posición en vivo, del chofer o del pasajero (`de`): `publicada`, `atrasada` (más vieja que la última publicada), `vencida` (superaba la vigencia) o `error` (falló o no se confirmó en 200 ms) |
 
 ## Versión optimizada (`UBICACION_ESTRATEGIA=optimizada`)
@@ -527,5 +528,5 @@ npm run test:dominio -w @viajes/location
    - límite de pedidos en `/ubicaciones`;
    - ~~retención del historial~~ (hecho: 30 días los de viaje y 24 h los demás, ver [Retención del historial](#retención-del-historial));
    - ~~publicación por Redis para el seguimiento~~ (hecho, ver [Posición en vivo](#posición-en-vivo)); la regla de privacidad la aplica dispatch al suscribirse;
-   - Alloy y los dashboards de Grafana sobre el `/metrics` de `platform` (ya hecho);
-   - ADR 0008 (Redis GEO frente a PostGIS frente a geohash), con los números de [docs/mediciones.md](mediciones.md).
+   - ~~Alloy y los dashboards de Grafana~~ (hecho: [docs/observabilidad.md](observabilidad.md));
+   - ~~ADR 0008~~ (hecho: [Redis GEO frente a PostGIS frente a geohash](adr/0008-busqueda-geografica.md)), con los números de [docs/mediciones.md](mediciones.md).

@@ -37,7 +37,7 @@ Test: `services/dispatch/tests/seguridad/log-pedidos.test.ts`.
 | `POST /login` | identity | email y IP | 5 y 30 cada 15 min | `IDENTITY_LOGIN_MAX_POR_EMAIL`, `IDENTITY_LOGIN_MAX_POR_IP` ([identity.md](identity.md#límite-de-intentos-de-login)) |
 | `POST /solicitudes` | dispatch | pasajero | 10 por minuto | `LIMITE_SOLICITUDES_POR_MINUTO` |
 | `POST /ubicaciones` y `POST /ubicaciones/pasajero` | location | usuario | 120 por minuto | `LIMITE_UBICACIONES_POR_MINUTO` |
-| `GET /eventos` (SSE) | dispatch | usuario | 3 streams abiertos | `SSE_MAX_POR_USUARIO` |
+| `GET /eventos` (SSE) | dispatch | usuario | 3 streams abiertos, contados entre todas las instancias (Redis) | `SSE_MAX_POR_USUARIO` |
 
 Al pasarse: **429** `DEMASIADOS_PEDIDOS` con `RateLimit-Limit`, `RateLimit-Remaining`, `RateLimit-Reset` y `Retry-After` (en segundos). Los encabezados `RateLimit-*` van también en las respuestas que pasan.
 

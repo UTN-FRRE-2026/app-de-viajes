@@ -143,6 +143,8 @@ services:
       OFERTA_TTL_SEGUNDOS: ${OFERTA_TTL_SEGUNDOS:-}
       # Límite de tasa de la solicitud, por pasajero. Vacía: el valor por defecto de dispatch (10 por minuto).
       LIMITE_SOLICITUDES_POR_MINUTO: ${LIMITE_SOLICITUDES_POR_MINUTO:-}
+      # Retención de los eventos publicados del outbox. Vacía: 24 h.
+      OUTBOX_RETENCION_HORAS: ${OUTBOX_RETENCION_HORAS:-}
       # Flotas: el alta de un chofer verifica la cuenta en identity (red interna; /interno/* no se publica).
       IDENTITY_URL: http://identity:3001
       IDENTITY_TOKEN_SERVICIO: ${IDENTITY_TOKEN_SERVICIO:-}
@@ -162,6 +164,7 @@ services:
       MAPAS_TIMEOUT_MS: ${MAPAS_TIMEOUT_MS:-}
       MAPAS_LATENCIA_SIMULADA_MS: ${MAPAS_LATENCIA_SIMULADA_MS:-}
       TARIFAS_CACHE_TTL_SEGUNDOS: ${TARIFAS_CACHE_TTL_SEGUNDOS:-}
+      ZONAS_CACHE_TTL_SEGUNDOS: ${ZONAS_CACHE_TTL_SEGUNDOS:-}
       PAGOS_TIMEOUT_MS: ${PAGOS_TIMEOUT_MS:-}
       PAGOS_LATENCIA_SIMULADA_MS: ${PAGOS_LATENCIA_SIMULADA_MS:-}
       PAGOS_RECHAZAR_DESDE_CENTAVOS: ${PAGOS_RECHAZAR_DESDE_CENTAVOS:-}
@@ -183,6 +186,9 @@ services:
       context: .
       dockerfile: infra/web/Dockerfile
     image: ghcr.io/grupo7/viajes-web:${VERSION:-0.1.0}
+    environment:
+      # La IP de Caddy en el entorno publicado (deploy/), la única cuyo X-Forwarded-For cree nginx.
+      CADDY_IP: ${CADDY_IP:-10.250.77.11}
     ports:
       - "${WEB_PUERTO:-8080}:8080"
     networks:
@@ -194,8 +200,49 @@ services:
       - location
       - dispatch
 
+  # Observabilidad, OPCIONAL: solo con `docker compose --profile obs up -d`. Sin el perfil no se crea, y
+  # nada depende de él. Lee /metrics de los tres servicios por la red interna y los logs JSON por el
+  # socket de Docker, y los manda a Grafana Cloud (docs/observabilidad.md). Las credenciales, solo en el
+  # .env: si faltan, Alloy arranca igual pero no envía nada (lo avisa en su log), y nada más se entera.
+  alloy:
+    image: grafana/alloy:v1.21.3
+    profiles: ["obs"]
+    command:
+      - run
+      - /etc/alloy/config.alloy
+      - --storage.path=/var/lib/alloy/data
+      # La interfaz de depuración de Alloy (estado de cada componente), publicada solo en el host.
+      - --server.http.listen-addr=0.0.0.0:12345
+    environment:
+      GRAFANA_CLOUD_PROM_URL: ${GRAFANA_CLOUD_PROM_URL:-}
+      GRAFANA_CLOUD_PROM_USUARIO: ${GRAFANA_CLOUD_PROM_USUARIO:-}
+      GRAFANA_CLOUD_LOKI_URL: ${GRAFANA_CLOUD_LOKI_URL:-}
+      GRAFANA_CLOUD_LOKI_USUARIO: ${GRAFANA_CLOUD_LOKI_USUARIO:-}
+      GRAFANA_CLOUD_TOKEN: ${GRAFANA_CLOUD_TOKEN:-}
+      # Bearer de /metrics: el mismo METRICAS_TOKEN de los servicios. OBS_METRICAS_TOKEN lo reemplaza para
+      # leer el entorno de carga sin tocar el de los servicios.
+      OBS_METRICAS_TOKEN: ${OBS_METRICAS_TOKEN:-${METRICAS_TOKEN:-}}
+      # Qué se lee y con qué etiqueta. Por defecto, este Compose; para una corrida de k6, el de carga.
+      OBS_ENTORNO: ${OBS_ENTORNO:-desarrollo}
+      OBS_IDENTITY: ${OBS_IDENTITY:-identity:3001}
+      OBS_LOCATION: ${OBS_LOCATION:-location:3004}
+      OBS_DISPATCH: ${OBS_DISPATCH:-dispatch:3005}
+      OBS_INTERVALO: ${OBS_INTERVALO:-15s}
+    volumes:
+      - ./observabilidad/alloy/config.alloy:/etc/alloy/config.alloy:ro
+      # Solo para descubrir los contenedores y leer sus logs. Es un acceso amplio al daemon: por eso
+      # Alloy va en un perfil aparte y no publica nada fuera del host.
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # WAL de las métricas: si Grafana Cloud no responde un rato, se reenvían al volver.
+      - alloy_datos:/var/lib/alloy/data
+    ports:
+      - "127.0.0.1:12345:12345"
+    networks:
+      - default
+
 volumes:
   pg_datos:
+  alloy_datos:
 
 networks:
   # nginx y los tres servicios. Subred propia para que la IP de web sea fija; fuera de los 172.x que

@@ -163,6 +163,8 @@ model Cobro {
   motivoRechazo    String?        @map("decline_reason")
   creadoEn         DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
   actualizadoEn    DateTime       @default(now()) @map("updated_at") @db.Timestamptz(3)
+  // El barrido lo reclamó hasta esta hora (migración 20261129000000_cobros_reclamo). null: libre.
+  reclamadoHasta   DateTime?      @map("claimed_until") @db.Timestamptz(3)
   solicitud        SolicitudViaje @relation(fields: [solicitudId], references: [id])
 
   // El barrido: los pendientes, primero los que hace más que no se intentan (cada fallo toca updated_at).
