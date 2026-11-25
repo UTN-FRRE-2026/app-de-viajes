@@ -90,3 +90,50 @@ $C down                     # bajar todo (los datos quedan en el volumen)
 Para empezar de cero (borra todos los datos): `$C down -v` y borrar `deploy/.env.produccion`.
 
 Observabilidad (opcional): con las credenciales de Grafana Cloud en `deploy/.env.produccion`, agregar `--profile obs` ([observabilidad.md](observabilidad.md)).
+
+## Coolify
+
+La otra forma de publicarlo: en un servidor con [Coolify](https://coolify.io) (pensado para Coolify 4.7 con Traefik 3.6). Usa [`docker-compose.coolify.yml`](../docker-compose.coolify.yml), un archivo solo, que **no** se suma al `docker-compose.yml`. Lo que hace `desplegar.mjs` desde la máquina, acá lo hacen los contenedores:
+
+| | Con Caddy (`desplegar.mjs`) | Coolify |
+|---|---|---|
+| TLS | Caddy | El proxy de Coolify (Traefik), con Let's Encrypt |
+| Puertos publicados | 80 y 443 (Caddy) | Ninguno: Traefik llega a `web:8080` por la red interna |
+| Bases, usuarios y PostGIS | Script de init montado | El mismo script, adentro de la imagen de Postgres ([`infra/postgres/Dockerfile`](../infra/postgres/Dockerfile)) |
+| Migraciones | Desde la máquina | Cada servicio, al arrancar (`MIGRAR_AL_ARRANCAR=si`, [`arrancar.sh`](../infra/servicio/arrancar.sh)) |
+| Usuarios de prueba | `npm run seed` desde la máquina | El contenedor `semilla`, en cada despliegue (idempotente) |
+| IP del cliente | IP fijas de Caddy y nginx | Se confía en `RED_CONFIABLE` (por defecto `10.0.0.0/8`, las redes de Docker en ese servidor) |
+| HSTS | Caddy | nginx |
+
+### Primera vez
+
+1. **Secretos**, en tu máquina (no se versionan):
+   ```bash
+   node deploy/preparar-env.mjs viajes.midominio.com   # deploy/.env.produccion
+   node deploy/env-coolify.mjs                         # deploy/.env.coolify: solo lo que usa Coolify
+   ```
+2. **En Coolify**: *New Resource → Public Repository* (o el repo por la GitHub App), rama `main`, *Build Pack* **Docker Compose**, *Docker Compose Location* `/docker-compose.coolify.yml`.
+3. **Environment Variables → Developer view**: pegar el contenido de `deploy/.env.coolify`. Las demás tienen valor por defecto en el compose; se pueden fijar ahí también (tarifas, ofertas, límites).
+4. **Domains** del servicio `web`: `https://viajes.midominio.com:8080` (el `:8080` es el puerto del contenedor; no se publica). Los demás servicios, sin dominio.
+5. **Deploy**. La primera vez construye las imágenes (unos minutos). Queda listo cuando los 7 contenedores están `healthy`, `semilla` incluido.
+6. **La demo de flotas y zonas**, una vez, desde tu máquina (sin ella, toda solicitud da 422 `ORIGEN_FUERA_DE_ZONA`):
+   ```bash
+   IDENTITY_SEED_CONTRASENA=<la de deploy/.env.coolify> node scripts/demo-flotas.mjs https://viajes.midominio.com
+   ```
+7. **Comprobar**:
+   ```bash
+   npm run web:probar -- https://viajes.midominio.com deploy/.env.produccion
+   ```
+   Y que la IP del cliente llegue bien: un login con un `X-Forwarded-For` inventado tiene que quedar en el log de identity con tu IP real, no con la inventada:
+   ```bash
+   curl -s -o /dev/null -H 'X-Forwarded-For: 1.2.3.4' -H 'content-type: application/json' \
+     -d '{"email":"nadie@viajes.test","contrasena":"incorrecta-123456"}' https://viajes.midominio.com/api/identity/login
+   ```
+   Si aparece `1.2.3.4`, o la IP de Traefik para todos, revisar `RED_CONFIABLE` (`docker network inspect` de la red del recurso) y la configuración de `forwardedHeaders` del proxy.
+
+### Cuidados
+
+- **Las contraseñas de las bases se fijan en el primer despliegue** (el init corre con el volumen vacío). Si después se cambian en Coolify, hay que cambiarlas también en Postgres (`ALTER ROLE <servicio>_svc PASSWORD '...'`, desde la terminal del contenedor `postgres` en Coolify), o los servicios no conectan.
+- **Backups**: Coolify respalda solo sus bases propias, no un Postgres dentro de un compose. Un *Scheduled Task* sobre `postgres` con `pg_dumpall -U postgres` (o un `pg_dump` por base) a un destino fuera del servidor.
+- **Cloudflare**: con el proxy de Cloudflare (nube naranja) delante, la IP que llega a Traefik es la de Cloudflare. Mejor dejar el registro DNS solo (nube gris), o configurar Traefik para que crea el encabezado de Cloudflare.
+- La observabilidad (Alloy) no está en este compose: necesita el socket de Docker. Si hace falta, se agrega aparte.

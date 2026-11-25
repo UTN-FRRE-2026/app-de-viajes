@@ -1,0 +1,193 @@
+# Entorno publicado en Coolify (docs/despliegue.md#coolify). Archivo SOLO, no se suma al docker-compose.yml:
+# en Coolify: Docker Compose, «Docker Compose Location» = /docker-compose.coolify.yml.
+#
+# Qué cambia respecto de docker-compose.yml + deploy/compose.produccion.yml (el despliegue con Caddy):
+# - Ningún servicio publica puertos: Coolify tiene su proxy (Traefik) en 80 y 443, y le lleva el tráfico
+#   al servicio `web` (8080) por la red interna. El dominio se asigna en la UI de Coolify, en `web`.
+# - Sin Caddy: el TLS lo pone Traefik (Let's Encrypt). El HSTS de la página lo agrega nginx.
+# - Sin archivos del repo montados como volumen (Coolify no los tiene en el servidor): el init de
+#   Postgres va adentro de su imagen (infra/postgres/Dockerfile).
+# - Las migraciones corren al arrancar cada servicio (MIGRAR_AL_ARRANCAR, infra/servicio/arrancar.sh), y
+#   los usuarios de prueba los carga `semilla`, un contenedor que corre una vez y termina.
+# - Sin IP fijas: Traefik no tiene una. nginx y los servicios creen el X-Forwarded-For solo si la conexión
+#   viene de RED_CONFIABLE (por defecto 10.0.0.0/8, las redes que Docker reparte en ese servidor). Por esa
+#   red solo llegan Traefik y estos contenedores: nadie de afuera puede inventarse otra IP.
+#
+# Los secretos se cargan en Environment Variables de Coolify (las que llevan `:?` son obligatorias). Se generan
+# con `node deploy/preparar-env.mjs <dominio>` y `node deploy/env-coolify.mjs` (docs/despliegue.md).
+
+services:
+  postgres:
+    build:
+      context: .
+      dockerfile: infra/postgres/Dockerfile
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
+      # El init crea cada usuario con su contraseña. Solo la primera vez (volumen vacío): si después se
+      # cambian acá, hay que cambiarlas también en la base (ALTER ROLE, docs/despliegue.md#coolify).
+      DB_PASSWORD_IDENTITY: ${DB_PASSWORD_IDENTITY:?}
+      DB_PASSWORD_LOCATION: ${DB_PASSWORD_LOCATION:?}
+      DB_PASSWORD_DISPATCH: ${DB_PASSWORD_DISPATCH:?}
+    volumes:
+      - pg_datos:/var/lib/postgresql/data
+    healthcheck:
+      # Por TCP: con el volumen vacío, el init corre sobre un servidor que escucha solo en el socket.
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U postgres -d dispatch"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    # AOF: con la estrategia optimizada, Redis guarda las posiciones y los pings que todavía no pasaron a
+    # Postgres. Así sobreviven a un reinicio del contenedor.
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_datos:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  identity:
+    build:
+      context: .
+      args:
+        SERVICE: identity
+    environment:
+      PUERTO: "3001"
+      MIGRAR_AL_ARRANCAR: "si"
+      CONFIAR_EN_PROXY: ${RED_CONFIABLE:-10.0.0.0/8}
+      IDENTITY_PERSISTENCIA: postgres
+      IDENTITY_DATABASE_URL: postgresql://identity_svc:${DB_PASSWORD_IDENTITY:?}@postgres:5432/identity
+      REDIS_URL: redis://redis:6379
+      JWT_ISSUER: viajes-identity
+      JWT_AUDIENCE: viajes
+      METRICAS_TOKEN: ${METRICAS_TOKEN:?}
+      IDENTITY_JWT_CLAVE_PRIVADA_B64: ${IDENTITY_JWT_CLAVE_PRIVADA_B64:?}
+      IDENTITY_TOKEN_SERVICIO: ${IDENTITY_TOKEN_SERVICIO:?}
+      IDENTITY_LOGIN_MAX_POR_EMAIL: ${IDENTITY_LOGIN_MAX_POR_EMAIL:-}
+      IDENTITY_LOGIN_MAX_POR_IP: ${IDENTITY_LOGIN_MAX_POR_IP:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Los usuarios de prueba (uno por rol, README), con IDENTITY_SEED_CONTRASENA. Corre en cada despliegue,
+  # después de que identity migró su base; es idempotente (deja siempre el mismo estado). Después queda
+  # dormido en vez de terminar: Coolify muestra un contenedor terminado como caído. El healthcheck dice
+  # si el seed salió bien; si falla, el contenedor sale con error y se reintenta.
+  semilla:
+    build:
+      context: .
+      target: semilla
+      args:
+        SERVICE: identity
+    command: ["sh", "-c", "npm run seed --silent -w @viajes/identity && touch /tmp/sembrado && exec sleep infinity"]
+    environment:
+      IDENTITY_DATABASE_URL: postgresql://identity_svc:${DB_PASSWORD_IDENTITY:?}@postgres:5432/identity
+      IDENTITY_SEED_CONTRASENA: ${IDENTITY_SEED_CONTRASENA:?}
+    healthcheck:
+      test: ["CMD", "test", "-f", "/tmp/sembrado"]
+      interval: 5s
+      timeout: 3s
+      start_period: 120s
+      retries: 3
+    # tini como PID 1: el `sleep` termina enseguida con el SIGTERM de un redespliegue.
+    init: true
+    depends_on:
+      identity:
+        condition: service_healthy
+    restart: unless-stopped
+
+  location:
+    build:
+      context: .
+      args:
+        SERVICE: location
+    environment:
+      PUERTO: "3004"
+      MIGRAR_AL_ARRANCAR: "si"
+      CONFIAR_EN_PROXY: ${RED_CONFIABLE:-10.0.0.0/8}
+      # La que aguanta 500 choferes (docs/mediciones.md).
+      UBICACION_ESTRATEGIA: ${UBICACION_ESTRATEGIA:-optimizada}
+      LOCATION_DATABASE_URL: postgresql://location_svc:${DB_PASSWORD_LOCATION:?}@postgres:5432/location
+      REDIS_URL: redis://redis:6379
+      JWKS_URL: http://identity:3001/.well-known/jwks.json
+      JWT_ISSUER: viajes-identity
+      JWT_AUDIENCE: viajes
+      METRICAS_TOKEN: ${METRICAS_TOKEN:?}
+      LOCATION_TOKEN_SERVICIO: ${LOCATION_TOKEN_SERVICIO:?}
+      LOCATION_HISTORIAL_RETENCION_HORAS: ${LOCATION_HISTORIAL_RETENCION_HORAS:-}
+      LOCATION_HISTORIAL_SIN_VIAJE_HORAS: ${LOCATION_HISTORIAL_SIN_VIAJE_HORAS:-}
+      DISPATCH_URL: http://dispatch:3005
+      DISPATCH_TOKEN_SERVICIO: ${DISPATCH_TOKEN_SERVICIO:?}
+      LIMITE_UBICACIONES_POR_MINUTO: ${LIMITE_UBICACIONES_POR_MINUTO:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  dispatch:
+    build:
+      context: .
+      args:
+        SERVICE: dispatch
+    environment:
+      PUERTO: "3005"
+      MIGRAR_AL_ARRANCAR: "si"
+      CONFIAR_EN_PROXY: ${RED_CONFIABLE:-10.0.0.0/8}
+      DISPATCH_PERSISTENCIA: postgres
+      DATABASE_URL: postgresql://dispatch_svc:${DB_PASSWORD_DISPATCH:?}@postgres:5432/dispatch
+      REDIS_URL: redis://redis:6379
+      JWKS_URL: http://identity:3001/.well-known/jwks.json
+      JWT_ISSUER: viajes-identity
+      JWT_AUDIENCE: viajes
+      METRICAS_TOKEN: ${METRICAS_TOKEN:?}
+      DISPATCH_BUSCADOR: location
+      LOCATION_URL: http://location:3004
+      LOCATION_TOKEN_SERVICIO: ${LOCATION_TOKEN_SERVICIO:?}
+      IDENTITY_URL: http://identity:3001
+      IDENTITY_TOKEN_SERVICIO: ${IDENTITY_TOKEN_SERVICIO:?}
+      DISPATCH_TOKEN_SERVICIO: ${DISPATCH_TOKEN_SERVICIO:?}
+      # Vacías: los valores por defecto de dispatch (src/config). Se pueden fijar en Coolify.
+      OFERTAS_SIMULTANEAS: ${OFERTAS_SIMULTANEAS:-}
+      OFERTA_TTL_SEGUNDOS: ${OFERTA_TTL_SEGUNDOS:-}
+      LIMITE_SOLICITUDES_POR_MINUTO: ${LIMITE_SOLICITUDES_POR_MINUTO:-}
+      TARIFA_BAJADA_CENTAVOS: ${TARIFA_BAJADA_CENTAVOS:-}
+      TARIFA_CENTAVOS_POR_KM: ${TARIFA_CENTAVOS_POR_KM:-}
+      TARIFA_CENTAVOS_POR_MINUTO: ${TARIFA_CENTAVOS_POR_MINUTO:-}
+      TARIFA_MINIMO_CENTAVOS: ${TARIFA_MINIMO_CENTAVOS:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # El único con dominio: en Coolify, Domains de `web` = https://<dominio>:8080 (el :8080 es el puerto del
+  # contenedor, no se publica). Sirve el frontend y hace de reverse proxy a los tres servicios.
+  web:
+    build:
+      context: .
+      dockerfile: infra/web/Dockerfile
+    environment:
+      # De quién cree nginx el X-Forwarded-For: la red por la que llega Traefik (ver arriba).
+      CADDY_IP: ${RED_CONFIABLE:-10.0.0.0/8}
+    depends_on:
+      - identity
+      - location
+      - dispatch
+    restart: unless-stopped
+
+volumes:
+  pg_datos:
+  redis_datos:
