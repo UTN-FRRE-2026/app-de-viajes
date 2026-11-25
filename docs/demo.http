@@ -8,7 +8,7 @@
 # Antes de empezar:
 #   npm run setup                  (usuarios de prueba)
 #   docker compose up -d --build   (el sistema, con nginx en http://localhost:8080)
-#   npm run demo:flotas            (zonas CABA y Norte, flotas, chofer del seed habilitado y activo)
+#   npm run demo:flotas            (zonas Resistencia y Corrientes, flotas, chofer del seed habilitado y activo)
 #
 # Rutas, cuerpos y errores: services/*/src/infra/http/*.ts y packages/contracts/src.
 # Todo POST o PUT con efecto lleva Idempotency-Key (16 a 128 letras, números, - o _); sin ella, 400.
@@ -21,11 +21,11 @@
 @choferId = 00000000-0000-4000-8000-000000000002
 @flotaDemo = 00000000-0000-4000-8000-0000000000f1
 
-# Lugares de la demo (apps/web/src/roles/pasajero/lugares.ts), dentro de la zona CABA.
-@obeliscoLat = -34.6037
-@obeliscoLng = -58.3816
-@planetarioLat = -34.5696
-@planetarioLng = -58.4116
+# Lugares de la demo (apps/web/src/roles/pasajero/lugares.ts), dentro de la zona Resistencia (Gran Resistencia).
+@plazaLat = -27.4511
+@plazaLng = -58.9865
+@domoLat = -27.4369
+@domoLng = -58.9808
 
 # La clave de la solicitud de la sección 4. CAMBIALA en cada corrida de la demo: una clave ya usada
 # repite la respuesta guardada (durante 24 h), aunque sea de un viaje viejo.
@@ -102,12 +102,12 @@ Content-Type: application/json
 { "disponible": true }
 
 ###
-# 204. A unos 50 m del Obelisco. El chofer sale del token, nunca del cuerpo.
+# 204. A unos 50 m de la Plaza 25 de Mayo. El chofer sale del token, nunca del cuerpo.
 POST {{base}}/ubicacion/ubicaciones
 Authorization: Bearer {{tokenChofer}}
 Content-Type: application/json
 
-{ "lat": -34.6040, "lng": -58.3820 }
+{ "lat": -27.4515, "lng": -58.9869 }
 
 
 ######################################################################################################
@@ -115,7 +115,7 @@ Content-Type: application/json
 ######################################################################################################
 
 # 200: tarifaCentavos, distanciaMetros, duracionSegundos, desglose y tarifaVersion.
-GET {{base}}/viajes/tarifas/estimacion?origenLat={{obeliscoLat}}&origenLng={{obeliscoLng}}&destinoLat={{planetarioLat}}&destinoLng={{planetarioLng}}
+GET {{base}}/viajes/tarifas/estimacion?origenLat={{plazaLat}}&origenLng={{plazaLng}}&destinoLat={{domoLat}}&destinoLng={{domoLng}}
 Authorization: Bearer {{tokenPasajero}}
 
 
@@ -133,8 +133,8 @@ Idempotency-Key: {{claveSolicitud}}
 Content-Type: application/json
 
 {
-  "origen": { "lat": {{obeliscoLat}}, "lng": {{obeliscoLng}} },
-  "destino": { "lat": {{planetarioLat}}, "lng": {{planetarioLng}} }
+  "origen": { "lat": {{plazaLat}}, "lng": {{plazaLng}} },
+  "destino": { "lat": {{domoLat}}, "lng": {{domoLng}} }
 }
 
 ###
@@ -146,8 +146,8 @@ Idempotency-Key: {{claveSolicitud}}
 Content-Type: application/json
 
 {
-  "origen": { "lat": {{obeliscoLat}}, "lng": {{obeliscoLng}} },
-  "destino": { "lat": {{planetarioLat}}, "lng": {{planetarioLng}} }
+  "origen": { "lat": {{plazaLat}}, "lng": {{plazaLng}} },
+  "destino": { "lat": {{domoLat}}, "lng": {{domoLng}} }
 }
 
 ###
@@ -158,8 +158,8 @@ Idempotency-Key: {{claveSolicitud}}
 Content-Type: application/json
 
 {
-  "origen": { "lat": {{obeliscoLat}}, "lng": {{obeliscoLng}} },
-  "destino": { "lat": -34.6083, "lng": -58.3712 }
+  "origen": { "lat": {{plazaLat}}, "lng": {{plazaLng}} },
+  "destino": { "lat": -27.4512, "lng": -58.9791 }
 }
 
 ###
@@ -169,8 +169,8 @@ Authorization: Bearer {{tokenPasajero}}
 Content-Type: application/json
 
 {
-  "origen": { "lat": {{obeliscoLat}}, "lng": {{obeliscoLng}} },
-  "destino": { "lat": {{planetarioLat}}, "lng": {{planetarioLng}} }
+  "origen": { "lat": {{plazaLat}}, "lng": {{plazaLng}} },
+  "destino": { "lat": {{domoLat}}, "lng": {{domoLng}} }
 }
 
 
@@ -207,7 +207,7 @@ POST {{base}}/ubicacion/ubicaciones/pasajero
 Authorization: Bearer {{tokenPasajero}}
 Content-Type: application/json
 
-{ "lat": {{obeliscoLat}}, "lng": {{obeliscoLng}} }
+{ "lat": {{plazaLat}}, "lng": {{plazaLng}} }
 
 ###
 # 200: EN_CAMINO. Solo el chofer asignado: otro chofer recibe 404.
@@ -290,7 +290,7 @@ POST {{base}}/ubicacion/ubicaciones
 Authorization: Bearer {{tokenChofer}}
 Content-Type: application/json
 
-{ "lat": -34.6040, "lng": -58.3820 }
+{ "lat": -27.4515, "lng": -58.9869 }
 
 ###
 # ...y el pasajero pide otro (201).
@@ -301,8 +301,8 @@ Idempotency-Key: {{$guid}}
 Content-Type: application/json
 
 {
-  "origen": { "lat": {{obeliscoLat}}, "lng": {{obeliscoLng}} },
-  "destino": { "lat": -34.6083, "lng": -58.3712 }
+  "origen": { "lat": {{plazaLat}}, "lng": {{plazaLng}} },
+  "destino": { "lat": -27.4512, "lng": -58.9791 }
 }
 
 ###
@@ -441,7 +441,7 @@ Content-Type: application/json
 {}
 
 ###
-# Aislamiento: el admin de la Flota Norte pide un chofer de la Flota Demo. 404 CHOFER_NO_ENCONTRADO,
+# Aislamiento: el admin de la Flota Corrientes pide un chofer de la Flota Demo. 404 CHOFER_NO_ENCONTRADO,
 # lo mismo que si no existiera.
 GET {{base}}/viajes/flota/choferes/{{choferId}}
 Authorization: Bearer {{tokenFlota2}}
@@ -467,7 +467,7 @@ POST {{base}}/ubicacion/ubicaciones
 Authorization: Bearer {{tokenChofer}}
 Content-Type: application/json
 
-{ "lat": -34.6040, "lng": -58.3820, "choferId": "00000000-0000-4000-8000-000000000099" }
+{ "lat": -27.4515, "lng": -58.9869, "choferId": "00000000-0000-4000-8000-000000000099" }
 
 ###
 # Un pasajero no informa ubicación de chofer: 403 ROL_NO_PERMITIDO.
@@ -475,7 +475,7 @@ POST {{base}}/ubicacion/ubicaciones
 Authorization: Bearer {{tokenPasajero}}
 Content-Type: application/json
 
-{ "lat": -34.6040, "lng": -58.3820 }
+{ "lat": -27.4515, "lng": -58.9869 }
 
 ###
 # Rol vedado: un chofer no pide viajes. 403 ROL_NO_PERMITIDO.
@@ -485,8 +485,8 @@ Idempotency-Key: {{$guid}}
 Content-Type: application/json
 
 {
-  "origen": { "lat": {{obeliscoLat}}, "lng": {{obeliscoLng}} },
-  "destino": { "lat": {{planetarioLat}}, "lng": {{planetarioLng}} }
+  "origen": { "lat": {{plazaLat}}, "lng": {{plazaLng}} },
+  "destino": { "lat": {{domoLat}}, "lng": {{domoLng}} }
 }
 
 ###
@@ -507,8 +507,8 @@ Idempotency-Key: {{$guid}}
 Content-Type: application/json
 
 {
-  "origen": { "lat": 200, "lng": {{obeliscoLng}} },
-  "destino": { "lat": {{planetarioLat}}, "lng": {{planetarioLng}} }
+  "origen": { "lat": 200, "lng": {{plazaLng}} },
+  "destino": { "lat": {{domoLat}}, "lng": {{domoLng}} }
 }
 
 ###
@@ -519,8 +519,8 @@ Idempotency-Key: {{$guid}}
 Content-Type: application/json
 
 {
-  "origen": { "lat": {{obeliscoLat}}, "lng": {{obeliscoLng}} },
-  "destino": { "lat": {{planetarioLat}}, "lng": {{planetarioLng}} },
+  "origen": { "lat": {{plazaLat}}, "lng": {{plazaLng}} },
+  "destino": { "lat": {{domoLat}}, "lng": {{domoLng}} },
   "__proto__": { "rol": "admin" }
 }
 
@@ -553,7 +553,7 @@ Authorization: Bearer {{tokenFlota}}
 
 ###
 # Lo interno no se publica: 404 RUTA_NO_ENCONTRADA desde nginx (también /metrics y /ready).
-GET {{base}}/ubicacion/interno/candidatos?lat=-34.6&lng=-58.38
+GET {{base}}/ubicacion/interno/candidatos?lat=-27.45&lng=-58.986
 
 ###
 GET {{base}}/viajes/metrics
@@ -572,8 +572,8 @@ Idempotency-Key: {{$guid}}
 Content-Type: application/json
 
 {
-  "origen": { "lat": {{obeliscoLat}}, "lng": {{obeliscoLng}} },
-  "destino": { "lat": {{planetarioLat}}, "lng": {{planetarioLng}} }
+  "origen": { "lat": {{plazaLat}}, "lng": {{plazaLng}} },
+  "destino": { "lat": {{domoLat}}, "lng": {{domoLng}} }
 }
 
 ###

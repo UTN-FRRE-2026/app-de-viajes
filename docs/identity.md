@@ -224,7 +224,7 @@ Invoke-RestMethod "$identity/.well-known/jwks.json" | Select-Object -ExpandPrope
 ```powershell
 $pasajero = Entrar 'pasajero@viajes.test'
 $conPasajero = @{ Authorization = "Bearer $($pasajero.token)" }
-$viaje = @{ origen = @{ lat = -34.6037; lng = -58.3816 }; destino = @{ lat = -34.5875; lng = -58.4207 } } | ConvertTo-Json
+$viaje = @{ origen = @{ lat = -27.4511; lng = -58.9865 }; destino = @{ lat = -27.4369; lng = -58.9808 } } | ConvertTo-Json
 # Todo POST con efecto en dispatch lleva una Idempotency-Key nueva por operación (sin ella, 400).
 function ConClave($encabezados) { $encabezados + @{ 'Idempotency-Key' = [guid]::NewGuid().ToString() } }
 $solicitud = Invoke-RestMethod -Method Post "$dispatch/solicitudes" -ContentType 'application/json' -Headers (ConClave $conPasajero) -Body $viaje

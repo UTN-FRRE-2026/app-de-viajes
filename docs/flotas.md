@@ -244,9 +244,9 @@ Cada solicitud pregunta en qué zona está el origen (`ST_Covers` en PostGIS) y,
 
 ## Datos de demo y de carga
 
-- **Demo** (`npm run demo:flotas`, contra el Compose): crea por la API las zonas «CABA» y «Norte».
-  - La flota del `admin.flota` opera en CABA, con el chofer del seed habilitado y activo.
-  - La del `admin.flota2` opera en Norte.
+- **Demo** (`npm run demo:flotas`, contra el Compose): crea por la API las zonas «Resistencia» (Gran Resistencia) y «Corrientes».
+  - La flota del `admin.flota` opera en Resistencia, con el chofer del seed habilitado y activo.
+  - La del `admin.flota2` (Flota Corrientes) opera en Corrientes.
   - Es idempotente. Si una flota ya existe, no toca su nombre ni su límite.
   - Con `DISPATCH_BUSCADOR=fijo`, la lista fija también pasa por el filtro.
 - **Carga** (`carga/flotas.sql`): `carrera.ps1` y `medir.ps1 -Solicitudes` lo aplican después de `limpiar.ps1`.

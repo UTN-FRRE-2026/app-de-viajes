@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import {
   api,
-  CERCA_DEL_OBELISCO,
+  CERCA_DE_LA_PLAZA,
   choferNuevo,
   entrar,
   entrarPorApi,
@@ -18,8 +18,8 @@ import {
 // `npm run e2e:levantar` (OFERTAS_SIMULTANEAS=1, OFERTA_TTL_SEGUNDOS=6): con varias ofertas a la vez, los
 // dos choferes la recibirían juntos.
 
-const OBELISCO = { lat: -34.6037, lng: -58.3816 };
-const PLANETARIO = { lat: -34.5696, lng: -58.4116 };
+const PLAZA = { lat: -27.4511, lng: -58.9865 };
+const DOMO = { lat: -27.4369, lng: -58.9808 };
 
 let segundo: { id: string; email: string };
 let adminFlota: Sesion;
@@ -48,7 +48,7 @@ test.afterEach(async () => {
 
 test('el primer chofer deja vencer la oferta y el viaje se le ofrece al siguiente', async ({ browser }) => {
   // El chofer del seed está más cerca del origen: la oferta es primero para él.
-  const ctxCerca = await browser.newContext({ geolocation: CERCA_DEL_OBELISCO, permissions: ['geolocation'] });
+  const ctxCerca = await browser.newContext({ geolocation: CERCA_DE_LA_PLAZA, permissions: ['geolocation'] });
   const ctxLejos = await browser.newContext({ geolocation: UN_POCO_MAS_LEJOS, permissions: ['geolocation'] });
   for (const c of [ctxCerca, ctxLejos]) await prepararContexto(c);
   const cerca = await ctxCerca.newPage();
@@ -65,7 +65,7 @@ test('el primer chofer deja vencer la oferta y el viaje se le ofrece al siguient
 
   // El pedido va por la API: la pantalla del pasajero ya se prueba en el flujo 2.
   const pasajero = await entrarPorApi(SEED.pasajero);
-  const viaje = exigir(await api(pasajero, 'POST', '/viajes/solicitudes', { origen: OBELISCO, destino: PLANETARIO }), 201, 'pedir');
+  const viaje = exigir(await api(pasajero, 'POST', '/viajes/solicitudes', { origen: PLAZA, destino: DOMO }), 201, 'pedir');
 
   // Primero le llega al más cercano, y solo a él. Que al otro no le llegó se comprueba en la base
   // (`GET /chofer/estado`), no en su pantalla: ahí una oferta podría estar todavía en camino por el SSE.

@@ -10,7 +10,7 @@ Cada paso dice qué mostrar y con qué: una pantalla (http://localhost:8080), un
 npm install
 npm run setup                  # .env, clave, bases, migraciones y usuarios de prueba
 docker compose up -d --build   # postgres, redis, identity, location, dispatch y web
-npm run demo:flotas            # zonas CABA y Norte, las dos flotas, el chofer del seed habilitado y activo
+npm run demo:flotas            # zonas Resistencia y Corrientes, las dos flotas, el chofer del seed habilitado y activo
 npm test                       # una vez, para tener los tests de concurrencia a mano (pasos 7 y 8)
 ```
 
@@ -42,8 +42,8 @@ Lo recorre el flujo 1 de Playwright (`e2e/tests/01-login-roles.spec.ts`).
 
 Dos pestañas: el chofer a la izquierda y el pasajero a la derecha.
 
-1. **Chofer** (`/chofer`): «Disponible», y en la ubicación elegir **Manual (demo)** con un punto cerca del Obelisco (por ejemplo `-34.6040`, `-58.3820`). La ubicación se reenvía cada 5 s.
-2. **Pasajero** (`/pasajero`): origen «Obelisco» y destino «Planetario Galileo Galilei» de la lista de lugares. Se ve la **estimación**; «Pedir viaje».
+1. **Chofer** (`/chofer`): «Disponible», y en la ubicación elegir **Manual (demo)** con un punto cerca de la Plaza 25 de Mayo (por ejemplo `-27.4515`, `-58.9869`). La ubicación se reenvía cada 5 s.
+2. **Pasajero** (`/pasajero`): origen «Plaza 25 de Mayo» y destino «Domo del Centenario» de la lista de lugares. Se ve la **estimación**; «Pedir viaje».
 3. **Chofer:** la oferta aparece sola (SSE `OfferCreated`), con la cuenta regresiva de 15 s y la tarifa estimada. «Aceptar».
 4. **Pasajero:** la línea de tiempo prende «Chofer asignado» en vivo, con cuánto tardó, y el chofer aparece en el mapa (SSE `DriverLocationUpdated`).
 5. **Chofer:** «Voy en camino», «Inició el viaje», «Finalizar». Cada paso se prende del lado del pasajero.
@@ -76,9 +76,9 @@ Cambiar `@claveSolicitud` antes de cada corrida: la respuesta se guarda 24 h. De
 
 ## 5. Oferta que vence con el chofer desconectado
 
-1. **Chofer:** disponible, con su ubicación manual cerca del Obelisco.
+1. **Chofer:** disponible, con su ubicación manual cerca de la Plaza 25 de Mayo.
 2. **Cerrar la pestaña del chofer.** Para el sistema sigue disponible, y su última posición vale 30 s (`UBICACION_VIGENCIA_SEGUNDOS`).
-3. **Pasajero,** dentro de esos 30 s: pedir un viaje desde el Obelisco. La oferta va al chofer desconectado.
+3. **Pasajero,** dentro de esos 30 s: pedir un viaje desde la Plaza 25 de Mayo. La oferta va al chofer desconectado.
 4. **Esperar unos 15 s** (`OFERTA_TTL_SEGUNDOS`) más hasta 2 s del barrido. El servidor marca la oferta vencida (`OfferExpired`): no depende de que el celular del chofer avise nada. No queda otro chofer apto, así que la solicitud pasa a `SIN_CHOFERES` y el pasajero ve el paso en rojo («sin choferes»).
 5. En `/operador`, filtrar por `SIN_CHOFERES`: ahí está el viaje.
 
@@ -113,7 +113,7 @@ Por la API: [demo.http](demo.http), sección 7. Incluye la búsqueda con `' OR 1
 
 **Por la API**, todo junto: [demo.http](demo.http), sección 8. El admin baja el límite a 1, un chofer nuevo se registra, se da de alta y se habilita; activarlo da 409 `LIMITE_FLOTA_ALCANZADO`; con el límite en 5, entra.
 
-**Aislamiento:** el admin de la Flota Norte pide un chofer de la Flota Demo y recibe 404, como si no existiera (sección 8). Lo recorre el flujo 4 de Playwright.
+**Aislamiento:** el admin de la Flota Corrientes pide un chofer de la Flota Demo y recibe 404, como si no existiera (sección 8). Lo recorre el flujo 4 de Playwright.
 
 **La carrera G:** 50 activaciones simultáneas con límite 10 dejan exactamente 10 activos.
 

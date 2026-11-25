@@ -147,7 +147,7 @@ Va en `src/roles/pasajero/`, con la división de las otras pantallas: `Panel.tsx
 - Muestra el origen (oscuro), el destino (azul), el recorrido en línea recta y al chofer en verde. Pasados 30 s sin posición, el chofer se ve gris.
 - Se encuadra solo cuando cambian el origen o el destino, sin animación, no con cada posición del chofer.
 - El origen y el destino se eligen de varias formas:
-  - en una lista de **lugares de la demo** (`lugares.ts`, todos dentro de la zona «CABA» de `npm run demo:flotas`), para la demo y para Playwright;
+  - en una lista de **lugares de la demo** (`lugares.ts`, todos dentro de la zona «Resistencia» de `npm run demo:flotas`), para la demo y para Playwright;
   - con un **clic en el mapa**;
   - con **«Usar mi ubicación»** para el origen.
 

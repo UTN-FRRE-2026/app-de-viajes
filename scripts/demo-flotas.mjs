@@ -3,9 +3,11 @@
 //
 //   node scripts/demo-flotas.mjs [url]   (por defecto http://localhost:<WEB_PUERTO o 8080>)
 //
-// - Zonas «CABA» y «Norte» (se tocan en un borde, no se superponen).
-// - La flota del admin.flota (Flota Demo) opera en CABA; la del admin.flota2 (Flota Norte), en Norte.
-//   Si una flota no existe, se crea con límite 5; si existe, no se toca su nombre ni su límite.
+// - Zonas «Resistencia» (Gran Resistencia: Resistencia, Barranqueras, Fontana y Puerto Vilelas) y
+//   «Corrientes» (la ciudad, del otro lado del río). No se superponen.
+// - La flota del admin.flota (Flota Demo) opera en Resistencia; la del admin.flota2 (Flota Corrientes),
+//   en Corrientes. Si una flota no existe, se crea con límite 5; si existe, no se toca su límite (y su
+//   nombre solo si cambió acá).
 // - El chofer del seed queda en la Flota Demo, habilitado y activo (ponerse disponible es cosa suya,
 //   desde /chofer).
 // Usa las cuentas del seed (`npm run seed`) con IDENTITY_SEED_CONTRASENA del .env. No imprime
@@ -21,10 +23,13 @@ if (!CONTRASENA) {
   process.exit(1);
 }
 
-/** Ids fijos: la demo se puede rearmar sin duplicar zonas. */
+/**
+ * Ids fijos: la demo se puede rearmar sin duplicar zonas (con un id que ya existe, se reemplazan su
+ * nombre y su área). Las cajas salen de los límites de OpenStreetMap; entre las dos queda el río Paraná.
+ */
 const ZONAS = [
-  { id: '00000000-0000-4000-8000-0000000ca8a0', nombre: 'CABA', caja: [-58.53, -34.71, -58.33, -34.53] },
-  { id: '00000000-0000-4000-8000-0000000a07e0', nombre: 'Norte', caja: [-58.6, -34.53, -58.45, -34.43] },
+  { id: '00000000-0000-4000-8000-0000000ca8a0', nombre: 'Resistencia', caja: [-59.08, -27.55, -58.87, -27.38] },
+  { id: '00000000-0000-4000-8000-0000000a07e0', nombre: 'Corrientes', caja: [-58.86, -27.55, -58.7, -27.41] },
 ];
 const poligono = ([lng1, lat1, lng2, lat2]) => ({
   type: 'Polygon',
@@ -64,16 +69,20 @@ try {
 
   for (const [sesion, nombre] of [
     [flotaA, 'Flota Demo'],
-    [flotaB, 'Flota Norte'],
+    [flotaB, 'Flota Corrientes'],
   ]) {
     const actual = await api(sesion, 'GET', '/flota');
     if (actual.estado === 404) exigir(await api(admin, 'PUT', `/admin/flotas/${sesion.usuario.fleetId}`, { nombre, maxActivos: 5 }), 200, `crear ${nombre}`);
-    else exigir(actual, 200, `leer ${nombre}`);
+    else if (exigir(actual, 200, `leer ${nombre}`).nombre !== nombre) {
+      // Una demo armada antes (la Flota Norte de la zona de CABA): se renombra y conserva su límite.
+      const { maxActivos } = actual.json;
+      exigir(await api(admin, 'PUT', `/admin/flotas/${sesion.usuario.fleetId}`, { nombre, maxActivos }), 200, `renombrar ${nombre}`);
+    }
   }
 
   for (const z of ZONAS) exigir(await api(admin, 'PUT', `/admin/zonas/${z.id}`, { nombre: z.nombre, area: poligono(z.caja) }), 200, `zona ${z.nombre}`);
   exigir(await api(admin, 'PUT', `/admin/flotas/${flotaA.usuario.fleetId}/zonas`, { zonas: [ZONAS[0].id] }), 200, 'zonas de la Flota Demo');
-  exigir(await api(admin, 'PUT', `/admin/flotas/${flotaB.usuario.fleetId}/zonas`, { zonas: [ZONAS[1].id] }), 200, 'zonas de la Flota Norte');
+  exigir(await api(admin, 'PUT', `/admin/flotas/${flotaB.usuario.fleetId}/zonas`, { zonas: [ZONAS[1].id] }), 200, 'zonas de la Flota Corrientes');
 
   const choferId = chofer.usuario.id;
   let registro = await api(flotaA, 'GET', `/flota/choferes/${choferId}`);
@@ -93,9 +102,9 @@ try {
   };
   console.log('Demo de flotas y zonas lista:');
   console.log(`  zonas: ${ZONAS.map((z) => z.nombre).join(' y ')}`);
-  console.log(`  ${await resumen(flotaA)}, opera en CABA; el chofer del seed está habilitado y activo`);
-  console.log(`  ${await resumen(flotaB)}, opera en Norte`);
-  console.log('  Para recibir ofertas, el chofer se pone disponible en /chofer, con su ubicación en CABA.');
+  console.log(`  ${await resumen(flotaA)}, opera en Resistencia; el chofer del seed está habilitado y activo`);
+  console.log(`  ${await resumen(flotaB)}, opera en Corrientes`);
+  console.log('  Para recibir ofertas, el chofer se pone disponible en /chofer, con su ubicación en Gran Resistencia.');
 } catch (err) {
   console.error(`demo-flotas: ${err.message}`);
   process.exit(1);
