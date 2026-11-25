@@ -13,14 +13,19 @@
 //   OpenStreetMap); si no responde, o con --sin-calles, en línea recta. Informa su posición cada 1 s,
 //   como un GPS: el pasajero lo ve moverse en vivo (SSE DriverLocationUpdated) y la tarifa final sale
 //   del recorrido real.
-// - Si el pasajero cancela, vuelve a esperar. Si se corta, al volver a correrlo retoma el viaje activo.
+// - Si el pasajero cancela, vuelve a esperar. Si se corta, al volver a correrlo retoma el viaje activo
+//   desde la última posición (la guarda en un archivo temporal); sin ella, desde el origen si el viaje
+//   ya estaba en curso.
 // - Ctrl+C: deja de estar disponible y termina.
 //
 // Contraseña: IDENTITY_SEED_CONTRASENA del archivo de --env (por ejemplo deploy/.env.coolify), del
 // entorno, o del .env. No imprime contraseñas ni tokens. Mientras corre, la pantalla del chofer en el
 // navegador tiene que estar cerrada: si no, los dos mandan posiciones distintas.
 import { randomUUID } from 'node:crypto';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { setDefaultAutoSelectFamilyAttemptTimeout } from 'node:net';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { setTimeout as esperar } from 'node:timers/promises';
 import { parseArgs } from 'node:util';
 import { leerEnv } from './lib/entorno.mjs';
@@ -122,10 +127,40 @@ const estadoChofer = async () => {
 
 let posicion = { lat: latDesde, lng: lngDesde };
 let ultimoErrorPing = null;
+/** El viaje que se está haciendo, o null: la posición guardada solo sirve para retomar ese viaje. */
+let viajeActual = null;
+
+// La última posición, en un archivo temporal por chofer: si el script se corta en medio de un viaje,
+// al volver a correrlo sigue desde ahí, en vez de saltar a --desde y rehacer el camino.
+const RUTA_POSICION = join(tmpdir(), `simular-chofer-${op.chofer.replace(/[^a-z0-9]/gi, '_')}.json`);
+
+function guardarPosicion() {
+  try {
+    writeFileSync(RUTA_POSICION, JSON.stringify({ solicitudId: viajeActual, ...posicion }));
+  } catch {
+    // sin el archivo, un corte retoma desde el origen o --desde: no vale la pena frenar el GPS
+  }
+}
+
+/** Dónde arranca si al entrar ya tiene un viaje activo. */
+function posicionParaRetomar(viaje) {
+  try {
+    const guardada = JSON.parse(readFileSync(RUTA_POSICION, 'utf8'));
+    if (guardada.solicitudId === viaje.id && Number.isFinite(guardada.lat) && Number.isFinite(guardada.lng)) {
+      return { posicion: { lat: guardada.lat, lng: guardada.lng }, desde: 'la última posición guardada' };
+    }
+  } catch {
+    // no hay posición guardada de este viaje
+  }
+  // En curso, el pasajero ya subió: lo más cercano a la verdad es el origen, no --desde.
+  if (viaje.estado === 'EN_CURSO') return { posicion: { ...viaje.origen }, desde: 'el origen del viaje' };
+  return { posicion, desde: '--desde' };
+}
 
 async function gps() {
   while (!terminando) {
     const inicio = Date.now();
+    guardarPosicion();
     try {
       const r = await api('POST', '/ubicacion/ubicaciones', posicion);
       const error = r.estado === 204 ? null : `${r.estado} ${r.codigo ?? ''}`.trim();
@@ -223,6 +258,15 @@ async function avanzar(viaje, accion) {
 
 /** Lleva un viaje desde el estado en que esté hasta el final. */
 async function hacerViaje(inicial) {
+  viajeActual = inicial.id;
+  try {
+    await llevarViaje(inicial);
+  } finally {
+    viajeActual = null;
+  }
+}
+
+async function llevarViaje(inicial) {
   let viaje = inicial;
   log(`viaje ${corto(viaje.id)} (${viaje.estado})`);
   if (viaje.estado === 'ASIGNADO') viaje = await avanzar(viaje, 'en-camino');
@@ -255,7 +299,12 @@ try {
   const inicial = await estadoChofer();
   if (!inicial.registro) throw new Error(`${op.chofer} no está en ninguna flota: correr antes node scripts/demo-flotas.mjs <url>`);
   if (!inicial.registro.habilitado || !inicial.registro.activo) throw new Error(`${op.chofer} no está habilitado o activo en su flota (node scripts/demo-flotas.mjs <url>)`);
-  if (inicial.viaje) log('hay un viaje activo: lo retomo');
+  if (inicial.viaje) {
+    // Antes de arrancar el GPS: si no, el primer ping mandaría --desde y el auto saltaría para atrás.
+    const retomar = posicionParaRetomar(inicial.viaje);
+    posicion = retomar.posicion;
+    log(`hay un viaje activo (${inicial.viaje.estado}): lo retomo desde ${retomar.desde}`);
+  }
 
   void gps();
   await esperar(1500); // que location tenga la posición antes de que lo busquen
@@ -263,7 +312,8 @@ try {
     const r = await api('PUT', '/viajes/chofer/disponibilidad', { disponible: true });
     if (r.estado !== 200) throw new Error(`no pude ponerme disponible: ${r.estado} ${r.codigo ?? ''}`);
   }
-  log(`${op.chofer} disponible en ${posicion.lat.toFixed(4)}, ${posicion.lng.toFixed(4)}. Esperando ofertas (Ctrl+C para terminar)…`);
+  const enQue = inicial.viaje ? 'Sigo con el viaje' : 'Esperando ofertas';
+  log(`${op.chofer} disponible en ${posicion.lat.toFixed(4)}, ${posicion.lng.toFixed(4)}. ${enQue} (Ctrl+C para terminar)…`);
 
   for (;;) {
     try {

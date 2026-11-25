@@ -76,7 +76,7 @@ node scripts/simular-chofer.mjs https://<dominio> --env deploy/.env.coolify   # 
 - Entra como `chofer@viajes.test`, se pone disponible a 1,5 km de la Plaza 25 de Mayo y acepta la primera oferta.
 - Toca «Voy en camino», maneja hasta el origen, «Inició el viaje», maneja hasta el destino y «Finalizar». Después espera el próximo viaje desde donde quedó.
 - Maneja por las calles con la ruta de OSRM (el ruteo público de OpenStreetMap; si no responde, en línea recta) e informa su posición cada 1 s, como un GPS.
-- Si el pasajero cancela, vuelve a esperar. Si se corta, al volver a correrlo retoma el viaje activo. Ctrl+C: deja de estar disponible.
+- Si el pasajero cancela, vuelve a esperar. Si se corta, al volver a correrlo retoma el viaje activo desde la última posición, sin saltar para atrás. Ctrl+C: deja de estar disponible.
 - Opciones: `--kmh 40` (velocidad; con `--kmh 120` el viaje dura un tercio), `--desde lat,lng` (dónde arranca; tiene que estar a menos de 5 km del origen del viaje), `--chofer <email>`, `--sin-calles`.
 - Mientras corre, la pantalla del chofer en el navegador tiene que estar cerrada: si no, los dos mandan posiciones distintas.
 
