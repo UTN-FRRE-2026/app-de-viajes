@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { api, choferNuevo, entrar, entrarPorApi, exigir, prepararContexto, SEED, type Sesion } from './soporte';
 
 // Flujo 4 (PLAN 5.3): el admin de flota activa choferes hasta el límite, y no ve los de otra flota.
-// Usa la Flota Norte (admin.flota2), así no toca la Flota Demo de los otros flujos.
+// Usa la Flota Corrientes (admin.flota2), así no toca la Flota Demo de los otros flujos.
 
 let admin: Sesion;
 let norte: Sesion;

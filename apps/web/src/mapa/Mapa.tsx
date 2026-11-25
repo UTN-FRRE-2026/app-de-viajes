@@ -3,8 +3,8 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import type { Punto } from '../viaje/viaje';
 
-/** El Obelisco: el centro de la zona CABA de la demo (`npm run demo:flotas`). */
-export const CENTRO_DEMO: Punto = { lat: -34.6037, lng: -58.3816 };
+/** La Plaza 25 de Mayo de Resistencia: el centro de la zona «Resistencia» de la demo (`npm run demo:flotas`). */
+export const CENTRO_DEMO: Punto = { lat: -27.4511, lng: -58.9865 };
 
 export interface Marcas {
   origen?: Punto | null;

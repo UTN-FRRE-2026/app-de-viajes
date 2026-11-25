@@ -25,8 +25,8 @@ const T0 = Date.parse('2026-11-24T12:00:00.000Z');
 const solicitud = (id: string, estado: Solicitud['estado'], version: number, extra: Partial<Solicitud> = {}): Solicitud => ({
   id,
   pasajeroId: 'p',
-  origen: { lat: -34.6037, lng: -58.3816 },
-  destino: { lat: -34.5696, lng: -58.4116 },
+  origen: { lat: -27.4511, lng: -58.9865 },
+  destino: { lat: -27.4369, lng: -58.9808 },
   estado,
   choferId: estado === 'BUSCANDO' || estado === 'SIN_CHOFERES' ? null : C1,
   motivoCancelacion: null,
@@ -104,7 +104,7 @@ describe('eventos del SSE', () => {
 
   it('la posición del chofer: solo la de este viaje, con chofer, y más nueva que la última', () => {
     const e = con(solicitud(S1, 'EN_CAMINO', 3));
-    const pos = (s: number, solicitudId = S1) => ({ solicitudId, choferId: C1, lat: -34.6, lng: -58.38, actualizadaEn: new Date(T0 + s * 1000).toISOString() });
+    const pos = (s: number, solicitudId = S1) => ({ solicitudId, choferId: C1, lat: -27.45, lng: -58.986, actualizadaEn: new Date(T0 + s * 1000).toISOString() });
     const a = aplicarEvento(e, 'DriverLocationUpdated', pos(10), T0).estado;
     expect(a.posicionChofer?.actualizadaEn).toBe(pos(10).actualizadaEn);
     expect(aplicarEvento(a, 'DriverLocationUpdated', pos(5), T0).estado.posicionChofer?.actualizadaEn).toBe(pos(10).actualizadaEn);
@@ -214,8 +214,8 @@ describe('textos y lugares', () => {
   });
 
   it('un punto a menos de 60 m de un lugar de la demo se nombra; si no, es un punto en el mapa', () => {
-    expect(lugarEn({ lat: -34.6039, lng: -58.3817 })).toBe('Obelisco');
-    expect(nombrePunto({ lat: -34.62, lng: -58.45 })).toBe('Punto en el mapa');
+    expect(lugarEn({ lat: -27.4513, lng: -58.9866 })).toBe('Plaza 25 de Mayo');
+    expect(nombrePunto({ lat: -27.47, lng: -58.95 })).toBe('Punto en el mapa');
   });
 
   it('un viaje cancelado no tiene importe; uno sin terminar, el estimado; uno terminado, el final', () => {

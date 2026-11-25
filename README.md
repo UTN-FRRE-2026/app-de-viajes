@@ -119,7 +119,7 @@ npm run dev           # identity (3001), location (3004) y dispatch (3005) en un
 
   ```bash
   docker compose up -d --build   # postgres, redis, identity, location, dispatch y web
-  npm run demo:flotas            # zonas CABA y Norte, las dos flotas y el chofer del seed activo
+  npm run demo:flotas            # zonas Resistencia y Corrientes, las dos flotas y el chofer del seed activo
   ```
 
   - El punto de entrada es el contenedor `web` (nginx): http://localhost:8080 (`WEB_PUERTO`), con la API en `/api/identity/`, `/api/viajes/` y `/api/ubicacion/`. Usan las mismas bases ya migradas y la clave del `.env`.
@@ -145,8 +145,8 @@ Los carga `npm run seed` (lo corre `npm run setup`), desde `services/identity/sr
 | `chofer@viajes.test` | `chofer` | `00000000-0000-4000-8000-000000000002` | Flota Demo, habilitado y activo (lo deja así `npm run demo:flotas`) |
 | `operador@viajes.test` | `operador` | `00000000-0000-4000-8000-000000000003` | — |
 | `admin@viajes.test` | `admin` | `00000000-0000-4000-8000-000000000004` | — |
-| `admin.flota@viajes.test` | `admin_flota` | `00000000-0000-4000-8000-000000000005` | Flota Demo (`…0000000000f1`), opera en la zona CABA |
-| `admin.flota2@viajes.test` | `admin_flota` | `00000000-0000-4000-8000-000000000006` | Flota Norte (`…0000000000f2`), opera en la zona Norte. Sirve para probar el aislamiento entre flotas |
+| `admin.flota@viajes.test` | `admin_flota` | `00000000-0000-4000-8000-000000000005` | Flota Demo (`…0000000000f1`), opera en la zona Resistencia (Gran Resistencia) |
+| `admin.flota2@viajes.test` | `admin_flota` | `00000000-0000-4000-8000-000000000006` | Flota Corrientes (`…0000000000f2`), opera en la zona Corrientes. Sirve para probar el aislamiento entre flotas |
 
 - **Las flotas y las zonas** no las crea el seed (viven en dispatch): las crea `npm run demo:flotas` por la API. Si una flota no existe, la crea con límite 5; si existe, no toca su nombre ni su límite.
 - **Por el registro público** (`POST /api/identity/registro`) solo se crean pasajeros y choferes. `operador`, `admin` y `admin_flota` salen solo del seed.

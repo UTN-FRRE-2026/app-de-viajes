@@ -165,7 +165,7 @@ PASAJERO=$(token pasajero@viajes.test); ADMIN=$(token admin@viajes.test)
 
 | Qué | Comando | Lo que da nuestra API |
 |---|---|---|
-| Un pasajero pide 10 viajes a la vez | `node ataque/carrera.mjs -u $BASE -r /viajes/solicitudes -b '{"origen":{"lat":-34.6037,"lng":-58.3816},"destino":{"lat":-34.5696,"lng":-58.4116}}' -t $PASAJERO -n 10 --max-exitos 1` | 1×201 y 9×409 `SOLICITUD_ACTIVA_EXISTENTE` (cancelalo después). Hace falta un chofer disponible en la zona: sin choferes, la solicitud termina en `SIN_CHOFERES`, que no cuenta como activa, y la prueba no dice nada |
+| Un pasajero pide 10 viajes a la vez | `node ataque/carrera.mjs -u $BASE -r /viajes/solicitudes -b '{"origen":{"lat":-27.4511,"lng":-58.9865},"destino":{"lat":-27.4369,"lng":-58.9808}}' -t $PASAJERO -n 10 --max-exitos 1` | 1×201 y 9×409 `SOLICITUD_ACTIVA_EXISTENTE` (cancelalo después). Hace falta un chofer disponible en la zona: sin choferes, la solicitud termina en `SIN_CHOFERES`, que no cuenta como activa, y la prueba no dice nada |
 | 20 cobros del mismo viaje | `node ataque/carrera.mjs -u $BASE -r /viajes/solicitudes/<id>/cobrar -b '{}' -t $PASAJERO -n 20` | 20×200 con un solo cuerpo distinto: la misma `referencia` y el mismo estado |
 | Aceptar contra cancelar | Completá `ataque/ejemplos/aceptar-contra-cancelar.json` con la oferta, la solicitud y los dos tokens: `node ataque/carrera.mjs -c ataque/ejemplos/aceptar-contra-cancelar.json` | La cancelación, 200; la aceptación, 200 o 409 `SOLICITUD_NO_DISPONIBLE`. El viaje queda `CANCELADO_PASAJERO` y el chofer libre |
 | Registro del mismo email | `node ataque/carrera.mjs -c ataque/ejemplos/registro.json` | 1×201 y 19×409 `IDENTIFICADOR_EN_USO` |

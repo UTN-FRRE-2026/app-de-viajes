@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { CERCA_DEL_OBELISCO, entrar, entrarPorApi, noDisponible, prepararContexto, SEED, sinViajeActivo, vigilarCsp } from './soporte';
+import { CERCA_DE_LA_PLAZA, entrar, entrarPorApi, noDisponible, prepararContexto, SEED, sinViajeActivo, vigilarCsp } from './soporte';
 
 // Flujo 2 (PLAN 5.3): un viaje completo con dos navegadores, pasajero y chofer. Del lado del pasajero,
 // cada paso de la línea de tiempo se prende en vivo (SSE), sin recargar.
@@ -16,8 +16,8 @@ test.afterEach(async () => {
 
 test('el pasajero pide, el chofer acepta y lo lleva; el pasajero lo ve en vivo hasta el final', async ({ browser }) => {
   const ctxPasajero = await browser.newContext();
-  // El chofer comparte su GPS: el navegador le da una posición cerca del Obelisco.
-  const ctxChofer = await browser.newContext({ geolocation: CERCA_DEL_OBELISCO, permissions: ['geolocation'] });
+  // El chofer comparte su GPS: el navegador le da una posición cerca de la Plaza 25 de Mayo.
+  const ctxChofer = await browser.newContext({ geolocation: CERCA_DE_LA_PLAZA, permissions: ['geolocation'] });
   await prepararContexto(ctxPasajero);
   await prepararContexto(ctxChofer);
   const pasajero = await ctxPasajero.newPage();
@@ -33,8 +33,8 @@ test('el pasajero pide, el chofer acepta y lo lleva; el pasajero lo ve en vivo h
   // El pasajero elige origen y destino, ve la estimación y pide.
   await entrar(pasajero, SEED.pasajero);
   await expect(pasajero.getByRole('button', { name: 'Pedir viaje' })).toBeDisabled();
-  await pasajero.getByLabel('Origen', { exact: true }).selectOption('obelisco');
-  await pasajero.getByLabel('Destino', { exact: true }).selectOption('planetario');
+  await pasajero.getByLabel('Origen', { exact: true }).selectOption('plaza-25-de-mayo');
+  await pasajero.getByLabel('Destino', { exact: true }).selectOption('domo-del-centenario');
   await expect(pasajero.locator('.columna-detalle .monto')).toContainText('$');
   await pasajero.getByRole('button', { name: 'Pedir viaje' }).click();
   const actual = pasajero.locator('.linea-tiempo .paso.actual');

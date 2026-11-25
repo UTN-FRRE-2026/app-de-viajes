@@ -30,9 +30,10 @@ export const SEED = {
   flota2: 'admin.flota2@viajes.test',
 } as const;
 
-/** Cerca del Obelisco, dentro de la zona CABA de la demo (`npm run demo:flotas`). */
-export const CERCA_DEL_OBELISCO = { latitude: -34.6012, longitude: -58.3838 };
-export const UN_POCO_MAS_LEJOS = { latitude: -34.6105, longitude: -58.3965 };
+/** A unos 270 m de la Plaza 25 de Mayo, dentro de la zona «Resistencia» de la demo (`npm run demo:flotas`). */
+export const CERCA_DE_LA_PLAZA = { latitude: -27.449, longitude: -58.988 };
+/** A 1,7 km de la plaza: el segundo chofer más cercano. */
+export const UN_POCO_MAS_LEJOS = { latitude: -27.46, longitude: -59.0 };
 
 export interface Sesion {
   token: string;
