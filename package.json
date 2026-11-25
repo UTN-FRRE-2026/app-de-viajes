@@ -21,6 +21,7 @@
     "web:probar": "node scripts/probar-web.mjs",
     "demo:flotas": "node scripts/demo-flotas.mjs",
     "demo:apagado": "node scripts/demo-apagado.mjs",
+    "demo:chofer": "node scripts/simular-chofer.mjs",
     "e2e:levantar": "npm run levantar -w @viajes/e2e",
     "e2e": "npm run probar -w @viajes/e2e",
     "lint": "eslint .",

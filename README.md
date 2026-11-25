@@ -129,6 +129,8 @@ npm run dev           # identity (3001), location (3004) y dispatch (3005) en un
 
 `DISPATCH_LOG_SQL=1` muestra cada query en el log, incluido el `SELECT ... FOR UPDATE`.
 
+`npm run demo:chofer` es un chofer automático: acepta la oferta y maneja por las calles hasta el origen y el destino, informando su posición cada 1 s, mientras vos hacés de pasajero en el navegador ([docs/demo.md](docs/demo.md#con-un-chofer-automático-que-se-mueve-por-las-calles)).
+
 `npm run demo:apagado` muestra el apagado ordenado: SIGTERM a dispatch con un pedido lento en curso; el pedido termina con 200, una conexión nueva se rechaza y el proceso sale con 0 (en WSL o Linux; no necesita nada levantado).
 
 **Entorno publicado** (el del ataque cruzado): `node deploy/desplegar.mjs <dominio>` en una máquina con Docker y Node 22. Solo publica Caddy (HTTPS) en 80 y 443, con secretos propios y location en la versión optimizada. Ver [docs/despliegue.md](docs/despliegue.md).
