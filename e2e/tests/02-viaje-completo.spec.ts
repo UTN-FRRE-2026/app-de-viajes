@@ -24,8 +24,10 @@ test('el pasajero pide, el chofer acepta y lo lleva; el pasajero lo ve en vivo h
   const chofer = await ctxChofer.newPage();
   const csp = [pasajero, chofer].map(vigilarCsp);
 
-  // El chofer se pone disponible y empieza a mandar su posición.
+  // El chofer elige el GPS (el modo por defecto es «Simulada», que maneja y avanza solo: ese flujo es
+  // el 6), se pone disponible y empieza a mandar su posición.
   await entrar(chofer, SEED.chofer);
+  await chofer.getByRole('radio', { name: 'GPS' }).check();
   await chofer.getByRole('button', { name: 'Ponerme disponible' }).click();
   await expect(chofer.getByText('Disponible', { exact: true })).toBeVisible();
   await expect(chofer.getByText(/Enviando cada 5 s/)).toBeVisible();

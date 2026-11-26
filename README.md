@@ -214,7 +214,7 @@ npm test          # dominio en memoria + integración, concurrencia y seguridad 
 - Un archivo: `npm test -w @viajes/dispatch -- tests/concurrencia/asignacion-unica.test.ts`.
 - Cada test de concurrencia está comprobado: falla si se saca la protección que prueba (ver los ADR y [docs/flotas.md](docs/flotas.md#cómo-se-sabe-que-el-test-detecta-la-falta-de-la-protección)).
 
-**End to end** (Playwright, los cinco flujos, contra el sistema en Docker Compose):
+**End to end** (Playwright, los cinco flujos de PLAN 5.3 y el de la conducción simulada, contra el sistema en Docker Compose):
 
 ```bash
 npx -w @viajes/e2e playwright install chromium   # la primera vez (en Linux, con --with-deps)

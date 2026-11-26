@@ -5,6 +5,7 @@ import {
   aplicarEvento,
   aplicarLectura,
   aplicarRespuesta,
+  choferLlego,
   ESTADO_INICIAL,
   faltaCobro,
   lineaDeTiempo,
@@ -244,5 +245,23 @@ describe('panel del operador', () => {
   it('los rechazos conocidos al cancelar tienen su texto', () => {
     expect(textoRechazoCancelacion(new ErrorApi(409, 'SOLICITUD_NO_CANCELABLE', 'x'))).toMatch(/ya no se puede cancelar/);
     expect(textoRechazoCancelacion(new ErrorApi(0, 'RED', 'x'))).toBeNull();
+  });
+});
+
+describe('«Tu chofer llegó» (solo de pantalla)', () => {
+  const origen = { lat: -27.4511, lng: -58.9865 };
+  const encima = { lat: -27.45115, lng: -58.9865 }; // unos 5 m
+  const cuadra = { lat: -27.4502, lng: -58.9865 }; // unos 100 m
+
+  it('en camino y a pocos metros del origen, con la posición vigente', () => {
+    expect(choferLlego(solicitud(S1, 'EN_CAMINO', 3), encima, false)).toBe(true);
+    expect(choferLlego(solicitud(S1, 'EN_CAMINO', 3), cuadra, false)).toBe(false);
+    expect(choferLlego(solicitud(S1, 'EN_CAMINO', 3), encima, true)).toBe(false);
+    expect(choferLlego(solicitud(S1, 'EN_CAMINO', 3), null, false)).toBe(false);
+  });
+
+  it('no en otro estado (asignado todavía no salió; en curso ya lo levantó)', () => {
+    expect(choferLlego(solicitud(S1, 'ASIGNADO', 2), encima, false)).toBe(false);
+    expect(choferLlego(solicitud(S1, 'EN_CURSO', 4), origen, false)).toBe(false);
   });
 });

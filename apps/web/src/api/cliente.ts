@@ -121,9 +121,10 @@ export async function pedir<T>(metodo: string, ruta: string, { cuerpo, clave }: 
 export async function cerrarSesion(): Promise<void> {
   const { refreshToken } = useSesion.getState();
   useSesion.getState().cerrar();
-  // Las coordenadas manuales (demo) son del usuario que se va: no quedan para el próximo.
+  // Las coordenadas manuales y simuladas (demo) y el modo elegido son del usuario que se va: no quedan
+  // para el próximo.
   try {
-    for (const k of Object.keys(sessionStorage)) if (k.startsWith('viajes:ubicacion-manual:')) sessionStorage.removeItem(k);
+    for (const k of Object.keys(sessionStorage)) if (k.startsWith('viajes:ubicacion-')) sessionStorage.removeItem(k);
   } catch {
     // Sin almacenamiento: no hay nada guardado.
   }

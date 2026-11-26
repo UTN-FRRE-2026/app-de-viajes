@@ -80,6 +80,8 @@ node scripts/simular-chofer.mjs https://<dominio> --env deploy/.env.coolify   # 
 - Opciones: `--kmh 40` (velocidad; con `--kmh 120` el viaje dura un tercio), `--desde lat,lng` (dónde arranca; tiene que estar a menos de 5 km del origen del viaje), `--chofer <email>`, `--sin-calles`.
 - Mientras corre, la pantalla del chofer en el navegador tiene que estar cerrada: si no, los dos mandan posiciones distintas.
 
+Sin el script, la pantalla del chofer hace lo mismo en el navegador: su modo de ubicación por defecto, **«Simulada (demo)»**, maneja solo por la ruta real, avanza solo con «Voy en camino» y «Finalizar», y deja «Inició el viaje» al chofer ([docs/web.md](web.md#la-pantalla-del-chofer-chofer)). Con chofer y pasajero en dos navegadores (o uno en una ventana privada), se ve el auto moverse en las dos pantallas a la vez.
+
 ## 4. Idempotencia
 
 [demo.http](demo.http), sección 4:

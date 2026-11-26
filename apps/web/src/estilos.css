@@ -1161,9 +1161,11 @@ fieldset.punto.marcando legend {
   align-items: stretch;
 }
 
+/* Con «Simulada (demo)» son tres: en un celular angosto, la tercera baja de renglón. */
 .opciones {
   display: flex;
-  gap: 1.25rem;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.25rem;
 }
 
 label.opcion {

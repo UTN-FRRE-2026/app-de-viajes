@@ -59,6 +59,8 @@ test('el primer chofer deja vencer la oferta y el viaje se le ofrece al siguient
     [lejos, segundo.email],
   ] as const) {
     await entrar(pagina, email);
+    // Con el GPS del contexto: la «Simulada» por defecto los pondría a los dos en el mismo punto.
+    await pagina.getByRole('radio', { name: 'GPS' }).check();
     await pagina.getByRole('button', { name: 'Ponerme disponible' }).click();
     await expect(pagina.getByText(/Enviando cada 5 s/)).toBeVisible();
   }

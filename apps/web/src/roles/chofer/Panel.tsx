@@ -25,8 +25,9 @@ import {
   type Punto,
 } from '../../viaje/viaje';
 import { nombrePunto } from '../pasajero/lugares';
-import { ofertasVisibles, restanteMs, SIGUIENTE } from './logica';
+import { avanceSimulado, ofertasVisibles, restanteMs, SIGUIENTE } from './logica';
 import { useChofer } from './store';
+import { useConduccionSimulada, type Conduccion } from './useConduccionSimulada';
 
 const TEXTO_CONEXION: Record<EstadoConexion, string> = {
   conectando: 'Conectando…',
@@ -64,7 +65,19 @@ export function PanelChofer() {
     alConectar: () => void useChofer.getState().releer(),
   });
   // La ubicación se envía si está disponible o tiene un viaje: sin envíos, a los 30 s deja de ser candidato.
-  const envio = useEnvioUbicacion('/ubicacion/ubicaciones', disponible || viaje !== null);
+  // Por defecto, «Simulada (demo)»: el auto maneja solo por la ruta real.
+  const envio = useEnvioUbicacion('/ubicacion/ubicaciones', disponible || viaje !== null, { simulada: true });
+  const simulada = envio.modo === 'simulada';
+  const conduccion = useConduccionSimulada({ activa: simulada, viaje, posicion: envio.fijacion, mover: envio.fijarSimulada });
+
+  // Los avances automáticos de la simulada: «Voy en camino» al quedar asignado y «Finalizar» al llegar
+  // al destino, cuando location ya tiene ese último punto. Una vez por viaje y acción (el store lo anota).
+  const finalEnviado = viaje !== null && envio.enviada !== null && conduccion.llego && distanciaMetros(envio.enviada, viaje.destino) < 1;
+  const accionSola = simulada ? avanceSimulado(viaje, { llego: conduccion.llego, finalEnviado }) : null;
+  const viajeId = viaje?.id;
+  useEffect(() => {
+    if (accionSola) useChofer.getState().avanzarSolo(accionSola);
+  }, [accionSola, viajeId]);
 
   // «Ubicarme en el mapa» (solo en manual): el próximo toque fija la posición y cierra la selección.
   // Fuera de eso, el mapa se puede mover y tocar sin cambiar dónde está el auto.
@@ -104,7 +117,12 @@ export function PanelChofer() {
   const yo = envio.fijacion;
   const enViaje = viaje?.estado === 'EN_CURSO';
   const rutaTrabajo = useRuta(trabajo ? trabajo.origen : null, trabajo ? trabajo.destino : null);
-  const tramo = useRuta(trabajo && yo ? yo : null, trabajo && yo ? (enViaje ? trabajo.destino : trabajo.origen) : null, { auto: true });
+  // En la simulada, en camino o en curso, el tramo es la ruta fija que maneja el auto: no se pide otra.
+  const manejando = simulada && (viaje?.estado === 'EN_CAMINO' || enViaje);
+  const desdeAuto = trabajo && yo && !manejando ? yo : null;
+  const rutaAuto = useRuta(desdeAuto, desdeAuto && trabajo ? (enViaje ? trabajo.destino : trabajo.origen) : null, { auto: true });
+  const tramo = manejando ? tramoSimulado(conduccion) : rutaAuto;
+  const llego = manejando && conduccion.llego;
 
   if (!cargado) {
     return errorLectura ? (
@@ -126,9 +144,13 @@ export function PanelChofer() {
     mojonMetros: tramo?.distanciaMetros ?? null,
   };
 
-  // El cartel, con viaje: a dónde ir ahora y en cuántos minutos.
+  // El cartel, con viaje: a dónde ir ahora y en cuántos minutos; en la simulada, también que llegó.
   const cartel: Cartel | null = !viaje
     ? null
+    : llego
+      ? enViaje
+        ? { tipo: 'llegada', rotulo: 'Llegaste a', lugar: nombrePunto(viaje.destino), segundos: null, detalle: 'Llegaste · finalizando el viaje' }
+        : { tipo: 'llegada', rotulo: 'Llegaste a buscar al pasajero en', lugar: nombrePunto(viaje.origen), segundos: null, detalle: 'Llegaste · esperá al pasajero' }
     : enViaje
       ? { tipo: 'destino', rotulo: 'Hacia', lugar: nombrePunto(viaje.destino), segundos: tramo?.duracionSegundos ?? null, detalle: tramo ? `a ${textoDistancia(tramo.distanciaMetros)}` : null }
       : { tipo: 'encuentro', rotulo: 'Buscá al pasajero en', lugar: nombrePunto(viaje.origen), segundos: tramo?.duracionSegundos ?? null, detalle: tramo ? `a ${textoDistancia(tramo.distanciaMetros)}` : null };
@@ -173,7 +195,7 @@ export function PanelChofer() {
           {!disponible && !viaje ? <Disponibilidad /> : null}
           <Resumen />
           {viaje ? (
-            <ViajeActivo envio={envio} llegaEnSegundos={tramo?.duracionSegundos ?? null} />
+            <ViajeActivo envio={envio} llegaEnSegundos={llego ? null : (tramo?.duracionSegundos ?? null)} simulada={manejando ? { llego } : null} />
           ) : (
             <Ofertas envio={envio} hastaOrigen={oferta && tramo ? { ofertaId: oferta.ofertaId, metros: tramo.distanciaMetros } : null} />
           )}
@@ -366,7 +388,25 @@ function DatosOferta({ oferta, desde, metrosRuta }: { oferta: OfertaPendiente; d
   );
 }
 
-function ViajeActivo({ envio, llegaEnSegundos }: { envio: EnvioUbicacion; llegaEnSegundos: number | null }) {
+/**
+ * La ruta fija del tramo simulado, como la del auto: los puntos para dibujar y lo que falta. Los puntos
+ * son siempre el mismo arreglo: el mapa no se redibuja ni reencuadra con cada paso.
+ */
+function tramoSimulado(c: Conduccion) {
+  if (!c.ruta || c.restanteMetros === null || c.restanteSegundos === null) return null;
+  return { puntos: c.ruta.puntos, distanciaMetros: c.restanteMetros, duracionSegundos: c.restanteSegundos };
+}
+
+/** `simulada`: el auto maneja solo en este tramo, y si ya llegó. Null con GPS o manual. */
+function ViajeActivo({
+  envio,
+  llegaEnSegundos,
+  simulada,
+}: {
+  envio: EnvioUbicacion;
+  llegaEnSegundos: number | null;
+  simulada: { llego: boolean } | null;
+}) {
   const viaje = useChofer((s) => s.viaje);
   const operacion = useChofer((s) => s.operacion);
   const posicion = useChofer((s) => s.posicionPasajero);
@@ -393,8 +433,20 @@ function ViajeActivo({ envio, llegaEnSegundos }: { envio: EnvioUbicacion; llegaE
         </div>
       </div>
       <Posicion titulo="Pasajero" posicion={posicion} referencia={envio.fijacion} desfaseMs={desfaseMs} />
+      {simulada && !simulada.llego ? (
+        <p className="nota">
+          {viaje.estado === 'EN_CURSO' ? 'El auto va solo al destino y finaliza el viaje al llegar.' : 'El auto va solo a buscar al pasajero.'}
+        </p>
+      ) : null}
       {siguiente ? (
-        <button type="button" className="principal" disabled={operacion !== null} onClick={() => useChofer.getState().avanzar()}>
+        // En la simulada, mientras el auto maneja, el botón queda secundario: la acción del momento es
+        // esperar. Al llegar al origen, «Inició el viaje» vuelve a ser la principal.
+        <button
+          type="button"
+          className={simulada && !simulada.llego ? 'secundario' : 'principal'}
+          disabled={operacion !== null}
+          onClick={() => useChofer.getState().avanzar()}
+        >
           {operacion?.fase === 'enviando' ? 'Enviando…' : siguiente.texto}
         </button>
       ) : null}

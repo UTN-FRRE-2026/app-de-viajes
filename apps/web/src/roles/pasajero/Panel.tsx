@@ -11,7 +11,7 @@ import { ControlUbicacion } from '../../ubicacion/ControlUbicacion';
 import { VIGENCIA_MS } from '../../ubicacion/posicion';
 import { useEnvioUbicacion } from '../../ubicacion/useEnvioUbicacion';
 import { distanciaMetros, numeroViaje, pesos, textoDistancia, textoMinutos, type Punto } from '../../viaje/viaje';
-import { esActivo, lineaDeTiempo, type ItemLinea } from './logica';
+import { choferLlego, esActivo, lineaDeTiempo, type ItemLinea } from './logica';
 import { LUGARES, lugarEn, nombrePunto } from './lugares';
 import { usePasajero } from './store';
 
@@ -125,7 +125,9 @@ export function PanelPasajero() {
           detalle: estimado ? textoDistancia(estimado.distanciaMetros) : null,
         }
       : null
-    : viaje.estado === 'ASIGNADO' || viaje.estado === 'EN_CAMINO'
+    : choferLlego(viaje, posicionChofer, movilVieja)
+      ? { tipo: 'llegada', rotulo: 'Tu chofer te espera en', lugar: nombrePunto(viaje.origen), segundos: null, detalle: 'Tu chofer llegó' }
+      : viaje.estado === 'ASIGNADO' || viaje.estado === 'EN_CAMINO'
       ? {
           tipo: 'encuentro',
           rotulo: 'Tu chofer te busca en',

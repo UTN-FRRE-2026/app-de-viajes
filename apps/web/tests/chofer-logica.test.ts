@@ -3,8 +3,11 @@ import {
   aplicarEvento,
   aplicarLectura,
   aplicarRespuesta,
+  avanceSimulado,
+  claveAutomatica,
   ESTADO_INICIAL,
   ofertasVisibles,
+  puedeAvanzarSolo,
   restanteMs,
   type EstadoChofer,
 } from '../src/roles/chofer/logica';
@@ -168,5 +171,49 @@ describe('eventos', () => {
     const e = aplicarRespuesta(conViaje, { ...solicitud(S1, 'COMPLETADA', 4) }, 9);
     expect(e.viaje).toBeNull();
     expect(e.terminado?.id).toBe(S1);
+  });
+});
+
+describe('avances automáticos de la conducción simulada', () => {
+  const asignado: EstadoChofer = { ...ESTADO_INICIAL, cargado: true, viaje: solicitud(S1, 'ASIGNADO', 1) };
+
+  it('«Voy en camino» apenas queda asignado; «Inició el viaje» nunca solo', () => {
+    expect(avanceSimulado(solicitud(S1, 'ASIGNADO', 1), { llego: false, finalEnviado: false })).toBe('en-camino');
+    expect(avanceSimulado(solicitud(S1, 'EN_CAMINO', 2), { llego: true, finalEnviado: true })).toBeNull();
+    expect(avanceSimulado(null, { llego: true, finalEnviado: true })).toBeNull();
+  });
+
+  it('«Finalizar» solo al llegar al destino y después de que location tiene el punto final', () => {
+    const enCurso = solicitud(S1, 'EN_CURSO', 3);
+    expect(avanceSimulado(enCurso, { llego: false, finalEnviado: false })).toBeNull();
+    expect(avanceSimulado(enCurso, { llego: true, finalEnviado: false })).toBeNull();
+    expect(avanceSimulado(enCurso, { llego: true, finalEnviado: true })).toBe('finalizar');
+  });
+
+  it('cada avance se pide una sola vez por viaje y acción', () => {
+    expect(puedeAvanzarSolo(asignado, 'en-camino')).toBe(true);
+    const pedido = { ...asignado, automaticos: [claveAutomatica(S1, 'en-camino')] };
+    expect(puedeAvanzarSolo(pedido, 'en-camino')).toBe(false);
+    // Otro viaje, la misma acción: sí.
+    expect(puedeAvanzarSolo({ ...pedido, viaje: solicitud(S2, 'ASIGNADO', 1) }, 'en-camino')).toBe(true);
+  });
+
+  it('no con otra operación en curso o incierta (no se reintenta en loop: queda «Reintentar»)', () => {
+    const incierta: EstadoChofer = {
+      ...asignado,
+      operacion: { accion: 'en-camino', solicitudId: S1, desde: 'ASIGNADO', clave: 'k', fase: 'incierta', error: new Error('red') },
+    };
+    expect(puedeAvanzarSolo(incierta, 'en-camino')).toBe(false);
+  });
+
+  it('solo la acción que sigue en el estado del viaje', () => {
+    expect(puedeAvanzarSolo(asignado, 'finalizar')).toBe(false);
+    expect(puedeAvanzarSolo({ ...ESTADO_INICIAL, viaje: null }, 'en-camino')).toBe(false);
+  });
+
+  it('las lecturas conservan lo ya pedido', () => {
+    const pedido = { ...asignado, automaticos: [claveAutomatica(S1, 'en-camino')] };
+    const { estado } = aplicarLectura(pedido, lectura(solicitud(S1, 'EN_CAMINO', 2)), momento(1));
+    expect(estado.automaticos).toEqual([claveAutomatica(S1, 'en-camino')]);
   });
 });

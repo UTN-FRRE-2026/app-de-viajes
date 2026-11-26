@@ -71,6 +71,7 @@ Están las cuatro: [chofer](#la-pantalla-del-chofer-chofer), [flota](#el-panel-d
 - **el mojón**, un poste blanco sobre la ruta con los kilómetros que faltan por las calles;
 - **el auto**, visto desde arriba. Gira hacia donde maneja y avanza suave entre una posición y la siguiente (~1 s), salvo con `prefers-reduced-motion`. Sin posición reciente se ve gris.
 - `src/mapa/useRuta.ts` pide la ruta. La del origen y el destino elegidos se pide de nuevo con cualquier cambio de un extremo (un origen corrido unos metros puede cambiar la ruta entera). La que sale del auto (`{ auto: true }`) se pide de nuevo solo cuando el auto se movió más de 120 m o cambió el destino: así cuida el límite de `GET /rutas` por usuario y el servidor de ruteo.
+- **En la conducción simulada del chofer** ([abajo](#la-pantalla-del-chofer-chofer)), su mapa no usa la ruta «del auto»: dibuja la ruta fija del tramo, la misma que maneja, pedida una sola vez. Como es el mismo arreglo durante todo el tramo, el mapa no se redibuja ni se reencuadra con cada paso; el mojón y los minutos cuentan lo que falta sobre esa ruta. La pantalla del pasajero no cambia: ve el auto por `DriverLocationUpdated`, como el de un GPS.
 
 **El cartel.** Arriba de la hoja, el cartel verde dice hacia dónde y en cuántos minutos: «HACIA Terminal de Ómnibus · 8 MIN», «TU CHOFER TE BUSCA EN Plaza 25 de Mayo · 1 MIN». Los minutos y las distancias de los casilleros son por las calles, los mismos del mojón; sin ruta, en línea recta.
 
@@ -101,7 +102,18 @@ Las relecturas se juntan: una en vuelo y, como mucho, otra pendiente. No se usa 
 
 Lo mismo con «Voy en camino», «Inició el viaje» y «Finalizar»: una clave por acción, que se conserva mientras el resultado es incierto. Si una relectura muestra que el viaje ya cambió de estado, la acción se aplicó y no hay nada que reintentar.
 
-**Ubicación.** Se envía mientras el chofer está disponible o tiene un viaje activo. A los 30 s sin envíos, location deja de contarlo como candidato. Por eso, ponerse no disponible lo saca de las ofertas aunque dispatch todavía no filtre por disponibilidad. Las posiciones viejas no se envían: ver la sección siguiente.
+**Ubicación.** Se envía mientras el chofer está disponible o tiene un viaje activo. A los 30 s sin envíos, location deja de contarlo como candidato. Por eso, ponerse no disponible lo saca de las ofertas aunque dispatch todavía no filtre por disponibilidad. Las posiciones viejas no se envían: ver la sección siguiente. Hay tres modos: **GPS**, **Manual (demo)** y **Simulada (demo)**, que es el que viene elegido. El elegido se recuerda en la pestaña.
+
+**Conducción simulada («Simulada (demo)»).** Para la demo sin salir a la calle: el auto maneja solo por la ruta real, y el chofer y el pasajero lo ven moverse a la vez, por el camino de siempre (`POST /api/ubicacion/ubicaciones` → location → Redis → dispatch → SSE `DriverLocationUpdated`). Hace lo que `scripts/simular-chofer.mjs`, pero en la pantalla:
+- **Sin viaje**, el auto queda quieto y manda su posición cada 1 s, así sigue siendo candidato. Arranca en el punto del script (-27.4620, -58.9960, a 1,5 km de la Plaza 25 de Mayo, en la zona «Resistencia»), o donde quedó: la posición simulada se recuerda en la pestaña (`sessionStorage`), así una recarga a mitad de viaje sigue desde ahí.
+- **Asignado:** pide «Voy en camino» solo. El auto arranca cuando se confirma `EN_CAMINO`.
+- **En camino:** maneja hasta el origen y frena. «Llegó» es solo de pantalla, sin un estado nuevo: el chofer ve en su cartel la bandera de llegada («Llegaste · esperá al pasajero») con «Inició el viaje» como acción principal, y lo toca él. Mientras maneja, ese botón queda secundario.
+- **En curso:** arranca solo hacia el destino. Al llegar, primero location recibe el punto final y después pide «Finalizar» solo. El cobro sale como siempre.
+- **Una ruta fija por tramo:** se pide una vez a `GET /api/viajes/rutas` (dispatch → OSRM) desde donde está el auto al empezar el tramo, y la misma se maneja y se dibuja. No sigue la ruta «del auto» del mapa, que se vuelve a pedir cada 120 m. La polilínea suma el auto al principio y el punto exacto al final: la ruta por las calles empieza y termina en la calle más cercana. Si el ruteo no responde, dispatch da la recta (`fuente: 'recta'`) y el auto va en línea recta; si falla el pedido, también.
+- **Velocidad y llegada:** 40 km/h (`VELOCIDAD_SIMULADA_KMH`), un paso cada 1 s con el tiempo que pasó de verdad (como mucho 5 s, si la pestaña quedó en segundo plano). Llega cuando le faltan 20 m o menos sobre la ruta, o al terminarla, y se para justo en el punto. La cuenta está aparte, sin React (`src/ubicacion/simulacion.ts`, `tests/simulacion.test.ts`); el manejo, en `useConduccionSimulada.ts`.
+- **Los avances automáticos** van por `avanzar()` del store, con su Idempotency-Key y su resultado incierto. Cada uno se pide una sola vez por viaje y acción (`automaticos` en el store). Si queda incierto, no se reintenta solo: queda el «Reintentar» de siempre. Los botones siguen ahí, por si hacen falta a mano.
+- **Se frena** al cambiar de modo, al cancelarse el viaje o al cambiar de viaje o de estado. Una respuesta de ruta que llega tarde se ignora.
+- **GPS y Manual siguen como antes:** sin avances automáticos y con el envío cada 5 s. El pasajero no tiene este modo.
 
 ## El panel de la flota (`/flota`)
 
@@ -181,7 +193,8 @@ Va en `src/roles/pasajero/`, con la división de las otras pantallas: `Panel.tsx
 - **Pedir:** con la estimación a la vista (`GET /tarifas/estimacion`). Si el resultado es incierto, «No sabemos si se pidió el viaje» y «Reintentar» con la MISMA clave; la relectura lo resuelve si el viaje ya existe. Los rechazos conocidos tienen su texto: `SOLICITUD_ACTIVA_EXISTENTE`, `ORIGEN_FUERA_DE_ZONA` y `VIAJE_FUERA_DE_RANGO`.
 - **Cancelar:** solo buscando chofer, asignado o con el chofer en camino, lo mismo que permite dispatch; ya en viaje, solo el operador. Se confirma en la misma columna, sin modal. Si el resultado es incierto, se reintenta con la misma clave, y la relectura lo resuelve si el viaje ya no está activo. Si cancela el chofer o un operador, un aviso dice quién y con qué motivo.
 - **El cobro** llega por `PaymentCaptured` o `PaymentDeclined`. Esos eventos no se reponen: si llegaron con el stream cortado, cada relectura de un viaje terminado con el cobro sin resolver lo lee de `GET /solicitudes/:id`, que trae el cobro y no lo procesa. «Ver el cobro ahora» usa `POST /solicitudes/:id/cobrar`: lo procesa en el momento, lo devuelve como está si ya se resolvió y nunca cobra dos veces.
-- **La ubicación del pasajero** se comparte con el chofer mientras viene a buscarlo (`ASIGNADO` y `EN_CAMINO`), con el mismo control de GPS o manual que el chofer.
+- **La ubicación del pasajero** se comparte con el chofer mientras viene a buscarlo (`ASIGNADO` y `EN_CAMINO`), con el mismo control de GPS o manual que el chofer (sin la simulada).
+- **«Tu chofer llegó»**, solo de pantalla: con el viaje `EN_CAMINO` y la posición del chofer vigente a 20 m o menos del origen, el cartel pasa a la bandera de llegada (`choferLlego` en `logica.ts`).
 
 ## El panel del operador (`/operador`)
 
@@ -201,13 +214,14 @@ Lo usan las pantallas del pasajero y del chofer:
 |---|---|
 | `src/tiempo-real/eventos.ts` y `useEventos()` | El cliente del SSE. Usa `fetch` con el `Authorization` (EventSource no permite encabezados) y un lector de `text/event-stream` (`lector-sse.ts`). Reconecta con el `retry:` del servidor más un poco de azar; con cada falla seguida espera el doble, hasta 30 s. Con 401 renueva el token una vez; con 403 se detiene; con 429 (más de 3 pestañas) o 503, avisa y espera. Se cierra al cerrar la sesión. `alConectar` es el momento de releer el estado |
 | `src/api/operacion.ts` | `esIncierto(error)` y `ClavesDeOperacion`: una `Idempotency-Key` por objetivo (`disponible:true`, `aceptar:<id>`). Se conserva mientras el resultado es incierto y se descarta con éxito o con un error definitivo |
-| `src/ubicacion/` | `useEnvioUbicacion(ruta, activo)` y `ControlUbicacion`: GPS con `watchPosition`, o coordenadas cargadas a mano (**Manual (demo)**, también si se rechaza el permiso). El pasajero lo usa con `/ubicacion/ubicaciones/pasajero` |
+| `src/ubicacion/` | `useEnvioUbicacion(ruta, activo, { simulada })` y `ControlUbicacion`: GPS con `watchPosition`, coordenadas cargadas a mano (**Manual (demo)**, también si se rechaza el permiso) y, solo en el chofer, **Simulada (demo)** (`simulacion.ts`). El pasajero lo usa con `/ubicacion/ubicaciones/pasajero` |
 | `src/viaje/` | Los tipos de las respuestas (de `@viajes/contracts`, solo tipos), las etiquetas de cada estado, la distancia y `Posicion`: la posición en vivo de la otra parte, con «sin datos recientes» pasados los 30 s |
 
 **Posiciones viejas.** location le pone a cada ping la hora del servidor: reenviar un GPS viejo lo haría parecer actual.
 - El reenvío cada 5 s manda solo una posición **reciente**: tomada hace 15 s o menos, según el `timestamp` del GPS. Es la mitad de los 30 s de vigencia de location.
+- La simulada se envía cada 1 s, con un solo reloj y sin superponer pedidos: 60 por minuto, dentro de las 120 que admite location por usuario (`LIMITE_UBICACIONES_POR_MINUTO`). Más rápido no entraría.
 - Pasado ese tiempo deja de enviar, y la pantalla muestra «GPS sin posición reciente (hace N s): no se envía».
-- Las coordenadas manuales las declara el usuario: se reenvían mientras estén puestas. Se recuerdan en la pestaña (`sessionStorage`), así una recarga a mitad de viaje sigue enviando, y se borran al cerrar sesión.
+- Las coordenadas manuales y la posición simulada las declara la pantalla: se reenvían mientras estén puestas. Se recuerdan en la pestaña (`sessionStorage`), así una recarga a mitad de viaje sigue enviando, y se borran al cerrar sesión.
 
 ## Qué no se publica
 
