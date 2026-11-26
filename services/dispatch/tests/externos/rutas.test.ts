@@ -83,6 +83,52 @@ describe('MapasOsrm', () => {
     expect(resultados).toEqual(['calles', 'cache']);
   });
 
+  it('la misma ruta pedida a la vez (el mapa y la estimación) sale en un solo pedido a OSRM', async () => {
+    let soltar!: () => void;
+    const espera = new Promise<void>((r) => (soltar = r));
+    const { f, pedidos } = fetchFalso(async () => {
+      await espera;
+      return Response.json(cuerpoOsrm());
+    });
+    const resultados: string[] = [];
+    const mapas = osrm(f, { alResolver: (r) => resultados.push(r) });
+
+    // Las dos antes de que conteste OSRM: la segunda espera la respuesta de la primera.
+    const ruta = mapas.ruta(ORIGEN, DESTINO);
+    const recorrido = mapas.recorrido(ORIGEN, DESTINO);
+    soltar();
+    expect(await recorrido).toEqual({ metros: 4613, segundos: 655 });
+    expect((await ruta).fuente).toBe('calles');
+    expect(pedidos).toHaveLength(1);
+    expect(resultados.sort()).toEqual(['cache', 'calles']);
+  });
+
+  it('si el pedido compartido falla, falla para todos y el siguiente vuelve a pedir', async () => {
+    let soltar!: () => void;
+    const espera = new Promise<void>((r) => (soltar = r));
+    let respuestas = 0;
+    const { f, pedidos } = fetchFalso(async () => {
+      respuestas++;
+      if (respuestas === 1) {
+        await espera;
+        return new Response('caído', { status: 503 });
+      }
+      return Response.json(cuerpoOsrm());
+    });
+    const mapas = osrm(f);
+
+    const primera = mapas.ruta(ORIGEN, DESTINO);
+    const segunda = mapas.ruta(ORIGEN, DESTINO);
+    soltar();
+    await expect(primera).rejects.toThrow();
+    await expect(segunda).rejects.toThrow();
+    expect(pedidos).toHaveLength(1);
+
+    // El pedido fallido no queda «en curso» para siempre: el próximo sale de nuevo y anda.
+    expect((await mapas.ruta(ORIGEN, DESTINO)).fuente).toBe('calles');
+    expect(pedidos).toHaveLength(2);
+  });
+
   it('el caché tiene tope: descarta la ruta usada hace más tiempo', async () => {
     const { f, pedidos } = fetchFalso();
     const mapas = osrm(f, { maxCache: 2 });
