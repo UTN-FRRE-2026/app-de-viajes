@@ -1,568 +1,633 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-24T03:48:55.478Z",
+  "generatedAt": "2026-11-26T17:16:21.559Z",
   "title": "Design System: Viajes",
   "extensions": {
     "colorMeta": {
-      "fondo": {
-        "role": "neutral",
-        "displayName": "Gris Frío de Fondo",
-        "canonical": "#f4f6f8",
-        "oklch": "oklch(97.2% 0.003 247.9)",
+      "verde": {
+        "role": "primary",
+        "displayName": "Verde Ruta",
+        "canonical": "#00563f",
+        "oklch": "oklch(40.2% 0.082 167.3)",
+        "cssVar": "--verde",
         "tonalRamp": [
-          "#0b0b0b",
-          "#242526",
-          "#414243",
-          "#606163",
-          "#818284",
-          "#a4a5a6",
-          "#c8c9ca",
-          "#eeeeef"
+          "#070d0a",
+          "#132921",
+          "#1e493a",
+          "#286c54",
+          "#478d73",
+          "#79ab97",
+          "#aeccbf",
+          "#e7f1ed"
         ]
       },
-      "tarjeta": {
+      "verde-2": {
+        "role": "primary",
+        "displayName": "Verde Noche",
+        "canonical": "#00422f",
+        "oklch": "oklch(33.6% 0.069 166.6)",
+        "cssVar": "--verde-2",
+        "tonalRamp": [
+          "#070d0a",
+          "#162821",
+          "#25483a",
+          "#356a55",
+          "#538b74",
+          "#80a997",
+          "#b2cbc0",
+          "#e8f1ed"
+        ]
+      },
+      "verde-claro": {
+        "role": "primary",
+        "displayName": "Verde Lavado",
+        "canonical": "#e3efe9",
+        "oklch": "oklch(94.1% 0.015 164.7)",
+        "cssVar": "--verde-claro",
+        "tonalRamp": [
+          "#0a0b0b",
+          "#212523",
+          "#3b413e",
+          "#57605b",
+          "#75807b",
+          "#98a19d",
+          "#c0c5c3",
+          "#edefee"
+        ]
+      },
+      "ambar": {
+        "role": "secondary",
+        "displayName": "Ámbar de Obra",
+        "canonical": "#f2a900",
+        "oklch": "oklch(78.5% 0.164 77.6)",
+        "cssVar": "--ambar",
+        "tonalRamp": [
+          "#110a02",
+          "#351f00",
+          "#5f3500",
+          "#8c4c00",
+          "#b16c00",
+          "#c89439",
+          "#dfbf8e",
+          "#f8eddd"
+        ]
+      },
+      "ambar-oscuro": {
+        "role": "secondary",
+        "displayName": "Ámbar Oscuro",
+        "canonical": "#c98a00",
+        "oklch": "oklch(67.9% 0.142 76.5)",
+        "cssVar": "--ambar-oscuro",
+        "tonalRamp": [
+          "#100a03",
+          "#331f00",
+          "#5c3700",
+          "#874f00",
+          "#ac6f00",
+          "#c4954c",
+          "#dcbf96",
+          "#f7eddf"
+        ]
+      },
+      "ambar-fondo": {
+        "role": "secondary",
+        "displayName": "Ámbar Fondo",
+        "canonical": "#fff4d1",
+        "oklch": "oklch(96.7% 0.047 92.6)",
+        "cssVar": "--ambar-fondo",
+        "tonalRamp": [
+          "#0c0b08",
+          "#27241a",
+          "#463f2c",
+          "#665d40",
+          "#877d5d",
+          "#a69e86",
+          "#c9c4b5",
+          "#f0eee9"
+        ]
+      },
+      "ambar-texto": {
+        "role": "secondary",
+        "displayName": "Ámbar Texto",
+        "canonical": "#6b4a00",
+        "oklch": "oklch(43.4% 0.090 79.3)",
+        "cssVar": "--ambar-texto",
+        "tonalRamp": [
+          "#0e0b05",
+          "#2d220f",
+          "#513c16",
+          "#77571c",
+          "#9a773a",
+          "#b59a6e",
+          "#d2c2a7",
+          "#f3eee5"
+        ]
+      },
+      "rojo": {
+        "role": "tertiary",
+        "displayName": "Rojo Anular",
+        "canonical": "#c62828",
+        "oklch": "oklch(53.9% 0.194 26.7)",
+        "cssVar": "--rojo",
+        "tonalRamp": [
+          "#160605",
+          "#42100e",
+          "#761615",
+          "#ae151a",
+          "#d83c38",
+          "#eb776c",
+          "#f8afa6",
+          "#ffe8e4"
+        ]
+      },
+      "rojo-2": {
+        "role": "tertiary",
+        "displayName": "Rojo Anular Hondo",
+        "canonical": "#a51f1f",
+        "oklch": "oklch(47.0% 0.170 26.8)",
+        "cssVar": "--rojo-2",
+        "tonalRamp": [
+          "#140706",
+          "#3f1411",
+          "#701f1c",
+          "#a52926",
+          "#cf4a42",
+          "#e37d73",
+          "#f2b2aa",
+          "#ffe8e5"
+        ]
+      },
+      "rojo-fondo": {
+        "role": "tertiary",
+        "displayName": "Rojo Fondo",
+        "canonical": "#fcecec",
+        "oklch": "oklch(95.6% 0.017 17.5)",
+        "cssVar": "--rojo-fondo",
+        "tonalRamp": [
+          "#0c0b0b",
+          "#272323",
+          "#463d3d",
+          "#675a5a",
+          "#877979",
+          "#a69b9b",
+          "#c9c2c2",
+          "#f0eeee"
+        ]
+      },
+      "azul": {
+        "role": "tertiary",
+        "displayName": "Azul de Foco",
+        "canonical": "#1e5aa8",
+        "oklch": "oklch(47.3% 0.139 256.8)",
+        "cssVar": "--azul",
+        "tonalRamp": [
+          "#060b14",
+          "#11243f",
+          "#1b3f70",
+          "#255ca6",
+          "#427dce",
+          "#73a0df",
+          "#aac6ed",
+          "#e6effd"
+        ]
+      },
+      "chapa": {
         "role": "neutral",
-        "displayName": "Blanco Tarjeta",
+        "displayName": "Blanco Chapa",
         "canonical": "#ffffff",
         "oklch": "oklch(100.0% 0.000 89.9)",
+        "cssVar": "--chapa",
         "tonalRamp": [
           "#0b0b0b",
-          "#252525",
-          "#424242",
-          "#616161",
-          "#828282",
-          "#a5a5a5",
-          "#c9c9c9",
+          "#242424",
+          "#404040",
+          "#5d5d5d",
+          "#7d7d7d",
+          "#9e9e9e",
+          "#c4c4c4",
           "#eeeeee"
         ]
       },
-      "texto": {
+      "fondo": {
         "role": "neutral",
-        "displayName": "Tinta Azulada",
-        "canonical": "#1d2330",
-        "oklch": "oklch(25.6% 0.026 265.3)",
+        "displayName": "Gris Verdoso",
+        "canonical": "#e8efeb",
+        "oklch": "oklch(94.6% 0.009 161.3)",
+        "cssVar": "--fondo",
         "tonalRamp": [
-          "#0a0b0e",
-          "#22252b",
-          "#3d424c",
-          "#5b616f",
-          "#7c8291",
-          "#a0a5b1",
-          "#c5c9d2",
-          "#eceef3"
+          "#0b0b0b",
+          "#232523",
+          "#3d413f",
+          "#5a5f5c",
+          "#797f7b",
+          "#9ba09d",
+          "#c2c5c3",
+          "#eeefee"
+        ]
+      },
+      "asfalto": {
+        "role": "neutral",
+        "displayName": "Negro Asfalto",
+        "canonical": "#1c1c1c",
+        "oklch": "oklch(22.6% 0.000 89.9)",
+        "cssVar": "--asfalto",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#242424",
+          "#404040",
+          "#5d5d5d",
+          "#7d7d7d",
+          "#9e9e9e",
+          "#c4c4c4",
+          "#eeeeee"
         ]
       },
       "suave": {
         "role": "neutral",
-        "displayName": "Pizarra Suave",
-        "canonical": "#5b6475",
-        "oklch": "oklch(50.2% 0.029 263.2)",
+        "displayName": "Gris Pizarra",
+        "canonical": "#4c5852",
+        "oklch": "oklch(44.8% 0.018 164.1)",
+        "cssVar": "--suave",
         "tonalRamp": [
-          "#090b0f",
-          "#21252c",
-          "#3c424d",
-          "#596171",
-          "#7a8393",
-          "#9ea5b2",
-          "#c4c9d3",
-          "#eceff4"
+          "#0a0b0b",
+          "#212523",
+          "#3a423e",
+          "#55615b",
+          "#74817a",
+          "#97a19c",
+          "#c0c6c3",
+          "#edefee"
         ]
       },
-      "acento": {
-        "role": "primary",
-        "displayName": "Azul de Acción",
-        "canonical": "#1f6feb",
-        "oklch": "oklch(56.9% 0.202 259.7)",
-        "tonalRamp": [
-          "#010922",
-          "#032253",
-          "#0a3d8a",
-          "#135ac5",
-          "#397eed",
-          "#6fa5fb",
-          "#a4cbff",
-          "#d9f0ff"
-        ]
-      },
-      "acento-texto": {
-        "role": "primary",
-        "displayName": "Azul Tinta",
-        "canonical": "#174ea6",
-        "oklch": "oklch(44.3% 0.153 259.9)",
-        "tonalRamp": [
-          "#030a1c",
-          "#0e2448",
-          "#1d4079",
-          "#2e5eae",
-          "#4f81d3",
-          "#7ea6e7",
-          "#adcbfa",
-          "#def0ff"
-        ]
-      },
-      "acento-suave": {
-        "role": "primary",
-        "displayName": "Azul Suave",
-        "canonical": "#e3ecfd",
-        "oklch": "oklch(94.1% 0.025 263.3)",
-        "tonalRamp": [
-          "#0a0b0e",
-          "#22252b",
-          "#3d424b",
-          "#5b616e",
-          "#7b8390",
-          "#9fa5b0",
-          "#c5c9d1",
-          "#eceef3"
-        ]
-      },
-      "seleccion": {
-        "role": "primary",
-        "displayName": "Azul Selección",
-        "canonical": "#cfe0fb",
-        "oklch": "oklch(90.2% 0.041 259.6)",
-        "tonalRamp": [
-          "#080b10",
-          "#1f252f",
-          "#394251",
-          "#556277",
-          "#758399",
-          "#9ba6b7",
-          "#c2cad6",
-          "#eaeff6"
-        ]
-      },
-      "ok": {
-        "role": "secondary",
-        "displayName": "Verde Hecho",
-        "canonical": "#1a7f37",
-        "oklch": "oklch(52.4% 0.140 148.0)",
-        "tonalRamp": [
-          "#010f03",
-          "#072e11",
-          "#124f22",
-          "#1f7435",
-          "#469655",
-          "#7ab683",
-          "#acd6b1",
-          "#def6e0"
-        ]
-      },
-      "ok-suave": {
-        "role": "secondary",
-        "displayName": "Verde Suave",
-        "canonical": "#e3f4e8",
-        "oklch": "oklch(95.1% 0.024 155.1)",
-        "tonalRamp": [
-          "#090c0a",
-          "#212723",
-          "#3b453e",
-          "#58655c",
-          "#79867d",
-          "#9da8a1",
-          "#c4cbc6",
-          "#ebf0ec"
-        ]
-      },
-      "riel-hecho": {
-        "role": "secondary",
-        "displayName": "Verde Riel",
-        "canonical": "#a9d8b6",
-        "oklch": "oklch(84.0% 0.068 153.4)",
-        "tonalRamp": [
-          "#060d08",
-          "#182a1e",
-          "#2e4936",
-          "#456c51",
-          "#668d71",
-          "#8fae98",
-          "#bad0bf",
-          "#e6f2e9"
-        ]
-      },
-      "error": {
-        "role": "tertiary",
-        "displayName": "Rojo Cortado",
-        "canonical": "#b42318",
-        "oklch": "oklch(50.0% 0.182 29.5)",
-        "tonalRamp": [
-          "#1c0301",
-          "#470d08",
-          "#771d14",
-          "#aa2e22",
-          "#d25344",
-          "#e98576",
-          "#fdb4a8",
-          "#ffe3db"
-        ]
-      },
-      "error-suave": {
-        "role": "tertiary",
-        "displayName": "Rojo Suave",
-        "canonical": "#fdecea",
-        "oklch": "oklch(95.6% 0.019 25.6)",
-        "tonalRamp": [
-          "#0d0a0a",
-          "#292323",
-          "#493f3e",
-          "#6b5e5c",
-          "#8c7f7d",
-          "#ada2a1",
-          "#cfc7c6",
-          "#f2eded"
-        ]
-      },
-      "aviso-fondo": {
-        "role": "tertiary",
-        "displayName": "Ámbar de Aviso",
-        "canonical": "#fff6e0",
-        "oklch": "oklch(97.4% 0.030 88.4)",
-        "tonalRamp": [
-          "#0d0b07",
-          "#28251d",
-          "#474235",
-          "#686150",
-          "#898270",
-          "#aaa597",
-          "#cdc9bf",
-          "#f1eee8"
-        ]
-      },
-      "aviso-borde": {
-        "role": "tertiary",
-        "displayName": "Borde Ámbar",
-        "canonical": "#f0d58c",
-        "oklch": "oklch(87.9% 0.097 90.0)",
-        "tonalRamp": [
-          "#0f0b01",
-          "#2e2406",
-          "#504011",
-          "#745f1d",
-          "#968041",
-          "#b5a475",
-          "#d5c8a7",
-          "#f5eedb"
-        ]
-      },
-      "borde": {
-        "role": "neutral",
-        "displayName": "Borde de Tarjeta",
-        "canonical": "#dde2ea",
-        "oklch": "oklch(91.1% 0.012 259.8)",
-        "tonalRamp": [
-          "#0a0b0d",
-          "#232528",
-          "#3f4247",
-          "#5e6168",
-          "#7e8389",
-          "#a2a5aa",
-          "#c7c9cd",
-          "#edeef1"
-        ]
-      },
-      "borde-control": {
-        "role": "neutral",
-        "displayName": "Borde de Control",
-        "canonical": "#c5ccd8",
-        "oklch": "oklch(84.3% 0.018 261.3)",
-        "tonalRamp": [
-          "#0a0b0d",
-          "#232529",
-          "#3e4249",
-          "#5c616b",
-          "#7d838d",
-          "#a1a5ad",
-          "#c6c9cf",
-          "#eceef2"
-        ]
-      },
-      "divisor": {
-        "role": "neutral",
-        "displayName": "Divisor",
-        "canonical": "#eef1f5",
-        "oklch": "oklch(95.7% 0.006 255.5)",
-        "tonalRamp": [
-          "#0b0b0c",
-          "#242526",
-          "#404244",
-          "#5f6164",
-          "#808286",
-          "#a3a5a8",
-          "#c8c9cb",
-          "#eeeeef"
-        ]
-      },
-      "pastilla-neutra": {
-        "role": "neutral",
-        "displayName": "Gris de Pastilla",
-        "canonical": "#e8edf5",
-        "oklch": "oklch(94.5% 0.012 259.8)",
-        "tonalRamp": [
-          "#0a0b0d",
-          "#232528",
-          "#3f4246",
-          "#5e6168",
-          "#7f8389",
-          "#a2a5aa",
-          "#c7c9cd",
-          "#edeef1"
-        ]
-      },
-      "gris-apagado": {
+      "apagado": {
         "role": "neutral",
         "displayName": "Gris Apagado",
-        "canonical": "#8a93a3",
-        "oklch": "oklch(66.1% 0.026 262.1)",
+        "canonical": "#5f6c65",
+        "oklch": "oklch(51.8% 0.019 162.2)",
+        "cssVar": "--apagado",
         "tonalRamp": [
-          "#0a0b0e",
-          "#22252b",
-          "#3d424c",
-          "#5a626f",
-          "#7b8391",
-          "#9fa5b1",
-          "#c5c9d1",
-          "#eceff3"
+          "#0a0c0b",
+          "#212523",
+          "#3a423e",
+          "#55615a",
+          "#74817a",
+          "#97a19c",
+          "#bfc6c2",
+          "#edefee"
+        ]
+      },
+      "filete": {
+        "role": "neutral",
+        "displayName": "Filete",
+        "canonical": "#c3d0c8",
+        "oklch": "oklch(84.5% 0.018 159.0)",
+        "cssVar": "--filete",
+        "tonalRamp": [
+          "#0a0b0b",
+          "#212523",
+          "#3b423d",
+          "#56615a",
+          "#758179",
+          "#98a19b",
+          "#c0c6c2",
+          "#edefee"
+        ]
+      },
+      "filete-2": {
+        "role": "neutral",
+        "displayName": "Filete Claro",
+        "canonical": "#dde6e1",
+        "oklch": "oklch(91.7% 0.012 162.0)",
+        "cssVar": "--filete-2",
+        "tonalRamp": [
+          "#0a0b0b",
+          "#222523",
+          "#3c413e",
+          "#58605c",
+          "#77807b",
+          "#9aa09d",
+          "#c1c5c3",
+          "#edefee"
         ]
       }
     },
     "typographyMeta": {
       "display": {
+        "displayName": "Minutos del cartel",
+        "purpose": "La cifra grande a la derecha del cartel verde."
+      },
+      "monto": {
         "displayName": "Monto",
-        "purpose": "Solo el monto grande de la estimación o la tarifa final; tabular."
+        "purpose": "Tarifa estimada o final; 1.75rem en el cierre fijo."
       },
       "headline": {
-        "displayName": "Título de pantalla",
-        "purpose": "h1 de cada tarjeta principal; 1.25rem en la columna angosta del pasajero."
+        "displayName": "Lugar del cartel",
+        "purpose": "El destino o punto de encuentro, en mayúsculas; 1.55rem en el celular.",
+        "textTransform": "uppercase"
       },
       "title": {
-        "displayName": "Título de tarjeta",
-        "purpose": "h2 de las tarjetas de viaje; h3 del detalle a 1rem."
+        "displayName": "Título (h1)",
+        "purpose": "h1 de pantalla; 1.25rem dentro del cartel.",
+        "textTransform": "uppercase"
+      },
+      "title-sm": {
+        "displayName": "Título (h2)",
+        "purpose": "h2 de tarjetas y bloques de la hoja; h3 a 0.98rem.",
+        "textTransform": "uppercase"
+      },
+      "cifra": {
+        "displayName": "Cifra de casillero",
+        "purpose": "Valores de los casilleros (distancias, tiempos)."
+      },
+      "boton": {
+        "displayName": "Botón",
+        "purpose": "Todo botón; 1.12rem en el principal.",
+        "textTransform": "uppercase"
+      },
+      "senal": {
+        "displayName": "Señal",
+        "purpose": "Nombre del paso dentro de cada señal.",
+        "textTransform": "uppercase"
+      },
+      "label": {
+        "displayName": "Rótulo",
+        "purpose": "Rótulos de casilleros, leyendas, encabezados de tabla.",
+        "textTransform": "uppercase"
       },
       "body": {
-        "displayName": "Cuerpo",
-        "purpose": "Texto corriente; tablas a 0.93rem; etiquetas de formulario a 500."
+        "displayName": "Texto",
+        "purpose": "Texto corriente; etiquetas de formulario a 600 y 0.95rem."
       },
       "nota": {
         "displayName": "Nota",
-        "purpose": "Aclaraciones, motivos y ayuda, en color suave."
-      },
-      "label": {
-        "displayName": "Etiqueta",
-        "purpose": "Pastillas, horas y detalle de la línea de tiempo, encabezados de tabla, códigos."
+        "purpose": "Aclaraciones y ayuda, en gris pizarra."
       }
     },
+    "fonts": [
+      {
+        "family": "Barlow",
+        "source": "@fontsource/barlow (self-hosted)",
+        "weights": [
+          400,
+          500,
+          600
+        ]
+      },
+      {
+        "family": "Barlow Condensed",
+        "source": "@fontsource/barlow-condensed (self-hosted)",
+        "weights": [
+          600,
+          700
+        ]
+      }
+    ],
     "shadows": [
       {
-        "name": "flotante-mapa",
-        "value": "0 4px 12px rgba(29, 35, 48, 0.16)",
-        "purpose": "Solo la pastilla de ayuda que flota sobre el mapa."
+        "name": "filete-cartel",
+        "value": "inset 0 0 0 4px var(--verde), inset 0 0 0 6px #fff",
+        "purpose": "El filete blanco interior del cartel. Señal hecha: 2.5px/4px. Nunca en botones."
       },
       {
-        "name": "anillo-actual",
-        "value": "0 0 0 5px rgba(31, 111, 235, 0.18)",
-        "purpose": "Halo del punto del paso actual en la línea de tiempo."
+        "name": "filete-senal-actual",
+        "value": "inset 0 0 0 2.5px var(--ambar), inset 0 0 0 4.5px var(--asfalto)",
+        "purpose": "Borde negro interior de la señal ámbar, como las de advertencia."
       },
       {
-        "name": "hundido",
-        "value": "inset 0 0 0 1px #c5ccd8",
-        "purpose": "Botón «Cancelar» de la fila abierta en la tabla del operador (con fondo #dfe5ee)."
+        "name": "filete-barra",
+        "value": "inset 0 -5px 0 var(--verde), inset 0 -6.5px 0 rgba(255, 255, 255, 0.85)",
+        "purpose": "El filete blanco al pie de la barra superior."
+      },
+      {
+        "name": "sombra",
+        "value": "0 6px 20px rgba(0, 40, 28, 0.16)",
+        "purpose": "Lo que flota sobre el mapa o se apoya en él: oferta, zoom, ayuda del mapa, hoja en escritorio."
+      },
+      {
+        "name": "hoja-sube",
+        "value": "0 -6px 20px rgba(0, 40, 28, 0.18)",
+        "purpose": "La hoja del celular sobre el mapa."
+      },
+      {
+        "name": "cierre-fijo",
+        "value": "0 -8px 18px rgba(0, 40, 28, 0.1)",
+        "purpose": "El cierre fijo al pie de la hoja."
+      },
+      {
+        "name": "menu-pie",
+        "value": "0 -4px 16px rgba(0, 30, 20, 0.22)",
+        "purpose": "El menú al pie del celular."
+      },
+      {
+        "name": "boton-principal",
+        "value": "0 3px 10px rgba(0, 66, 47, 0.22)",
+        "purpose": "La única sombra de un control en reposo."
+      },
+      {
+        "name": "mojon",
+        "value": "0 3px 8px rgba(0, 0, 0, 0.25)",
+        "purpose": "El poste parado sobre el mapa."
       }
     ],
     "motion": [
       {
-        "name": "ease-prender",
-        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
-        "purpose": "Curva del único movimiento: el paso de la línea de tiempo que se prende."
+        "name": "encender",
+        "value": "0.45s cubic-bezier(0.16, 1, 0.3, 1), scale(1.12)+opacity 0.35 → none, 40ms de escalonado por paso",
+        "purpose": "Una señal que se enciende al llegar su evento. Sin animación con prefers-reduced-motion."
       },
       {
-        "name": "prender",
-        "value": "0.6s",
-        "purpose": "El punto de un paso hecho crece desde scale(0.4)."
+        "name": "giro-auto",
+        "value": "transform 0.35s cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "El auto gira con el rumbo. Sin transición con prefers-reduced-motion."
       },
       {
-        "name": "prender-actual",
-        "value": "0.9s",
-        "purpose": "El punto del paso actual crece y suelta un anillo que se apaga hasta quedar en anillo-actual."
+        "name": "control",
+        "value": "0.15s ease-out (color, fondo, borde); active translateY(1px) 0.1s",
+        "purpose": "Cambios de estado de botones, campos y menú."
       },
       {
-        "name": "reduced-motion",
-        "value": "animation: none",
-        "purpose": "Con prefers-reduced-motion: reduce no se anima nada."
-      },
-      {
-        "name": "hover-boton",
-        "value": "filter: brightness(0.94)",
-        "purpose": "Hover de todos los botones habilitados; sin transición."
+        "name": "vence",
+        "value": "inline-size 0.5s linear",
+        "purpose": "La barra ámbar de la oferta que se vacía."
       }
     ],
     "breakpoints": [
       {
-        "name": "contenido",
-        "value": "960px",
-        "purpose": "Contenedor de las pantallas de un solo flujo."
+        "name": "celular",
+        "value": "max-width: 719px",
+        "purpose": "Menú al pie, barra de 3.25rem."
       },
       {
-        "name": "ancho",
-        "value": "1360px",
-        "purpose": "Contenedor de pasajero y operador (.ancho)."
+        "name": "tablas",
+        "value": "max-width: 900px",
+        "purpose": "Tablas con desplazamiento horizontal."
       },
       {
-        "name": "dos-columnas",
-        "value": "1180px",
-        "purpose": "El pasajero pasa a dos columnas."
-      },
-      {
-        "name": "tabla-desplazable",
-        "value": "900px",
-        "purpose": "Las tablas se desplazan en horizontal."
-      },
-      {
-        "name": "una-columna",
-        "value": "760px",
-        "purpose": "El pasajero pasa a una columna; mapa de 340px."
-      },
-      {
-        "name": "acciones-envuelven",
-        "value": "480px",
-        "purpose": "Las filas de acciones se envuelven."
+        "name": "escritorio",
+        "value": "min-width: 960px",
+        "purpose": "Mapa a la izquierda, hoja de 27.5rem a la derecha."
       }
     ],
-    "constraints": [
-      "CSP estricta: todo estilo vive en src/estilos.css; nunca style= ni estilos o scripts en línea. npm run build falla si los encuentra (scripts/revisar-csp.mjs).",
-      "Ningún recurso de otro origen (fuentes, íconos, CDN); solo las teselas de OpenStreetMap."
-    ]
+    "layout": {
+      "barraAlto": "3.5rem (3.25rem celular)",
+      "navAlto": "4rem",
+      "hojaAncho": "27.5rem",
+      "contenido": "960px",
+      "ancho": "1360px"
+    },
+    "mapRules": {
+      "teselas": "filter: grayscale(0.85) contrast(0.95) brightness(1.04)",
+      "mojonMinimoMetros": 800,
+      "mojonPosicion": "punto medio por distancia, sobre la aproximación si existe, si no sobre la ruta",
+      "ruta": "verde 5.5px sobre borde blanco 10px",
+      "aproximacion": "ámbar oscuro 5px, dasharray 1 9"
+    }
   },
   "components": [
     {
-      "name": "Botón primario",
-      "kind": "button",
-      "refersTo": "button-primary",
-      "description": "Acción que avanza el flujo; azul de acción.",
-      "html": "<button class=\"ds-btn\">Aceptar</button>",
-      "css": ".ds-btn { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; line-height: 1.5; font-size: 1rem; padding: 0.5rem 0.9rem; border: 0; border-radius: 6px; cursor: pointer; background: var(--acento, #1f6feb); color: #fff; } .ds-btn:hover { filter: brightness(0.94); } .ds-btn:focus-visible { outline: 2px solid var(--acento, #1f6feb); outline-offset: 2px; } .ds-btn:disabled { opacity: 0.6; cursor: default; }"
-    },
-    {
       "name": "Botón principal",
       "kind": "button",
-      "refersTo": "button-principal",
-      "description": "La acción principal de un formulario: todo el ancho, más alta, a 600.",
+      "refersTo": "button-primary",
+      "description": "La acción principal: píldora verde maciza, sin el filete blanco de los carteles.",
       "html": "<button class=\"ds-btn-principal\">Pedir viaje</button>",
-      "css": ".ds-btn-principal { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; line-height: 1.5; font-size: 1rem; padding: 0.5rem 0.9rem; border: 0; border-radius: 6px; cursor: pointer; width: 100%; padding: 0.7rem 1rem; font-weight: 600; background: var(--acento, #1f6feb); color: #fff; } .ds-btn-principal:hover { filter: brightness(0.94); } .ds-btn-principal:focus-visible { outline: 2px solid var(--acento, #1f6feb); outline-offset: 2px; }"
+      "css": ".ds-btn-principal { width: 100%; font-family: 'Barlow Condensed', 'Barlow', system-ui, sans-serif; font-weight: 700; font-size: 1.12rem; text-transform: uppercase; letter-spacing: 0.08em; padding: 0.95rem 1.2rem; min-height: 2.75rem; border: 2px solid var(--verde, #00563f); border-radius: 999px; background: var(--verde, #00563f); color: #fff; box-shadow: 0 3px 10px rgba(0, 66, 47, 0.22); cursor: pointer; transition: background-color 0.15s ease-out, border-color 0.15s ease-out, transform 0.1s ease-out; } .ds-btn-principal:hover { background: var(--verde-2, #00422f); border-color: var(--verde-2, #00422f); } .ds-btn-principal:active { transform: translateY(1px); } .ds-btn-principal:focus-visible { outline: 2.5px solid var(--azul, #1e5aa8); outline-offset: 2px; }"
     },
     {
       "name": "Botón secundario",
       "kind": "button",
       "refersTo": "button-secundario",
-      "description": "Acción que no avanza el flujo: actualizar, volver, cancelar como segunda opción.",
-      "html": "<button class=\"ds-btn-secundario\">Actualizar</button>",
-      "css": ".ds-btn-secundario { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; line-height: 1.5; font-size: 1rem; padding: 0.5rem 0.9rem; border: 0; border-radius: 6px; cursor: pointer; background: #e8edf5; color: var(--texto, #1d2330); } .ds-btn-secundario:hover { filter: brightness(0.94); } .ds-btn-secundario:focus-visible { outline: 2px solid var(--acento, #1f6feb); outline-offset: 2px; }"
+      "description": "Acciones que no avanzan el flujo: chapa blanca con borde asfalto.",
+      "html": "<button class=\"ds-btn-secundario\">Volver</button>",
+      "css": ".ds-btn-secundario { font-family: 'Barlow Condensed', 'Barlow', system-ui, sans-serif; font-weight: 700; font-size: 1.02rem; text-transform: uppercase; letter-spacing: 0.08em; padding: 0.7rem 1.1rem; min-height: 2.75rem; border: 2px solid var(--asfalto, #1c1c1c); border-radius: 8px; background: var(--chapa, #fff); color: var(--asfalto, #1c1c1c); cursor: pointer; transition: background-color 0.15s ease-out; } .ds-btn-secundario:hover { background: var(--fondo, #e8efeb); } .ds-btn-secundario:active { transform: translateY(1px); } .ds-btn-secundario:focus-visible { outline: 2.5px solid var(--azul, #1e5aa8); outline-offset: 2px; }"
     },
     {
       "name": "Botón de peligro",
       "kind": "button",
       "refersTo": "button-peligro",
-      "description": "Solo para confirmar una cancelación.",
-      "html": "<button class=\"ds-btn-peligro\">Sí, cancelar el viaje</button>",
-      "css": ".ds-btn-peligro { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; line-height: 1.5; font-size: 1rem; padding: 0.5rem 0.9rem; border: 0; border-radius: 6px; cursor: pointer; background: var(--error, #b42318); color: #fff; } .ds-btn-peligro:hover { filter: brightness(0.94); } .ds-btn-peligro:focus-visible { outline: 2px solid var(--acento, #1f6feb); outline-offset: 2px; }"
-    },
-    {
-      "name": "Botón enlace",
-      "kind": "button",
-      "refersTo": "button-enlace",
-      "description": "Acción menor en línea; con aria-pressed pasa a 600 sin subrayado.",
-      "html": "<button class=\"ds-btn-enlace\">Elegir en el mapa</button> <button class=\"ds-btn-enlace\" aria-pressed=\"true\">Marcando…</button>",
-      "css": ".ds-btn-enlace { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; line-height: 1.5; font-size: 1rem; padding: 0; border: 0; background: none; color: var(--acento, #1f6feb); text-decoration: underline; text-underline-offset: 0.2em; cursor: pointer; } .ds-btn-enlace[aria-pressed='true'] { font-weight: 600; text-decoration: none; } .ds-btn-enlace:focus-visible { outline: 2px solid var(--acento, #1f6feb); outline-offset: 2px; }"
+      "description": "Solo para anular un viaje.",
+      "html": "<button class=\"ds-btn-peligro\">Cancelar viaje</button>",
+      "css": ".ds-btn-peligro { font-family: 'Barlow Condensed', 'Barlow', system-ui, sans-serif; font-weight: 700; font-size: 1.02rem; text-transform: uppercase; letter-spacing: 0.08em; padding: 0.7rem 1.1rem; min-height: 2.75rem; border: 2px solid var(--rojo, #c62828); border-radius: 8px; background: var(--rojo, #c62828); color: #fff; cursor: pointer; transition: background-color 0.15s ease-out, border-color 0.15s ease-out; } .ds-btn-peligro:hover { background: var(--rojo-2, #a51f1f); border-color: var(--rojo-2, #a51f1f); } .ds-btn-peligro:focus-visible { outline: 2.5px solid var(--azul, #1e5aa8); outline-offset: 2px; }"
     },
     {
       "name": "Campo",
       "kind": "input",
       "refersTo": "input",
-      "description": "Etiqueta arriba a 500, campo con borde de control.",
-      "html": "<label class=\"ds-label\">Buscar<input class=\"ds-input\" placeholder=\"Pasajero, chofer o id\"></label>",
-      "css": ".ds-label { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; line-height: 1.5; display: flex; flex-direction: column; gap: 0.25rem; font-weight: 500; color: var(--texto, #1d2330); } .ds-input { font: inherit; font-weight: 400; padding: 0.5rem 0.6rem; border: 1px solid #c5ccd8; border-radius: 6px; background: #fff; color: var(--texto, #1d2330); } .ds-input:focus-visible { outline: 2px solid var(--acento, #1f6feb); outline-offset: 2px; }"
+      "description": "Campo de chapa blanca con la etiqueta arriba.",
+      "html": "<label class=\"ds-campo\">Latitud<input class=\"ds-input\" value=\"-27.4512\" /></label>",
+      "css": ".ds-campo { display: flex; flex-direction: column; gap: 0.3rem; font-family: 'Barlow', system-ui, sans-serif; font-weight: 600; font-size: 0.95rem; color: var(--asfalto, #1c1c1c); } .ds-input { font: inherit; font-weight: 500; font-size: 1rem; color: var(--asfalto, #1c1c1c); padding: 0.65rem 0.75rem; min-height: 2.75rem; border: 1.5px solid #8e9c94; border-radius: 8px; background: var(--chapa, #fff); font-variant-numeric: tabular-nums; transition: border-color 0.15s ease-out; } .ds-input:hover { border-color: var(--asfalto, #1c1c1c); } .ds-input:focus-visible { outline: 2.5px solid var(--azul, #1e5aa8); outline-offset: 2px; border-color: var(--azul, #1e5aa8); }"
     },
     {
-      "name": "Pastillas de estado",
-      "kind": "chip",
-      "refersTo": "pastilla",
-      "description": "Conexión y estado del viaje: neutra, en marcha, ok, cortado.",
-      "html": "<span class=\"ds-pill\">Sin viaje</span> <span class=\"ds-pill ds-pill-marcha\">En camino</span> <span class=\"ds-pill ds-pill-ok\">En vivo</span> <span class=\"ds-pill ds-pill-error\">Reconectando</span>",
-      "css": ".ds-pill { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; line-height: 1.5; display: inline-block; font-size: 0.85rem; padding: 0.15rem 0.6rem; border-radius: 999px; background: #e8edf5; color: var(--suave, #5b6475); white-space: nowrap; } .ds-pill-marcha { background: #e3ecfd; color: #174ea6; } .ds-pill-ok { background: #e3f4e8; color: var(--ok, #1a7f37); } .ds-pill-error { background: #fdecea; color: var(--error, #b42318); }"
+      "name": "Barra",
+      "kind": "nav",
+      "refersTo": "navigation",
+      "description": "La barra verde con filete blanco al pie; el enlace activo lleva la raya ámbar.",
+      "html": "<nav class=\"ds-barra\"><span class=\"ds-marca\">Viajes</span><a class=\"ds-menu ds-activo\" href=\"#\">Mi viaje</a><a class=\"ds-menu\" href=\"#\">Historial</a></nav>",
+      "css": ".ds-barra { display: flex; align-items: stretch; gap: 1.25rem; height: 3.5rem; padding: 0 1.25rem; background: var(--verde, #00563f); color: #fff; box-shadow: inset 0 -5px 0 var(--verde, #00563f), inset 0 -6.5px 0 rgba(255, 255, 255, 0.85); font-family: 'Barlow Condensed', 'Barlow', system-ui, sans-serif; text-transform: uppercase; } .ds-marca { align-self: center; font-weight: 700; font-size: 1.35rem; letter-spacing: 0.1em; } .ds-menu { display: inline-flex; align-items: center; padding: 0 0.75rem; color: rgba(255, 255, 255, 0.76); text-decoration: none; font-weight: 600; font-size: 1rem; letter-spacing: 0.1em; border-top: 3px solid transparent; border-bottom: 3px solid transparent; transition: color 0.15s ease-out; } .ds-menu:hover { color: #fff; } .ds-menu.ds-activo { color: #fff; border-bottom-color: var(--ambar, #f2a900); } .ds-menu:focus-visible { outline: 2.5px solid #fff; outline-offset: 2px; }"
     },
     {
-      "name": "Tarjeta",
+      "name": "Cartel",
+      "kind": "custom",
+      "refersTo": "cartel",
+      "description": "El cartel verde de Vialidad: pictograma y lugar a la izquierda, minutos grandes a la derecha, filete blanco interior.",
+      "html": "<div class=\"ds-cartel\"><div class=\"ds-cartel-cab\"><span class=\"ds-cartel-h\">Tu viaje</span><span class=\"ds-cartel-n\">Nº DCB840</span></div><div class=\"ds-cartel-destino\"><p class=\"ds-cartel-lugar\"><svg class=\"ds-picto\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.25\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M5 20V12a3 3 0 0 1 3-3h10\"/><path d=\"m14 5 4 4-4 4\"/></svg><strong>Plaza 25 de Mayo</strong></p><p class=\"ds-cartel-min\"><strong>7</strong><span>min</span></p></div></div>",
+      "css": ".ds-cartel { padding: 0.85rem 1.05rem 0.9rem; background: var(--verde, #00563f); color: #fff; border-radius: 10px; box-shadow: inset 0 0 0 4px var(--verde, #00563f), inset 0 0 0 6px #fff; font-family: 'Barlow Condensed', 'Barlow', system-ui, sans-serif; text-transform: uppercase; } .ds-cartel p { margin: 0; } .ds-cartel-cab { display: flex; align-items: center; gap: 0.8rem; } .ds-cartel-h { font-weight: 700; font-size: 1.25rem; letter-spacing: 0.07em; } .ds-cartel-n { font-weight: 600; font-size: 0.9rem; letter-spacing: 0.08em; color: rgba(255, 255, 255, 0.82); font-variant-numeric: tabular-nums; } .ds-cartel-destino { display: flex; align-items: flex-end; justify-content: space-between; gap: 0.75rem; margin-top: 0.6rem; padding-top: 0.6rem; border-top: 1.5px solid rgba(255, 255, 255, 0.55); } .ds-cartel-lugar { display: flex; align-items: center; gap: 0.55rem; } .ds-picto { width: 2.1rem; height: 2.1rem; flex: none; } .ds-cartel-lugar strong { font-weight: 700; font-size: 1.75rem; line-height: 1.02; letter-spacing: 0.02em; } .ds-cartel-min { display: flex; flex-direction: column; align-items: flex-end; line-height: 1; font-variant-numeric: tabular-nums; } .ds-cartel-min strong { font-weight: 700; font-size: 2.9rem; } .ds-cartel-min span { font-weight: 600; font-size: 0.85rem; letter-spacing: 0.12em; }"
+    },
+    {
+      "name": "Señales del viaje",
+      "kind": "custom",
+      "refersTo": "senal-hecha",
+      "description": "Los pasos en lugar fijo: verde con filete lo hecho, ámbar con borde negro lo actual, discontinua lo pendiente.",
+      "html": "<ol class=\"ds-senales\"><li class=\"ds-senal ds-hecho\"><strong>Pedido</strong></li><li class=\"ds-senal ds-hecho\"><strong>Chofer asignado</strong></li><li class=\"ds-senal ds-actual\"><strong>En camino</strong></li><li class=\"ds-senal\"><strong>En viaje</strong></li><li class=\"ds-senal\"><strong>Terminado</strong></li><li class=\"ds-senal\"><strong>Cobrado</strong></li></ol>",
+      "css": ".ds-senales { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.6rem 0.5rem; } .ds-senal { display: flex; align-items: center; justify-content: center; min-height: 4.4rem; padding: 0.45rem; border-radius: 6px; text-align: center; font-family: 'Barlow Condensed', 'Barlow', system-ui, sans-serif; font-size: 0.86rem; line-height: 1.08; text-transform: uppercase; letter-spacing: 0.05em; color: var(--apagado, #5f6c65); border: 1.5px dashed #a9b9b0; } .ds-senal.ds-hecho { border: 0; color: #fff; background: var(--verde, #00563f); box-shadow: inset 0 0 0 2.5px var(--verde, #00563f), inset 0 0 0 4px #fff; animation: ds-encender 0.45s cubic-bezier(0.16, 1, 0.3, 1) both; } .ds-senal.ds-actual { border: 0; color: var(--asfalto, #1c1c1c); background: var(--ambar, #f2a900); box-shadow: inset 0 0 0 2.5px var(--ambar, #f2a900), inset 0 0 0 4.5px var(--asfalto, #1c1c1c); animation: ds-encender 0.45s cubic-bezier(0.16, 1, 0.3, 1) both; } @keyframes ds-encender { from { transform: scale(1.12); opacity: 0.35; } to { transform: none; opacity: 1; } } @media (prefers-reduced-motion: reduce) { .ds-senal { animation: none !important; } }"
+    },
+    {
+      "name": "Mojón",
+      "kind": "custom",
+      "refersTo": "mojon",
+      "description": "El poste blanco con los kilómetros que faltan, en el punto medio de tramos de 800 m o más.",
+      "html": "<span class=\"ds-mojon\"><b>3,2</b><span>km</span></span>",
+      "css": ".ds-mojon { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; width: 46px; height: 52px; padding-top: 0.2rem; background: var(--chapa, #fff); border: 2px solid var(--asfalto, #1c1c1c); border-radius: 16px 16px 4px 4px; box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25); font-family: 'Barlow Condensed', 'Barlow', system-ui, sans-serif; color: var(--asfalto, #1c1c1c); line-height: 1; } .ds-mojon b { font-weight: 700; font-size: 1.15rem; font-variant-numeric: tabular-nums; } .ds-mojon span { font-weight: 600; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.1em; }"
+    },
+    {
+      "name": "Cierre con línea de carril",
       "kind": "card",
-      "refersTo": "tarjeta",
-      "description": "Contenedor base: blanco, borde fino, 10px, encabezado con título y pastilla.",
-      "html": "<section class=\"ds-card\"><div class=\"ds-card-head\"><h2>Tu viaje</h2><span class=\"ds-card-pill\">En vivo</span></div><p class=\"ds-card-nota\">Esperando que un chofer acepte.</p><div class=\"ds-card-bloque\"><strong>$ 4.250</strong></div></section>",
-      "css": ".ds-card { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; line-height: 1.5; background: #fff; border: 1px solid #dde2ea; border-radius: 10px; padding: 1.5rem; display: flex; flex-direction: column; gap: 0.75rem; color: var(--texto, #1d2330); max-width: 320px; } .ds-card-head { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; } .ds-card-head h2 { margin: 0; font-size: 1.15rem; } .ds-card-pill { font-size: 0.85rem; padding: 0.15rem 0.6rem; border-radius: 999px; background: #e3f4e8; color: #1a7f37; } .ds-card-nota { margin: 0; font-size: 0.9rem; color: #5b6475; } .ds-card-bloque { padding-top: 0.75rem; border-top: 1px solid #eef1f5; font-variant-numeric: tabular-nums; }"
+      "refersTo": "hoja",
+      "description": "La línea de carril ámbar discontinua y, debajo, el importe y la acción principal.",
+      "html": "<div class=\"ds-cierre\"><div class=\"ds-importe\"><span class=\"ds-rotulo\">Tarifa estimada</span><span class=\"ds-monto\">$ 4.850</span></div><button class=\"ds-cierre-btn\">Pedir viaje</button></div>",
+      "css": ".ds-cierre { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 0.6rem 1rem; padding: 1.1rem 1.25rem 1rem; background: repeating-linear-gradient(90deg, var(--ambar, #f2a900) 0 1.25rem, transparent 1.25rem 2rem) top / 100% 3px no-repeat, var(--chapa, #fff); } .ds-importe { display: flex; flex-direction: column; gap: 0.25rem; } .ds-rotulo { font-family: 'Barlow Condensed', 'Barlow', system-ui, sans-serif; font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.11em; color: var(--suave, #4c5852); } .ds-monto { font-family: 'Barlow Condensed', 'Barlow', system-ui, sans-serif; font-weight: 700; font-size: 1.75rem; line-height: 1; color: var(--asfalto, #1c1c1c); font-variant-numeric: tabular-nums; } .ds-cierre-btn { font-family: 'Barlow Condensed', 'Barlow', system-ui, sans-serif; font-weight: 700; font-size: 1.12rem; text-transform: uppercase; letter-spacing: 0.08em; padding: 0.85rem 1.4rem; border: 2px solid var(--verde, #00563f); border-radius: 999px; background: var(--verde, #00563f); color: #fff; box-shadow: 0 3px 10px rgba(0, 66, 47, 0.22); cursor: pointer; } .ds-cierre-btn:hover { background: var(--verde-2, #00422f); border-color: var(--verde-2, #00422f); } .ds-cierre-btn:focus-visible { outline: 2.5px solid var(--azul, #1e5aa8); outline-offset: 2px; }"
     },
     {
-      "name": "Aviso",
-      "kind": "custom",
-      "refersTo": "aviso",
-      "description": "Franja ámbar que pide una acción: texto a la izquierda, botón a la derecha.",
-      "html": "<div class=\"ds-aviso\"><p>Tenés una oferta nueva.</p><button>Ver</button></div>",
-      "css": ".ds-aviso { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; line-height: 1.5; display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.75rem 1rem; border-radius: 10px; background: #fff6e0; border: 1px solid #f0d58c; color: #1d2330; } .ds-aviso p { margin: 0; } .ds-aviso button { font: inherit; padding: 0.5rem 0.9rem; border: 0; border-radius: 6px; background: #e8edf5; color: #1d2330; cursor: pointer; }"
-    },
-    {
-      "name": "Línea de tiempo del viaje",
-      "kind": "custom",
-      "refersTo": "linea-tiempo",
-      "description": "Componente insignia: cada paso se prende cuando llega su evento; único movimiento de la app.",
-      "html": "<ol class=\"ds-lt\"><li class=\"ds-paso hecho\"><strong>Pedido</strong><span class=\"ds-hora\">14:02</span></li><li class=\"ds-paso hecho\"><strong>Chofer asignado</strong><span class=\"ds-hora\">14:03</span></li><li class=\"ds-paso actual\"><strong>En camino</strong><span class=\"ds-hora\">14:03</span></li><li class=\"ds-paso\"><strong>En viaje</strong></li><li class=\"ds-paso\"><strong>Terminado</strong></li></ol>",
-      "css": ".ds-lt { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; line-height: 1.5; list-style: none; margin: 0; padding: 0; color: #1d2330; } .ds-paso { position: relative; display: flex; flex-direction: column; padding: 0 0 1.35rem 2.2rem; color: #5b6475; } .ds-paso strong { font-weight: 500; } .ds-paso.hecho, .ds-paso.actual { color: #1d2330; } .ds-paso.hecho strong, .ds-paso.actual strong { font-weight: 700; } .ds-paso:last-child { padding-bottom: 0; } .ds-paso::before { content: ''; position: absolute; left: 4px; top: 4px; width: 16px; height: 16px; border-radius: 50%; background: #fff; border: 2px solid #c5ccd8; box-sizing: border-box; } .ds-paso:not(:last-child)::after { content: ''; position: absolute; left: 11px; top: 20px; bottom: -4px; width: 2px; background: #dde2ea; } .ds-paso.hecho:not(:last-child)::after { background: #a9d8b6; } .ds-paso.hecho::before { background: #1a7f37; border-color: #1a7f37; animation: ds-prender 0.6s cubic-bezier(0.16, 1, 0.3, 1); } .ds-paso.actual::before { background: #1f6feb; border-color: #1f6feb; box-shadow: 0 0 0 5px rgba(31, 111, 235, 0.18); animation: ds-prender-actual 0.9s cubic-bezier(0.16, 1, 0.3, 1); } .ds-paso.actual strong { color: #174ea6; } .ds-hora { font-size: 0.85rem; color: #5b6475; font-variant-numeric: tabular-nums; } @keyframes ds-prender { from { transform: scale(0.4); } to { transform: scale(1); } } @keyframes ds-prender-actual { from { transform: scale(0.4); box-shadow: 0 0 0 0 rgba(31, 111, 235, 0.45); } 60% { transform: scale(1); box-shadow: 0 0 0 12px rgba(31, 111, 235, 0); } to { box-shadow: 0 0 0 5px rgba(31, 111, 235, 0.18); } } @media (prefers-reduced-motion: reduce) { .ds-paso.hecho::before, .ds-paso.actual::before { animation: none; } }"
+      "name": "Etiqueta de estado (gestión)",
+      "kind": "chip",
+      "refersTo": "etiqueta",
+      "description": "Estado de un viaje en tablas de operador e historial; nunca en las vistas del viaje.",
+      "html": "<span class=\"ds-etiqueta ds-marcha\">En camino</span> <span class=\"ds-etiqueta ds-hecho\">Completado</span> <span class=\"ds-etiqueta ds-cancelado\">Cancelado</span>",
+      "css": ".ds-etiqueta { display: inline-block; font-family: 'Barlow Condensed', 'Barlow', system-ui, sans-serif; font-weight: 700; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.09em; line-height: 1.3; padding: 0.12rem 0.45rem; border: 1.5px solid var(--apagado, #5f6c65); border-radius: 4px; color: var(--apagado, #5f6c65); } .ds-etiqueta.ds-marcha { border-color: var(--ambar-oscuro, #c98a00); color: var(--ambar-texto, #6b4a00); background: var(--ambar-fondo, #fff4d1); } .ds-etiqueta.ds-hecho { border-color: var(--verde, #00563f); color: var(--verde, #00563f); background: var(--verde-claro, #e3efe9); } .ds-etiqueta.ds-cancelado { border-color: var(--rojo, #c62828); color: var(--rojo, #c62828); background: var(--rojo-fondo, #fcecec); }"
     }
   ],
   "narrative": {
-    "northStar": "El tablero de la demo",
-    "overview": "Un tablero claro y plano que se lee de un vistazo en la notebook de la defensa. Fondo gris frío, tarjetas blancas con un borde fino, un solo azul de acción y tres colores de estado (azul en marcha, verde hecho, rojo cortado). Nada compite con lo que el backend resuelve: la asignación y el seguimiento en vivo.\n\nLa identidad es la que el equipo ya usaba para chofer y admin de flota; pasajero y operador la extienden sin cambiarla. La densidad es la de una herramienta: textos del sistema, números tabulares, tablas sin adorno. El único gesto expresivo es la línea de tiempo del viaje, donde cada paso se prende cuando llega su evento.\n\nTodo vive en una sola hoja, `src/estilos.css`, con los tokens base en `:root`. La CSP de la página no admite estilos en línea, así que esa hoja es la única fuente de verdad visual.",
+    "northStar": "La ruta nacional",
+    "overview": "El viaje se lee como una ruta argentina. Un cartel verde de Vialidad dice hacia dónde vas y cuántos minutos faltan; un mojón blanco cuenta los kilómetros sobre el mapa; los pasos del viaje son señales en fila que se encienden cuando llega su evento: verde lo hecho, ámbar lo que pasa ahora. El estado no es una frase que cambia dentro de una tarjeta flotante: es una señal fija que se prende en su lugar.\n\nEl material es la chapa pintada de la señalética vial: verde ruta con un filete blanco interior a un paso del borde, blanco chapa, negro asfalto para el texto y ámbar de obra para lo que está en curso. Barlow, una grotesca de señalización, en todo; la versión condensada en mayúsculas para carteles, rótulos y botones, con cifras tabulares. El mapa queda en gris para que la ruta, el auto y el mojón lleven el color.\n\nEn el celular el mapa queda arriba y la hoja blanca sube por encima con el cartel, las señales, los datos y la acción; en pantalla grande, mapa a la izquierda y hoja al costado. Las pantallas de gestión (operador, flota, historial) usan el mismo material en versión de herramienta: tarjetas de chapa, tablas con filete verde y rótulos condensados.\n\nTodo vive en `src/estilos.css`, con los tokens en `:root`. La CSP de la página no admite estilos ni scripts en línea, así que esa hoja es la única fuente de verdad visual.",
     "keyCharacteristics": [
-      "Plano: profundidad por borde y fondo, casi sin sombras.",
-      "Un acento azul para la acción y el paso actual; el color de estado vive en pastillas.",
-      "Fuente del sistema y números tabulares en todo lo que cambia (horas, montos, cuentas).",
-      "Un solo movimiento: el paso de la línea de tiempo que se prende."
+      "Verde ruta con filete blanco interior: la marca de los carteles y de las señales hechas.",
+      "Ámbar de obra para el ahora: el paso actual, el tramo de aproximación, la línea de carril, el auto.",
+      "Señales en lugar fijo, que se encienden y nunca cambian de posición.",
+      "Barlow Condensed en mayúsculas para todo lo que es cartel; cifras tabulares en todo lo que cambia.",
+      "Mapa en gris; el color es de la ruta, el auto y el mojón."
     ],
     "rules": [
       {
-        "name": "La Regla del Estado en Pastilla",
-        "section": "colors",
-        "body": "El estado de un viaje o de la conexión se dice con una pastilla redondeada de fondo suave y texto del color de estado: azul si sigue, verde si terminó bien, rojo si se cortó. No se inventan colores nuevos para estados nuevos; se elige uno de los tres."
+        "name": "La Regla del Ámbar es Ahora",
+        "body": "El ámbar marca solo lo que está pasando en este momento: el paso actual, el tramo que el auto está recorriendo, el auto y la línea de carril antes de la acción. Nada terminado ni pendiente es ámbar.",
+        "section": "colors"
       },
       {
-        "name": "La Regla del Azul Único",
-        "section": "colors",
-        "body": "El azul de acción es el único color que invita a tocar. El verde y el rojo informan; el rojo solo es botón cuando la acción destruye algo (cancelar un viaje)."
+        "name": "La Regla del Rojo que Anula",
+        "body": "El rojo aparece solo cuando algo se anula o falla. Nunca decora ni marca un estado normal.",
+        "section": "colors"
+      },
+      {
+        "name": "La Regla del Mapa Gris",
+        "body": "Las teselas van filtradas a gris (`grayscale(0.85) contrast(0.95) brightness(1.04)`); el color del mapa lo llevan la ruta verde con borde blanco, el auto ámbar y el mojón.",
+        "section": "colors"
+      },
+      {
+        "name": "La Regla del Cartel Condensado",
+        "body": "Todo lo que se lee como cartel (títulos, lugares, rótulos, botones, señales, el menú, el mojón, la patente) va en Barlow Condensed, mayúsculas e interletra abierta. El texto que se lee como frase va en Barlow normal y en caja baja.",
+        "section": "typography"
       },
       {
         "name": "La Regla del Número Quieto",
-        "section": "typography",
-        "body": "Todo número que cambia en vivo o se compara en columna (horas, montos, distancias, cuentas regresivas, fechas e importes de tabla) lleva `font-variant-numeric: tabular-nums`."
+        "body": "Toda cifra que cambia en vivo o se compara en columna (minutos, horas, montos, distancias, cuentas regresivas, patentes, números de viaje, fechas e importes de tabla) lleva `font-variant-numeric: tabular-nums`.",
+        "section": "typography"
       },
       {
-        "name": "La Regla del Borde, no la Sombra",
-        "section": "elevation",
-        "body": "Una superficie se separa con borde de 1px y cambio de fondo. Una sombra aparece solo cuando algo flota sobre el mapa o marca un estado."
-      },
-      {
-        "name": "La Regla del Único Movimiento",
-        "section": "components",
-        "body": "La línea de tiempo es lo único que se mueve. Ninguna otra superficie anima su entrada o sus cambios."
+        "name": "La Regla del Filete es del Cartel",
+        "body": "El filete blanco interior pertenece a la señalética: la barra, los carteles y las señales hechas. Ningún botón lo lleva, para que un paso hecho nunca se lea como un botón.",
+        "section": "elevation"
       }
     ],
     "dos": [
-      "**Do** escribir todo estilo en `src/estilos.css` con clases; la CSP de nginx rechaza `style=` y cualquier estilo o script en línea, y `npm run build` falla si los encuentra.",
-      "**Do** usar los tokens de `:root` (`--fondo`, `--tarjeta`, `--texto`, `--suave`, `--acento`, `--error`, `--ok`) para todo color que ya tenga uno.",
-      "**Do** decir el estado con una pastilla de los tres colores de estado, y la conexión en vivo siempre a la vista.",
-      "**Do** separar bloques dentro de una tarjeta con el divisor de 1px y 0.75rem, no con otra caja.",
-      "**Do** usar números tabulares en horas, montos, distancias y columnas numéricas.",
-      "**Do** respetar `prefers-reduced-motion` en todo lo que se mueva."
+      "**Do** escribir todo estilo en `src/estilos.css` con clases y tokens de `:root`; la CSP rechaza `style=` y cualquier estilo o script en línea, y `npm run build` falla si los encuentra.",
+      "**Do** servir las fuentes desde el mismo origen con @fontsource (Barlow y Barlow Condensed); nada de CDN.",
+      "**Do** decir el estado del viaje con la señal ámbar en su lugar fijo de la grilla.",
+      "**Do** usar el filete blanco interior solo en la barra, los carteles y las señales hechas.",
+      "**Do** hacer la acción principal como una píldora verde maciza, sin filete.",
+      "**Do** decir la dirección del cartel con un pictograma y dejar la palabra solo para lectores (`.solo-lector`).",
+      "**Do** sacar las distancias de los casilleros de la ruta real, igual que el mojón, y poner el mojón solo en tramos de 800 m o más, en el punto medio por distancia.",
+      "**Do** dejar las teselas en gris para que la ruta, el auto y el mojón lleven el color.",
+      "**Do** usar cifras tabulares en minutos, horas, montos, distancias, cuentas y columnas numéricas.",
+      "**Do** respetar `prefers-reduced-motion` en todo lo que se mueva (las señales al encenderse y el giro del auto)."
     ],
     "donts": [
-      "**Don't** usar `style=` ni estilos en línea, ni cargar fuentes, íconos o mapas de otro origen; solo las teselas de OpenStreetMap salen afuera.",
-      "**Don't** agregar sombras a tarjetas o botones en reposo; la separación es borde y fondo.",
-      "**Don't** animar nada fuera de la línea de tiempo del viaje.",
-      "**Don't** usar el rojo para una acción que no destruye nada, ni el verde como botón."
+      "**Don't** poner el filete blanco de cartel en un botón: un paso hecho no se tiene que leer como un botón.",
+      "**Don't** poner un rótulo o «kicker» encima del lugar del cartel; el pictograma ya lo dice.",
+      "**Don't** usar pastillas de estado en las vistas del viaje (pasajero y chofer); la señal ámbar es el estado.",
+      "**Don't** usar el ámbar para algo terminado o pendiente, ni el rojo para algo que no se anula o falla.",
+      "**Don't** usar el azul fuera del foco.",
+      "**Don't** anidar tarjetas: los choferes de la flota son filas de lista y los bloques de la hoja se separan con filete.",
+      "**Don't** mover una señal de lugar ni reemplazar una por otra cuando cambia el estado.",
+      "**Don't** usar íconos de fuente, emojis ni librerías de íconos; los pictogramas son SVG propios de trazo redondeado."
     ]
   }
 }

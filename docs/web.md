@@ -13,7 +13,7 @@ Se levanta con el resto: `docker compose up -d --build` y después http://localh
 
 ## El frontend (`apps/web`)
 
-React + Vite + Zustand (PLAN 5.2), mínimo y sin PWA. Es un workspace más: `npm run dev:web` lo levanta en http://localhost:5173 con el mismo enrutamiento que nginx (el proxy de Vite manda `/api/identity`, `/api/viajes` y `/api/ubicacion` a 3001, 3005 y 3004), y `npm run build -w @viajes/web` lo compila. El `Dockerfile` de `web` lo compila en una etapa propia y nginx sirve `dist/`. Los archivos de `/assets/` llevan hash y se cachean para siempre; la página sigue con `no-cache` y la CSP.
+React + Vite + Zustand (PLAN 5.2), instalable como PWA ([Diseño y PWA](#diseño-y-pwa)). Es un workspace más: `npm run dev:web` lo levanta en http://localhost:5173 con el mismo enrutamiento que nginx (el proxy de Vite manda `/api/identity`, `/api/viajes` y `/api/ubicacion` a 3001, 3005 y 3004), y `npm run build -w @viajes/web` lo compila. El `Dockerfile` de `web` lo compila en una etapa propia y nginx sirve `dist/`. Los archivos de `/assets/` llevan hash y se cachean para siempre; la página sigue con `no-cache` y la CSP.
 
 **CSP.** El build no tiene scripts ni estilos en línea: un `index.html` mínimo, los estilos en archivos `.css` (nunca `style=`) y `assetsInlineLimit: 0`, para que nada quede embebido como `data:`. `npm run build` lo comprueba (`apps/web/scripts/revisar-csp.mjs`) y falla si encuentra código en línea.
 
@@ -50,9 +50,33 @@ Para sumar una pantalla:
 
 Están las cuatro: [chofer](#la-pantalla-del-chofer-chofer), [flota](#el-panel-de-la-flota-flota), [pasajero](#la-pantalla-del-pasajero-pasajero) y [operador](#el-panel-del-operador-operador).
 
+## Diseño y PWA
+
+**El estilo: «Ruta nacional»**, la señalética vial argentina (`src/estilos.css`, decisión en `apps/web/DESIGN.md`):
+- verde ruta con filete blanco en la barra y los carteles, texto negro asfalto, ámbar para el paso actual y el tramo del auto, rojo solo para anular y para los errores;
+- Barlow y Barlow Condensed, servidas desde el mismo origen con `@fontsource` (la CSP no deja traer fuentes de afuera);
+- íconos dibujados a mano en SVG (`src/componentes/Iconos.tsx`), incluido el auto del mapa.
+
+**Celular primero en pasajero y chofer.** El mapa queda arriba, fijo, y la hoja del viaje sube por encima al desplazarse. El menú baja a una barra al pie, al alcance del pulgar, y respeta el borde de los celulares con notch (`viewport-fit=cover` y `env(safe-area-inset-*)`). Desde 960 px, el mapa va a la izquierda y la hoja al costado. Operador y flota son pantallas de escritorio que también se adaptan.
+
+**PWA:**
+- `public/manifest.json`, con los íconos de `public/` (192, 512, el recortable de Android y el de iOS). Salen de `public/icono.svg` con `node apps/web/scripts/iconos.mjs`, que usa el Chromium de Playwright;
+- `public/sw.js`, el service worker, que se registra solo en el build. `/api/*` (incluido el SSE) y las teselas de OpenStreetMap van siempre a la red y no se guardan nunca. `/assets/*` sale primero del caché, porque llevan hash. Las páginas van primero a la red y, sin red, abre la última copia de la app;
+- nginx los sirve desde `location /`, con `no-cache` y la misma CSP: el service worker se actualiza en cada despliegue;
+- **limitación:** una PWA no manda la ubicación con la pantalla apagada o la app en segundo plano, sobre todo en iPhone. Para la demo alcanza; para uso real haría falta una app nativa.
+
+**El mapa** (`src/mapa/Mapa.tsx`, compartido por pasajero y chofer):
+- **la ruta real por las calles** de `GET /api/viajes/rutas` ([docs/api.md](api.md)), en verde con borde blanco. Mientras no llega, o si el ruteo no responde, se dibuja la línea recta punteada;
+- **el tramo del auto** hasta el punto que importa ahora (el origen mientras lo viene a buscar), punteado en ámbar;
+- **el mojón**, un poste blanco sobre la ruta con los kilómetros que faltan por las calles;
+- **el auto**, visto desde arriba. Gira hacia donde maneja y avanza suave entre una posición y la siguiente (~1 s), salvo con `prefers-reduced-motion`. Sin posición reciente se ve gris.
+- `src/mapa/useRuta.ts` pide la ruta y vuelve a pedirla solo cuando el auto se movió más de 120 m o cambió el destino. Así cuida el límite de `GET /rutas` por usuario y el servidor de ruteo.
+
+**El cartel.** Arriba de la hoja, el cartel verde dice hacia dónde y en cuántos minutos: «HACIA Terminal de Ómnibus · 8 MIN», «TU CHOFER TE BUSCA EN Plaza 25 de Mayo · 1 MIN». Los minutos y las distancias de los casilleros son por las calles, los mismos del mojón; sin ruta, en línea recta.
+
 ## La pantalla del chofer (`/chofer`)
 
-Una sola pantalla (`src/roles/chofer/Panel.tsx`) con tres bloques: disponibilidad y ubicación, las ofertas y el viaje activo. Su estado vive en un store de Zustand propio (`store.ts`). Cómo se aplican las lecturas, las respuestas y los eventos está aparte, sin React ni red (`logica.ts`), y se testea solo (`apps/web/tests/`).
+Una sola pantalla (`src/roles/chofer/Panel.tsx`): arriba, el mapa con su auto, la ruta del viaje (o de la primera oferta) y el tramo hasta el pasajero; abajo, la hoja con las ofertas o el viaje activo primero (la oferta vence en 15 s), y después la disponibilidad y la ubicación. Sin estar disponible, lo primero es «Ponerme disponible». Cada oferta es un cartel con la cuenta regresiva y una barra que se vacía. Su estado vive en un store de Zustand propio (`store.ts`). Cómo se aplican las lecturas, las respuestas y los eventos está aparte, sin React ni red (`logica.ts`), y se testea solo (`apps/web/tests/`).
 
 **La base manda, el SSE avisa.** Todo lo que se muestra sale de `GET /api/viajes/chofer/estado`: el registro en la flota, el viaje activo y las ofertas pendientes (ver [docs/flotas.md](flotas.md#rutas)). Se relee:
 - al abrir la pantalla: así, **al recargar**, el viaje activo y las ofertas pendientes vuelven solos;
@@ -122,30 +146,30 @@ Mientras el resultado es incierto, la clave se conserva, y la fila o el formular
 
 ## La pantalla del pasajero (`/pasajero`)
 
-Tres columnas, para web de escritorio (en anchos chicos se apilan):
+El mapa y la hoja ([Diseño y PWA](#diseño-y-pwa)). La hoja, de arriba abajo:
 
-| Columna | Sin viaje | Con viaje |
+| | Sin viaje | Con viaje |
 |---|---|---|
-| Izquierda | El origen y el destino | **La línea de tiempo**: Pedido, Chofer asignado, En camino, En viaje, Terminado y Cobrado |
-| Centro | El mapa | El mapa |
-| Derecha | La estimación y «Pedir viaje» | El chofer, la tarifa, el cobro y las acciones |
+| Cartel | «Pedir un viaje» y, elegido el destino, hacia dónde y los minutos | «Tu viaje», el número, y hacia dónde va lo que importa ahora |
+| Cuerpo | DESDE y HASTA: lugar de la lista, toque en el mapa o «Usar mi ubicación» | DESDE → HASTA, el chofer en casilleros (distancia, llegada, antigüedad de la posición) y **las señales** |
+| Cierre (tras la línea de carril) | La tarifa estimada y «Pedir viaje» | La tarifa, el cobro y las acciones |
 
 Va en `src/roles/pasajero/`, con la división de las otras pantallas: `Panel.tsx`, `store.ts`, y `logica.ts` sin React ni red (`tests/pasajero-logica.test.ts`). El historial está en `/pasajero/historial`, de a 10 con «Ver más».
 
-**La línea de tiempo.** Cada evento del SSE prende su paso con la hora en que llegó, y la asignación muestra cuánto tardó («en 7 s»).
-- El paso actual va en azul, con «hace N s», y lo hecho en verde.
-- Una cancelación o «sin choferes» termina en un paso en rojo, con el motivo y quién canceló.
+**Las señales** (la línea de tiempo, `.linea-tiempo`). Los seis pasos (Pedido, Chofer asignado, En camino, En viaje, Terminado, Cobrado) tienen cada uno su lugar fijo en una grilla de 3 × 2: quedan alineados y ninguno se pisa con otro ni cambia de lugar. Cada evento del SSE enciende su señal con la hora en que llegó, y la asignación muestra cuánto tardó («en 7 s»).
+- Lo hecho, en verde con filete blanco. El paso actual, en ámbar con borde negro (como las de advertencia), con «hace N s». Lo que falta, en blanco punteado.
+- Una cancelación o «sin choferes» termina en una señal roja «Anulado», con el motivo y quién canceló.
 - Lo que pasó con la pantalla cerrada no tiene hora, salvo el pedido, que toma `creadaEn` del servidor.
-- El punto de cada paso se prende con una animación corta, que se apaga con `prefers-reduced-motion`.
+- Cada señal se enciende con una animación corta, que se apaga con `prefers-reduced-motion`.
 
 **La base manda, el SSE avisa**, como en `/chofer`. El pasajero no tiene un `GET` de su viaje activo: se relee la primera página de `GET /historial` (los más nuevos primero; hay como mucho un viaje activo por pasajero), al abrir, al reconectar y con cada evento que cambia el viaje. Valen las mismas reglas de lecturas atrasadas (la marca de la última acción) y de `version`.
 - Un viaje que terminó **queda en pantalla** con su estado final hasta «Pedir otro viaje», así se ve la tarifa final o el motivo de la cancelación.
 - `DriverLocationUpdated` se aplica directo, solo si es del viaje activo con chofer y más nueva que la anterior.
 
-**El mapa** (`src/mapa/Mapa.tsx`):
-- **Leaflet** (1.9.4, en el bundle y en su propio archivo: se baja solo al entrar como pasajero) con las teselas de **OpenStreetMap**. Es lo único que viene de afuera, y solo como imágenes (`img-src`, ver la CSP abajo).
-- Muestra el origen (oscuro), el destino (azul), el recorrido en línea recta y al chofer en verde. Pasados 30 s sin posición, el chofer se ve gris.
-- Se encuadra solo cuando cambian el origen o el destino, sin animación, no con cada posición del chofer.
+**El mapa** (`src/mapa/Mapa.tsx`, ver [Diseño y PWA](#diseño-y-pwa)):
+- **Leaflet** (1.9.4, en el bundle) con las teselas de **OpenStreetMap**. Es lo único que viene de afuera, y solo como imágenes (`img-src`, ver la CSP abajo).
+- Muestra el origen (verde), el destino (negro), la ruta real, el auto del chofer y el mojón. Pasados 30 s sin posición, el auto se ve gris.
+- Se encuadra cuando cambian el origen, el destino o la ruta, sin animación, no con cada posición del auto.
 - El origen y el destino se eligen de varias formas:
   - en una lista de **lugares de la demo** (`lugares.ts`, todos dentro de la zona «Resistencia» de `npm run demo:flotas`), para la demo y para Playwright;
   - con un **clic en el mapa**;
