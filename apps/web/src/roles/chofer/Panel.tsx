@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { esIncierto } from '../../api/operacion';
 import { ErrorApi } from '../../api/errores';
 import { CartelDestino, type Cartel } from '../../componentes/CartelDestino';
@@ -12,6 +12,7 @@ import type { EstadoConexion } from '../../tiempo-real/eventos';
 import { useEventos } from '../../tiempo-real/useEventos';
 import { useSesion } from '../../sesion/store';
 import { ControlUbicacion } from '../../ubicacion/ControlUbicacion';
+import { coordenadasDelToque } from '../../ubicacion/posicion';
 import { useEnvioUbicacion, type EnvioUbicacion } from '../../ubicacion/useEnvioUbicacion';
 import { Posicion } from '../../viaje/Posicion';
 import {
@@ -65,6 +66,36 @@ export function PanelChofer() {
   // La ubicación se envía si está disponible o tiene un viaje: sin envíos, a los 30 s deja de ser candidato.
   const envio = useEnvioUbicacion('/ubicacion/ubicaciones', disponible || viaje !== null);
 
+  // «Ubicarme en el mapa» (solo en manual): el próximo toque fija la posición y cierra la selección.
+  // Fuera de eso, el mapa se puede mover y tocar sin cambiar dónde está el auto.
+  const [eligiendo, setEligiendo] = useState(false);
+  const enMapa = eligiendo && envio.modo === 'manual';
+  useEffect(() => {
+    if (envio.modo !== 'manual') setEligiendo(false);
+  }, [envio.modo]);
+  useEffect(() => {
+    if (!enMapa) return;
+    const alTeclear = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setEligiendo(false);
+    };
+    window.addEventListener('keydown', alTeclear);
+    return () => window.removeEventListener('keydown', alTeclear);
+  }, [enMapa]);
+  const ubicarEnMapa = {
+    eligiendo: enMapa,
+    alternar: () => {
+      // En el celular la hoja tapa el mapa: se vuelve arriba, de una, para que se vea dónde tocar.
+      if (!enMapa) window.scrollTo({ top: 0 });
+      setEligiendo(!enMapa);
+    },
+  };
+  const tocarMapa = (p: Punto) => {
+    const c = coordenadasDelToque(p);
+    if (!c) return;
+    envio.fijarManual(c);
+    setEligiendo(false);
+  };
+
   // En el mapa: el viaje activo o, si no, la primera oferta. El auto es uno mismo.
   const ahora = useAhora(1000);
   const estado = useChofer();
@@ -106,8 +137,13 @@ export function PanelChofer() {
     // Con una oferta o un viaje, el mapa se achica: el cartel y la acción («Aceptar», «Voy en camino»…)
     // entran en la primera pantalla del celular.
     <div className={`chofer-app ancho${viaje || oferta ? ' con-oferta' : ''}`}>
-      <section className="zona-mapa" aria-label="Mapa">
-        <Mapa marcas={marcas} etiqueta="Mapa del chofer" />
+      <section className={enMapa ? 'zona-mapa eligiendo' : 'zona-mapa'} aria-label="Mapa">
+        <Mapa marcas={marcas} etiqueta="Mapa del chofer" {...(enMapa ? { alTocar: tocarMapa } : {})} />
+        {enMapa ? (
+          <p className="nota ayuda-mapa" role="status">
+            Tocá el mapa para fijar tu ubicación.
+          </p>
+        ) : null}
       </section>
 
       <section className="hoja" aria-labelledby="titulo-chofer">
@@ -142,7 +178,7 @@ export function PanelChofer() {
             <Ofertas envio={envio} hastaOrigen={oferta && tramo ? { ofertaId: oferta.ofertaId, metros: tramo.distanciaMetros } : null} />
           )}
           {disponible || viaje ? <Disponibilidad /> : null}
-          <ControlUbicacion envio={envio} inactivo="Ponete disponible para compartir tu ubicación y recibir ofertas." />
+          <ControlUbicacion envio={envio} inactivo="Ponete disponible para compartir tu ubicación y recibir ofertas." enMapa={ubicarEnMapa} />
         </div>
       </section>
     </div>

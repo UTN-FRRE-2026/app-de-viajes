@@ -1,18 +1,35 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { textoDeError } from '../componentes/MensajeError';
 import { hace, useAhora } from '../componentes/useAhora';
 import { estadoPosicion, leerCoordenadas, VIGENCIA_MS } from './posicion';
 import type { EnvioUbicacion } from './useEnvioUbicacion';
 
+/** Elegir la ubicación manual tocando el mapa: si se está eligiendo y cómo empezar o cancelar. */
+export interface UbicarEnMapa {
+  eligiendo: boolean;
+  alternar(): void;
+}
+
 /**
  * El envío de ubicación: GPS o manual (demo), y si se está enviando. `inactivo` explica por qué no se
- * envía (por ejemplo, «Ponete disponible para compartir tu ubicación»).
+ * envía (por ejemplo, «Ponete disponible para compartir tu ubicación»). Con `enMapa`, el modo manual
+ * ofrece además «Ubicarme en el mapa»; las coordenadas a mano siguen como alternativa.
  */
-export function ControlUbicacion({ envio, inactivo }: { envio: EnvioUbicacion; inactivo: string }) {
+export function ControlUbicacion({ envio, inactivo, enMapa }: { envio: EnvioUbicacion; inactivo: string; enMapa?: UbicarEnMapa }) {
   const ahora = useAhora();
   const [lat, setLat] = useState(() => String(envio.fijacion?.lat ?? ''));
   const [lng, setLng] = useState(() => String(envio.fijacion?.lng ?? ''));
   const [invalida, setInvalida] = useState(false);
+
+  // En manual, los campos muestran el punto fijado, venga de ellos mismos o de un toque en el mapa.
+  const manualLat = envio.modo === 'manual' ? envio.fijacion?.lat : undefined;
+  const manualLng = envio.modo === 'manual' ? envio.fijacion?.lng : undefined;
+  useEffect(() => {
+    if (manualLat === undefined || manualLng === undefined) return;
+    setLat(String(manualLat));
+    setLng(String(manualLng));
+    setInvalida(false);
+  }, [manualLat, manualLng]);
 
   const fijar = (e: FormEvent) => {
     e.preventDefault();
@@ -48,6 +65,11 @@ export function ControlUbicacion({ envio, inactivo }: { envio: EnvioUbicacion; i
           <input type="radio" name="fuente" checked={envio.modo === 'manual'} onChange={() => envio.cambiarModo('manual')} /> Manual (demo)
         </label>
       </div>
+      {envio.modo === 'manual' && enMapa ? (
+        <button type="button" className={enMapa.eligiendo ? 'principal' : 'secundario'} aria-pressed={enMapa.eligiendo} onClick={enMapa.alternar}>
+          {enMapa.eligiendo ? 'Ubicándome en el mapa… (cancelar)' : 'Ubicarme en el mapa'}
+        </button>
+      ) : null}
       {envio.modo === 'manual' ? (
         <form className="coordenadas" onSubmit={fijar}>
           <label>

@@ -1564,6 +1564,11 @@ meter.vence:-moz-meter-sub-sub-optimum::-moz-meter-bar {
   pointer-events: none;
 }
 
+/* El chofer eligiendo su ubicación en el mapa: la mira en vez de la mano de arrastrar. */
+.zona-mapa.eligiendo .mapa.leaflet-container {
+  cursor: crosshair;
+}
+
 /* --- Tablas: historial del pasajero y panel del operador --- */
 .tabla {
   width: 100%;
