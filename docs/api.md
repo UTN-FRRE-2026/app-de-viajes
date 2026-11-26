@@ -131,6 +131,7 @@ Detalle en [docs/tarifas.md](tarifas.md).
 | Ruta | Rol | Entrada | Respuesta | Errores propios | Idem. |
 |---|---|---|---|---|---|
 | `GET /tarifas/estimacion?origenLat&origenLng&destinoLat&destinoLng` | `pasajero`, `operador`, `admin` | los cuatro números, obligatorios | `200 {tarifaCentavos, moneda, distanciaMetros, duracionSegundos, desglose, tarifaVersion}` | `422 VIAJE_FUERA_DE_RANGO`; `503 MAPAS_NO_DISPONIBLE` | — |
+| `GET /rutas?origenLat&origenLng&destinoLat&destinoLng` | `pasajero`, `chofer`, `operador`, `admin` | los cuatro números, obligatorios | `200 {distanciaMetros, duracionSegundos, puntos: [[lat, lng], …], fuente: "calles" \| "recta"}`, con `Cache-Control: private, max-age=300`. Si el ruteo no responde, la línea recta (`fuente: "recta"`) | `429` pasado `LIMITE_RUTAS_POR_MINUTO` (60) por usuario | — |
 | `GET /admin/tarifas` | `admin` | — | `200 {version, moneda, bajadaCentavos, centavosPorKm, centavosPorMinuto, minimoCentavos, maxMetros, actualizadaPor, actualizadaEn}` | — | — |
 | `PUT /admin/tarifas` | `admin` | `{bajadaCentavos, centavosPorKm, centavosPorMinuto, minimoCentavos, maxMetros}`, todos enteros: importes de 0 a 100 000 000, `maxMetros` de 1 a 1 000 000 | `200` la versión nueva, en la misma forma que el `GET` | `422 TARIFA_INVALIDA` | sí |
 

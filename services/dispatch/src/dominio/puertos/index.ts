@@ -220,6 +220,18 @@ export interface ServicioMapas {
   recorrido(origen: Coordenada, destino: Coordenada): Promise<Recorrido>;
 }
 
+/** Una ruta para dibujar en el mapa: el recorrido y sus puntos `[lat, lng]`, en orden. */
+export interface Ruta extends Recorrido {
+  puntos: [number, number][];
+  /** `calles`: el ruteo real. `recta`: la aproximación en línea recta (el ruteo no respondió). */
+  fuente: 'calles' | 'recta';
+}
+
+/** Rutas para el mapa. No falla: si el ruteo real no responde, devuelve la línea recta. */
+export interface ServicioRutas {
+  ruta(origen: Coordenada, destino: Coordenada): Promise<Ruta>;
+}
+
 /** Los parámetros de tarifa vigentes, para estimar. Puede tener caché: tiene que reflejar el último cambio. */
 export interface ProveedorTarifas {
   vigente(): Promise<ParametrosTarifa>;

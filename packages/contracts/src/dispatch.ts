@@ -93,6 +93,20 @@ export const EstimacionRespuesta = z.strictObject({
 });
 export type EstimacionRespuesta = z.infer<typeof EstimacionRespuesta>;
 
+/** La ruta por las calles entre dos puntos, para dibujarla en el mapa. Consulta sin efectos: GET. */
+export const RutaQuery = EstimacionQuery;
+export type RutaQuery = EstimacionQuery;
+
+export const RutaRespuesta = z.strictObject({
+  distanciaMetros: z.number().int().min(0),
+  duracionSegundos: z.number().int().min(0),
+  /** El recorrido, en orden: pares [lat, lng]. Al menos el origen y el destino. */
+  puntos: z.array(z.tuple([z.number(), z.number()])).min(2),
+  /** `calles`: el ruteo real. `recta`: el ruteo no respondió y la ruta es la línea recta aproximada. */
+  fuente: z.enum(['calles', 'recta']),
+});
+export type RutaRespuesta = z.infer<typeof RutaRespuesta>;
+
 /**
  * Límites de la tarifa: dejan todos los cálculos holgadamente dentro de los enteros seguros de
  * JavaScript. Los usan el contrato del admin, el dominio de dispatch y su configuración.

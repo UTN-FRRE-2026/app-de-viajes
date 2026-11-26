@@ -1,3 +1,4 @@
+import { setDefaultAutoSelectFamilyAttemptTimeout } from 'node:net';
 import { fileURLToPath } from 'node:url';
 import type { Reloj } from '@viajes/kernel';
 import {
@@ -43,7 +44,9 @@ import { chequeoRedis, chequeosBase } from './infra/db/salud.js';
 import { BuscadorCandidatosFijo } from './infra/externos/buscador-fijo.js';
 import { BuscadorCandidatosLocation } from './infra/externos/buscador-location.js';
 import { DirectorioIdentity } from './infra/externos/directorio-identity.js';
+import { MapasConRespaldo } from './infra/externos/mapas-con-respaldo.js';
 import { MapasConTimeout } from './infra/externos/mapas-con-timeout.js';
+import { MapasOsrm } from './infra/externos/mapas-osrm.js';
 import { MapasSimulado } from './infra/externos/mapas-simulado.js';
 import { PagosConTimeout } from './infra/externos/pagos-con-timeout.js';
 import { PagosSimulado } from './infra/externos/pagos-simulado.js';
@@ -56,7 +59,7 @@ import { ElegibilidadMemoria } from './infra/memoria/zonas-memoria.js';
 import { ElegibilidadPrisma } from './infra/db/zonas-prisma.js';
 import { RepositorioTarifasPrisma } from './infra/db/tarifas-prisma.js';
 import { RepositorioTarifasMemoria } from './infra/memoria/tarifas-memoria.js';
-import { contadorCacheTarifas, contadorCacheZonas } from './infra/metricas/prometheus.js';
+import { contadorCacheTarifas, contadorCacheZonas, contadorRuteo } from './infra/metricas/prometheus.js';
 import { cacheTarifasRedis, ProveedorTarifasVersionadas, type CacheTarifas } from './infra/tarifas/proveedor-tarifas.js';
 import { semillaDesdeConfig } from './infra/tarifas/tarifas-config.js';
 import { cacheZonasRedis, type CacheZonas } from './infra/zonas/cache-zonas.js';
@@ -254,16 +257,37 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
     },
   });
 
+  const metricas = crearMetricas({ servicio: 'dispatch' });
+  const contarRuta = contadorRuteo(metricas);
+
   // Mapas siempre detrás del timeout: el simulado no lo necesita, pero un proveedor real sí, y así
   // la falla cerrado se prueba con el mismo código que va a envolver a ese proveedor.
+  const simulado = new MapasSimulado({
+    factorDesvio: config.MAPAS_FACTOR_DESVIO,
+    velocidadKmh: config.MAPAS_VELOCIDAD_KMH,
+    latenciaMs: config.MAPAS_LATENCIA_SIMULADA_MS,
+  });
+  if (config.MAPAS_PROVEEDOR === 'osrm') {
+    // El OSRM público está en Europa: desde Argentina, conectar tarda más que los 250 ms que Node le da
+    // por defecto a cada dirección (IPv6 e IPv4) antes de probar la otra, y fetch fallaba. Lo mismo que
+    // scripts/simular-chofer.mjs. Solo cambia el reparto entre direcciones, no el timeout del pedido.
+    setDefaultAutoSelectFamilyAttemptTimeout(1000);
+  }
+  // Con OSRM: las calles reales y, si no responde, el simulado. La ruta del mapa y la estimación salen
+  // del mismo adaptador (y del mismo caché), así que el número y el dibujo coinciden.
+  const ruteo =
+    config.MAPAS_PROVEEDOR === 'osrm'
+      ? new MapasConRespaldo(
+          new MapasOsrm({ url: config.MAPAS_OSRM_URL, timeoutMs: config.MAPAS_OSRM_TIMEOUT_MS, alResolver: contarRuta }),
+          simulado,
+          logger,
+          () => contarRuta('respaldo'),
+        )
+      : simulado;
   const mapas = new MapasConTimeout(
-    reemplazos.mapas ??
-      new MapasSimulado({
-        factorDesvio: config.MAPAS_FACTOR_DESVIO,
-        velocidadKmh: config.MAPAS_VELOCIDAD_KMH,
-        latenciaMs: config.MAPAS_LATENCIA_SIMULADA_MS,
-      }),
-    config.MAPAS_TIMEOUT_MS,
+    reemplazos.mapas ?? ruteo,
+    // Con OSRM, el timeout de afuera deja lugar a que OSRM venza y conteste el respaldo.
+    config.MAPAS_PROVEEDOR === 'osrm' ? Math.max(config.MAPAS_TIMEOUT_MS, config.MAPAS_OSRM_TIMEOUT_MS + 500) : config.MAPAS_TIMEOUT_MS,
     logger,
   );
   // Pagos, igual que mapas: siempre detrás del timeout, para que la falla cerrado sea el mismo código
@@ -286,7 +310,6 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
     maxMetros: config.TARIFA_MAX_METROS,
   });
 
-  const metricas = crearMetricas({ servicio: 'dispatch' });
   // Zonas con caché: solo la búsqueda previa a la oferta. La aceptación revalida con Postgres en su transacción.
   if (cacheZonas && elegibilidad instanceof ElegibilidadPrisma) {
     elegibilidad = new ElegibilidadConCache({ base: elegibilidad, cache: cacheZonas, logger, alLeerCache: contadorCacheZonas(metricas) });
@@ -312,6 +335,8 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
     },
     metricas: metricasDespachoPrometheus(metricas),
     mapas,
+    // Con un mapas de reemplazo (tests), la ruta es su línea recta: la misma fuente que la estimación.
+    ...(reemplazos.mapas ? {} : { rutas: ruteo }),
     tarifas,
     pagos,
     repoTarifas,
@@ -352,6 +377,13 @@ export function componer(config: Config, logger: Logger, reemplazos: Reemplazos 
         contador: contadorTasa,
         nombre: 'solicitudes',
         maximo: config.LIMITE_SOLICITUDES_POR_MINUTO,
+        ventanaMs: 60_000,
+        logger,
+      }),
+      limitarTasa({
+        contador: contadorTasa,
+        nombre: 'rutas',
+        maximo: config.LIMITE_RUTAS_POR_MINUTO,
         ventanaMs: 60_000,
         logger,
       }),

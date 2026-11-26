@@ -6,11 +6,13 @@ import {
   HistorialQuery,
   PanelQuery,
   ParamsId,
+  RutaQuery,
   SinBody,
   TramosViajeBody,
   type EstadoChoferRespuesta,
   type TramosViajeRespuesta,
   type EstimacionRespuesta,
+  type RutaRespuesta,
 } from '@viajes/contracts';
 import {
   autenticar,
@@ -52,6 +54,8 @@ export function rutasDespacho(
   tokenInterno?: string,
   /** Límite de tasa de la solicitud de viaje, por pasajero (`limitarTasa`). Sin él, no hay límite. */
   limitarSolicitudes: RequestHandler = (_req, _res, next) => next(),
+  /** Límite de tasa de GET /rutas, por usuario. Sin él, no hay límite. */
+  limitarRutas: RequestHandler = (_req, _res, next) => next(),
 ): Router {
   const r = Router();
 
@@ -91,6 +95,20 @@ export function rutasDespacho(
       destino: { lat: destinoLat, lng: destinoLng },
     });
     res.set('Cache-Control', 'no-store').json(estimacion);
+  });
+
+  // La ruta por las calles, para dibujarla en el mapa: el pasajero antes de pedir y mientras sigue al
+  // chofer, el chofer hasta el origen y el destino, el operador en su panel. Sin efectos: GET. Si el
+  // ruteo no responde, la línea recta (`fuente: 'recta'`), nunca un error: el mapa siempre dibuja algo.
+  r.get('/rutas', requerirRol('pasajero', 'chofer', 'operador', 'admin'), validar({ query: RutaQuery }), limitarRutas, async (req, res) => {
+    const { origenLat, origenLng, destinoLat, destinoLng } = req.query as unknown as RutaQuery;
+    const { metros, segundos, puntos, fuente } = await casos.rutaEntre({
+      origen: { lat: origenLat, lng: origenLng },
+      destino: { lat: destinoLat, lng: destinoLng },
+    });
+    const respuesta: RutaRespuesta = { distanciaMetros: metros, duracionSegundos: segundos, puntos, fuente };
+    // Privada: las coordenadas son de un viaje de alguien. El navegador la puede reusar un rato.
+    res.set('Cache-Control', 'private, max-age=300').json(respuesta);
   });
 
   // Configuración de la tarifa: solo el admin. El GET devuelve la vigente con su versión.

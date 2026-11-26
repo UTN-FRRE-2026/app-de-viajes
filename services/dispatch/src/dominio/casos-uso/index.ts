@@ -5,7 +5,7 @@ import { cobrarPendientes, cobrarViaje } from './cobrar.js';
 import { crearSolicitud } from './crear-solicitud.js';
 import type { DependenciasDespacho } from './dependencias.js';
 import { situacionChofer } from './estado-chofer.js';
-import { estimarTarifa } from './estimar-tarifa.js';
+import { estimarTarifa, rutaEntre } from './estimar-tarifa.js';
 import { configurarTarifa, obtenerTarifa } from './tarifas-admin.js';
 import { historial, panelOperador } from './listar-viajes.js';
 import { obtenerSolicitud } from './obtener-solicitud.js';
@@ -29,6 +29,7 @@ export function crearCasosDeUso(deps: DependenciasDespacho) {
     situacionChofer: situacionChofer(deps),
     panelOperador: panelOperador(deps),
     estimarTarifa: estimarTarifa(deps),
+    rutaEntre: rutaEntre(deps),
     obtenerTarifa: obtenerTarifa(deps),
     configurarTarifa: configurarTarifa(deps),
     /** Para la retención del historial de location (ruta interna, con token de servicio). */
