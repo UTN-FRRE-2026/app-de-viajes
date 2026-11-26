@@ -42,6 +42,9 @@ async function rutaEnL(ruta: Route): Promise<void> {
   });
 }
 
+/** Una posición enviada es el origen (el auto simulado frena justo en el punto; 1e-7° son ~1 cm). */
+const enOrigen = (p: { lat: number; lng: number }) => Math.abs(p.lat - ORIGEN.lat) < 1e-7 && Math.abs(p.lng - ORIGEN.lng) < 1e-7;
+
 /** Dónde dibuja Leaflet el auto ahora (su `transform`). */
 const autoEnPantalla = (p: Page) => p.locator('.mapa-auto').evaluate((el) => (el as HTMLElement).style.transform);
 
@@ -88,6 +91,15 @@ test('en «Simulada» el auto va solo a buscar al pasajero, frena, y al iniciar 
   const chofer = await ctxChofer.newPage();
   const pasajero = await ctxPasajero.newPage();
   const csp = [chofer, pasajero].map(vigilarCsp);
+  // Las posiciones que location aceptó (POST /api/ubicacion/ubicaciones con 204), en orden: el chofer
+  // no superpone envíos, así que llegan en el orden en que salieron.
+  const aceptadas: { lat: number; lng: number }[] = [];
+  chofer.on('response', (r) => {
+    const pedido = r.request();
+    if (pedido.method() === 'POST' && new URL(pedido.url()).pathname === '/api/ubicacion/ubicaciones' && r.status() === 204) {
+      aceptadas.push(pedido.postDataJSON());
+    }
+  });
 
   // «Simulada (demo)» viene elegida: se pone disponible y el auto, quieto, manda su posición cada 1 s.
   await entrar(chofer, SEED.chofer);
@@ -113,16 +125,22 @@ test('en «Simulada» el auto va solo a buscar al pasajero, frena, y al iniciar 
   expect(enChofer).toBeGreaterThanOrEqual(3);
   expect(enPasajero).toBeGreaterThanOrEqual(3);
 
-  // Llega al origen y frena: el pasajero ve «Tu chofer llegó» y el chofer, su cartel de llegada con
-  // «Inició el viaje» como acción principal. El viaje sigue en camino (llegar es solo de pantalla).
-  await expect(pasajero.getByText('Tu chofer llegó')).toBeVisible({ timeout: 30_000 });
+  // Llega al origen: location acepta una posición que es justo el origen. El pasajero ve «Tu chofer
+  // llegó» y el chofer, su cartel de llegada con «Inició el viaje» como acción principal. El viaje sigue
+  // en camino (llegar es solo de pantalla).
+  await expect.poll(() => aceptadas.findIndex(enOrigen), { timeout: 30_000 }).toBeGreaterThanOrEqual(0);
+  const llegada = aceptadas.findIndex(enOrigen);
+  await expect(pasajero.getByText('Tu chofer llegó')).toBeVisible();
   await expect(chofer.locator('.cartel')).toContainText('esperá al pasajero');
   const iniciar = chofer.getByRole('button', { name: 'Inició el viaje' });
   await expect(iniciar).toHaveClass(/principal/);
   await expect(actual).toContainText('En camino a buscarte');
-  const quieto = await autoEnPantalla(chofer);
-  await chofer.waitForTimeout(2_500);
-  expect(await autoEnPantalla(chofer)).toBe(quieto);
+
+  // Frenó: hasta que el chofer toca «Inició el viaje», cada envío aceptado repite el origen (sigue
+  // mandando cada 1 s, quieto). Se miran unos cuantos, no uno solo.
+  await expect.poll(() => aceptadas.length - llegada, { timeout: 10_000 }).toBeGreaterThanOrEqual(4);
+  const hastaIniciar = aceptadas.slice(llegada);
+  expect(hastaIniciar.filter((p) => !enOrigen(p))).toEqual([]);
 
   // El chofer inicia a mano; el auto arranca solo hacia el destino y, al llegar, finaliza solo.
   await iniciar.click();
