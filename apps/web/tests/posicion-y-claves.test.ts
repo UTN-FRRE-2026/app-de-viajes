@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ErrorApi } from '../src/api/errores';
 import { ClavesDeOperacion } from '../src/api/operacion';
-import { estadoPosicion, leerCoordenadas, posicionParaEnviar, type Fijacion } from '../src/ubicacion/posicion';
+import { coordenadasDelToque, estadoPosicion, leerCoordenadas, posicionParaEnviar, type Fijacion } from '../src/ubicacion/posicion';
 
 describe('posición para enviar', () => {
   const ahora = Date.parse('2026-11-23T12:00:30.000Z');
@@ -27,6 +27,11 @@ describe('posición para enviar', () => {
     expect(leerCoordenadas('-34,6037', '-58.3816')).toEqual({ lat: -34.6037, lng: -58.3816 });
     expect(leerCoordenadas('91', '0')).toBeNull();
     expect(leerCoordenadas('', '0')).toBeNull();
+  });
+
+  it('un toque en el mapa da coordenadas de 6 decimales, y nada si el mapa dio la vuelta al mundo', () => {
+    expect(coordenadasDelToque({ lat: -27.45110123456, lng: -58.98650987654 })).toEqual({ lat: -27.451101, lng: -58.98651 });
+    expect(coordenadasDelToque({ lat: -27.4511, lng: 301.0135 })).toBeNull();
   });
 });
 

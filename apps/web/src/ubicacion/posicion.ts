@@ -54,3 +54,12 @@ export function leerCoordenadas(lat: string, lng: string): { lat: number; lng: n
   if (a < -90 || a > 90 || b < -180 || b > 180) return null;
   return { lat: a, lng: b };
 }
+
+/**
+ * Un punto tocado en el mapa, como si se hubieran escrito sus coordenadas: redondeado a 6 decimales
+ * (unos 10 cm) y con las mismas reglas que `leerCoordenadas`. Fuera de rango (el mapa da la vuelta al
+ * mundo y Leaflet puede dar una longitud de más de 180), null.
+ */
+export function coordenadasDelToque(p: { lat: number; lng: number }): { lat: number; lng: number } | null {
+  return leerCoordenadas(p.lat.toFixed(6), p.lng.toFixed(6));
+}
