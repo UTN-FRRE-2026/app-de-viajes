@@ -7,6 +7,7 @@
 // - OBS_IDENTITY, OBS_LOCATION, OBS_DISPATCH: host:puerto de cada servicio en la red interna.
 // - OBS_ENTORNO: etiqueta `entorno` de las métricas (desarrollo, carga).
 // - OBS_INTERVALO: cada cuánto se lee /metrics.
+// - OBS_PROYECTO: de qué proyecto de Compose se toman los logs (en Coolify, solo el del recurso).
 
 // --- Métricas ---
 
@@ -53,6 +54,16 @@ discovery.relabel "servicios" {
 	rule {
 		source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
 		regex         = "identity|location|dispatch"
+		action        = "keep"
+	}
+
+	// Y de un solo proyecto, si se lo indica. En Coolify el servidor es compartido: el socket ve los
+	// contenedores de todas las apps, y otra podría tener un servicio `identity`. Coolify usa como proyecto
+	// de Compose el UUID del recurso y se lo pasa a cada contenedor en COOLIFY_RESOURCE_UUID. OBS_PROYECTO
+	// lo reemplaza; sin ninguno de los dos (desarrollo, carga), cualquier proyecto.
+	rule {
+		source_labels = ["__meta_docker_container_label_com_docker_compose_project"]
+		regex         = coalesce(sys.env("OBS_PROYECTO"), sys.env("COOLIFY_RESOURCE_UUID"), ".+")
 		action        = "keep"
 	}
 

@@ -36,7 +36,7 @@
         "type": "query",
         "name": "entorno",
         "label": "Entorno",
-        "description": "Etiqueta que agrega Alloy (OBS_ENTORNO): desarrollo o carga.",
+        "description": "Etiqueta que agrega Alloy (OBS_ENTORNO): desarrollo, carga o produccion.",
         "datasource": {
           "type": "prometheus",
           "uid": "${DS_PROMETHEUS}"

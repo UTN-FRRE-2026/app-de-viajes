@@ -16,6 +16,7 @@ dispatch :3005 ─┘                  │
 | `observabilidad/dashboards/despacho.json` | (b) Despacho |
 | `observabilidad/dashboards/tarea-pesada.json` | (c) Tarea pesada (6.6) |
 | `docker-compose.yml`, servicio `alloy` | `grafana/alloy:v1.21.3`, solo con `--profile obs` |
+| `observabilidad/alloy/Dockerfile`, `docker-compose.coolify.yml` | La misma imagen con `config.alloy` adentro, para Coolify ([En Coolify](#en-coolify)) |
 
 ## Qué se mide y por qué
 
@@ -113,6 +114,18 @@ Las consultas usan la fuente de datos como variable (`${DS_PROMETHEUS}`, de tipo
 | **Tarea pesada (6.6)** | Estrategia; pings por segundo por resultado; latencia de `POST /ubicaciones`; cola del historial, pendientes, ocupación y descartados (optimizada); lag del event loop de location frente a dispatch; latencia de la búsqueda de candidatos y de la solicitud; memoria; publicaciones de la posición en vivo |
 
 Los percentiles salen de los buckets de cada histograma, así que son aproximados: el lag va de 1 ms a 2 s, la duración HTTP de 5 ms a 10 s y el tiempo hasta la asignación de 50 ms a 60 s.
+
+## En Coolify
+
+En el entorno publicado ([despliegue.md](despliegue.md#coolify)) Alloy no es un perfil: es un servicio más de `docker-compose.coolify.yml`, siempre presente. Cambia respecto del perfil `obs`:
+
+- **La configuración va adentro de la imagen** (`observabilidad/alloy/Dockerfile`, la misma `config.alloy`): Coolify no tiene los archivos del repo en el servidor para montarlos.
+- **Sin puertos ni dominio.** La interfaz de Alloy escucha solo dentro del contenedor; la usa el healthcheck (`/-/ready`).
+- **`entorno="produccion"`** en las métricas (`OBS_ENTORNO`). Los dashboards lo ofrecen solo en la variable **Entorno**.
+- **Solo los logs de este recurso.** El servidor es compartido y el socket de Docker ve los contenedores de todas las apps. Alloy se queda con los del proyecto de Compose del recurso: Coolify usa su UUID como nombre de proyecto y se lo pasa a cada contenedor en `COOLIFY_RESOURCE_UUID`. Si hiciera falta fijarlo a mano, `OBS_PROYECTO` en las variables del recurso. En Loki, la etiqueta `proyecto` es ese UUID.
+- **Las credenciales**, en *Environment Variables* del recurso. `node deploy/env-coolify.mjs` las suma a `deploy/.env.coolify` si están completas en `deploy/.env.produccion`. Sin ellas, Alloy arranca y no envía nada; los servicios no se enteran.
+
+Para activarlo: completar las cinco `GRAFANA_CLOUD_*` ([Credenciales](#credenciales-en-grafana-cloud)) en `deploy/.env.produccion`, correr `node deploy/env-coolify.mjs`, pegar `deploy/.env.coolify` en Coolify (*Environment Variables → Developer view*) y **Redeploy**. Para comprobar: en los logs de `alloy` en Coolify, ningún `Failed to send batch`; en Grafana Cloud, Explore, `up{job="app-viajes", entorno="produccion"}` da 1 por servicio y `{servicio="dispatch"}` en Loki trae los logs.
 ## Durante una corrida de k6
 
 Las mediciones corren en el **entorno de carga** (`carga/compose.yml`, proyecto `viajes-carga`), que no comparte red con el de desarrollo. Para verlas en Grafana, se conecta Alloy a la red de carga y se le cambia a quién lee:

@@ -188,6 +188,43 @@ services:
       - dispatch
     restart: unless-stopped
 
+  # Grafana Alloy (docs/observabilidad.md#en-coolify): lee /metrics de los tres servicios por la red interna y
+  # sus logs por el socket de Docker, y los manda a Grafana Cloud. La configuración va adentro de la imagen.
+  # Sin las GRAFANA_CLOUD_* arranca igual y no envía nada (lo avisa en su log); nada depende de él.
+  alloy:
+    build:
+      context: .
+      dockerfile: observabilidad/alloy/Dockerfile
+    environment:
+      GRAFANA_CLOUD_PROM_URL: ${GRAFANA_CLOUD_PROM_URL:-}
+      GRAFANA_CLOUD_PROM_USUARIO: ${GRAFANA_CLOUD_PROM_USUARIO:-}
+      GRAFANA_CLOUD_LOKI_URL: ${GRAFANA_CLOUD_LOKI_URL:-}
+      GRAFANA_CLOUD_LOKI_USUARIO: ${GRAFANA_CLOUD_LOKI_USUARIO:-}
+      GRAFANA_CLOUD_TOKEN: ${GRAFANA_CLOUD_TOKEN:-}
+      OBS_METRICAS_TOKEN: ${METRICAS_TOKEN:?}
+      OBS_ENTORNO: ${OBS_ENTORNO:-produccion}
+      OBS_IDENTITY: identity:3001
+      OBS_LOCATION: location:3004
+      OBS_DISPATCH: dispatch:3005
+      OBS_INTERVALO: ${OBS_INTERVALO:-15s}
+      # Vacía: los logs del proyecto de este recurso (COOLIFY_RESOURCE_UUID, ver config.alloy).
+      OBS_PROYECTO: ${OBS_PROYECTO:-}
+    volumes:
+      # Solo para descubrir los contenedores y leer sus logs. Es un acceso amplio al daemon (el :ro no lo
+      # limita): por eso Alloy no publica ningún puerto ni tiene dominio.
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # WAL de las métricas: si Grafana Cloud no responde un rato, se reenvían al volver.
+      - alloy_datos:/var/lib/alloy/data
+    healthcheck:
+      # La imagen no trae curl ni wget: /-/ready por bash.
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/12345 && printf 'GET /-/ready HTTP/1.0\\r\\n\\r\\n' >&3 && head -n 1 <&3 | grep -q ' 200'"]
+      interval: 15s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+    restart: unless-stopped
+
 volumes:
   pg_datos:
   redis_datos:
+  alloy_datos:
