@@ -29,7 +29,13 @@ if (esPrincipal) {
     console.error(`deploy/.env.produccion no tiene: ${faltan.join(', ')}`);
     process.exit(1);
   }
-  writeFileSync(RUTA_COOLIFY, `${nombres.map((n) => `${n}=${valores[n]}`).join('\n')}\n`, { mode: 0o600 });
-  console.log(`deploy/.env.coolify creado con ${nombres.length} variables (${nombres.join(', ')}).`);
+  // Opcionales: las credenciales de Grafana Cloud (Alloy), solo si están completas en .env.produccion.
+  const grafana = Object.keys(valores).filter((n) => n.startsWith('GRAFANA_CLOUD_') && valores[n]);
+  const todas = [...nombres, ...grafana.filter((n) => !nombres.includes(n))];
+  writeFileSync(RUTA_COOLIFY, `${todas.map((n) => `${n}=${valores[n]}`).join('\n')}\n`, { mode: 0o600 });
+  console.log(`deploy/.env.coolify creado con ${todas.length} variables (${todas.join(', ')}).`);
+  if (grafana.length < 5) {
+    console.log('Sin las cinco GRAFANA_CLOUD_* completas: Alloy arranca pero no envía nada (docs/observabilidad.md).');
+  }
   console.log('Pegar su contenido en Coolify: Environment Variables → Developer view. No se muestra acá.');
 }

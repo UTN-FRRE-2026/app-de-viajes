@@ -115,7 +115,7 @@ La otra forma de publicarlo: en un servidor con [Coolify](https://coolify.io) (p
 2. **En Coolify**: *New Resource → Public Repository* (o el repo por la GitHub App), rama `main`, *Build Pack* **Docker Compose**, *Docker Compose Location* `/docker-compose.coolify.yml`.
 3. **Environment Variables → Developer view**: pegar el contenido de `deploy/.env.coolify`. Las demás tienen valor por defecto en el compose; se pueden fijar ahí también (tarifas, ofertas, límites).
 4. **Domains** del servicio `web`: `https://viajes.midominio.com:8080` (el `:8080` es el puerto del contenedor; no se publica). Los demás servicios, sin dominio.
-5. **Deploy**. La primera vez construye las imágenes (unos minutos). Queda listo cuando los 7 contenedores están `healthy`, `semilla` incluido.
+5. **Deploy**. La primera vez construye las imágenes (unos minutos). Queda listo cuando los 8 contenedores están `healthy`, `semilla` y `alloy` incluidos.
 6. **La demo de flotas y zonas**, una vez, desde tu máquina (sin ella, toda solicitud da 422 `ORIGEN_FUERA_DE_ZONA`):
    ```bash
    IDENTITY_SEED_CONTRASENA=<la de deploy/.env.coolify> node scripts/demo-flotas.mjs https://viajes.midominio.com
@@ -136,4 +136,4 @@ La otra forma de publicarlo: en un servidor con [Coolify](https://coolify.io) (p
 - **Las contraseñas de las bases se fijan en el primer despliegue** (el init corre con el volumen vacío). Si después se cambian en Coolify, hay que cambiarlas también en Postgres (`ALTER ROLE <servicio>_svc PASSWORD '...'`, desde la terminal del contenedor `postgres` en Coolify), o los servicios no conectan.
 - **Backups**: Coolify respalda solo sus bases propias, no un Postgres dentro de un compose. Un *Scheduled Task* sobre `postgres` con `pg_dumpall -U postgres` (o un `pg_dump` por base) a un destino fuera del servidor.
 - **Cloudflare**: con el proxy de Cloudflare (nube naranja) delante, la IP que llega a Traefik es la de Cloudflare. Mejor dejar el registro DNS solo (nube gris), o configurar Traefik para que crea el encabezado de Cloudflare.
-- La observabilidad (Alloy) no está en este compose: necesita el socket de Docker. Si hace falta, se agrega aparte.
+- **Observabilidad**: el compose trae Alloy, que manda métricas y logs a Grafana Cloud si están las cinco `GRAFANA_CLOUD_*` en las variables del recurso; sin ellas no envía nada ([observabilidad.md](observabilidad.md#en-coolify)). Monta el socket de Docker de solo lectura para leer los logs: es un acceso amplio al daemon, y por eso no publica puertos.
