@@ -1,0 +1,302 @@
+[
+    {
+        "ofertaId":  "36b3f523-b07a-4a88-b03f-8d86e4a2a640",
+        "choferId":  "00000000-0000-4000-8000-c00000000001",
+        "indiceToken":  0,
+        "clave":  "cca789e8-aef3-4452-8b8f-15dce7bed9be"
+    },
+    {
+        "ofertaId":  "21db5b4a-a05e-4d2a-a6e0-6842f09007e6",
+        "choferId":  "00000000-0000-4000-8000-c00000000002",
+        "indiceToken":  1,
+        "clave":  "b77d5ae7-07d3-4281-9590-2e0bccb204a6"
+    },
+    {
+        "ofertaId":  "33d014ce-ce37-4aeb-8b3c-7ae516688b88",
+        "choferId":  "00000000-0000-4000-8000-c00000000003",
+        "indiceToken":  2,
+        "clave":  "8fb2eb39-ac78-47f2-9982-57780b3cd106"
+    },
+    {
+        "ofertaId":  "0e0475e9-42f4-4ec4-88be-1ffc45529cd4",
+        "choferId":  "00000000-0000-4000-8000-c00000000004",
+        "indiceToken":  3,
+        "clave":  "2598e467-6761-4270-839e-2eda6d08b1eb"
+    },
+    {
+        "ofertaId":  "dbb7dd33-77b2-4370-80a6-bfac8bc61798",
+        "choferId":  "00000000-0000-4000-8000-c00000000005",
+        "indiceToken":  4,
+        "clave":  "c42885c6-d9ce-4034-837a-88a9ffba8ef8"
+    },
+    {
+        "ofertaId":  "9d578d41-439c-43e9-8e50-b308e3e02b84",
+        "choferId":  "00000000-0000-4000-8000-c00000000006",
+        "indiceToken":  5,
+        "clave":  "f995f14b-eda2-47d3-aac4-93bb2ebbeca4"
+    },
+    {
+        "ofertaId":  "ef60a5b7-c915-4441-868c-5d3212bbf870",
+        "choferId":  "00000000-0000-4000-8000-c00000000007",
+        "indiceToken":  6,
+        "clave":  "3ef57813-ea81-4aa4-9f33-1947586930b9"
+    },
+    {
+        "ofertaId":  "8e397f0b-0efe-4618-ba80-0af7c0be114b",
+        "choferId":  "00000000-0000-4000-8000-c00000000008",
+        "indiceToken":  7,
+        "clave":  "bfa2b0ce-6700-410a-8acf-1667319f3a54"
+    },
+    {
+        "ofertaId":  "20f51070-5764-4e47-b360-b4793716d14b",
+        "choferId":  "00000000-0000-4000-8000-c00000000009",
+        "indiceToken":  8,
+        "clave":  "de0b459a-ff33-4f9a-8006-eae05fdd36ec"
+    },
+    {
+        "ofertaId":  "6fe4d0d8-d200-4bd9-8d4f-aba25303f18a",
+        "choferId":  "00000000-0000-4000-8000-c0000000000a",
+        "indiceToken":  9,
+        "clave":  "35f5f3b1-8636-4ad1-8a5b-bda9cb9ebb31"
+    },
+    {
+        "ofertaId":  "84205558-042a-465c-94c3-511cf29f6bc4",
+        "choferId":  "00000000-0000-4000-8000-c0000000000b",
+        "indiceToken":  10,
+        "clave":  "b0e9bad3-d622-47cb-8f0c-526e37d54921"
+    },
+    {
+        "ofertaId":  "1bd83c85-73ab-4ccc-8c09-29123112c90f",
+        "choferId":  "00000000-0000-4000-8000-c0000000000c",
+        "indiceToken":  11,
+        "clave":  "ce103473-7e37-418e-8370-7d42683cb84a"
+    },
+    {
+        "ofertaId":  "47cd849d-83e8-49bf-8b0c-e90ff4e9625d",
+        "choferId":  "00000000-0000-4000-8000-c0000000000d",
+        "indiceToken":  12,
+        "clave":  "9cd6db8e-5d51-4fe9-ad74-2e5bce5a7646"
+    },
+    {
+        "ofertaId":  "316d8c42-7610-423e-b24b-f473b7e044c2",
+        "choferId":  "00000000-0000-4000-8000-c0000000000e",
+        "indiceToken":  13,
+        "clave":  "4ceb9e1a-476e-4c0f-b9b4-2098eaa37f29"
+    },
+    {
+        "ofertaId":  "829f576e-8c1e-4c12-be35-f1040b36a35c",
+        "choferId":  "00000000-0000-4000-8000-c0000000000f",
+        "indiceToken":  14,
+        "clave":  "82158bb3-d7a9-4113-aca3-bbf59c06a80d"
+    },
+    {
+        "ofertaId":  "7022d02d-cabc-4c47-a39a-bd7d6e13907d",
+        "choferId":  "00000000-0000-4000-8000-c00000000010",
+        "indiceToken":  15,
+        "clave":  "3f43a029-02c8-4aca-b962-95432dbf2626"
+    },
+    {
+        "ofertaId":  "45724f1e-a1cf-4efd-b1d6-4b71d080a047",
+        "choferId":  "00000000-0000-4000-8000-c00000000011",
+        "indiceToken":  16,
+        "clave":  "043342c7-6d8e-4246-9dc5-5c3139b3bc91"
+    },
+    {
+        "ofertaId":  "612ba0d8-6c79-4d66-859c-8444a32fc9d2",
+        "choferId":  "00000000-0000-4000-8000-c00000000012",
+        "indiceToken":  17,
+        "clave":  "c31d6938-5a2e-4786-886b-3280f193969b"
+    },
+    {
+        "ofertaId":  "192f8f31-7042-4bcb-8b89-a9e230f8c5f3",
+        "choferId":  "00000000-0000-4000-8000-c00000000013",
+        "indiceToken":  18,
+        "clave":  "7c95ece2-ad0e-4396-8dff-6c234dc5e933"
+    },
+    {
+        "ofertaId":  "32cf3200-6e54-4a12-99e5-2363b93a4c0f",
+        "choferId":  "00000000-0000-4000-8000-c00000000014",
+        "indiceToken":  19,
+        "clave":  "b93e4318-cdd8-405b-815f-e1e465444b21"
+    },
+    {
+        "ofertaId":  "9bd78817-d0e7-4816-847b-f4e33fbca9c3",
+        "choferId":  "00000000-0000-4000-8000-c00000000015",
+        "indiceToken":  20,
+        "clave":  "57bd31f9-bd44-4e59-a8be-47af6c668a4d"
+    },
+    {
+        "ofertaId":  "1c897d19-f840-4a4d-a30a-ed9f49da3d12",
+        "choferId":  "00000000-0000-4000-8000-c00000000016",
+        "indiceToken":  21,
+        "clave":  "8dbf108a-3b72-48b6-9aeb-c6d70550fde4"
+    },
+    {
+        "ofertaId":  "3fde2915-2317-4f68-95f9-ee331f190081",
+        "choferId":  "00000000-0000-4000-8000-c00000000017",
+        "indiceToken":  22,
+        "clave":  "615edd03-dc88-4e6b-89f8-a08e7dce1ecb"
+    },
+    {
+        "ofertaId":  "fc4020ae-493a-419b-b75c-7255c9c5f54e",
+        "choferId":  "00000000-0000-4000-8000-c00000000018",
+        "indiceToken":  23,
+        "clave":  "ecd16f90-5aec-40ae-a680-8c3f2e9ec02e"
+    },
+    {
+        "ofertaId":  "df8dcf13-899b-4161-b0c1-d63aedc9dbf3",
+        "choferId":  "00000000-0000-4000-8000-c00000000019",
+        "indiceToken":  24,
+        "clave":  "3c522e41-3c4e-49ca-8093-72390e351235"
+    },
+    {
+        "ofertaId":  "dc1cc42c-4b7c-43fc-a870-28fa8ba41bb6",
+        "choferId":  "00000000-0000-4000-8000-c0000000001a",
+        "indiceToken":  25,
+        "clave":  "45529c3e-1285-4a02-b221-b26d7c64dd70"
+    },
+    {
+        "ofertaId":  "423d764c-bc99-44d8-a68a-09036eb1ed62",
+        "choferId":  "00000000-0000-4000-8000-c0000000001b",
+        "indiceToken":  26,
+        "clave":  "451e6b81-3641-4b80-a30a-791c1e5c3d9c"
+    },
+    {
+        "ofertaId":  "19b38b17-096f-478a-b4b6-a3f6db9595f7",
+        "choferId":  "00000000-0000-4000-8000-c0000000001c",
+        "indiceToken":  27,
+        "clave":  "4a788afe-ffc1-466e-9162-a856bb10dbfc"
+    },
+    {
+        "ofertaId":  "12fadef7-1247-4cea-aef5-73f6af10f91b",
+        "choferId":  "00000000-0000-4000-8000-c0000000001d",
+        "indiceToken":  28,
+        "clave":  "4a2352d8-0082-49f1-b381-ae730e7a4e9b"
+    },
+    {
+        "ofertaId":  "8121e829-7af2-43cd-8873-b18dc7f96cc1",
+        "choferId":  "00000000-0000-4000-8000-c0000000001e",
+        "indiceToken":  29,
+        "clave":  "36b568fd-dd68-415a-ab17-b9549d364880"
+    },
+    {
+        "ofertaId":  "2ba39609-ac0d-40d7-80c1-6a9a1c28859e",
+        "choferId":  "00000000-0000-4000-8000-c0000000001f",
+        "indiceToken":  30,
+        "clave":  "ee72155c-fb5c-496f-9f02-1a3b7a6bd5cd"
+    },
+    {
+        "ofertaId":  "890c6509-1045-4d80-9e3b-1c5a49a51a49",
+        "choferId":  "00000000-0000-4000-8000-c00000000020",
+        "indiceToken":  31,
+        "clave":  "ddabc2ae-c915-423c-b323-9ff8cb7e957d"
+    },
+    {
+        "ofertaId":  "196ca981-cf36-4e17-ba59-33bf440c8fd7",
+        "choferId":  "00000000-0000-4000-8000-c00000000021",
+        "indiceToken":  32,
+        "clave":  "c95989e4-bea4-4972-b0e0-4462754a3322"
+    },
+    {
+        "ofertaId":  "281203f5-e2b5-4a04-8bf4-37eaa4f48626",
+        "choferId":  "00000000-0000-4000-8000-c00000000022",
+        "indiceToken":  33,
+        "clave":  "c7e75b6c-a19b-4daa-8b52-7f9c23f233e0"
+    },
+    {
+        "ofertaId":  "2537f3d9-90a5-40f3-979d-f510dd165402",
+        "choferId":  "00000000-0000-4000-8000-c00000000023",
+        "indiceToken":  34,
+        "clave":  "4ec320b4-b67f-4b4b-9444-1c3d9282faba"
+    },
+    {
+        "ofertaId":  "a17bd50a-d944-4b8d-95a9-dc95bce56772",
+        "choferId":  "00000000-0000-4000-8000-c00000000024",
+        "indiceToken":  35,
+        "clave":  "240afe63-abb6-490b-ab18-61f0ecd79cff"
+    },
+    {
+        "ofertaId":  "e2c04660-c30d-4a95-800c-0196a6fd76b1",
+        "choferId":  "00000000-0000-4000-8000-c00000000025",
+        "indiceToken":  36,
+        "clave":  "a34975ef-f3fb-4382-aaf9-492367c4e1eb"
+    },
+    {
+        "ofertaId":  "19837741-75a3-4cc2-8f4b-79e387791940",
+        "choferId":  "00000000-0000-4000-8000-c00000000026",
+        "indiceToken":  37,
+        "clave":  "b7703292-790d-4bbe-a989-094af9a6aee6"
+    },
+    {
+        "ofertaId":  "e61f6984-a58b-4f15-a567-178c1d19359a",
+        "choferId":  "00000000-0000-4000-8000-c00000000027",
+        "indiceToken":  38,
+        "clave":  "5717c2dc-d5d6-4423-9d6d-4b200a4293e2"
+    },
+    {
+        "ofertaId":  "255d983c-6661-4d26-bac3-6f9d5c591029",
+        "choferId":  "00000000-0000-4000-8000-c00000000028",
+        "indiceToken":  39,
+        "clave":  "f0c0f94d-efd5-409b-b8db-39320c979b84"
+    },
+    {
+        "ofertaId":  "f6cb24b4-5ca1-4352-9f7c-f5f2d5b071ab",
+        "choferId":  "00000000-0000-4000-8000-c00000000029",
+        "indiceToken":  40,
+        "clave":  "64184e18-9f2e-4ecd-bb92-420ba27ef87e"
+    },
+    {
+        "ofertaId":  "cd3c4163-b587-492e-aef0-848e14d50577",
+        "choferId":  "00000000-0000-4000-8000-c0000000002a",
+        "indiceToken":  41,
+        "clave":  "830be5a4-dace-47d5-8158-ed87839a5eb6"
+    },
+    {
+        "ofertaId":  "f4fbe346-6a91-4bfa-afc3-0e72f5b5c38e",
+        "choferId":  "00000000-0000-4000-8000-c0000000002b",
+        "indiceToken":  42,
+        "clave":  "e80097cd-b367-448a-bdfc-589b83616fa1"
+    },
+    {
+        "ofertaId":  "d41b524b-597b-492e-a741-0f81837ffed4",
+        "choferId":  "00000000-0000-4000-8000-c0000000002c",
+        "indiceToken":  43,
+        "clave":  "a8f1964a-f0bd-4d1f-b01c-92f3cacc5a34"
+    },
+    {
+        "ofertaId":  "aa0c74e9-8234-434e-abcb-adf7621a40b7",
+        "choferId":  "00000000-0000-4000-8000-c0000000002d",
+        "indiceToken":  44,
+        "clave":  "922b3a4b-ef7d-4117-bd60-cc59cc1fe8b1"
+    },
+    {
+        "ofertaId":  "db5db1d0-214c-478a-8bfb-5f43edddbb3b",
+        "choferId":  "00000000-0000-4000-8000-c0000000002e",
+        "indiceToken":  45,
+        "clave":  "2d1d4f40-bd51-40a0-8d98-c11b94fc33c4"
+    },
+    {
+        "ofertaId":  "e2c6e502-ad05-4e93-8cd0-cfea72653deb",
+        "choferId":  "00000000-0000-4000-8000-c0000000002f",
+        "indiceToken":  46,
+        "clave":  "9f03d669-da20-45c4-99bd-3e7cc28fc362"
+    },
+    {
+        "ofertaId":  "88e500b4-84f9-4e4c-b83f-b45faabed0d9",
+        "choferId":  "00000000-0000-4000-8000-c00000000030",
+        "indiceToken":  47,
+        "clave":  "21186d68-9ea5-4f1b-8522-e9012fb94c3c"
+    },
+    {
+        "ofertaId":  "4c5f305d-5064-4837-8a39-3308c414102a",
+        "choferId":  "00000000-0000-4000-8000-c00000000031",
+        "indiceToken":  48,
+        "clave":  "84e1aded-c2fc-4410-aef5-5a7e4450ee9d"
+    },
+    {
+        "ofertaId":  "2aea1fd6-3c19-4eb9-aa7d-092856c65cb9",
+        "choferId":  "00000000-0000-4000-8000-c00000000032",
+        "indiceToken":  49,
+        "clave":  "e7866ac5-3b11-4c87-8040-b431a316aa65"
+    }
+]

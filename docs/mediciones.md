@@ -179,15 +179,25 @@ La máquina era la misma y no se lanzó otra carga a propósito. Pero es un Wind
 
 ## 6.3 — Carrera de la asignación única con k6, contra el sistema en contenedores
 
-**22/11, una corrida de validación** con `carga/carrera.ps1` (ver [carga/README.md](../carga/README.md#carrera-de-la-asignación-única-63)). Reproduce el test `asignacion-unica.test.ts`: 50 choferes aceptan a la vez las 50 ofertas de la misma solicitud. La evidencia está en [mediciones/2026-11-22/carrera-1/](mediciones/2026-11-22/carrera-1/), sin credenciales.
+**Tres corridas** con `carga/carrera.ps1` (ver [carga/README.md](../carga/README.md#carrera-de-la-asignación-única-63)). Reproduce el test `asignacion-unica.test.ts`: 50 choferes aceptan a la vez las 50 ofertas de la misma solicitud. La evidencia de cada una está en su carpeta, sin credenciales.
 
-| | Resultado |
-|---|---|
-| Respuestas | **1×200 y 49×409**, todos `SOLICITUD_NO_DISPONIBLE`. Los 4 checks de k6 pasaron |
-| Ganador | El chofer `c…0009`, que también figura en la respuesta del 200 |
-| PostgreSQL, antes de cancelar | Solicitud `ASIGNADO` con ese chofer, **una sola fila en `driver_active_assignment` y es la suya**, ofertas en `ACEPTADA: 1, CANCELADA: 49` y un solo `TripAssigned` |
-| Después de cancelar | Solicitud `CANCELADO_PASAJERO` y `driver_active_assignment` vacía: el ganador y el pasajero quedaron libres |
-| Lote | Las 50 aceptaciones salieron en un solo `http.batch`: 890 ms en total contra 28,8 s de suma de duraciones, así que corrieron superpuestas |
+| Corrida | Commit | Respuestas | Ganador | Asignaciones activas antes de cancelar | Después de cancelar | Lote: total / suma de duraciones |
+|---|---|---|---|---|---|---|
+| [22/11](mediciones/2026-11-22/carrera-1/), validación | `ecd6a3e` | **1×200 y 49×409** | `c…0009` | **1, la del ganador** | liberados | 890 ms / 28,8 s |
+| [24/11](mediciones/2026-11-24/carrera-1/), con los datos de carga nuevos | `2cdccf4` | **1×200 y 49×409** | `c…0014` | **1, la del ganador** | liberados | 680 ms / 22,7 s |
+| [26/11](mediciones/2026-11-26/carrera-3/), sobre `main` | `b380276` | **1×200 y 49×409** | `c…0003` | **1, la del ganador** | liberados | 771 ms / 26,3 s |
+
+En las tres:
+- **Respuestas:** los 49 conflictos son `SOLICITUD_NO_DISPONIBLE`, y los 4 checks de k6 pasaron. El ganador es el mismo chofer que figura en la respuesta del 200.
+- **PostgreSQL, antes de cancelar:** la solicitud queda `ASIGNADO` con ese chofer, con **una sola fila en `driver_active_assignment`, la suya**. Las ofertas quedan en `ACEPTADA: 1, CANCELADA: 49`, con un solo `TripAssigned`.
+- **Después de cancelar:** la solicitud queda `CANCELADO_PASAJERO` y `driver_active_assignment` vacía, así que el ganador y el pasajero quedan libres (`ok: true` en `resultado.json`).
+- **Lote:** las 50 aceptaciones salen en un solo `http.batch`, y el total es una fracción de la suma de duraciones, así que corren superpuestas.
+
+**La corrida del 26/11** tardó 9 min 2 s de punta a punta (03:02:00 a 03:11:02).
+- **Casi todo fue preparar el entorno:** 7 min en reconstruir las imágenes de location y dispatch sobre `main`, después de un `down -v` del entorno de carga.
+- **La carrera en sí** ocupó unos 10 s, de las posiciones a la cancelación.
+
+El disco mecánico de Docker (ver [El disco de Docker](#el-disco-de-docker-pausas-de-15-a-25-s-con-la-cpu-libre)) no cambia este resultado: la carrera verifica la corrección, no la latencia.
 
 **Límite:** el test fuerza la superposición con una demora dentro de la transacción, y acá no. El resultado no depende de eso: con o sin superposición tiene que ser 1×200 y 49×409.
 

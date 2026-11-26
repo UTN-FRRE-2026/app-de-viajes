@@ -1,0 +1,2 @@
+﻿{"level":30,"time":1795673445182,"pid":1,"hostname":"2df2e1f015c5","name":"dispatch","puerto":3005,"persistencia":"postgres","buscador":"location","msg":"dispatch escuchando"}
+{"level":30,"time":1795673445312,"pid":1,"hostname":"2df2e1f015c5","name":"dispatch","version":"v1","configuradaPor":"semilla","msg":"tarifa vigente"}
