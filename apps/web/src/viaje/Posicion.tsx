@@ -1,6 +1,6 @@
 import { hace, useAhora } from '../componentes/useAhora';
 import { VIGENCIA_MS } from '../ubicacion/posicion';
-import { distanciaMetros, textoDistancia, textoPunto, type Punto } from './viaje';
+import { distanciaMetros, textoDistancia, type Punto } from './viaje';
 
 export interface PosicionEnVivo extends Punto {
   /** ISO, del servidor de location. */
@@ -33,9 +33,10 @@ export function Posicion({
   }
   const edad = ahora + desfaseMs - Date.parse(posicion.actualizadaEn);
   return (
+    // Las coordenadas no le dicen nada a nadie: la distancia y la antigüedad, sí. El punto está en el mapa.
     <p className={edad > VIGENCIA_MS ? 'error' : undefined}>
-      <strong>{titulo}:</strong> {textoPunto(posicion)}
-      {referencia ? ` · a ${textoDistancia(distanciaMetros(referencia, posicion))}` : ''} · {hace(edad)}
+      <strong>{titulo}</strong>
+      {referencia ? ` a ${textoDistancia(distanciaMetros(referencia, posicion))} de vos en línea recta` : ' en el mapa'} · posición de {hace(edad)}
       {edad > VIGENCIA_MS ? ' · sin datos recientes' : ''}
     </p>
   );

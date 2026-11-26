@@ -1,13 +1,16 @@
 import { useEffect, useState } from 'react';
+import { CartelDestino, type Cartel } from '../../componentes/CartelDestino';
+import { IconoFlecha, PictogramaPaso } from '../../componentes/Iconos';
 import { MensajeError, textoDeError } from '../../componentes/MensajeError';
 import { hace, useAhora } from '../../componentes/useAhora';
 import { Mapa } from '../../mapa/Mapa';
+import { useRuta, type Ruta } from '../../mapa/useRuta';
 import type { EstadoConexion } from '../../tiempo-real/eventos';
 import { useEventos } from '../../tiempo-real/useEventos';
 import { ControlUbicacion } from '../../ubicacion/ControlUbicacion';
 import { VIGENCIA_MS } from '../../ubicacion/posicion';
 import { useEnvioUbicacion } from '../../ubicacion/useEnvioUbicacion';
-import { distanciaMetros, ETIQUETA_ESTADO, pesos, textoDistancia, type Punto } from '../../viaje/viaje';
+import { distanciaMetros, numeroViaje, pesos, textoDistancia, textoMinutos, type Punto } from '../../viaje/viaje';
 import { esActivo, lineaDeTiempo, type ItemLinea } from './logica';
 import { LUGARES, lugarEn, nombrePunto } from './lugares';
 import { usePasajero } from './store';
@@ -24,9 +27,10 @@ const HORA = new Intl.DateTimeFormat('es-AR', { hour: '2-digit', minute: '2-digi
 type Campo = 'origen' | 'destino';
 
 /**
- * La pantalla del pasajero, con la línea de tiempo del viaje como eje: cada evento que llega por el
- * SSE prende un paso con la hora en que llegó. Lo que muestra sale del historial (`GET /historial`):
- * se relee al abrir, al reconectar el stream y con cada evento. Al recargar, el viaje activo vuelve solo.
+ * La pantalla del pasajero: el mapa con la ruta real y el auto, y abajo la hoja del viaje con su cartel.
+ * Cada evento que llega por el SSE sella su casillero con la hora en que llegó. Lo que muestra sale
+ * del historial (`GET /historial`): se relee al abrir, al reconectar el stream y con cada evento. Al
+ * recargar, el viaje activo vuelve solo.
  */
 export function PanelPasajero() {
   const cargado = usePasajero((s) => s.cargado);
@@ -62,10 +66,17 @@ export function PanelPasajero() {
   const ahora = useAhora();
   const movilVieja = posicionChofer !== null && ahora - Date.parse(posicionChofer.actualizadaEn) > VIGENCIA_MS;
 
+  // Las rutas del mapa: el viaje entero y, con chofer, el tramo del auto hasta el punto que importa.
+  const conChofer = viaje !== null && posicionChofer !== null && ['ASIGNADO', 'EN_CAMINO', 'EN_CURSO'].includes(viaje.estado);
+  const enViaje = viaje?.estado === 'EN_CURSO';
+  const rutaViaje = useRuta(viaje ? viaje.origen : origen, viaje ? viaje.destino : destino);
+  const tramo = useRuta(conChofer ? posicionChofer : null, conChofer && viaje ? (enViaje ? viaje.destino : viaje.origen) : null, { auto: true });
+  const estimado = usePasajero((s) => s.estimacion?.datos ?? null);
+
   const fijar = (campo: Campo, p: Punto) => {
     if (campo === 'origen') {
       setOrigen(p);
-      // Elegido el origen, el próximo clic en el mapa es el destino (si todavía no hay).
+      // Elegido el origen, el próximo toque en el mapa es el destino (si todavía no hay).
       setMarcando(destino ? null : 'destino');
     } else {
       setDestino(p);
@@ -84,33 +95,65 @@ export function PanelPasajero() {
   }
 
   const marcas = viaje
-    ? { origen: viaje.origen, destino: viaje.destino, movil: posicionChofer, movilVieja }
-    : { origen, destino };
+    ? {
+        origen: viaje.origen,
+        destino: viaje.destino,
+        movil: posicionChofer,
+        movilVieja,
+        // En viaje, el tramo del auto al destino reemplaza a la ruta entera.
+        ruta: enViaje && tramo ? tramo.puntos : (rutaViaje?.puntos ?? null),
+        aproximacion: !enViaje && tramo ? tramo.puntos : null,
+        mojonMetros: tramo?.distanciaMetros ?? (esActivo(viaje) ? (rutaViaje?.distanciaMetros ?? null) : null),
+      }
+    : { origen, destino, ruta: rutaViaje?.puntos ?? null, mojonMetros: rutaViaje?.distanciaMetros ?? null };
+
+  // Lo que le falta al auto hasta el punto que importa: por las calles si hay ruta (lo mismo que el
+  // mojón); si no, en línea recta. Va en el cartel, así se ve aunque el mojón no se dibuje.
+  const distanciaChofer =
+    viaje && posicionChofer
+      ? `a ${textoDistancia(tramo?.distanciaMetros ?? distanciaMetros(posicionChofer, enViaje ? viaje.destino : viaje.origen))}`
+      : null;
+
+  // El cartel: hacia dónde va lo que importa ahora y en cuántos minutos.
+  const cartel: Cartel | null = !viaje
+    ? destino
+      ? {
+          tipo: 'destino',
+          rotulo: 'Hacia',
+          lugar: nombrePunto(destino),
+          segundos: estimado?.duracionSegundos ?? null,
+          detalle: estimado ? textoDistancia(estimado.distanciaMetros) : null,
+        }
+      : null
+    : viaje.estado === 'ASIGNADO' || viaje.estado === 'EN_CAMINO'
+      ? {
+          tipo: 'encuentro',
+          rotulo: 'Tu chofer te busca en',
+          lugar: nombrePunto(viaje.origen),
+          segundos: tramo?.duracionSegundos ?? null,
+          detalle: distanciaChofer,
+        }
+      : viaje.estado === 'EN_CURSO' || viaje.estado === 'BUSCANDO'
+        ? {
+            tipo: 'destino',
+            rotulo: 'Hacia',
+            lugar: nombrePunto(viaje.destino),
+            segundos: (enViaje ? tramo : rutaViaje)?.duracionSegundos ?? null,
+            detalle: enViaje ? distanciaChofer : rutaViaje ? textoDistancia(rutaViaje.distanciaMetros) : null,
+          }
+        : viaje.estado === 'COMPLETADA'
+          ? { tipo: 'llegada', rotulo: 'Llegaste a', lugar: nombrePunto(viaje.destino), segundos: null }
+          : { tipo: 'destino', rotulo: 'Era hacia', lugar: nombrePunto(viaje.destino), segundos: null };
 
   return (
-    <div className="pasajero ancho">
-      <section className="tarjeta columna-viaje" aria-labelledby="titulo-viaje">
-        <div className="encabezado">
-          <h1 id="titulo-viaje">{viaje ? 'Tu viaje' : 'Pedir un viaje'}</h1>
-          <span className={`conexion ${conexion.estado}`} role="status">
-            {TEXTO_CONEXION[conexion.estado]}
-          </span>
-        </div>
-        {conexion.error ? <p className="error">{textoDeError(conexion.error)}</p> : null}
-        <Aviso />
-        {errorLectura ? <MensajeError error={errorLectura} onReintentar={() => void usePasajero.getState().releer()} /> : null}
-        {viaje ? (
-          <LineaTiempo />
-        ) : (
-          <Recorrido origen={origen} destino={destino} marcando={marcando} setMarcando={setMarcando} fijar={fijar} />
-        )}
-      </section>
-
+    // Con un viaje en curso, el mapa se achica: el cartel y las señales (con la hora del paso actual)
+    // entran en la primera pantalla del celular.
+    <div className={`pasajero ancho${viaje && esActivo(viaje) ? ' con-viaje' : ''}`}>
       <section className="zona-mapa" aria-label="Mapa">
         <Mapa
           marcas={marcas}
           etiqueta={viaje ? 'Mapa del viaje' : 'Mapa para elegir origen y destino'}
-          alTocar={!viaje && marcando ? (p) => fijar(marcando, p) : undefined}
+          {...(!viaje && marcando ? { alTocar: (p: Punto) => fijar(marcando, p) } : {})}
         />
         {!viaje ? (
           <p className="nota ayuda-mapa" role="status">
@@ -119,9 +162,31 @@ export function PanelPasajero() {
         ) : null}
       </section>
 
-      <aside className="tarjeta columna-detalle" aria-label="Detalle">
-        {viaje ? <DetalleViaje envio={envio} /> : <Estimacion origen={origen} destino={destino} />}
-      </aside>
+      <section className="hoja columna-viaje" aria-labelledby="titulo-viaje">
+        <header className="cartel">
+          <div className="cartel-fila">
+            <h1 id="titulo-viaje">{viaje ? 'Tu viaje' : 'Pedir un viaje'}</h1>
+            {viaje ? <span className="viaje-numero">Nº {numeroViaje(viaje.id)}</span> : null}
+            <span className={`conexion ${conexion.estado}`} role="status">
+              {TEXTO_CONEXION[conexion.estado]}
+            </span>
+          </div>
+          {cartel ? <CartelDestino cartel={cartel} /> : null}
+        </header>
+        <div className="hoja-cuerpo columna-detalle">
+          {conexion.error ? <p className="error">{textoDeError(conexion.error)}</p> : null}
+          <Aviso />
+          {errorLectura ? <MensajeError error={errorLectura} onReintentar={() => void usePasajero.getState().releer()} /> : null}
+          {viaje ? (
+            <DetalleViaje envio={envio} tramo={tramo} />
+          ) : (
+            <>
+              <Recorrido origen={origen} destino={destino} marcando={marcando} setMarcando={setMarcando} fijar={fijar} />
+              <Estimacion origen={origen} destino={destino} />
+            </>
+          )}
+        </div>
+      </section>
     </div>
   );
 }
@@ -139,25 +204,48 @@ function Aviso() {
   );
 }
 
-/** La línea de tiempo: los pasos del viaje, el actual resaltado, cada uno con la hora en que llegó. */
-function LineaTiempo() {
+/** DESDE → HASTA, en grande. */
+function Trayecto({ desde, hasta }: { desde: Punto; hasta: Punto }) {
+  return (
+    <dl className="trayecto">
+      <div className="punta">
+        <dt>Desde</dt>
+        <dd>{nombrePunto(desde)}</dd>
+      </div>
+      <IconoFlecha className="trayecto-flecha" />
+      <div className="punta">
+        <dt>Hasta</dt>
+        <dd>{nombrePunto(hasta)}</dd>
+      </div>
+    </dl>
+  );
+}
+
+/**
+ * Las señales del viaje: cada paso tiene su lugar fijo en la grilla, alineado con los demás, y se
+ * enciende (con la hora) cuando llega su evento. Nada se pisa ni se mueve de lugar.
+ */
+function Senales() {
   const estado = usePasajero();
   const ahora = useAhora();
   const items = lineaDeTiempo(estado);
   return (
-    <ol className="linea-tiempo">
+    <ol className="linea-tiempo senales" aria-label="Estado del viaje">
       {items.map((it) => (
-        <PasoLinea key={it.clave} item={it} ahora={ahora} />
+        <Senal key={it.clave} item={it} ahora={ahora} />
       ))}
     </ol>
   );
 }
 
-function PasoLinea({ item, ahora }: { item: ItemLinea; ahora: number }) {
+function Senal({ item, ahora }: { item: ItemLinea; ahora: number }) {
   const { titulo, estado, hora, detalle } = item;
   return (
     <li className={`paso ${estado}`} aria-current={estado === 'actual' ? 'step' : undefined}>
-      <strong>{titulo}</strong>
+      <span className="senal">
+        <PictogramaPaso clave={item.clave} className="senal-pictograma" />
+        <strong>{titulo}</strong>
+      </span>
       {hora !== null ? (
         <span className="hora">
           <time dateTime={new Date(hora).toISOString()}>{HORA.format(hora)}</time>
@@ -169,7 +257,7 @@ function PasoLinea({ item, ahora }: { item: ItemLinea; ahora: number }) {
   );
 }
 
-/** Origen y destino: lugares de la demo, «usar mi ubicación» o un clic en el mapa. */
+/** Origen y destino: lugares de la demo, «usar mi ubicación» o un toque en el mapa. */
 function Recorrido({
   origen,
   destino,
@@ -232,7 +320,7 @@ function PuntoCampo({
 
   return (
     <fieldset className={`punto ${campo}${marcando ? ' marcando' : ''}`}>
-      <legend>{titulo}</legend>
+      <legend>{campo === 'origen' ? 'Desde' : 'Hasta'}</legend>
       <select
         aria-label={titulo}
         value={seleccion}
@@ -266,7 +354,7 @@ function PuntoCampo({
   );
 }
 
-/** Sin viaje: la estimación del recorrido elegido y el botón para pedir. */
+/** Sin viaje: el talón con la estimación del recorrido elegido y el botón para pedir. */
 function Estimacion({ origen, destino }: { origen: Punto | null; destino: Punto | null }) {
   const estimacion = usePasajero((s) => s.estimacion);
   const pedido = usePasajero((s) => s.pedido);
@@ -274,40 +362,32 @@ function Estimacion({ origen, destino }: { origen: Punto | null; destino: Punto 
   const listo = origen !== null && destino !== null && estimacion?.datos != null && !estimacion.cargando;
 
   return (
-    <div className="detalle">
-      <h2>Estimación</h2>
-      {!origen || !destino ? (
-        <p className="nota">Elegí el origen y el destino para ver cuánto sale.</p>
-      ) : estimacion?.cargando ? (
-        <p className="nota">Calculando…</p>
-      ) : estimacion?.error ? (
-        <MensajeError error={estimacion.error} onReintentar={() => void usePasajero.getState().estimar(origen, destino)} />
-      ) : estimacion?.datos ? (
-        <>
-          <p className="monto">{pesos(estimacion.datos.tarifaCentavos)}</p>
-          <p className="nota">
-            {textoDistancia(estimacion.datos.distanciaMetros)} · {Math.max(1, Math.round(estimacion.datos.duracionSegundos / 60))} min
-            {estimacion.datos.desglose.minimoAplicado ? ' · tarifa mínima' : ''}
-          </p>
-          <p className="nota">La tarifa final se calcula con el recorrido real y puede ser distinta.</p>
-        </>
-      ) : null}
-
-      {origen && destino ? (
-        <dl className="datos-viaje">
-          <dt>Desde</dt>
-          <dd>{nombrePunto(origen)}</dd>
-          <dt>Hasta</dt>
-          <dd>{nombrePunto(destino)}</dd>
-        </dl>
-      ) : null}
+    <div className="cierre fijo">
+      <div className="importe">
+        <h2 className="rotulo">Tarifa estimada</h2>
+        {!origen || !destino ? (
+          <p className="nota">Elegí el origen y el destino para ver cuánto sale.</p>
+        ) : estimacion?.cargando ? (
+          <p className="nota">Calculando…</p>
+        ) : estimacion?.error ? (
+          <MensajeError error={estimacion.error} onReintentar={() => void usePasajero.getState().estimar(origen, destino)} />
+        ) : estimacion?.datos ? (
+          <>
+            <p className="monto">{pesos(estimacion.datos.tarifaCentavos)}</p>
+            <p className="nota cifras">
+              {textoDistancia(estimacion.datos.distanciaMetros)} · {textoMinutos(estimacion.datos.duracionSegundos)}
+              {estimacion.datos.desglose.minimoAplicado ? ' · tarifa mínima' : ''} · la final sale del recorrido real
+            </p>
+          </>
+        ) : null}
+      </div>
 
       {pedido?.fase === 'incierta' ? (
         <div className="incierto">
           <p className="error">No sabemos si se pidió el viaje: no llegó la respuesta.</p>
           <MensajeError error={pedido.error} />
           <div className="acciones">
-            <button type="button" onClick={() => usePasajero.getState().reintentarPedido()}>
+            <button type="button" className="principal" onClick={() => usePasajero.getState().reintentarPedido()}>
               Reintentar
             </button>
           </div>
@@ -327,8 +407,8 @@ function Estimacion({ origen, destino }: { origen: Punto | null; destino: Punto 
   );
 }
 
-/** Con viaje: dónde está el chofer, el recorrido, la tarifa, el cobro y las acciones. */
-function DetalleViaje({ envio }: { envio: ReturnType<typeof useEnvioUbicacion> }) {
+/** Con viaje: el trayecto, el chofer, las señales, y el cierre con la tarifa, el cobro y las acciones. */
+function DetalleViaje({ envio, tramo }: { envio: ReturnType<typeof useEnvioUbicacion>; tramo: Ruta | null }) {
   const viaje = usePasajero((s) => s.viaje)!;
   const cancelacion = usePasajero((s) => s.cancelacion);
   const ahora = useAhora();
@@ -338,53 +418,14 @@ function DetalleViaje({ envio }: { envio: ReturnType<typeof useEnvioUbicacion> }
   const referencia = viaje.estado === 'EN_CURSO' ? viaje.destino : viaje.origen;
 
   return (
-    <div className="detalle">
-      <div className="encabezado envuelve">
-        <h2>{!activo ? 'Resumen' : viaje.choferId ? 'Tu chofer' : 'Detalle'}</h2>
-        {/* Buscando, el estado ya lo dicen la línea de tiempo y la nota de abajo. */}
-        {viaje.estado !== 'BUSCANDO' ? (
-          <span className={`etiqueta estado-${viaje.estado.toLowerCase()}`}>{ETIQUETA_ESTADO[viaje.estado]}</span>
-        ) : null}
-      </div>
-      <Chofer ahora={ahora} referencia={referencia} />
+    <>
+      {/* Primero las señales: el estado del viaje es la señal ámbar, sin una pastilla que lo repita. */}
+      <Senales />
 
-      <dl className="datos-viaje">
-        <dt>Desde</dt>
-        <dd>{nombrePunto(viaje.origen)}</dd>
-        <dt>Hasta</dt>
-        <dd>{nombrePunto(viaje.destino)}</dd>
-      </dl>
+      <h2>{!activo ? 'Resumen' : viaje.choferId ? 'Tu chofer' : 'Detalle'}</h2>
+      <Chofer ahora={ahora} referencia={referencia} tramo={tramo} />
 
-      {!activo && viaje.estado !== 'COMPLETADA' ? (
-        // Cancelado o sin choferes: no se cobra (lo mismo que dice el historial).
-        <div className="tarifa">
-          <p className="nota">Importe</p>
-          <p className="monto">Sin cargo</p>
-        </div>
-      ) : tarifa ? (
-        tarifa.finalCentavos !== null ? (
-          <div className="tarifa">
-            <p className="nota">Tarifa final</p>
-            <p className="monto">{pesos(tarifa.finalCentavos)}</p>
-            <p className="nota">
-              Estimada: {pesos(tarifa.estimadaCentavos)}
-              {tarifa.motivosDiferencia.length > 0
-                ? ` · cambió por ${tarifa.motivosDiferencia.map((m) => (m === 'DISTANCIA' ? 'la distancia' : 'la duración')).join(' y ')}`
-                : ''}
-            </p>
-          </div>
-        ) : (
-          <div className="tarifa">
-            <p className="nota">Estimación</p>
-            <p className="monto">{pesos(tarifa.estimadaCentavos)}</p>
-            <p className="nota">
-              {textoDistancia(tarifa.recorridoEstimado.metros)} · {Math.max(1, Math.round(tarifa.recorridoEstimado.segundos / 60))} min
-            </p>
-          </div>
-        )
-      ) : null}
-
-      {viaje.estado === 'COMPLETADA' ? <CobroViaje /> : null}
+      <Trayecto desde={viaje.origen} hasta={viaje.destino} />
 
       {viaje.estado === 'ASIGNADO' || viaje.estado === 'EN_CAMINO' ? (
         <div className="compartir">
@@ -393,53 +434,89 @@ function DetalleViaje({ envio }: { envio: ReturnType<typeof useEnvioUbicacion> }
         </div>
       ) : null}
 
-      {viaje.estado === 'EN_CURSO' && !cancelacion ? (
-        <p className="nota">Ya estás en viaje: desde acá no se puede cancelar.</p>
-      ) : activo ? (
-        cancelacion?.fase === 'incierta' ? (
-          <div className="incierto">
-            <p className="error">No sabemos si se canceló: no llegó la respuesta.</p>
-            <MensajeError error={cancelacion.error} />
-            <button type="button" onClick={() => usePasajero.getState().reintentarCancelacion()}>
-              Reintentar
-            </button>
+      <div className="cierre">
+        {!activo && viaje.estado !== 'COMPLETADA' ? (
+          // Cancelado o sin choferes: no se cobra (lo mismo que dice el historial).
+          <div className="importe">
+            <p className="rotulo">Importe</p>
+            <p className="monto">Sin cargo</p>
           </div>
-        ) : confirmando ? (
-          <div className="confirmar" role="group" aria-label="Confirmar cancelación">
-            <p>¿Cancelar el viaje?</p>
-            <div className="acciones">
-              <button
-                type="button"
-                className="peligro"
-                disabled={cancelacion !== null}
-                onClick={() => {
-                  usePasajero.getState().cancelar();
-                  setConfirmando(false);
-                }}
-              >
-                Sí, cancelar
-              </button>
-              <button type="button" className="secundario" onClick={() => setConfirmando(false)}>
-                No
+        ) : tarifa ? (
+          tarifa.finalCentavos !== null ? (
+            <div className="importe">
+              <p className="rotulo">Tarifa final</p>
+              <p className="monto">{pesos(tarifa.finalCentavos)}</p>
+              <p className="nota">
+                Estimada: {pesos(tarifa.estimadaCentavos)}
+                {tarifa.motivosDiferencia.length > 0
+                  ? ` · cambió por ${tarifa.motivosDiferencia.map((m) => (m === 'DISTANCIA' ? 'la distancia' : 'la duración')).join(' y ')}`
+                  : ''}
+              </p>
+            </div>
+          ) : (
+            <div className="importe">
+              <p className="rotulo">Tarifa estimada</p>
+              <p className="monto">{pesos(tarifa.estimadaCentavos)}</p>
+              <p className="nota cifras">
+                {textoDistancia(tarifa.recorridoEstimado.metros)} · {textoMinutos(tarifa.recorridoEstimado.segundos)}
+              </p>
+            </div>
+          )
+        ) : null}
+
+        {viaje.estado === 'COMPLETADA' ? <CobroViaje /> : null}
+
+        {viaje.estado === 'EN_CURSO' && !cancelacion ? (
+          <p className="nota">Ya estás en viaje: desde acá no se puede cancelar.</p>
+        ) : activo ? (
+          cancelacion?.fase === 'incierta' ? (
+            <div className="incierto">
+              <p className="error">No sabemos si se canceló: no llegó la respuesta.</p>
+              <MensajeError error={cancelacion.error} />
+              <button type="button" onClick={() => usePasajero.getState().reintentarCancelacion()}>
+                Reintentar
               </button>
             </div>
-          </div>
+          ) : confirmando ? (
+            <div className="confirmar" role="group" aria-label="Confirmar cancelación">
+              <p>¿Cancelar el viaje? El viaje queda anulado.</p>
+              <div className="acciones">
+                <button
+                  type="button"
+                  className="peligro"
+                  disabled={cancelacion !== null}
+                  onClick={() => {
+                    usePasajero.getState().cancelar();
+                    setConfirmando(false);
+                  }}
+                >
+                  Sí, cancelar
+                </button>
+                <button type="button" className="secundario" onClick={() => setConfirmando(false)}>
+                  No
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button type="button" className="secundario" disabled={cancelacion !== null} onClick={() => setConfirmando(true)}>
+              {cancelacion ? 'Cancelando…' : 'Cancelar viaje'}
+            </button>
+          )
         ) : (
-          <button type="button" className="secundario" disabled={cancelacion !== null} onClick={() => setConfirmando(true)}>
-            {cancelacion ? 'Cancelando…' : 'Cancelar viaje'}
+          <button type="button" className="principal" onClick={() => usePasajero.getState().nuevoViaje()}>
+            Pedir otro viaje
           </button>
-        )
-      ) : (
-        <button type="button" className="principal" onClick={() => usePasajero.getState().nuevoViaje()}>
-          Pedir otro viaje
-        </button>
-      )}
-    </div>
+        )}
+      </div>
+    </>
   );
 }
 
-/** Dónde está el chofer, a qué distancia del punto que importa ahora, y hace cuánto llegó la posición. */
-function Chofer({ ahora, referencia }: { ahora: number; referencia: Punto }) {
+/**
+ * Los casilleros del chofer: a qué distancia está del punto que importa ahora, cuánto tarda en llegar
+ * por las calles (si hay ruta) y hace cuánto llegó la posición.
+ */
+function Chofer({ ahora, referencia, tramo }: { ahora: number; referencia: Punto; tramo: Ruta | null }) {
   const viaje = usePasajero((s) => s.viaje)!;
   const posicion = usePasajero((s) => s.posicionChofer);
   if (viaje.estado === 'BUSCANDO') return <p className="nota">Buscando un chofer cerca del origen…</p>;
@@ -447,12 +524,24 @@ function Chofer({ ahora, referencia }: { ahora: number; referencia: Punto }) {
   if (!posicion) return <p className="nota">Todavía sin posición del chofer: llega con su próximo envío.</p>;
   const edad = ahora - Date.parse(posicion.actualizadaEn);
   const vieja = edad > VIGENCIA_MS;
-  const hasta = viaje.estado === 'EN_CURSO' ? 'del destino' : 'del origen';
+  const hasta = viaje.estado === 'EN_CURSO' ? 'Al destino' : 'Del origen';
   return (
-    <p className={vieja ? 'error' : undefined}>
-      <strong className="distancia">{textoDistancia(distanciaMetros(posicion, referencia))}</strong> {hasta} · {hace(edad)}
-      {vieja ? ' · sin datos recientes' : ''}
-    </p>
+    <div className={vieja ? 'casilleros viejo' : 'casilleros'}>
+      <div className="casillero">
+        <span className="rotulo">{hasta}</span>
+        {/* Por las calles si hay ruta (la misma que el mojón del mapa); si no, en línea recta. */}
+        <strong className="distancia">{textoDistancia(tramo?.distanciaMetros ?? distanciaMetros(posicion, referencia))}</strong>
+      </div>
+      <div className="casillero">
+        <span className="rotulo">{viaje.estado === 'EN_CURSO' ? 'Llegás en' : 'Llega en'}</span>
+        <strong className="cifra">{tramo ? textoMinutos(tramo.duracionSegundos) : '—'}</strong>
+      </div>
+      <div className="casillero">
+        <span className="rotulo">Posición</span>
+        <strong className="cifra">{hace(edad)}</strong>
+      </div>
+      {vieja ? <p className="error casilleros-aviso">Sin datos recientes del chofer.</p> : null}
+    </div>
   );
 }
 

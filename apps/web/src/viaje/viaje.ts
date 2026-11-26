@@ -40,3 +40,9 @@ const KM = new Intl.NumberFormat('es-AR', { minimumFractionDigits: 1, maximumFra
 /** «650 m», «6,2 km»: con coma decimal, como los importes. */
 export const textoDistancia = (m: number) => (m < 1000 ? `${Math.round(m)} m` : `${KM.format(m / 1000)} km`);
 export const textoPunto = (p: Punto) => `${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}`;
+
+/** «4 min»: un viaje o una llegada, al minuto (nunca 0). */
+export const textoMinutos = (segundos: number) => `${Math.max(1, Math.round(segundos / 60))} min`;
+
+/** El número del viaje: los primeros 6 caracteres del id del viaje, en mayúsculas («A3F09C»). */
+export const numeroViaje = (id: string) => id.replace(/-/g, '').slice(0, 6).toUpperCase();
