@@ -1,17 +1,40 @@
-/* Todos los estilos van en archivos .css (nunca en style=): la CSP de la página no permite estilos en línea. */
+/* Todos los estilos van en archivos .css (nunca en style=): la CSP de la página no permite estilos en línea.
+   El mundo: la señalética vial argentina. Verde ruta con filete blanco en la barra y los carteles, blanco
+   chapa, negro asfalto para el texto, ámbar de obra para el paso actual, el tramo de aproximación y la
+   línea de carril; rojo solo para anular y para los errores. Barlow (grotesca de señalización) en todo:
+   condensada en mayúsculas para carteles y rótulos, con cifras tabulares. */
 :root {
   color-scheme: light;
-  --fondo: #f4f6f8;
-  --tarjeta: #ffffff;
-  --texto: #1d2330;
-  --suave: #5b6475;
-  --acento: #1f6feb;
-  --error: #b42318;
-  --ok: #1a7f37;
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --fondo: #e8efeb;
+  --chapa: #ffffff;
+  --verde: #00563f;
+  --verde-2: #00422f;
+  --verde-claro: #e3efe9;
+  --asfalto: #1c1c1c;
+  --suave: #4c5852;
+  --apagado: #5f6c65;
+  --ambar: #f2a900;
+  --ambar-oscuro: #c98a00;
+  --ambar-fondo: #fff4d1;
+  --ambar-texto: #6b4a00;
+  --azul: #1e5aa8;
+  --rojo: #c62828;
+  --rojo-2: #a51f1f;
+  --rojo-fondo: #fcecec;
+  --filete: #c3d0c8;
+  --filete-2: #dde6e1;
+  --sombra: 0 6px 20px rgba(0, 40, 28, 0.16);
+  --barra-alto: 3.5rem;
+  --nav-alto: 4rem;
+  --f-cuerpo: 'Barlow', system-ui, sans-serif;
+  --f-cartel: 'Barlow Condensed', 'Barlow', system-ui, sans-serif;
+  font-family: var(--f-cuerpo);
+  font-size: 100%;
   line-height: 1.5;
-  color: var(--texto);
+  color: var(--asfalto);
   background: var(--fondo);
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
 }
 
 * {
@@ -20,35 +43,404 @@
 
 body {
   margin: 0;
+  min-height: 100dvh;
 }
 
-.barra {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 0.75rem 1.25rem;
-  background: var(--tarjeta);
-  border-bottom: 1px solid #dde2ea;
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-family: var(--f-cartel);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  line-height: 1.1;
+  color: var(--asfalto);
+  text-wrap: balance;
 }
 
-.barra nav {
-  display: flex;
-  gap: 0.75rem;
-  flex: 1;
+h1 {
+  font-size: 1.6rem;
 }
 
-.barra nav a {
+h2 {
+  font-size: 1.15rem;
+  letter-spacing: 0.05em;
+}
+
+h3 {
+  font-size: 0.98rem;
+  letter-spacing: 0.07em;
+}
+
+p {
+  margin: 0;
+}
+
+/* --- Lo que el navegador dibuja solo, con la paleta de la ruta --- */
+::selection {
+  background: var(--ambar-fondo);
+  color: var(--asfalto);
+}
+
+:focus-visible {
+  outline: 2.5px solid var(--azul);
+  outline-offset: 2px;
+}
+
+html {
+  scrollbar-color: var(--filete) transparent;
+  scrollbar-width: thin;
+}
+
+a {
+  color: var(--verde);
+  text-underline-offset: 0.2em;
+}
+
+.solo-lector {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* --- Rótulos, notas y cifras --- */
+.rotulo,
+.trayecto dt,
+legend,
+.tabla th {
+  font-family: var(--f-cartel);
+  font-weight: 600;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.11em;
   color: var(--suave);
+}
+
+.nota {
+  color: var(--suave);
+  font-size: 0.93rem;
+}
+
+.cifras,
+.cifra,
+.distancia,
+.hora,
+.viaje-numero,
+.cuenta,
+.patente,
+.tabla .numero,
+.tabla .fecha {
+  font-variant-numeric: tabular-nums;
+}
+
+.cifra,
+.distancia {
+  font-family: var(--f-cartel);
+  font-weight: 700;
+  color: var(--asfalto);
+}
+
+code {
+  font-family: ui-monospace, monospace;
+}
+
+.monto {
+  font-family: var(--f-cartel);
+  font-weight: 700;
+  font-size: 2.4rem;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  color: var(--asfalto);
+  font-variant-numeric: tabular-nums;
+}
+
+.error {
+  color: var(--rojo);
+}
+
+.ok {
+  color: var(--verde);
+}
+
+.cargando {
+  text-align: center;
+  color: var(--suave);
+  margin-top: 4rem;
+}
+
+/* --- Controles: botones como carteles, campos, selecciones --- */
+button {
+  font-family: var(--f-cartel);
+  font-weight: 700;
+  font-size: 1.02rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.7rem 1.1rem;
+  min-height: 2.75rem;
+  border: 2px solid var(--verde);
+  border-radius: 8px;
+  background: var(--verde);
+  color: #fff;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease-out,
+    border-color 0.15s ease-out,
+    transform 0.1s ease-out;
+}
+
+button:not(:disabled):hover {
+  background: var(--verde-2);
+  border-color: var(--verde-2);
+}
+
+button:not(:disabled):active {
+  transform: translateY(1px);
+}
+
+button:disabled {
+  cursor: default;
+  background: var(--filete-2);
+  border-color: var(--filete-2);
+  color: var(--apagado);
+  box-shadow: none;
+}
+
+/* La acción principal: una píldora verde maciza. Nunca con el filete blanco de los carteles, que es de
+   las señales: un paso hecho no se tiene que leer como un botón. */
+button.principal {
+  width: 100%;
+  padding: 0.95rem 1.2rem;
+  font-size: 1.12rem;
+  border-radius: 999px;
+  box-shadow: 0 3px 10px rgba(0, 66, 47, 0.22);
+}
+
+button.secundario {
+  background: var(--chapa);
+  border-color: var(--asfalto);
+  color: var(--asfalto);
+}
+
+button.secundario:not(:disabled):hover {
+  background: var(--fondo);
+  border-color: var(--asfalto);
+}
+
+button.peligro {
+  background: var(--rojo);
+  border-color: var(--rojo);
+}
+
+button.peligro:not(:disabled):hover {
+  background: var(--rojo-2);
+  border-color: var(--rojo-2);
+}
+
+button.enlace {
+  min-height: 0;
+  padding: 0.15rem 0;
+  border: 0;
+  background: none;
+  color: var(--verde);
+  font-family: var(--f-cuerpo);
+  font-weight: 600;
+  font-size: 0.93rem;
+  text-transform: none;
+  letter-spacing: 0;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.22em;
+}
+
+button.enlace:not(:disabled):hover {
+  background: none;
+  color: var(--verde-2);
+}
+
+button.enlace[aria-pressed='true'] {
+  color: var(--ambar-texto);
   text-decoration: none;
 }
 
-.barra nav a.active {
-  color: var(--acento);
+button.enlace:disabled {
+  background: none;
+  color: var(--apagado);
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
   font-weight: 600;
+  font-size: 0.95rem;
+}
+
+input,
+select {
+  font: inherit;
+  font-weight: 500;
+  font-size: 1rem;
+  color: var(--asfalto);
+  padding: 0.65rem 0.75rem;
+  min-height: 2.75rem;
+  border: 1.5px solid #8e9c94;
+  border-radius: 8px;
+  background: var(--chapa);
+  transition: border-color 0.15s ease-out;
+}
+
+input:hover,
+select:hover {
+  border-color: var(--asfalto);
+}
+
+input:focus-visible,
+select:focus-visible {
+  border-color: var(--azul);
+}
+
+input[aria-invalid='true'] {
+  border-color: var(--rojo);
+}
+
+input[type='radio'] {
+  min-height: 0;
+  width: 1.15rem;
+  height: 1.15rem;
+  accent-color: var(--verde);
+}
+
+meter {
+  width: 100%;
+}
+
+/* --- El marco: la barra verde y, en el celular, el menú al pie --- */
+.barra {
+  position: sticky;
+  top: 0;
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  height: var(--barra-alto);
+  padding: 0 1.25rem;
+  background: var(--verde);
+  color: #fff;
+  box-shadow:
+    inset 0 -5px 0 var(--verde),
+    inset 0 -6.5px 0 rgba(255, 255, 255, 0.85);
+}
+
+.marca {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-family: var(--f-cartel);
+  font-weight: 700;
+  font-size: 1.35rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.marca-logo {
+  display: block;
+  width: 2.3rem;
+  height: auto;
+}
+
+.marca-cartel {
+  fill: var(--verde-2);
+}
+
+.marca-filete {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 1.6;
+}
+
+.marca-flecha {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.marca-carril {
+  fill: none;
+  stroke: var(--ambar);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+}
+
+.menu {
+  display: flex;
+  align-self: stretch;
+  gap: 0.25rem;
+  flex: 1;
+}
+
+.menu a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0 0.75rem;
+  color: rgba(255, 255, 255, 0.76);
+  text-decoration: none;
+  font-family: var(--f-cartel);
+  font-weight: 600;
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  border-bottom: 3px solid transparent;
+  border-top: 3px solid transparent;
+  transition: color 0.15s ease-out;
+}
+
+.menu a:hover {
+  color: #fff;
+}
+
+.menu a.active {
+  color: #fff;
+  border-bottom-color: var(--ambar);
+}
+
+.menu-icono {
+  width: 1.3rem;
+  height: 1.3rem;
+  flex: none;
 }
 
 .quien {
-  color: var(--suave);
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.93rem;
+}
+
+.barra :focus-visible {
+  outline-color: #fff;
+}
+
+button.salir {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.25rem;
+  padding: 0.35rem 0.8rem;
+  font-size: 0.88rem;
+  background: transparent;
+  border: 1.5px solid rgba(255, 255, 255, 0.5);
+  color: #fff;
+  box-shadow: none;
+}
+
+button.salir:not(:disabled):hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: #fff;
 }
 
 .contenido {
@@ -58,74 +450,34 @@ body {
 }
 
 .angosto {
-  max-width: 380px;
+  max-width: 400px;
 }
 
+.angosto-centrado {
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+/* Las pantallas anchas (operador) usan más que los 960 px del resto. */
+.contenido:has(.ancho) {
+  max-width: 1360px;
+  margin-top: 1.25rem;
+}
+
+/* --- Tarjetas: login, historial, operador y flota --- */
 .tarjeta {
-  background: var(--tarjeta);
-  border: 1px solid #dde2ea;
-  border-radius: 10px;
+  background: var(--chapa);
+  border: 1px solid var(--filete);
+  border-radius: 12px;
   padding: 1.5rem;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.9rem;
 }
 
-h1 {
-  margin: 0 0 0.25rem;
-  font-size: 1.4rem;
-}
-
-label {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  font-weight: 500;
-}
-
-input {
-  font: inherit;
-  padding: 0.5rem 0.6rem;
-  border: 1px solid #c5ccd8;
-  border-radius: 6px;
-}
-
-button {
-  font: inherit;
-  padding: 0.5rem 0.9rem;
-  border: 0;
-  border-radius: 6px;
-  background: var(--acento);
-  color: #fff;
-  cursor: pointer;
-}
-
-button:disabled {
-  opacity: 0.6;
-  cursor: default;
-}
-
-.error {
-  color: var(--error);
-  margin: 0;
-}
-
-.nota {
-  color: var(--suave);
-  font-size: 0.9rem;
-  margin: 0;
-}
-
-.cargando {
-  text-align: center;
-  color: var(--suave);
-  margin-top: 4rem;
-}
-
-/* --- Pantallas de viaje (chofer; el pasajero reutiliza las mismas clases) --- */
-h2 {
-  margin: 0;
-  font-size: 1.15rem;
+.tarjeta h2 {
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--filete-2);
 }
 
 .panel {
@@ -141,739 +493,1109 @@ h2 {
   gap: 0.75rem;
 }
 
-.tarjeta p {
-  margin: 0;
-}
-
-.conexion,
-.etiqueta {
-  font-size: 0.85rem;
-  padding: 0.15rem 0.6rem;
-  border-radius: 999px;
-  background: #e8edf5;
-  color: var(--suave);
-}
-
-.conexion.conectado {
-  background: #e3f4e8;
-  color: var(--ok);
-}
-
-.conexion.reconectando,
-.conexion.detenido {
-  background: #fdecea;
-  color: var(--error);
-}
-
-.ok {
-  color: var(--ok);
-}
-
-.disponibilidad,
-.ubicacion {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  align-items: flex-start;
-}
-
-.opciones {
-  display: flex;
-  gap: 1rem;
-}
-
-label.opcion {
-  flex-direction: row;
-  align-items: center;
-  gap: 0.35rem;
-  font-weight: 400;
-}
-
-.coordenadas {
-  display: flex;
+.encabezado.envuelve {
   flex-wrap: wrap;
-  align-items: flex-end;
-  gap: 0.5rem;
-}
-
-.coordenadas input {
-  width: 9.5rem;
-}
-
-.aviso {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.75rem 1rem;
-  border-radius: 10px;
-  background: #fff6e0;
-  border: 1px solid #f0d58c;
-}
-
-.aviso p {
-  margin: 0;
-}
-
-.oferta {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.75rem;
-  border: 1px solid #dde2ea;
-  border-radius: 8px;
-}
-
-.oferta.resaltada {
-  border-color: var(--acento);
-  flex-direction: column;
-  align-items: flex-start;
-}
-
-.oferta.vencida {
-  opacity: 0.55;
-}
-
-.datos {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
 }
 
 .acciones {
   display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.cuenta {
-  font-variant-numeric: tabular-nums;
-  color: var(--suave);
-}
-
-.resumen {
-  border-color: var(--ok);
-}
-
-button.secundario {
-  background: #e8edf5;
-  color: var(--texto);
-}
-
-/* --- Panel de la flota --- */
-.cupo {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-}
-
-.cupo meter {
-  width: 100%;
-  height: 0.9rem;
-}
-
-.periodo-reporte {
-  display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
-  align-items: flex-end;
-}
-
-.reporte {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.reporte .facturado strong {
-  font-size: 1.6rem;
-}
-
-.formulario-alta {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  align-items: flex-start;
-}
-
-.formulario-alta label {
-  width: 100%;
-}
-
-.vehiculo {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 0.75rem;
-  width: 100%;
-}
-
-.choferes {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
+  align-items: center;
   gap: 0.6rem;
 }
 
-.chofer {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-  padding: 0.75rem;
-  border: 1px solid #dde2ea;
-  border-radius: 8px;
+.acciones button {
+  flex: 1 1 auto;
 }
 
-.datos-chofer,
-.marcas {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.datos-chofer {
-  justify-content: space-between;
-}
-
-.etiqueta.si {
-  background: #e3f4e8;
-  color: var(--ok);
-}
-
-.etiqueta.alerta {
-  background: #fff4e5;
-  color: #8a4b00;
-}
-
-.codigo {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-
-.codigo code {
-  font-size: 0.85rem;
-  overflow-wrap: anywhere;
-}
-
-.codigo button {
-  padding: 0.2rem 0.6rem;
-  font-size: 0.85rem;
-}
-
-@media (max-width: 480px) {
-  .acciones {
-    flex-wrap: wrap;
-  }
-}
-
-/* --- Comunes: lo que el navegador dibuja solo, con la paleta de la app --- */
-::selection {
-  background: #cfe0fb;
-  color: var(--texto);
-}
-
-:focus-visible {
-  outline: 2px solid var(--acento);
-  outline-offset: 2px;
-}
-
-select {
-  font: inherit;
-  padding: 0.5rem 0.6rem;
-  border: 1px solid #c5ccd8;
-  border-radius: 6px;
-  background: var(--tarjeta);
-  color: var(--texto);
-}
-
-button:not(:disabled):hover {
-  filter: brightness(0.94);
-}
-
-button.principal {
-  width: 100%;
-  padding: 0.7rem 1rem;
-  font-weight: 600;
-}
-
-button.peligro {
-  background: var(--error);
-}
-
-button.enlace {
-  padding: 0;
-  background: none;
-  color: var(--acento);
-  text-decoration: underline;
-  text-underline-offset: 0.2em;
-}
-
-button.enlace[aria-pressed='true'] {
-  font-weight: 600;
-  text-decoration: none;
-}
-
-.solo-lector {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
+/* --- Pastillas: el estado del viaje y la conexión --- */
+.etiqueta {
+  display: inline-block;
+  font-family: var(--f-cartel);
+  font-weight: 700;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  line-height: 1.3;
   white-space: nowrap;
+  padding: 0.12rem 0.45rem;
+  border: 1.5px solid var(--apagado);
+  border-radius: 4px;
+  color: var(--apagado);
 }
 
-/* Las pantallas anchas (pasajero, operador) usan más que los 960 px del resto. */
-.contenido:has(.ancho) {
-  max-width: 1360px;
-  margin-top: 1.25rem;
+.etiqueta.si,
+.etiqueta.estado-completada {
+  border-color: var(--verde);
+  color: var(--verde);
+  background: var(--verde-claro);
 }
 
-/* Estados del viaje en una pastilla: el color dice si sigue, terminó bien o se cortó. */
+.etiqueta.alerta,
 .etiqueta.estado-buscando,
 .etiqueta.estado-asignado,
 .etiqueta.estado-en_camino,
 .etiqueta.estado-en_curso {
-  background: #e3ecfd;
-  color: #174ea6;
-}
-
-.etiqueta.estado-completada {
-  background: #e3f4e8;
-  color: var(--ok);
+  border-color: var(--ambar-oscuro);
+  color: var(--ambar-texto);
+  background: var(--ambar-fondo);
 }
 
 .etiqueta.estado-cancelado_pasajero,
 .etiqueta.estado-cancelado_chofer,
 .etiqueta.estado-cancelado_operador,
 .etiqueta.estado-sin_choferes {
-  background: #fdecea;
-  color: var(--error);
+  border-color: var(--rojo);
+  color: var(--rojo);
+  background: var(--rojo-fondo);
 }
 
-.monto {
-  margin: 0;
-  font-size: 2rem;
-  font-weight: 700;
-  line-height: 1.15;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.01em;
+/* La conexión en vivo, siempre a la vista: un punto que dice el estado. */
+.conexion {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  white-space: nowrap;
+  font-family: var(--f-cartel);
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
 }
 
-/* --- Pasajero: la línea de tiempo como eje, el mapa al centro, el detalle a la derecha --- */
-.pasajero {
-  display: grid;
-  grid-template-columns: 300px minmax(0, 1fr) 320px;
-  gap: 1.25rem;
-  align-items: stretch;
-  min-height: max(560px, calc(100vh - 7rem));
+.conexion::before {
+  content: '';
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: #a8b5ae;
 }
 
-.pasajero > .tarjeta {
-  align-self: start;
+.conexion.conectado::before {
+  background: #7be0a8;
 }
 
-.columna-viaje h1 {
-  font-size: 1.25rem;
+.conexion.reconectando::before {
+  background: var(--ambar);
 }
 
-/* En la columna angosta, el aviso apila el texto y el botón. */
-.columna-viaje .aviso {
+.conexion.detenido::before {
+  background: #ff7a7a;
+}
+
+.aviso {
+  display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 0.6rem;
-}
-
-.encabezado.envuelve {
-  flex-wrap: wrap;
-}
-
-.encabezado .etiqueta,
-.encabezado .conexion {
-  white-space: nowrap;
-}
-
-.zona-mapa {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  min-height: 420px;
-}
-
-.mapa {
-  flex: 1;
-  min-height: 420px;
-  border: 1px solid #dde2ea;
+  padding: 0.85rem 1rem;
   border-radius: 10px;
-  overflow: hidden;
-  background: #e9ece6;
+  background: var(--ambar-fondo);
+  border: 1.5px solid var(--ambar);
+  color: var(--asfalto);
 }
 
-.ayuda-mapa {
-  position: absolute;
-  left: 50%;
-  bottom: 1.5rem;
-  transform: translateX(-50%);
-  z-index: 500;
-  padding: 0.35rem 0.8rem;
-  border-radius: 999px;
-  background: var(--tarjeta);
-  color: var(--texto);
-  box-shadow: 0 4px 12px rgba(29, 35, 48, 0.16);
-  pointer-events: none;
-  white-space: nowrap;
+.vacio {
+  margin: 0;
+  padding: 1.75rem 1rem;
+  text-align: center;
+  color: var(--suave);
+  border: 1.5px dashed var(--filete);
+  border-radius: 10px;
 }
 
-/* Los puntos del mapa (círculos SVG de Leaflet: el CSS les gana a sus atributos). */
-.mapa.leaflet-container {
-  font: inherit;
-}
-
-.leaflet-interactive.mapa-origen,
-.leaflet-interactive.mapa-destino,
-.mapa-movil {
-  stroke: #fff;
-  stroke-width: 3;
-  fill-opacity: 1;
-}
-
-.mapa-origen {
-  fill: var(--texto);
-}
-
-.mapa-destino {
-  fill: var(--acento);
-}
-
-.mapa-movil {
-  fill: var(--ok);
-}
-
-.mapa-movil.halo {
-  stroke: none;
-  fill: var(--ok);
-  fill-opacity: 0.2;
-}
-
-.mapa-movil.vieja {
-  fill: #8a93a3;
-}
-
-.mapa-recorrido {
-  stroke: var(--acento);
-  stroke-width: 3;
-  stroke-opacity: 0.55;
-  stroke-dasharray: 6 8;
-  fill: none;
-}
-
-/* La línea de tiempo. Cada paso se prende cuando llega su evento: el punto crece desde el centro y
-   suelta un anillo que se apaga. Es el único movimiento de la pantalla. */
-.linea-tiempo {
-  list-style: none;
-  margin: 0.25rem 0 0;
+/* --- Pasajero y chofer: el mapa y la hoja. En el celular el mapa queda arriba (fijo) y la hoja sube
+       por encima; en pantalla grande, el mapa a la izquierda y la hoja al costado. --- */
+.contenido:has(.pasajero),
+.contenido:has(.chofer-app) {
+  max-width: none;
+  margin: 0;
   padding: 0;
 }
 
-/* El riel se dibuja por paso, de un punto al siguiente: termina en el último, aunque lleve detalle.
-   Entre dos pasos hechos va en verde. */
-.paso:not(:last-child)::after {
-  content: '';
-  position: absolute;
-  left: 11px;
-  top: 20px;
-  bottom: -4px;
-  width: 2px;
-  background: #dde2ea;
+.pasajero,
+.chofer-app {
+  position: relative;
 }
 
-.paso.hecho:not(:last-child)::after {
-  background: #a9d8b6;
+.zona-mapa {
+  position: sticky;
+  top: var(--barra-alto);
+  z-index: 0;
+  height: clamp(16rem, 44dvh, 30rem);
+}
+
+.mapa {
+  width: 100%;
+  height: 100%;
+  background: #e6e9e3;
+}
+
+.hoja {
+  position: relative;
+  z-index: 1;
+  margin-top: -1.25rem;
+  min-height: calc(100dvh - var(--barra-alto) - 16rem);
+  background: var(--chapa);
+  border-radius: 18px 18px 0 0;
+  box-shadow: 0 -6px 20px rgba(0, 40, 28, 0.18);
+  overflow: clip;
+}
+
+/* El cartel: verde, con el filete blanco a un paso del borde, como los de Vialidad. */
+.cartel {
+  margin: 0.75rem 0.75rem 0;
+  padding: 0.85rem 1.05rem 0.9rem;
+  background: var(--verde);
+  color: #fff;
+  border-radius: 10px;
+  box-shadow:
+    inset 0 0 0 4px var(--verde),
+    inset 0 0 0 6px #fff;
+}
+
+.cartel-fila {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.8rem;
+}
+
+.cartel h1 {
+  color: #fff;
+  font-size: 1.25rem;
+  letter-spacing: 0.07em;
+}
+
+.viaje-numero {
+  font-family: var(--f-cartel);
+  font-weight: 600;
+  font-size: 0.9rem;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.cartel .conexion {
+  margin-left: auto;
+}
+
+.cartel-destino {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 0.6rem;
+  padding-top: 0.6rem;
+  border-top: 1.5px solid rgba(255, 255, 255, 0.55);
+}
+
+.cartel-lugar {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+}
+
+.cartel-lugar p {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* La distancia que falta, chica bajo el lugar: se ve aunque el mojón no se dibuje. */
+.cartel-detalle {
+  font-family: var(--f-cartel);
+  font-weight: 600;
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.cartel-antes {
+  font-weight: 600;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+}
+
+.cartel-pictograma {
+  flex: none;
+  width: 2.1rem;
+  height: 2.1rem;
+  stroke-width: 2.25;
+  color: #fff;
+}
+
+.cartel-lugar strong {
+  font-family: var(--f-cartel);
+  font-weight: 700;
+  font-size: 1.75rem;
+  line-height: 1.02;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  overflow-wrap: anywhere;
+}
+
+.cartel-minutos {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex: none;
+  font-family: var(--f-cartel);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.cartel-minutos strong {
+  font-weight: 700;
+  font-size: 2.9rem;
+}
+
+.cartel-minutos span {
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.hoja-cuerpo {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  padding: 1.1rem 1.25rem 1.75rem;
+}
+
+/* DESDE → HASTA, en grande. */
+.trayecto {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: end;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.trayecto .punta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.trayecto .punta:last-child {
+  text-align: right;
+}
+
+.trayecto dd {
+  margin: 0;
+  font-family: var(--f-cartel);
+  font-weight: 700;
+  font-size: 1.3rem;
+  line-height: 1.05;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--asfalto);
+  overflow-wrap: anywhere;
+}
+
+.trayecto-flecha {
+  width: 1.75rem;
+  height: 1.75rem;
+  margin-bottom: 0.1rem;
+  color: var(--verde);
+}
+
+/* Los casilleros: datos con su rótulo, separados por filetes. */
+.casilleros-cabeza {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.75rem;
+}
+
+.casilleros-cabeza h2 {
+  margin-right: auto;
+}
+
+.casilleros-cabeza .viaje-numero {
+  color: var(--suave);
+}
+
+.casilleros {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(6.5rem, 1fr));
+  border-top: 1px solid var(--filete);
+  border-bottom: 1px solid var(--filete);
+}
+
+.casillero {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding: 0.55rem 0.75rem 0.6rem;
+  border-left: 1px solid var(--filete-2);
+}
+
+.casillero:first-child {
+  border-left: 0;
+  padding-left: 0;
+}
+
+.casillero .cifra,
+.casillero .distancia {
+  font-size: 1.4rem;
+  line-height: 1.15;
+}
+
+.casilleros.viejo .cifra,
+.casilleros.viejo .distancia {
+  color: var(--apagado);
+}
+
+.casilleros-aviso {
+  grid-column: 1 / -1;
+  padding: 0.4rem 0 0.5rem;
+  border-top: 1px solid var(--filete-2);
+}
+
+/* Las señales: un lugar fijo por paso, en una grilla. Cada una se enciende cuando llega su evento:
+   verde lo hecho, ámbar (con borde negro, como las de advertencia) lo que pasa ahora. Ninguna se pisa
+   con otra ni cambia de lugar. Es el momento de la pantalla. */
+.linea-tiempo {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.6rem 0.5rem;
 }
 
 .paso {
-  position: relative;
   display: flex;
   flex-direction: column;
-  padding: 0 0 1.35rem 2.2rem;
+  align-items: center;
+  gap: 0.25rem;
+  min-width: 0;
+  text-align: center;
 }
 
-.paso:last-child {
-  padding-bottom: 0;
+.senal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  width: 100%;
+  min-height: 4.4rem;
+  padding: 0.45rem 0.45rem 0.5rem;
+  border-radius: 6px;
+  font-family: var(--f-cartel);
+  font-size: 0.86rem;
+  line-height: 1.08;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
-.paso::before {
-  content: '';
-  position: absolute;
-  left: 4px;
-  top: 4px;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: var(--tarjeta);
-  border: 2px solid #c5ccd8;
-  box-sizing: border-box;
+.senal strong {
+  font-weight: 700;
 }
 
-.paso.pendiente {
+.senal-pictograma {
+  width: 1.45rem;
+  height: 1.45rem;
+  stroke-width: 2;
+}
+
+.paso.pendiente .senal {
+  color: var(--apagado);
+  border: 1.5px dashed #a9b9b0;
+}
+
+.paso.pendiente .senal strong {
+  font-weight: 600;
+}
+
+.paso.hecho .senal {
+  color: #fff;
+  background: var(--verde);
+  box-shadow:
+    inset 0 0 0 2.5px var(--verde),
+    inset 0 0 0 4px #fff;
+  animation: encender 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.paso.actual .senal {
+  color: var(--asfalto);
+  background: var(--ambar);
+  box-shadow:
+    inset 0 0 0 2.5px var(--ambar),
+    inset 0 0 0 4.5px var(--asfalto);
+  animation: encender 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.paso.fallo .senal {
+  color: var(--rojo);
+  background: var(--chapa);
+  border: 3px solid var(--rojo);
+  animation: encender 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* «Anulado» solo en la señal final de un viaje cancelado (o sin choferes). Un cobro rechazado también
+   es un paso en rojo, pero el viaje terminó: lleva su motivo debajo («Rechazado: …»), no «Anulado». */
+.paso.fallo.final .senal::after {
+  content: 'Anulado';
+  order: -1;
+  display: block;
+  font-weight: 700;
+  font-size: 1.02rem;
+  letter-spacing: 0.14em;
+}
+
+.paso.fallo.final .senal strong {
+  font-weight: 600;
+  font-size: 0.76rem;
+}
+
+.paso.fallo .detalle-paso {
+  color: var(--rojo);
+}
+
+.paso:nth-child(2) .senal {
+  animation-delay: 40ms;
+}
+
+.paso:nth-child(3) .senal {
+  animation-delay: 80ms;
+}
+
+.paso:nth-child(4) .senal {
+  animation-delay: 120ms;
+}
+
+.paso:nth-child(5) .senal {
+  animation-delay: 160ms;
+}
+
+.paso:nth-child(6) .senal {
+  animation-delay: 200ms;
+}
+
+.hora {
+  font-family: var(--f-cartel);
+  font-weight: 600;
+  font-size: 0.84rem;
   color: var(--suave);
 }
 
-.paso.pendiente strong {
-  font-weight: 500;
+.paso.actual .hora {
+  color: var(--ambar-texto);
 }
 
-.paso.hecho::before {
-  background: var(--ok);
-  border-color: var(--ok);
-  animation: prender 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.paso.actual::before {
-  background: var(--acento);
-  border-color: var(--acento);
-  box-shadow: 0 0 0 5px rgba(31, 111, 235, 0.18);
-  animation: prender-actual 0.9s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.paso.actual strong {
-  color: #174ea6;
-}
-
-.paso.fallo::before {
-  background: var(--error);
-  border-color: var(--error);
-}
-
-.paso.fallo strong {
-  color: var(--error);
-}
-
-.hora,
 .detalle-paso {
-  font-size: 0.85rem;
+  font-size: 0.78rem;
   color: var(--suave);
-  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
 }
 
-@keyframes prender {
+/* La señal se enciende: se ve desde el primer cuadro, un poco grande y tenue, y asienta. */
+@keyframes encender {
   from {
-    transform: scale(0.4);
+    transform: scale(1.12);
+    opacity: 0.35;
   }
   to {
-    transform: scale(1);
-  }
-}
-
-@keyframes prender-actual {
-  from {
-    transform: scale(0.4);
-    box-shadow: 0 0 0 0 rgba(31, 111, 235, 0.45);
-  }
-  60% {
-    transform: scale(1);
-    box-shadow: 0 0 0 12px rgba(31, 111, 235, 0);
-  }
-  to {
-    box-shadow: 0 0 0 5px rgba(31, 111, 235, 0.18);
+    transform: none;
+    opacity: 1;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .paso.hecho::before,
-  .paso.actual::before {
+  .paso .senal {
     animation: none;
   }
 }
 
-/* El formulario de pedido, en la columna de la línea de tiempo. */
+/* El cierre: la línea de carril (ámbar, discontinua) y, debajo, el importe y la acción. */
+.cierre {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  margin-top: 0.25rem;
+  padding-top: 1.2rem;
+  background: repeating-linear-gradient(90deg, var(--ambar) 0 1.25rem, transparent 1.25rem 2rem) top / 100% 3px no-repeat;
+}
+
+.cierre.fijo {
+  position: sticky;
+  bottom: 0;
+  z-index: 3;
+  margin: 0 -1.25rem -1.75rem;
+  padding: 1.1rem 1.25rem 1rem;
+  background:
+    repeating-linear-gradient(90deg, var(--ambar) 0 1.25rem, transparent 1.25rem 2rem) top / 100% 3px no-repeat,
+    var(--chapa);
+  box-shadow: 0 -8px 18px rgba(0, 40, 28, 0.1);
+}
+
+/* Compacto: el importe a la izquierda y «Pedir viaje» a la derecha, en una fila; lo demás (un error, el
+   resultado incierto) ocupa la fila entera. Así no tapa el formulario de arriba. */
+.cierre.fijo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.6rem 1rem;
+}
+
+.cierre.fijo > :not(.importe):not(button) {
+  grid-column: 1 / -1;
+}
+
+.cierre.fijo > button.principal {
+  width: auto;
+  padding: 0.85rem 1.4rem;
+}
+
+.cierre.fijo .monto {
+  font-size: 1.75rem;
+}
+
+.importe {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.importe h2.rotulo {
+  font-size: 0.8rem;
+  letter-spacing: 0.11em;
+  color: var(--suave);
+}
+
+/* El pedido: DESDE y HASTA, cada uno en su casilla. */
 .recorrido {
-  display: flex;
-  flex-direction: column;
-  gap: 0.9rem;
-}
-
-/* Origen y destino: dos grupos separados por una línea, no cajas dentro de la tarjeta. */
-fieldset.punto {
-  margin: 0;
-  padding: 0 0 0.9rem;
-  border: 0;
-  border-bottom: 1px solid #eef1f5;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-fieldset.punto legend {
-  padding: 0;
-  margin-bottom: 0.5rem;
-  font-weight: 600;
-}
-
-fieldset.punto.origen legend::before,
-fieldset.punto.destino legend::before {
-  content: '';
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  margin-right: 0.4rem;
-  border-radius: 50%;
-  background: var(--texto);
-}
-
-fieldset.punto.destino legend::before {
-  background: var(--acento);
-}
-
-/* Marcando en el mapa: el título y la lista toman el acento. */
-fieldset.punto.marcando legend {
-  color: #174ea6;
-}
-
-fieldset.punto.marcando select {
-  border-color: var(--acento);
-}
-
-.acciones-punto {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem 1rem;
-  font-size: 0.9rem;
-}
-
-/* La columna del detalle. */
-.detalle {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
 }
 
-.detalle h3 {
+fieldset.punto {
   margin: 0;
-  font-size: 1rem;
-}
-
-.datos-viaje {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 0.35rem 0.75rem;
-  margin: 0;
-  padding-top: 0.75rem;
-  border-top: 1px solid #eef1f5;
-}
-
-.datos-viaje dt {
-  color: var(--suave);
-}
-
-.datos-viaje dd {
-  margin: 0;
-  text-align: right;
-  overflow-wrap: anywhere;
-}
-
-.tarifa {
+  padding: 0.65rem 0.9rem 0.85rem;
+  border: 1px solid var(--filete);
+  border-radius: 10px;
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
-  padding-top: 0.75rem;
-  border-top: 1px solid #eef1f5;
+  gap: 0.55rem;
+  transition:
+    border-color 0.15s ease-out,
+    background-color 0.15s ease-out;
 }
 
-.distancia {
-  font-size: 1.15rem;
-  font-variant-numeric: tabular-nums;
+fieldset.punto legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0 0.3rem;
+  margin-left: -0.3rem;
 }
 
+fieldset.punto legend::before {
+  content: '';
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 50%;
+  background: var(--verde);
+}
+
+fieldset.punto.destino legend::before {
+  border-radius: 2px;
+  background: var(--asfalto);
+}
+
+fieldset.punto.marcando {
+  border-color: var(--ambar-oscuro);
+  background: var(--ambar-fondo);
+}
+
+fieldset.punto.marcando legend {
+  color: var(--ambar-texto);
+}
+
+.acciones-punto {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1.1rem;
+}
+
+/* Bloques de la hoja separados por un filete, no por otra caja. */
 .compartir,
 .cobro,
 .incierto,
 .confirmar {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  padding-top: 0.75rem;
-  border-top: 1px solid #eef1f5;
+  gap: 0.6rem;
+}
+
+.compartir {
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--filete-2);
 }
 
 .confirmar p {
-  margin: 0;
   font-weight: 600;
 }
 
-.angosto-centrado {
-  max-width: 480px;
-  margin: 0 auto;
+/* La ubicación compartida: GPS o coordenadas a mano. */
+.ubicacion,
+.disponibilidad {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  align-items: stretch;
 }
 
-/* Hasta una notebook chica, la grilla pasa a dos columnas; en angosto, una. */
-@media (max-width: 1180px) {
-  .pasajero {
-    grid-template-columns: 300px minmax(0, 1fr);
-  }
+.opciones {
+  display: flex;
+  gap: 1.25rem;
+}
 
-  .columna-detalle {
-    grid-column: 1 / -1;
+label.opcion {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.45rem;
+  font-weight: 500;
+}
+
+.coordenadas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.6rem;
+}
+
+.coordenadas label {
+  flex: 1 1 8rem;
+}
+
+/* --- Chofer --- */
+.disponibilidad {
+  padding: 0.9rem 1rem 1rem;
+  border: 1px solid var(--filete);
+  border-radius: 12px;
+}
+
+.disponibilidad.prendida {
+  border-color: var(--verde);
+  background: var(--verde-claro);
+}
+
+.chapa {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.2rem 0.75rem;
+}
+
+.chapa strong {
+  font-family: var(--f-cartel);
+  font-weight: 700;
+  font-size: 1.55rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--asfalto);
+}
+
+.chapa strong.ok {
+  color: var(--verde);
+}
+
+.vehiculo-chofer {
+  color: var(--suave);
+}
+
+.patente {
+  display: inline-block;
+  margin-left: 0.25rem;
+  padding: 0 0.4rem;
+  border: 1.5px solid var(--asfalto);
+  border-radius: 4px;
+  color: var(--asfalto);
+  background: var(--chapa);
+  font-family: var(--f-cartel);
+  font-weight: 700;
+  font-size: 0.95rem;
+  letter-spacing: 0.1em;
+}
+
+.ofertas,
+.viaje-chofer,
+.resumen {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+/* La oferta es un cartel: cabecera verde con la cuenta regresiva y la barra ámbar que se vacía. */
+.oferta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.oferta.vencida {
+  opacity: 0.55;
+}
+
+.cartel.cartel-oferta {
+  margin: 0;
+  box-shadow:
+    inset 0 0 0 4px var(--verde),
+    inset 0 0 0 6px #fff,
+    var(--sombra);
+}
+
+.cartel-oferta .cartel-destino {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.cartel-hacia {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-top: 0.45rem;
+  font-family: var(--f-cartel);
+  font-weight: 600;
+  font-size: 1.15rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.cartel-hacia .cartel-pictograma {
+  width: 1.6rem;
+  height: 1.6rem;
+}
+
+.oferta-vence {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.7rem;
+}
+
+.oferta-vence .cuenta {
+  flex: none;
+  font-family: var(--f-cartel);
+  font-weight: 700;
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #fff;
+}
+
+.oferta-vence .cuenta.vencio {
+  color: #ffd0d0;
+}
+
+meter.vence {
+  display: block;
+  flex: 1;
+  height: 0.45rem;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.25);
+  appearance: none;
+}
+
+meter.vence::-webkit-meter-bar {
+  height: 0.45rem;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.25);
+}
+
+meter.vence::-webkit-meter-optimum-value,
+meter.vence::-webkit-meter-suboptimum-value {
+  background: var(--ambar);
+  transition: inline-size 0.5s linear;
+}
+
+meter.vence::-webkit-meter-even-less-good-value {
+  background: var(--rojo);
+}
+
+meter.vence::-moz-meter-bar {
+  background: var(--ambar);
+}
+
+meter.vence:-moz-meter-sub-sub-optimum::-moz-meter-bar {
+  background: var(--rojo);
+}
+
+.datos {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.resumen {
+  padding: 1rem;
+  border: 2px solid var(--verde);
+  border-radius: 12px;
+  background: var(--verde-claro);
+}
+
+.resumen h2 {
+  color: var(--verde);
+}
+
+/* --- El mapa: teselas de OSM en gris, la ruta verde con borde blanco, el auto y el mojón --- */
+.mapa.leaflet-container {
+  font: inherit;
+}
+
+.mapa .leaflet-tile-pane {
+  filter: grayscale(0.85) contrast(0.95) brightness(1.04);
+}
+
+.leaflet-interactive.mapa-origen,
+.leaflet-interactive.mapa-destino,
+.leaflet-interactive.mapa-persona {
+  stroke: #fff;
+  stroke-width: 3;
+  fill-opacity: 1;
+}
+
+.mapa-origen {
+  fill: var(--verde);
+}
+
+.mapa-destino {
+  fill: var(--asfalto);
+}
+
+.leaflet-interactive.mapa-persona {
+  fill: var(--chapa);
+  stroke: var(--asfalto);
+  stroke-width: 3.5;
+}
+
+/* El halo no es interactivo (no lleva .leaflet-interactive): sin este selector, Leaflet le pone su
+   trazo azul por defecto. */
+.mapa-persona.halo {
+  stroke: none;
+  fill: var(--asfalto);
+  fill-opacity: 0.14;
+}
+
+.mapa-ruta-borde {
+  stroke: #fff;
+  stroke-width: 10;
+  stroke-opacity: 0.95;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+}
+
+.mapa-ruta {
+  stroke: var(--verde);
+  stroke-width: 5.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+}
+
+.mapa-ruta.recta {
+  stroke-dasharray: 1 11;
+}
+
+.mapa-aproximacion {
+  stroke: var(--ambar-oscuro);
+  stroke-width: 5;
+  stroke-dasharray: 1 9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+}
+
+.leaflet-marker-icon.mapa-auto,
+.leaflet-marker-icon.mapa-mojon {
+  background: none;
+  border: 0;
+}
+
+.mapa-auto-giro {
+  display: block;
+  width: 40px;
+  height: 40px;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.mapa-auto-svg {
+  display: block;
+}
+
+.auto-sombra {
+  fill: rgba(0, 0, 0, 0.3);
+}
+
+.auto-rueda {
+  fill: var(--asfalto);
+}
+
+.auto-carroceria {
+  fill: var(--ambar);
+  stroke: var(--asfalto);
+  stroke-width: 1.3;
+}
+
+.auto-vidrio {
+  fill: #27353a;
+}
+
+.auto-techo {
+  fill: #e09d00;
+}
+
+.auto-luz {
+  fill: #fffbe6;
+}
+
+.auto-luz-trasera {
+  fill: var(--rojo);
+}
+
+.mapa-auto.vieja .auto-carroceria,
+.mapa-auto.vieja .auto-techo {
+  fill: #a9b4ae;
+}
+
+.mapa-auto.vieja .auto-luz-trasera {
+  fill: #c3cdc7;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mapa-auto-giro {
+    transition: none;
   }
 }
 
-@media (max-width: 760px) {
-  .pasajero {
-    grid-template-columns: minmax(0, 1fr);
-    min-height: 0;
-  }
+/* El mojón: el poste blanco con los kilómetros que faltan. */
+.mojon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 52px;
+  padding-top: 0.2rem;
+  background: var(--chapa);
+  border: 2px solid var(--asfalto);
+  border-radius: 16px 16px 4px 4px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
+  font-family: var(--f-cartel);
+  color: var(--asfalto);
+  line-height: 1;
+}
 
-  .zona-mapa,
-  .mapa {
-    min-height: 340px;
-  }
+.mojon b {
+  font-weight: 700;
+  font-size: 1.15rem;
+  font-variant-numeric: tabular-nums;
+}
 
-  .ayuda-mapa {
-    white-space: normal;
-    width: max-content;
-    max-width: calc(100% - 2rem);
-  }
+.mojon span {
+  font-weight: 600;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.leaflet-control-zoom.leaflet-bar {
+  border: 1px solid var(--filete);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: var(--sombra);
+}
+
+.leaflet-control-zoom a {
+  width: 2.25rem;
+  height: 2.25rem;
+  line-height: 2.25rem;
+  color: var(--asfalto);
+}
+
+.leaflet-tooltip {
+  font-family: var(--f-cartel);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--asfalto);
+  border-color: var(--filete);
+}
+
+.ayuda-mapa {
+  position: absolute;
+  left: 50%;
+  bottom: 2rem;
+  transform: translateX(-50%);
+  z-index: 500;
+  width: max-content;
+  max-width: calc(100% - 2rem);
+  padding: 0.4rem 0.9rem;
+  border-radius: 999px;
+  background: var(--verde);
+  color: #fff;
+  font-family: var(--f-cartel);
+  font-weight: 600;
+  font-size: 0.92rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  text-align: center;
+  box-shadow: var(--sombra);
+  pointer-events: none;
 }
 
 /* --- Tablas: historial del pasajero y panel del operador --- */
 .tabla {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.93rem;
+  font-size: 0.95rem;
 }
 
 .tabla th {
   text-align: left;
-  font-weight: 600;
-  color: var(--suave);
-  font-size: 0.85rem;
-  padding: 0.5rem 0.6rem;
-  border-bottom: 1px solid #dde2ea;
+  padding: 0.55rem 0.6rem;
+  border-bottom: 2px solid var(--verde);
   white-space: nowrap;
 }
 
 .tabla td {
-  padding: 0.6rem;
-  border-bottom: 1px solid #eef1f5;
+  padding: 0.65rem 0.6rem;
+  border-bottom: 1px solid var(--filete-2);
   vertical-align: top;
 }
 
 .tabla tbody tr:hover td {
-  background: #f8fafc;
+  background: #f4f8f6;
 }
 
 .tabla .numero {
   text-align: right;
-  font-variant-numeric: tabular-nums;
   white-space: nowrap;
+  font-weight: 600;
 }
 
 .tabla .fecha {
   white-space: nowrap;
-  font-variant-numeric: tabular-nums;
 }
 
 .tabla code {
@@ -885,6 +1607,7 @@ fieldset.punto.marcando select {
 }
 
 .tabla .accion button {
+  min-height: 0;
   padding: 0.3rem 0.7rem;
   font-size: 0.88rem;
 }
@@ -896,13 +1619,21 @@ fieldset.punto.marcando select {
 }
 
 .tabla tr.abierta td {
-  background: #fdf6f5;
+  background: var(--rojo-fondo);
   border-bottom-color: transparent;
 }
 
 .tabla tr.fila-cancelar td {
-  background: #fdf6f5;
+  background: var(--rojo-fondo);
   padding: 0.25rem 0.6rem 1rem;
+}
+
+/* El «Cancelar» de la fila abierta: hundido, para que se lea que su fila es la que se está editando. */
+.tabla button[aria-expanded='true'] {
+  box-shadow: inset 0 0 0 1px var(--filete);
+  background: var(--fondo);
+  border-color: var(--asfalto);
+  color: var(--asfalto);
 }
 
 /* --- Panel del operador --- */
@@ -920,13 +1651,6 @@ fieldset.punto.marcando select {
 .filtros .buscar {
   flex: 1;
   min-width: 260px;
-}
-
-/* El select, el campo y los botones del filtro, a la misma altura. */
-.filtros select,
-.filtros input,
-.filtros button {
-  height: 2.5rem;
 }
 
 /* Las columnas no cambian de ancho cuando se abre la fila de cancelar. */
@@ -960,21 +1684,6 @@ fieldset.punto.marcando select {
   overflow-wrap: anywhere;
 }
 
-/* El «Cancelar» de la fila abierta: hundido, para que se lea que su fila es la que se está editando. */
-.tabla button[aria-expanded='true'] {
-  box-shadow: inset 0 0 0 1px #c5ccd8;
-  background: #dfe5ee;
-}
-
-.vacio {
-  margin: 0;
-  padding: 2rem 1rem;
-  text-align: center;
-  color: var(--suave);
-  border: 1px dashed #c5ccd8;
-  border-radius: 8px;
-}
-
 .cancelar-viaje {
   display: flex;
   flex-wrap: wrap;
@@ -990,6 +1699,293 @@ fieldset.punto.marcando select {
 .cancelar-viaje .error,
 .cancelar-viaje .error + .error {
   flex-basis: 100%;
+}
+
+/* --- Panel de la flota --- */
+.cupo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.cupo meter {
+  height: 0.9rem;
+  accent-color: var(--verde);
+}
+
+.periodo-reporte {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: flex-end;
+}
+
+.reporte {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.reporte .facturado strong {
+  font-family: var(--f-cartel);
+  font-size: 1.9rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.formulario-alta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.formulario-alta label {
+  width: 100%;
+}
+
+.vehiculo {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.choferes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--filete-2);
+}
+
+/* Cada chofer es una fila de la lista: los datos y las marcas a la izquierda, la acción al final. */
+.chofer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.35rem 1rem;
+  padding: 0.75rem 0.25rem;
+  border-bottom: 1px solid var(--filete-2);
+}
+
+.chofer > * {
+  grid-column: 1;
+}
+
+.chofer > .acciones {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  justify-content: flex-end;
+}
+
+.chofer .acciones button {
+  flex: none;
+  min-height: 2.4rem;
+  padding: 0.45rem 0.9rem;
+  font-size: 0.92rem;
+}
+
+.datos-chofer,
+.marcas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.datos-chofer {
+  justify-content: space-between;
+}
+
+.codigo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.codigo code {
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
+}
+
+.codigo button {
+  min-height: 0;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.82rem;
+}
+
+/* --- Celular: el menú baja al pie, la barra se achica --- */
+@media (max-width: 719px) {
+  :root {
+    --barra-alto: 3.25rem;
+  }
+
+  body {
+    padding-bottom: calc(var(--nav-alto) + env(safe-area-inset-bottom));
+  }
+
+  .barra {
+    gap: 0.75rem;
+    padding: 0 1rem;
+  }
+
+  .quien {
+    display: none;
+  }
+
+  .menu {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1100;
+    height: calc(var(--nav-alto) + env(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom);
+    gap: 0;
+    background: var(--verde);
+    box-shadow: 0 -4px 16px rgba(0, 30, 20, 0.22);
+  }
+
+  .menu a {
+    flex: 1;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.2rem;
+    padding: 0;
+    font-size: 0.8rem;
+    border: 0;
+  }
+
+  .menu a.active {
+    color: #fff;
+  }
+
+  .menu a.active .menu-icono {
+    color: var(--ambar);
+  }
+
+  .menu-icono {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+
+  button.salir {
+    margin-left: auto;
+    padding: 0.35rem 0.55rem;
+  }
+
+  .salir-texto {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .contenido {
+    margin: 1rem auto;
+  }
+
+  .tarjeta {
+    padding: 1.15rem;
+  }
+
+  .hoja {
+    min-height: calc(100dvh - var(--barra-alto) - var(--nav-alto) - 14rem);
+  }
+
+  .trayecto dd {
+    font-size: 1.2rem;
+  }
+
+  .cartel-lugar strong {
+    font-size: 1.55rem;
+  }
+
+  .cierre.fijo {
+    bottom: calc(var(--nav-alto) + env(safe-area-inset-bottom));
+  }
+
+  .pasajero.con-viaje .zona-mapa {
+    height: clamp(13rem, 34dvh, 24rem);
+  }
+
+  .chofer-app.con-oferta .zona-mapa {
+    height: clamp(11rem, 26dvh, 17rem);
+  }
+
+  .ayuda-mapa {
+    bottom: 1.85rem;
+    padding: 0.3rem 0.75rem;
+    font-size: 0.8rem;
+    letter-spacing: 0.06em;
+  }
+}
+
+/* --- Login: el cartel de la marca arriba del formulario --- */
+.login {
+  margin-top: max(2rem, 8dvh);
+}
+
+.login .cartel {
+  margin: 0 0 1rem;
+  padding: 1.1rem 1.25rem 1.15rem;
+}
+
+.login-marca {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  font-family: var(--f-cartel);
+  font-weight: 700;
+  font-size: 1.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.login-marca .marca-logo {
+  width: 3rem;
+}
+
+.login-lema {
+  margin-top: 0.5rem;
+  padding-top: 0.55rem;
+  border-top: 1.5px solid rgba(255, 255, 255, 0.55);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* --- Pantalla grande: el mapa ocupa el resto y la hoja va al costado --- */
+@media (min-width: 960px) {
+  .pasajero,
+  .chofer-app {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 27.5rem;
+    gap: 1.25rem;
+    height: calc(100dvh - var(--barra-alto));
+    padding: 1.25rem;
+  }
+
+  .zona-mapa {
+    position: relative;
+    top: auto;
+    height: auto;
+    min-height: 0;
+    border: 1px solid var(--filete);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+
+  .hoja {
+    margin-top: 0;
+    min-height: 0;
+    height: 100%;
+    overflow-y: auto;
+    border: 1px solid var(--filete);
+    border-radius: 14px;
+    box-shadow: var(--sombra);
+  }
 }
 
 @media (max-width: 900px) {

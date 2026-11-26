@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Navigate, useNavigate, useSearchParams } from 'react-router';
 import { ErrorApi } from '../api/errores';
+import { Marca } from '../componentes/Iconos';
 import { MensajeError } from '../componentes/MensajeError';
 import { moduloDe } from '../roles';
 import { entrar } from '../sesion/login';
@@ -52,7 +53,14 @@ export function Login() {
 
   const propio = textoDelLogin(error);
   return (
-    <main className="contenido angosto">
+    <main className="contenido angosto login">
+      <div className="cartel">
+        <p className="login-marca">
+          <Marca className="marca-logo" />
+          Viajes
+        </p>
+        <p className="login-lema">Pedí un viaje en Resistencia y seguí al auto en vivo, por las calles.</p>
+      </div>
       <form className="tarjeta" onSubmit={(e) => void enviar(e)} noValidate>
         <h1>Entrar</h1>
         <label>
