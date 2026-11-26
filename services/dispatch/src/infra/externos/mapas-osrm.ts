@@ -32,10 +32,14 @@ const esPar = (v: unknown): v is [number, number] =>
  * con eso es `MapasConRespaldo` (la línea recta), no este adaptador.
  *
  * Caché en memoria (LRU) por coordenadas redondeadas a 5 decimales (~1 m): el servidor público pide no
- * más de un pedido por segundo, y la estimación y el mapa piden la misma ruta.
+ * más de un pedido por segundo, y la estimación y el mapa piden la misma ruta. Los pedidos en curso
+ * también se comparten: si el mapa y la estimación piden la misma ruta a la vez (antes de que llegue la
+ * primera respuesta), sale un solo pedido a OSRM y los dos esperan esa respuesta.
  */
 export class MapasOsrm implements ServicioMapas, ServicioRutas {
   private readonly cache = new Map<string, Ruta>();
+  /** Los pedidos a OSRM que todavía no contestaron, por clave. Se borran al terminar, bien o mal. */
+  private readonly enCurso = new Map<string, Promise<Ruta>>();
 
   constructor(private readonly opciones: OpcionesMapasOsrm) {}
 
@@ -54,10 +58,24 @@ export class MapasOsrm implements ServicioMapas, ServicioRutas {
       this.opciones.alResolver?.('cache');
       return guardada;
     }
-    const ruta = await this.pedir(origen, destino);
-    this.cache.set(clave, ruta);
-    const maximo = this.opciones.maxCache ?? 500;
-    while (this.cache.size > maximo) this.cache.delete(this.cache.keys().next().value as string);
+    const compartido = this.enCurso.get(clave);
+    if (compartido) {
+      // Ya hay un pedido en vuelo para esta ruta: se espera ese, no se manda otro. Si falla, falla para
+      // todos los que lo esperaban (y cada uno recibe el respaldo de MapasConRespaldo).
+      const ruta = await compartido;
+      this.opciones.alResolver?.('cache');
+      return ruta;
+    }
+    const pedido = this.pedir(origen, destino)
+      .then((ruta) => {
+        this.cache.set(clave, ruta);
+        const maximo = this.opciones.maxCache ?? 500;
+        while (this.cache.size > maximo) this.cache.delete(this.cache.keys().next().value as string);
+        return ruta;
+      })
+      .finally(() => this.enCurso.delete(clave));
+    this.enCurso.set(clave, pedido);
+    const ruta = await pedido;
     this.opciones.alResolver?.('calles');
     return ruta;
   }
