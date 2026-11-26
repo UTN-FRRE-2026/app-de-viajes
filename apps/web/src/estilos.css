@@ -946,7 +946,9 @@ button.salir:not(:disabled):hover {
   animation: encender 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-.paso.fallo .senal::after {
+/* «Anulado» solo en la señal final de un viaje cancelado (o sin choferes). Un cobro rechazado también
+   es un paso en rojo, pero el viaje terminó: lleva su motivo debajo («Rechazado: …»), no «Anulado». */
+.paso.fallo.final .senal::after {
   content: 'Anulado';
   order: -1;
   display: block;
@@ -955,9 +957,13 @@ button.salir:not(:disabled):hover {
   letter-spacing: 0.14em;
 }
 
-.paso.fallo .senal strong {
+.paso.fallo.final .senal strong {
   font-weight: 600;
   font-size: 0.76rem;
+}
+
+.paso.fallo .detalle-paso {
+  color: var(--rojo);
 }
 
 .paso:nth-child(2) .senal {

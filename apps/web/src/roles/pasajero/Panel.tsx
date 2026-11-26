@@ -241,7 +241,7 @@ function Senales() {
 function Senal({ item, ahora }: { item: ItemLinea; ahora: number }) {
   const { titulo, estado, hora, detalle } = item;
   return (
-    <li className={`paso ${estado}`} aria-current={estado === 'actual' ? 'step' : undefined}>
+    <li className={`paso ${estado}${item.clave === 'final' ? ' final' : ''}`} aria-current={estado === 'actual' ? 'step' : undefined}>
       <span className="senal">
         <PictogramaPaso clave={item.clave} className="senal-pictograma" />
         <strong>{titulo}</strong>

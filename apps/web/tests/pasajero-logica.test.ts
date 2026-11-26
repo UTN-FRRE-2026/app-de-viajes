@@ -158,7 +158,10 @@ describe('línea de tiempo', () => {
     expect(estados(e).slice(-2)).toEqual(['terminado:hecho', 'cobrado:actual']);
     const rechazo = { id: 'c', solicitudId: S1, montoCentavos: 1, estado: 'RECHAZADO' as const, motivoRechazo: 'sin fondos' };
     const linea = lineaDeTiempo({ ...e, cobro: rechazo });
-    expect(linea.at(-1)).toMatchObject({ estado: 'fallo', detalle: 'Rechazado: sin fondos' });
+    // Es el paso «cobrado» el que falla, no un paso «final»: la pantalla solo dice «Anulado» en el final
+    // de un viaje cancelado (`.paso.fallo.final`); acá el viaje terminó y lo que se rechazó fue el cobro.
+    expect(linea.at(-1)).toMatchObject({ clave: 'cobrado', estado: 'fallo', detalle: 'Rechazado: sin fondos' });
+    expect(linea.some((i) => i.clave === 'final')).toBe(false);
   });
 
   it('cancelado: los pasos que alcanzó y uno final en rojo con el motivo', () => {
