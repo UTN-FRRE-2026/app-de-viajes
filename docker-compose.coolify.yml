@@ -162,6 +162,11 @@ services:
       OFERTAS_SIMULTANEAS: ${OFERTAS_SIMULTANEAS:-}
       OFERTA_TTL_SEGUNDOS: ${OFERTA_TTL_SEGUNDOS:-}
       LIMITE_SOLICITUDES_POR_MINUTO: ${LIMITE_SOLICITUDES_POR_MINUTO:-}
+      LIMITE_RUTAS_POR_MINUTO: ${LIMITE_RUTAS_POR_MINUTO:-}
+      # Publicado: las calles reales con OSRM (el servidor público, salvo MAPAS_OSRM_URL), y la línea
+      # recta de respaldo si no responde (docs/tarifas.md#puerto-de-mapas).
+      MAPAS_PROVEEDOR: ${MAPAS_PROVEEDOR:-osrm}
+      MAPAS_OSRM_URL: ${MAPAS_OSRM_URL:-}
       TARIFA_BAJADA_CENTAVOS: ${TARIFA_BAJADA_CENTAVOS:-}
       TARIFA_CENTAVOS_POR_KM: ${TARIFA_CENTAVOS_POR_KM:-}
       TARIFA_CENTAVOS_POR_MINUTO: ${TARIFA_CENTAVOS_POR_MINUTO:-}

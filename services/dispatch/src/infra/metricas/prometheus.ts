@@ -22,6 +22,21 @@ export function contadorCacheZonas(metricas: Metricas): (resultado: ResultadoCac
   );
 }
 
+/**
+ * Ruteo (OSRM): `calles` (pedido a OSRM), `cache` (ya estaba) o `respaldo` (OSRM no respondió y se usó
+ * la línea recta). Las tres arrancan en 0, para que la primera de cada una se vea en un `rate()`.
+ */
+export function contadorRuteo({ registro }: Metricas): (resultado: 'calles' | 'cache' | 'respaldo') => void {
+  const rutas = new Counter({
+    name: 'dispatch_ruteo_total',
+    help: 'Rutas resueltas: calles (OSRM), cache, o respaldo (OSRM no respondió, línea recta).',
+    labelNames: ['resultado'] as const,
+    registers: [registro],
+  });
+  for (const r of ['calles', 'cache', 'respaldo'] as const) rutas.inc({ resultado: r }, 0);
+  return (resultado) => rutas.inc({ resultado });
+}
+
 /** Métricas de negocio de dispatch, en el mismo Registry que las comunes de `platform`. */
 export function metricasDespachoPrometheus({ registro }: Metricas): MetricasDespacho {
   const solicitudes = new Counter({

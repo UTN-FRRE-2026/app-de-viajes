@@ -143,6 +143,7 @@ services:
       OFERTA_TTL_SEGUNDOS: ${OFERTA_TTL_SEGUNDOS:-}
       # Límite de tasa de la solicitud, por pasajero. Vacía: el valor por defecto de dispatch (10 por minuto).
       LIMITE_SOLICITUDES_POR_MINUTO: ${LIMITE_SOLICITUDES_POR_MINUTO:-}
+      LIMITE_RUTAS_POR_MINUTO: ${LIMITE_RUTAS_POR_MINUTO:-}
       # Retención de los eventos publicados del outbox. Vacía: 24 h.
       OUTBOX_RETENCION_HORAS: ${OUTBOX_RETENCION_HORAS:-}
       # Flotas: el alta de un chofer verifica la cuenta en identity (red interna; /interno/* no se publica).
@@ -162,6 +163,9 @@ services:
       MAPAS_FACTOR_DESVIO: ${MAPAS_FACTOR_DESVIO:-}
       MAPAS_VELOCIDAD_KMH: ${MAPAS_VELOCIDAD_KMH:-}
       MAPAS_TIMEOUT_MS: ${MAPAS_TIMEOUT_MS:-}
+      MAPAS_PROVEEDOR: ${MAPAS_PROVEEDOR:-}
+      MAPAS_OSRM_URL: ${MAPAS_OSRM_URL:-}
+      MAPAS_OSRM_TIMEOUT_MS: ${MAPAS_OSRM_TIMEOUT_MS:-}
       MAPAS_LATENCIA_SIMULADA_MS: ${MAPAS_LATENCIA_SIMULADA_MS:-}
       TARIFAS_CACHE_TTL_SEGUNDOS: ${TARIFAS_CACHE_TTL_SEGUNDOS:-}
       ZONAS_CACHE_TTL_SEGUNDOS: ${ZONAS_CACHE_TTL_SEGUNDOS:-}

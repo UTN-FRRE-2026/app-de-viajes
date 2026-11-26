@@ -46,6 +46,9 @@ export const EsquemaConfig = z
     // Límite de tasa de POST /solicitudes por pasajero, por minuto (429 con RateLimit-*). 0 lo desactiva
     // (el entorno de carga, donde un pasajero de k6 pide decenas por minuto).
     LIMITE_SOLICITUDES_POR_MINUTO: vacioComoAusente(z.coerce.number().int().min(0).max(10_000).default(10)),
+    // GET /rutas, por usuario: el mapa la pide al elegir los puntos y cuando el auto se desvía. Cuida
+    // el servidor público de OSRM (docs/rutas.md).
+    LIMITE_RUTAS_POR_MINUTO: vacioComoAusente(z.coerce.number().int().min(0).max(10_000).default(60)),
     // La posición del chofer en vivo: los canales `<prefijo>posicion:<choferId>` que publica location.
     // Mismo nombre, misma regla y mismo valor que en location: el .env es compartido.
     LOCATION_REDIS_PREFIJO: z
@@ -83,6 +86,18 @@ export const EsquemaConfig = z
     MAPAS_VELOCIDAD_KMH: vacioComoAusente(z.coerce.number().int().min(5).max(120).default(25)),
     // Si mapas no contesta en este tiempo, la estimación responde 503 (falla cerrado).
     MAPAS_TIMEOUT_MS: vacioComoAusente(z.coerce.number().int().min(50).max(10_000).default(1000)),
+    // Ruteo: `simulado` (línea recta × desvío) u `osrm` (por las calles, con el simulado de respaldo si
+    // OSRM no responde). docs/rutas.md.
+    MAPAS_PROVEEDOR: vacioComoAusente(z.enum(['simulado', 'osrm']).default('simulado')),
+    MAPAS_OSRM_URL: vacioComoAusente(
+      z
+        .string()
+        .url()
+        .default('https://router.project-osrm.org')
+        .transform((u) => u.replace(/\/+$/, '')),
+    ),
+    // Cada pedido a OSRM se cancela pasado este tiempo, y se usa el respaldo.
+    MAPAS_OSRM_TIMEOUT_MS: vacioComoAusente(z.coerce.number().int().min(100).max(10_000).default(2500)),
     // Caché en Redis de los parámetros de cada versión de tarifa. Las versiones no cambian: el TTL
     // solo limpia las que dejaron de usarse.
     TARIFAS_CACHE_TTL_SEGUNDOS: vacioComoAusente(z.coerce.number().int().min(60).max(86_400).default(3600)),

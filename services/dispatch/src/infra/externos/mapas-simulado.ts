@@ -1,6 +1,6 @@
 import type { Coordenada } from '../../dominio/entidades/index.js';
 import type { Recorrido } from '../../dominio/tarifas/calculo.js';
-import type { ServicioMapas } from '../../dominio/puertos/index.js';
+import type { Ruta, ServicioMapas, ServicioRutas } from '../../dominio/puertos/index.js';
 
 const RADIO_TIERRA_METROS = 6_371_008.8;
 const rad = (grados: number) => (grados * Math.PI) / 180;
@@ -28,7 +28,7 @@ export interface OpcionesMapasSimulado {
  * Mapas sin proveedor externo: una **aproximación**, no un ruteo real. Recorrido = línea recta ×
  * factor de desvío; tiempo = recorrido a velocidad media constante. Devuelve enteros.
  */
-export class MapasSimulado implements ServicioMapas {
+export class MapasSimulado implements ServicioMapas, ServicioRutas {
   constructor(private readonly opciones: OpcionesMapasSimulado) {}
 
   async recorrido(origen: Coordenada, destino: Coordenada): Promise<Recorrido> {
@@ -37,5 +37,18 @@ export class MapasSimulado implements ServicioMapas {
     const metros = Math.round(distanciaRectaMetros(origen, destino) * factorDesvio);
     const segundos = Math.round((metros * 3.6) / velocidadKmh);
     return { metros, segundos };
+  }
+
+  /** La ruta "dibujable" del simulado: la línea recta, con el recorrido aproximado. */
+  async ruta(origen: Coordenada, destino: Coordenada): Promise<Ruta> {
+    const r = await this.recorrido(origen, destino);
+    return {
+      ...r,
+      puntos: [
+        [origen.lat, origen.lng],
+        [destino.lat, destino.lng],
+      ],
+      fuente: 'recta',
+    };
   }
 }
