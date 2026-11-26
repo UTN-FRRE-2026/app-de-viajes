@@ -16,6 +16,9 @@ const consulta = (a: Punto, b: Punto) =>
     destinoLng: b.lng.toFixed(6),
   }).toString();
 
+/** `GET /viajes/rutas`: la ruta por las calles (dispatch → OSRM), o la recta si el ruteo no responde. */
+export const pedirRuta = (desde: Punto, hasta: Punto) => pedir<Ruta>('GET', `/viajes/rutas?${consulta(desde, hasta)}`);
+
 const clavePunto = (p: Punto) => `${p.lat.toFixed(5)},${p.lng.toFixed(5)}`;
 
 /**
@@ -67,7 +70,7 @@ export function useRuta(desde: Punto | null, hasta: Punto | null, { auto = false
     // Sin cancelar al volver a correr: el auto se mueve cada segundo y el efecto corre otra vez antes
     // de que llegue la respuesta. Lo que decide es si sigue siendo el último pedido.
     const n = ++ultimo.current;
-    pedir<Ruta>('GET', `/viajes/rutas?${consulta(origen, hasta)}`)
+    pedirRuta(origen, hasta)
       .then((r) => {
         if (n === ultimo.current) setRuta({ clave, ruta: r });
       })

@@ -4,8 +4,11 @@
  * siendo candidato. Por eso el reenvío solo manda posiciones recientes.
  */
 
-/** Cada cuánto se reenvía la última posición, aunque el GPS no haya cambiado. */
+/** Cada cuánto se reenvía la última posición, aunque el GPS no haya cambiado (GPS y manual). */
 export const REENVIO_MS = 5_000;
+
+/** En la conducción simulada, cada cuánto se envía: el auto se mueve cada 1 s (`simulacion.ts`). */
+export const REENVIO_SIMULADA_MS = 1_000;
 
 /**
  * Una posición del GPS es reciente si se tomó hace 15 s o menos: la mitad de los 30 s de
@@ -16,7 +19,8 @@ export const RECIENTE_MS = 15_000;
 /** Pasado este tiempo sin envíos, location ya no tiene al usuario como candidato (vigencia de location). */
 export const VIGENCIA_MS = 30_000;
 
-export type Fuente = 'gps' | 'manual';
+/** De dónde sale la posición. `simulada`: el auto que maneja solo (demo, solo el chofer). */
+export type Fuente = 'gps' | 'manual' | 'simulada';
 
 export interface Fijacion {
   lat: number;
@@ -32,12 +36,12 @@ export type EstadoPosicion =
   | { tipo: 'vieja'; edadMs: number };
 
 /**
- * El estado de la posición para enviarla. La manual (modo demo) son coordenadas que declara el
- * usuario: valen mientras estén puestas, y cada envío lleva la hora del momento.
+ * El estado de la posición para enviarla. La manual y la simulada (modos demo) son posiciones que
+ * declara la pantalla: valen mientras estén puestas, y cada envío lleva la hora del momento.
  */
 export function estadoPosicion(f: Fijacion | null, ahora: number): EstadoPosicion {
   if (!f) return { tipo: 'sin-posicion' };
-  if (f.fuente === 'manual') return { tipo: 'reciente', edadMs: 0 };
+  if (f.fuente !== 'gps') return { tipo: 'reciente', edadMs: 0 };
   const edadMs = Math.max(0, ahora - f.tomadaEn);
   return edadMs <= RECIENTE_MS ? { tipo: 'reciente', edadMs } : { tipo: 'vieja', edadMs };
 }

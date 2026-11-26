@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { textoDeError } from '../componentes/MensajeError';
 import { hace, useAhora } from '../componentes/useAhora';
 import { estadoPosicion, leerCoordenadas, VIGENCIA_MS } from './posicion';
+import { VELOCIDAD_SIMULADA_KMH } from './simulacion';
 import type { EnvioUbicacion } from './useEnvioUbicacion';
 
 /** Elegir la ubicación manual tocando el mapa: si se está eligiendo y cómo empezar o cancelar. */
@@ -11,9 +12,10 @@ export interface UbicarEnMapa {
 }
 
 /**
- * El envío de ubicación: GPS o manual (demo), y si se está enviando. `inactivo` explica por qué no se
- * envía (por ejemplo, «Ponete disponible para compartir tu ubicación»). Con `enMapa`, el modo manual
- * ofrece además «Ubicarme en el mapa»; las coordenadas a mano siguen como alternativa.
+ * El envío de ubicación: GPS, manual (demo) o, en el chofer, simulada (demo: el auto maneja solo), y si
+ * se está enviando. `inactivo` explica por qué no se envía (por ejemplo, «Ponete disponible para
+ * compartir tu ubicación»). Con `enMapa`, el modo manual ofrece además «Ubicarme en el mapa»; las
+ * coordenadas a mano siguen como alternativa.
  */
 export function ControlUbicacion({ envio, inactivo, enMapa }: { envio: EnvioUbicacion; inactivo: string; enMapa?: UbicarEnMapa }) {
   const ahora = useAhora();
@@ -51,6 +53,9 @@ export function ControlUbicacion({ envio, inactivo, enMapa }: { envio: EnvioUbic
     alerta = true;
     linea = `GPS sin posición reciente (${hace(estado.edadMs)}): no se envía.`;
     if (envio.ultimoEnvio && ahora - envio.ultimoEnvio > VIGENCIA_MS) linea += ' Ya no aparecés como disponible para nuevos viajes.';
+  } else if (envio.modo === 'simulada') {
+    const ultimo = envio.ultimoEnvio ? ` · último envío ${hace(ahora - envio.ultimoEnvio)}` : '';
+    linea = `El auto maneja solo, a ${VELOCIDAD_SIMULADA_KMH} km/h por la ruta · enviando cada 1 s${ultimo}.`;
   } else {
     linea = envio.ultimoEnvio ? `Enviando cada 5 s · último envío ${hace(ahora - envio.ultimoEnvio)}.` : 'Enviando…';
   }
@@ -64,6 +69,11 @@ export function ControlUbicacion({ envio, inactivo, enMapa }: { envio: EnvioUbic
         <label className="opcion">
           <input type="radio" name="fuente" checked={envio.modo === 'manual'} onChange={() => envio.cambiarModo('manual')} /> Manual (demo)
         </label>
+        {envio.permiteSimulada ? (
+          <label className="opcion">
+            <input type="radio" name="fuente" checked={envio.modo === 'simulada'} onChange={() => envio.cambiarModo('simulada')} /> Simulada (demo)
+          </label>
+        ) : null}
       </div>
       {envio.modo === 'manual' && enMapa ? (
         <button type="button" className={enMapa.eligiendo ? 'principal' : 'secundario'} aria-pressed={enMapa.eligiendo} onClick={enMapa.alternar}>

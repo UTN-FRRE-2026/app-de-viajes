@@ -67,6 +67,11 @@ export interface EstadoChofer {
    * marcas salen de un contador creciente: una lectura que empezó antes que esta es vieja.
    */
   ultimaMutacion: number;
+  /**
+   * Los avances que ya pidió sola la conducción simulada, como `solicitudId:accion`: cada uno se pide
+   * una sola vez por viaje, aunque falle o quede incierto (ahí queda el «Reintentar» de siempre).
+   */
+  automaticos: string[];
 }
 
 export const ESTADO_INICIAL: EstadoChofer = {
@@ -82,6 +87,7 @@ export const ESTADO_INICIAL: EstadoChofer = {
   aceptacion: null,
   operacion: null,
   ultimaMutacion: 0,
+  automaticos: [],
 };
 
 const conChofer = (s: Solicitud) => ESTADOS_CON_CHOFER.includes(s.estado);
@@ -218,4 +224,40 @@ export function textoRechazoAceptacion(err: unknown): string | null {
     default:
       return null;
   }
+}
+
+// --- La conducción simulada («Simulada (demo)») -------------------------------------------------
+
+/** La clave de un avance automático: uno por viaje y acción. */
+export const claveAutomatica = (solicitudId: string, accion: AccionViaje) => `${solicitudId}:${accion}`;
+
+/**
+ * Si se puede pedir sola `accion`: es la que sigue en el viaje activo, no hay otra operación en curso
+ * ni incierta (una incierta no se reintenta sola: queda «Reintentar») y no se pidió antes en este viaje.
+ */
+export function puedeAvanzarSolo(e: EstadoChofer, accion: AccionViaje): boolean {
+  const { viaje } = e;
+  if (!viaje || SIGUIENTE[viaje.estado]?.accion !== accion || e.operacion) return false;
+  return !e.automaticos.includes(claveAutomatica(viaje.id, accion));
+}
+
+/** Cómo va el auto simulado en el tramo actual. */
+export interface EstadoConduccion {
+  /** Llegó al final del tramo (el origen con el viaje en camino, el destino en curso). */
+  llego: boolean;
+  /** location ya recibió el punto final del tramo. */
+  finalEnviado: boolean;
+}
+
+/**
+ * Qué avance pide sola la conducción simulada:
+ * - **«Voy en camino»** apenas el viaje queda asignado (el auto arranca cuando se confirma);
+ * - **«Finalizar»** al llegar al destino, después de que location tiene el punto final: así la última
+ *   posición del viaje es el destino;
+ * - **«Inició el viaje»** nunca: lo toca el chofer cuando sube el pasajero.
+ */
+export function avanceSimulado(viaje: Solicitud | null, c: EstadoConduccion): AccionViaje | null {
+  if (viaje?.estado === 'ASIGNADO') return 'en-camino';
+  if (viaje?.estado === 'EN_CURSO' && c.llego && c.finalEnviado) return 'finalizar';
+  return null;
 }

@@ -1,6 +1,7 @@
 import type { EstadoSolicitud, PayloadEventoDispatch } from '@viajes/contracts';
 import { ErrorApi } from '../../api/errores';
-import { ESTADOS_CON_CHOFER, pesos, type Punto, type Solicitud } from '../../viaje/viaje';
+import { LLEGADA_METROS } from '../../ubicacion/simulacion';
+import { distanciaMetros, ESTADOS_CON_CHOFER, pesos, type Punto, type Solicitud } from '../../viaje/viaje';
 
 // La lógica de la pantalla del pasajero, sin React ni red: la línea de tiempo del viaje, y cómo se
 // aplican las lecturas del historial, las respuestas de las acciones y los eventos del SSE.
@@ -71,6 +72,15 @@ export const esActivo = (s: Solicitud) => ESTADOS_ACTIVOS.includes(s.estado);
  */
 const CANCELABLE_PASAJERO: readonly EstadoSolicitud[] = ['BUSCANDO', 'ASIGNADO', 'EN_CAMINO'];
 export const puedeCancelar = (s: Solicitud) => CANCELABLE_PASAJERO.includes(s.estado);
+
+/**
+ * «Tu chofer llegó», solo de pantalla (no hay un estado del viaje para eso): el chofer viene en camino
+ * y su posición, vigente, está a `LLEGADA_METROS` o menos del origen.
+ */
+export function choferLlego(viaje: Solicitud | null, posicion: Punto | null, posicionVieja: boolean): boolean {
+  if (viaje?.estado !== 'EN_CAMINO' || !posicion || posicionVieja) return false;
+  return distanciaMetros(posicion, viaje.origen) <= LLEGADA_METROS;
+}
 
 /**
  * Hay que leer el cobro del viaje en pantalla: terminó y el cobro todavía no se resolvió. Los

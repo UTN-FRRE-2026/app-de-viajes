@@ -7,9 +7,12 @@ import {
   aplicarEvento,
   aplicarLectura,
   aplicarRespuesta,
+  claveAutomatica,
   ESTADO_INICIAL,
+  puedeAvanzarSolo,
   SIGUIENTE,
   textoRechazoAceptacion,
+  type AccionViaje,
   type EstadoChofer,
 } from './logica';
 
@@ -32,6 +35,11 @@ interface StoreChofer extends EstadoChofer {
   reintentarAceptacion(): void;
   /** La acción que sigue según el estado del viaje: en camino, iniciar o finalizar. */
   avanzar(): void;
+  /**
+   * Conducción simulada: pide `accion` sola, una vez por viaje (`puedeAvanzarSolo`). Va por `avanzar`,
+   * con su Idempotency-Key y su resultado incierto.
+   */
+  avanzarSolo(accion: AccionViaje): void;
   reintentarOperacion(): void;
   cambiarDisponible(valor: boolean): Promise<void>;
   cerrarAviso(): void;
@@ -155,6 +163,13 @@ export const useChofer = create<StoreChofer>()((set, get) => {
         aviso: null,
       });
       void enviarOperacion();
+    },
+
+    avanzarSolo(accion) {
+      const e = get();
+      if (!e.viaje || !puedeAvanzarSolo(e, accion)) return;
+      set({ automaticos: [...e.automaticos, claveAutomatica(e.viaje.id, accion)] });
+      get().avanzar();
     },
 
     reintentarOperacion() {
