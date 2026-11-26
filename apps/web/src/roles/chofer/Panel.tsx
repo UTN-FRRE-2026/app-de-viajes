@@ -73,7 +73,7 @@ export function PanelChofer() {
   const yo = envio.fijacion;
   const enViaje = viaje?.estado === 'EN_CURSO';
   const rutaTrabajo = useRuta(trabajo ? trabajo.origen : null, trabajo ? trabajo.destino : null);
-  const tramo = useRuta(trabajo && yo ? yo : null, trabajo && yo ? (enViaje ? trabajo.destino : trabajo.origen) : null);
+  const tramo = useRuta(trabajo && yo ? yo : null, trabajo && yo ? (enViaje ? trabajo.destino : trabajo.origen) : null, { auto: true });
 
   if (!cargado) {
     return errorLectura ? (

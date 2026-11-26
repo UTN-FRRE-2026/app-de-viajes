@@ -70,7 +70,7 @@ Están las cuatro: [chofer](#la-pantalla-del-chofer-chofer), [flota](#el-panel-d
 - **el tramo del auto** hasta el punto que importa ahora (el origen mientras lo viene a buscar), punteado en ámbar;
 - **el mojón**, un poste blanco sobre la ruta con los kilómetros que faltan por las calles;
 - **el auto**, visto desde arriba. Gira hacia donde maneja y avanza suave entre una posición y la siguiente (~1 s), salvo con `prefers-reduced-motion`. Sin posición reciente se ve gris.
-- `src/mapa/useRuta.ts` pide la ruta y vuelve a pedirla solo cuando el auto se movió más de 120 m o cambió el destino. Así cuida el límite de `GET /rutas` por usuario y el servidor de ruteo.
+- `src/mapa/useRuta.ts` pide la ruta. La del origen y el destino elegidos se pide de nuevo con cualquier cambio de un extremo (un origen corrido unos metros puede cambiar la ruta entera). La que sale del auto (`{ auto: true }`) se pide de nuevo solo cuando el auto se movió más de 120 m o cambió el destino: así cuida el límite de `GET /rutas` por usuario y el servidor de ruteo.
 
 **El cartel.** Arriba de la hoja, el cartel verde dice hacia dónde y en cuántos minutos: «HACIA Terminal de Ómnibus · 8 MIN», «TU CHOFER TE BUSCA EN Plaza 25 de Mayo · 1 MIN». Los minutos y las distancias de los casilleros son por las calles, los mismos del mojón; sin ruta, en línea recta.
 

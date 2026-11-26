@@ -70,7 +70,7 @@ export function PanelPasajero() {
   const conChofer = viaje !== null && posicionChofer !== null && ['ASIGNADO', 'EN_CAMINO', 'EN_CURSO'].includes(viaje.estado);
   const enViaje = viaje?.estado === 'EN_CURSO';
   const rutaViaje = useRuta(viaje ? viaje.origen : origen, viaje ? viaje.destino : destino);
-  const tramo = useRuta(conChofer ? posicionChofer : null, conChofer && viaje ? (enViaje ? viaje.destino : viaje.origen) : null);
+  const tramo = useRuta(conChofer ? posicionChofer : null, conChofer && viaje ? (enViaje ? viaje.destino : viaje.origen) : null, { auto: true });
   const estimado = usePasajero((s) => s.estimacion?.datos ?? null);
 
   const fijar = (campo: Campo, p: Punto) => {
