@@ -29,8 +29,9 @@ describe('avanzar sobre la polilínea', () => {
     expect(r.total).toBeLessThan(410);
   });
 
-  it('a 40 km/h, cada segundo son 11,1 m', () => {
-    expect(VELOCIDAD_SIMULADA_KMH).toBe(40);
+  it('a 120 km/h (la de la demo), cada segundo son 33,3 m; a 40, 11,1 m', () => {
+    expect(VELOCIDAD_SIMULADA_KMH).toBe(120);
+    expect(avanzar(r, 0, VELOCIDAD_SIMULADA_KMH, 1)).toBeCloseTo(33.333, 3);
     expect(avanzar(r, 0, 40, 1)).toBeCloseTo(11.111, 3);
     expect(avanzar(r, 100, 40, 9)).toBeCloseTo(200, 6);
   });
@@ -90,15 +91,15 @@ describe('llegar', () => {
     expect(yaEsta(PLAZA, NORTE)).toBe(false);
   });
 
-  it('a 40 km/h, 200 m se hacen en unos 17 pasos de 1 s (frena a 20 m o menos del final)', () => {
+  it('a 120 km/h, 200 m se hacen en unos 6 pasos de 1 s (frena a 20 m o menos del final)', () => {
     let andados = 0;
     let pasos = 0;
     while (!llego(r, andados) && pasos < 100) {
       andados = avanzar(r, andados, VELOCIDAD_SIMULADA_KMH, 1);
       pasos++;
     }
-    expect(pasos).toBeGreaterThanOrEqual(16);
-    expect(pasos).toBeLessThanOrEqual(18);
+    expect(pasos).toBeGreaterThanOrEqual(5);
+    expect(pasos).toBeLessThanOrEqual(7);
   });
 });
 

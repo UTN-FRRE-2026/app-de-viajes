@@ -6,14 +6,15 @@ import { api, entrar, entrarPorApi, exigir, noDisponible, prepararContexto, SEED
 // finaliza solo en el destino; las dos pantallas lo ven moverse a la vez.
 //
 // La ruta la responde el test (una L corta, sin OSRM ni dispatch) y la velocidad es la de siempre
-// (40 km/h): lo que se acorta es el recorrido, unos 140 m hasta el origen y 230 m hasta el destino.
+// (120 km/h): lo que se acorta es el recorrido, unos 400 m hasta el origen y 600 m hasta el destino
+// (unos 12 s y 18 s), así se lo ve moverse varios segundos en las dos pantallas.
 
 /** Donde queda el auto simulado sin una posición guardada (`PARTIDA_SIMULADA`, la de `simular-chofer.mjs`). */
 const PARTIDA = { lat: -27.462, lng: -58.996 };
-/** A unos 140 m de la partida por la L (90 m al norte y 50 m al este), en la zona «Resistencia». */
-const ORIGEN = { lat: -27.4612, lng: -58.9955 };
-/** A unos 230 m del origen por la L. */
-const DESTINO = { lat: -27.46, lng: -58.9945 };
+/** A unos 400 m de la partida por la L (250 m al norte y 150 m al este), en la zona «Resistencia». */
+const ORIGEN = { lat: -27.45975, lng: -58.9945 };
+/** A unos 600 m del origen por la L (306 m al norte y 296 m al este). */
+const DESTINO = { lat: -27.457, lng: -58.9915 };
 
 function metros(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
   const rad = (g: number) => (g * Math.PI) / 180;
@@ -73,7 +74,7 @@ test.afterEach(async () => {
 
 test('en «Simulada» el auto va solo a buscar al pasajero, frena, y al iniciar lo lleva y finaliza solo', async ({ browser }) => {
   test.setTimeout(120_000);
-  expect(metros(PARTIDA, ORIGEN)).toBeLessThan(150);
+  expect(metros(PARTIDA, ORIGEN)).toBeLessThan(450);
 
   // El chofer, sin GPS: la posición es la del auto simulado.
   const ctxChofer = await browser.newContext();
