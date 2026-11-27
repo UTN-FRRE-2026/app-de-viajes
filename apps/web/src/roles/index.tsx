@@ -20,7 +20,8 @@ export interface ModuloRol {
   /** Ruta base, también el inicio del rol después del login. */
   base: string;
   titulo: string;
-  menu: readonly { ruta: string; texto: string }[];
+  /** Con `roles`, la entrada la ven solo esos roles (la ruta la protege su propio `RequiereRol`). */
+  menu: readonly { ruta: string; texto: string; roles?: readonly Rol[] }[];
   rutas: RouteObject[];
 }
 

@@ -125,7 +125,7 @@ Por la API: [demo.http](demo.http), sección 7. Incluye la búsqueda con `' OR 1
 **En pantalla** (`/flota`, como `admin.flota@viajes.test`):
 1. El cupo: «Activos N de 5».
 2. **Alta de un chofer:** su código (el UUID que ve el chofer en `/chofer` mientras no está en una flota) y el vehículo. Queda «Pendiente de habilitación por el admin de la plataforma».
-3. Habilitarlo es del admin de la plataforma, por la API (`POST /api/viajes/admin/choferes/:id/habilitar`).
+3. **Habilitarlo es del admin de la plataforma**, en otra pestaña: `admin@viajes.test` → «Choferes» (`/operador/choferes`), pega el mismo código y toca «Habilitar». En `/flota`, «Actualizar»: queda «Habilitado» y «Activar» se puede tocar. También se puede por la API (`POST /api/viajes/admin/choferes/:id/habilitar`).
 4. **Activar hasta el límite:** el siguiente recibe «La flota llegó a su límite».
 5. **Viajes y facturación:** el reporte del mes, con lo facturado (solo los cobros aprobados) y los viajes completados.
 

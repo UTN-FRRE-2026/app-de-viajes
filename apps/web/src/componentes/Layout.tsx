@@ -13,6 +13,7 @@ export function Layout() {
   const usuario = useSesion((s) => s.usuario);
   const navegar = useNavigate();
   const modulo = usuario ? moduloDe(usuario.rol) : null;
+  const menu = modulo?.menu.filter((item) => !item.roles || (usuario !== null && item.roles.includes(usuario.rol))) ?? [];
 
   const salir = async () => {
     await cerrarSesion();
@@ -27,7 +28,7 @@ export function Layout() {
           <span className="marca-nombre">Viajes</span>
         </span>
         <nav className="menu" aria-label="Secciones">
-          {modulo?.menu.map((item) => (
+          {menu.map((item) => (
             <NavLink key={item.ruta} to={item.ruta} end>
               <IconoDeRuta ruta={item.ruta} className="menu-icono" />
               <span>{item.texto}</span>

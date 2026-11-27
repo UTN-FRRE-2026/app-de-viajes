@@ -160,6 +160,8 @@ export function PictogramaPaso({ clave, className }: { clave: string } & Props) 
 /** El ícono de cada entrada del menú, por su ruta. */
 export function IconoDeRuta({ ruta, className }: { ruta: string } & Props) {
   if (ruta.endsWith('/historial')) return <IconoHistorial {...(className ? { className } : {})} />;
+  // La habilitación del admin (`/operador/choferes`) es de choferes de flota: el mismo ícono que /flota.
+  if (ruta.endsWith('/choferes')) return <IconoFlota {...(className ? { className } : {})} />;
   if (ruta.startsWith('/chofer')) return <IconoVolante {...(className ? { className } : {})} />;
   if (ruta.startsWith('/operador')) return <IconoTablero {...(className ? { className } : {})} />;
   if (ruta.startsWith('/flota')) return <IconoFlota {...(className ? { className } : {})} />;

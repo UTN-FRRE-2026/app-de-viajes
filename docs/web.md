@@ -38,10 +38,10 @@ React + Vite + Zustand (PLAN 5.2), instalable como PWA ([Diseño y PWA](#diseño
 |---|---|
 | `pasajero` | `/pasajero` |
 | `chofer` | `/chofer` |
-| `operador` y `admin` | `/operador` |
+| `operador` y `admin` | `/operador` (el `admin` suma `/operador/choferes`) |
 | `admin_flota` | `/flota` |
 
-Cada rol tiene su archivo en `src/roles/` (`pasajero.tsx`, `chofer.tsx`, `operador.tsx`, `flota.tsx`), con `{ roles, base, titulo, menu, rutas }`. El router monta cada sección bajo su `base`, protegida por sus roles. Otro rol que entre por la URL ve «Esta pantalla no es para tu rol»; la autorización de verdad la hace la API. Después del login, cada uno va al inicio de su rol, o a la ruta de la que venía (`?volver=`, solo rutas internas).
+Cada rol tiene su archivo en `src/roles/` (`pasajero.tsx`, `chofer.tsx`, `operador.tsx`, `flota.tsx`), con `{ roles, base, titulo, menu, rutas }`. Una entrada del menú con `roles` la ven solo esos roles, y su ruta lleva su propio `RequiereRol` (así el admin tiene pantallas propias dentro de la sección del operador). El router monta cada sección bajo su `base`, protegida por sus roles. Otro rol que entre por la URL ve «Esta pantalla no es para tu rol»; la autorización de verdad la hace la API. Después del login, cada uno va al inicio de su rol, o a la ruta de la que venía (`?volver=`, solo rutas internas).
 
 Para sumar una pantalla:
 1. el componente, en `src/roles/<rol>/`;
@@ -110,7 +110,7 @@ Lo mismo con «Voy en camino», «Inició el viaje» y «Finalizar»: una clave 
 - **En camino:** maneja hasta el origen y frena. «Llegó» es solo de pantalla, sin un estado nuevo: el chofer ve en su cartel la bandera de llegada («Llegaste · esperá al pasajero») con «Inició el viaje» como acción principal, y lo toca él. Mientras maneja, ese botón queda secundario.
 - **En curso:** arranca solo hacia el destino. Al llegar, primero location recibe el punto final y después pide «Finalizar» solo. El cobro sale como siempre.
 - **Una ruta fija por tramo:** se pide una vez a `GET /api/viajes/rutas` (dispatch → OSRM) desde donde está el auto al empezar el tramo, y la misma se maneja y se dibuja. No sigue la ruta «del auto» del mapa, que se vuelve a pedir cada 120 m. La polilínea suma el auto al principio y el punto exacto al final: la ruta por las calles empieza y termina en la calle más cercana. Si el ruteo no responde, dispatch da la recta (`fuente: 'recta'`) y el auto va en línea recta; si falla el pedido, también.
-- **Velocidad y llegada:** 40 km/h (`VELOCIDAD_SIMULADA_KMH`), un paso cada 1 s con el tiempo que pasó de verdad (como mucho 5 s, si la pestaña quedó en segundo plano). Llega cuando le faltan 20 m o menos sobre la ruta, o al terminarla, y se para justo en el punto. La cuenta está aparte, sin React (`src/ubicacion/simulacion.ts`, `tests/simulacion.test.ts`); el manejo, en `useConduccionSimulada.ts`.
+- **Velocidad y llegada:** 120 km/h (`VELOCIDAD_SIMULADA_KMH`), más rápido que la ciudad a propósito para la demo (un recorrido de 2 km se ve en un minuto; el script `simular-chofer.mjs` sigue en 40). Los minutos del cartel salen de la duración de la ruta (la de OSRM, a velocidad de ciudad), en proporción a lo que falta: bajan más rápido que el reloj. Un paso cada 1 s con el tiempo que pasó de verdad (como mucho 5 s, si la pestaña quedó en segundo plano). Llega cuando le faltan 20 m o menos sobre la ruta, o al terminarla, y se para justo en el punto. La cuenta está aparte, sin React (`src/ubicacion/simulacion.ts`, `tests/simulacion.test.ts`); el manejo, en `useConduccionSimulada.ts`.
 - **Los avances automáticos** van por `avanzar()` del store, con su Idempotency-Key y su resultado incierto. Cada uno se pide una sola vez por viaje y acción (`automaticos` en el store). Si queda incierto, no se reintenta solo: queda el «Reintentar» de siempre. Los botones siguen ahí, por si hacen falta a mano.
 - **Se frena** al cambiar de modo, al cancelarse el viaje o al cambiar de viaje o de estado. Una respuesta de ruta que llega tarde se ignora.
 - **GPS y Manual siguen como antes:** sin avances automáticos y con el envío cada 5 s. El pasajero no tiene este modo.
@@ -121,7 +121,7 @@ Para el `admin_flota` (`src/roles/flota/`, con la misma división que el chofer:
 
 - **El cupo:** «Activos 3 de 5», de `GET /flota`. Con la flota llena, un aviso fijo: «La flota llegó a su límite de 5 choferes activos. Para activar a otro, desactivá uno: así se libera un cupo». El mismo texto aparece en la fila si un «Activar» recibe 409 `LIMITE_FLOTA_ALCANZADO`. El botón no se deshabilita por el contador local: puede estar viejo, y el que decide es el servidor.
 - **La lista:** `GET /flota/choferes` responde `{ choferes, siguiente }`. Muestra 10 por página, con «Ver más» mientras `siguiente` no sea null. «Actualizar» y volver a la pestaña releen el cupo y las filas ya cargadas, en un solo pedido de hasta 50. No hay eventos de flotas: así se ve una habilitación nueva o la disponibilidad que cambió el chofer.
-- **La habilitación es del admin de la plataforma.** Un chofer sin habilitar dice «Pendiente de habilitación por el admin de la plataforma», y su «Activar» queda deshabilitado. El panel no habilita.
+- **La habilitación es del admin de la plataforma.** Un chofer sin habilitar dice «Pendiente de habilitación por el admin de la plataforma», y su «Activar» queda deshabilitado. El panel no habilita: lo hace el admin en `/operador/choferes` (abajo).
 - **El alta:** el código del chofer (su UUID) y el vehículo. identity no permite buscar cuentas por email, así que el chofer ve su código en `/chofer` mientras no está en una flota, con un botón para copiarlo. Los errores tienen su texto: `CUENTA_NO_ES_CHOFER`, `CHOFER_YA_REGISTRADO`, `PATENTE_YA_REGISTRADA` y `IDENTITY_NO_DISPONIBLE`.
 
 **Viajes y facturación** (`GET /flota/reporte`, reglas en [docs/flotas.md](flotas.md#el-reporte-de-la-flota)):
@@ -205,6 +205,14 @@ Para `operador` y `admin` (`src/roles/operador/`). Una tabla de `GET /panel/viaj
 - **Cancelar con motivo** (obligatorio para el operador, de 3 a 200 caracteres), en una fila que se abre debajo del viaje, sin modal.
   - La clave es de `cancelar:<id>:<motivo>`: si el resultado es incierto, «Reintentar» usa la MISMA clave.
   - `SOLICITUD_NO_CANCELABLE` dice que el viaje ya terminó o estaba cancelado.
+
+## La habilitación de choferes (`/operador/choferes`, solo `admin`)
+
+El admin de la plataforma habilita a los choferes que cada flota dio de alta (`src/roles/admin/`). En el menú, «Choferes», que el operador no ve; si entra por la URL, «Esta pantalla no es para tu rol».
+- **Con el código del chofer:** la API no lista choferes para el admin. Se pega el código (el UUID que ve el chofer en `/chofer` y que su flota usó para el alta; se le sacan los espacios y va en minúsculas) y se toca «Habilitar» o «Deshabilitar» (`POST /admin/choferes/:id/habilitar` o `/deshabilitar`).
+- **El resultado:** «Habilitado: Fiat Cronos (AB123CD). Ya lo puede activar el admin de su flota.» Los choferes que se tocan quedan en «Choferes de esta sesión», con las mismas marcas que en `/flota` (habilitado, activo, disponible) y el botón contrario. Deshabilitar lo deja inactivo y no disponible, y libera su cupo si estaba activo.
+- **Errores:** 404 `CHOFER_NO_ENCONTRADO` dice que el chofer no está en ninguna flota: primero lo tiene que dar de alta su admin de flota.
+- **Una operación a la vez.** Si el resultado es incierto (sin respuesta, 5xx o la clave en curso), «Reintentar» usa la MISMA clave (`habilitar:<id>`) y «Descartar» la cierra. No se verifica con una lectura (no hay `GET` del chofer para el admin), pero las dos acciones son idempotentes.
 
 ## Lo compartido entre las pantallas de viaje
 

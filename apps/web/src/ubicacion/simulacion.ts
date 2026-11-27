@@ -4,8 +4,11 @@ import { distanciaMetros, type Punto } from '../viaje/viaje';
 // polilínea a una velocidad fija y sabe cuándo llegó. El cálculo es el de `scripts/simular-chofer.mjs`.
 // Se testea sola (apps/web/tests/simulacion.test.ts).
 
-/** A qué velocidad maneja el auto simulado: la de la ciudad, la misma del script de la demo. */
-export const VELOCIDAD_SIMULADA_KMH = 40;
+/**
+ * A qué velocidad maneja el auto simulado. Más rápido que la ciudad a propósito, para que en la demo
+ * un recorrido de 2 km se vea en un minuto (a 40 km/h eran tres). El script de la demo sigue en 40.
+ */
+export const VELOCIDAD_SIMULADA_KMH = 120;
 
 /** Cada cuánto avanza el auto simulado y manda su posición (60 por minuto: location admite 120). */
 export const PASO_SIMULADO_MS = 1_000;
