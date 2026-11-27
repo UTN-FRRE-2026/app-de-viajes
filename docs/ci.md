@@ -5,7 +5,7 @@
 | Job | Qué hace |
 |---|---|
 | `verificar` | `npm ci`, typecheck, lint, los tests de los servicios y del frontend (contra Postgres y Redis del CI) y `npm audit --audit-level=high` |
-| `e2e` | Levanta el sistema entero en Docker Compose y corre los flujos de Playwright (los cinco de PLAN 5.3 y la conducción simulada). Sube el reporte como artefacto `playwright` |
+| `e2e` | Levanta el sistema entero en Docker Compose y corre los flujos de Playwright (los cinco de PLAN 5.3, la conducción simulada y la habilitación de choferes). Sube el reporte como artefacto `playwright` |
 | `sast` | Semgrep sobre todo el repo. Falla con cualquier hallazgo. Sube el resultado en SARIF como artefacto `semgrep-sarif` |
 
 Las acciones de GitHub van **fijadas por commit**, con el tag en un comentario al lado: un tag lo puede mover el dueño de la acción, un commit no. Semgrep lo marca si no (`github-actions-mutable-action-tag`).
@@ -22,6 +22,7 @@ Los flujos de PLAN 5.3, contra nginx (`http://localhost:8080`), como en la demo:
 | `04-flota-limite.spec.ts` | El admin de la Flota Norte activa choferes hasta su límite, y el siguiente no entra («llegó a su límite»). No ve a los choferes de otra flota: ni en su lista ni por la API (404) |
 | `05-errores.spec.ts` | Login con credenciales incorrectas; alta de chofer con datos inválidos (marca cada campo y no manda nada); pedir sin origen ni destino; una sesión cerrada desde otro lado lleva al login al recargar |
 | `06-conduccion-simulada.spec.ts` | El chofer en «Simulada (demo)», el modo por defecto: «Voy en camino» sale solo, el auto se ve moverse en las dos pantallas, frena en el origen («Tu chofer llegó» para el pasajero, el cartel de llegada para el chofer), el chofer toca «Inició el viaje» y el viaje finaliza solo en el destino. La ruta la responde el test (una L corta, sin OSRM) y la velocidad es la de producción (40 km/h): se acorta el recorrido, no se acelera |
+| `07-habilitar-choferes.spec.ts` | El admin de la plataforma habilita en pantalla (`/operador/choferes`) a un chofer que la Flota Corrientes dio de alta, y en `/flota` ya tiene «Activar»; después lo deshabilita. Un chofer sin flota da «no está en ninguna flota». El operador no ve la pantalla, ni en el menú ni por la URL |
 
 **Cómo correrlos en local:**
 
